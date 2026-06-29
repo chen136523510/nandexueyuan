@@ -1,0 +1,23 @@
+/* 设计令牌：男德学院伪学院风 */
+:root {
+  /* 色彩 */
+  --color-green: #1f3d2e;
+  --color-green-light: #a8c4b4;
+  --color-green-dim: #4a6b5a;
+  --color-paper: #f4f1ea;
+  --color-paper-light: #faf8f3;
+  --color-ochre: #c8743b;
+  --color-ochre-dark: #b5632f;
+  --color-ink: #2d2620;
+  --color-ink-soft: #6b6358;
+  --color-line: #e0dcd0;
+  --color-card-border: #e8e4d8;
+
+  /* 字体 */
+  --font-serif: Georgia, 'Noto Serif SC', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* 间距 */
+  --space-page: 1.5rem;
+  --radius: 4px;
+}
