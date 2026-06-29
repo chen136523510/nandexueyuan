@@ -28,3 +28,7 @@ vendor/
 # 编译输出
 dist/
 build/
+
+# pnpm standalone bundle（npm 11 bug 临时方案）
+package/
+pnpm.tgz
