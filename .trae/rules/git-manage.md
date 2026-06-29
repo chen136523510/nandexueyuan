@@ -1,0 +1,85 @@
+# Git 管理规则
+
+## 开发流程
+
+```mermaid
+flowchart LR
+    A[本地开发] --> B[本地调试]
+    B --> C[git commit]
+    C --> D[git push origin master]
+    D --> E[SSH 服务器]
+    E --> F[git pull origin master]
+    F --> G[构建部署]
+```
+
+**核心原则：本地开发，调试完成后推送到服务器 bare 仓库，服务器拉取部署。**
+
+## 仓库结构
+
+| 位置 | 路径 | 类型 | 用途 |
+|------|------|------|------|
+| 本地 | `g:\UGit\nandexueyuan` | 工作仓库 | 开发调试 |
+| 服务器 bare | `/root/projects/www.nandexueyuan.top.git` | bare 仓库 | 中央枢纽，存历史 |
+| 服务器部署 | `/root/projects/www.nandexueyuan.top` | 工作仓库 | 生产运行 |
+
+## 分支策略
+
+- `master` — 唯一长期分支，保持可部署状态
+- 功能开发可直接在 master 上提交（个人项目，无需复杂分支）
+- **功能分支开发**：若在非 master 分支开发，必须先提交推送并发起合并请求，由 `master` 合并后方可部署；禁止直接部署非 master 分支
+
+## 提交规范
+
+### Commit Message 格式
+```
+<type>: <摘要>
+```
+
+| type | 说明 |
+|------|------|
+| feat | 新功能 |
+| fix | 修复 bug |
+| refactor | 重构（无功能变化） |
+| docs | 文档变更 |
+| chore | 构建/配置/依赖 |
+| style | 格式调整（无逻辑变化） |
+
+### 提交时机
+- 一次提交 = 一个完整的逻辑变更
+- 不要提交无法编译的代码
+- 不要提交 .env 文件（仅提交 .env.example）
+
+## 不提交的内容
+
+以下内容由 .gitignore 忽略：
+- `node_modules/` — 依赖目录，各环境各自安装
+- `.env` — 环境变量，各环境各自配置
+- `dist/` — 构建产物，部署时生成
+- `*.db` — SQLite 数据库文件
+- `public/media/**/*` — 媒体文件（仅保留目录结构）
+- `package/` — pnpm standalone bundle（临时方案）
+- `.trae/skills/` — Trae IDE 内置技能库资源（仅保留 `.trae/rules/` 项目规则）
+
+## 部署流程
+
+1. 本地确认 `git status` 干净（**部署前必须先 commit + push，工作区不允许有未提交变更**）
+2. `git push origin master`
+3. SSH 到服务器：`ssh nandexueyuan`
+4. 拉取代码：`cd /root/projects/www.nandexueyuan.top && git pull origin master`
+5. 前端构建：`npm run build`（或本地构建后上传 dist/）
+6. 后端重启：`pm2 restart nandexueyuan-api`
+7. Nginx 托管 dist/，反代 /api 到 3000
+
+## 换设备流程
+
+```bash
+# 新设备克隆
+git clone nandexueyuan:/root/projects/www.nandexueyuan.top.git
+
+# 安装依赖
+node package/dist/pnpm.mjs install        # 前端
+cd server && node ../package/dist/pnpm.mjs install --ignore-workspace  # 后端
+
+# 复制环境配置
+cp .env.example .env  # 填入本地实际值
+```

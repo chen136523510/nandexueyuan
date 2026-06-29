@@ -29,6 +29,19 @@ vendor/
 dist/
 build/
 
+# 数据库文件
+*.db
+*.db-journal
+
+# 媒体文件（保留目录结构，忽略实际文件）
+public/media/**/*
+!public/media/**/.gitkeep
+!public/media/**/README.md
+
 # pnpm standalone bundle（npm 11 bug 临时方案）
 package/
 pnpm.tgz
+
+# Trae IDE 配置（保留项目规则 .trae/rules/，忽略技能库等 IDE 资源）
+.trae/*
+!.trae/rules/
