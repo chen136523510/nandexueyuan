@@ -1,0 +1,13 @@
+﻿
+
+ComputerName           : 47.96.158.104
+RemoteAddress          : 47.96.158.104
+RemotePort             : 22
+InterfaceAlias         : 以太网
+SourceAddress          : 192.168.31.39
+PingSucceeded          : False
+PingReplyDetails (RTT) : 0 ms
+TcpTestSucceeded       : False
+
+
+
