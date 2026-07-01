@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-01
+- [新增] `LoginView.vue` — 登录页（用户名+密码，登录后跳转 redirect 或首页）
+- [新增] `RegisterView.vue` — 注册页（邀请码+用户名+密码，注册后自动登录）
+- [新增] `ProfileView.vue` — 个人中心（信息编辑+修改密码+退出登录）
+- commit: 未提交
+
+---
+
 ## 2026-06-29
 - [新增] `HomeView.vue` — 首页视图（从 App.vue 迁移，含 hero + stats + features）
 - [新增] `AboutView.vue` — 关于页占位

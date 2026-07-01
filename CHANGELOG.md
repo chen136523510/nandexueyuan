@@ -4,10 +4,25 @@
 
 ---
 
+## 2026-07-01 新增用户认证系统
+- [新增] `server/src/lib/` — Prisma Client 单例层
+- [新增] `server/src/utils/` — 工具层（response/jwt/password/inviteCode）
+- [新增] `server/prisma/` — Prisma schema + 迁移 + seed 脚本
+- [修改] `server/src/controllers/` — 新增 auth/user/inviteCode/admin 四个控制器
+- [修改] `server/src/middleware/` — 新增 auth 中间件，重构 errorHandler
+- [修改] `server/src/routes/api.js` — 注册全部认证/用户/邀请码/成员管理路由
+- [修改] `src/api/` — 重构 axios 拦截器，新增 auth/user API 模块
+- [新增] `src/stores/auth.js` — 认证状态管理
+- [新增] `src/views/` — LoginView/RegisterView/ProfileView
+- [修改] `src/router/index.js` — 路由守卫（requiresAuth/guestOnly）
+- commit: 未提交
+
+---
+
 ## 2026-07-01 修复换设备依赖安装流程
 - [修改] `.trae/rules/git-manage.md` — 换设备流程改用 `corepack enable pnpm`，移除对 gitignore 的 `package/` bundle 依赖
 - [修改] `CONTRIBUTING.md` — 安装步骤同步改用 corepack，移除 pnpm bundle 说明
-- commit: 未提交
+- commit: b4120f1
 
 ---
 

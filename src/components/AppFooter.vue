@@ -10,10 +10,11 @@
 
 <style scoped>
 .footer {
-  background: var(--color-ink);
-  color: #8a8278;
+  background: var(--qz-bg-card);
+  border-top: 1px solid var(--qz-border);
+  color: var(--qz-text-placeholder);
   text-align: center;
-  padding: 1.5rem;
-  font-size: 0.82rem;
+  padding: var(--qz-space-lg);
+  font-size: var(--qz-font-size-xs);
 }
 </style>

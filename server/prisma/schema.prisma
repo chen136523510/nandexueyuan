@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  passwordHash String
+  nickname     String?
+  avatar       String?
+  role         String    @default("member") // super_admin | admin | member
+  status       String    @default("active") // active | disabled
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdCodes InviteCode[] @relation("CodeCreator")
+  usedCodes    InviteCode[] @relation("CodeUser")
+
+  @@map("users")
+}
+
+model InviteCode {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  createdBy Int
+  usedBy    Int?
+  status    String    @default("unused") // unused | used | expired
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  creator User  @relation("CodeCreator", fields: [createdBy], references: [id])
+  user    User? @relation("CodeUser", fields: [usedBy], references: [id])
+
+  @@map("invite_codes")
+}
+
+model Announcement {
+  id        Int       @id @default(1)
+  content   String    @default("欢迎来到男德学院")
+  updatedAt DateTime  @updatedAt
+
+  @@map("announcements")
+}

@@ -1,23 +1,59 @@
-/* 设计令牌：男德学院伪学院风 */
+/* 设计令牌：Qzone 风格 */
 :root {
-  /* 色彩 */
-  --color-green: #1f3d2e;
-  --color-green-light: #a8c4b4;
-  --color-green-dim: #4a6b5a;
-  --color-paper: #f4f1ea;
-  --color-paper-light: #faf8f3;
-  --color-ochre: #c8743b;
-  --color-ochre-dark: #b5632f;
-  --color-ink: #2d2620;
-  --color-ink-soft: #6b6358;
-  --color-line: #e0dcd0;
-  --color-card-border: #e8e4d8;
+  /* 主色 — Qzone 标志蓝 */
+  --qz-primary: #3c8cff;
+  --qz-primary-dark: #1677ff;
+  --qz-primary-light: #e8f2ff;
+  --qz-primary-bg: #f0f6ff;
+
+  /* 功能色 */
+  --qz-success: #00c853;
+  --qz-warning: #ff9800;
+  --qz-danger: #ff4d4f;
+  --qz-info: #8c8c8c;
+
+  /* 中性色 */
+  --qz-text-primary: #1a1a1a;
+  --qz-text-regular: #333;
+  --qz-text-secondary: #666;
+  --qz-text-placeholder: #999;
+  --qz-border: #e8e8e8;
+  --qz-border-light: #f0f0f0;
+  --qz-bg-page: #f5f5f5;
+  --qz-bg-card: #ffffff;
+  --qz-bg-hover: #fafafa;
+
+  /* 链接 */
+  --qz-link: #3c8cff;
+  --qz-link-hover: #1677ff;
 
   /* 字体 */
-  --font-serif: Georgia, 'Noto Serif SC', serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --qz-font-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --qz-font-size-xs: 12px;
+  --qz-font-size-sm: 13px;
+  --qz-font-size-base: 14px;
+  --qz-font-size-md: 15px;
+  --qz-font-size-lg: 17px;
+  --qz-font-size-xl: 20px;
+  --qz-font-size-xxl: 24px;
 
   /* 间距 */
-  --space-page: 1.5rem;
-  --radius: 4px;
+  --qz-space-xs: 4px;
+  --qz-space-sm: 8px;
+  --qz-space-md: 12px;
+  --qz-space-lg: 16px;
+  --qz-space-xl: 24px;
+  --qz-space-xxl: 32px;
+
+  /* 圆角 */
+  --qz-radius-sm: 6px;
+  --qz-radius-md: 8px;
+  --qz-radius-lg: 12px;
+  --qz-radius-full: 999px;
+
+  /* 阴影 */
+  --qz-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --qz-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --qz-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
+  --qz-shadow-hover: 0 4px 12px rgba(60, 140, 255, 0.15);
 }

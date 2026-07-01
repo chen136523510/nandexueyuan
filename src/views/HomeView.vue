@@ -1,6 +1,11 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import AppFooter from '../components/AppFooter.vue'
+
+const router = useRouter()
+const auth = useAuthStore()
 
 // 彩蛋
 const showEgg = ref(false)
@@ -21,6 +26,15 @@ const upcoming = [
     <header class="hero">
       <h1 class="hero-title">男 德 学 院</h1>
       <p class="hero-subtitle">修身 齐家 摸鱼 开摆</p>
+      <div class="hero-actions">
+        <template v-if="auth.isLoggedIn">
+          <button class="hero-btn primary" @click="router.push('/home')">进入学院</button>
+        </template>
+        <template v-else>
+          <button class="hero-btn primary" @click="router.push('/login')">登录</button>
+          <button class="hero-btn" @click="router.push('/register')">注册</button>
+        </template>
+      </div>
     </header>
 
     <!-- 敬请期待 -->
@@ -82,25 +96,14 @@ const upcoming = [
 
 /* Hero */
 .hero {
-  background: var(--color-green);
-  color: var(--color-paper);
+  background: #1f3d2e;
+  color: #f4f1ea;
   text-align: center;
-  padding: 5rem var(--space-page) 4rem;
-}
-
-.hero-mark {
-  display: inline-block;
-  font-family: var(--font-serif);
-  font-size: 0.9rem;
-  letter-spacing: 0.3em;
-  color: var(--color-ochre);
-  border: 1px solid var(--color-ochre);
-  padding: 0.3rem 0.8rem;
-  margin-bottom: 2rem;
+  padding: 5rem 1.5rem 4rem;
 }
 
 .hero-title {
-  font-family: var(--font-serif);
+  font-family: Georgia, 'Noto Serif SC', serif;
   font-size: clamp(2.5rem, 7vw, 4.5rem);
   font-weight: 700;
   letter-spacing: 0.25em;
@@ -108,32 +111,67 @@ const upcoming = [
 }
 
 .hero-subtitle {
-  font-family: var(--font-serif);
+  font-family: Georgia, 'Noto Serif SC', serif;
   font-size: 1.15rem;
   letter-spacing: 0.4em;
-  color: var(--color-green-light);
+  color: #a8c4b4;
   margin: 0 0 2rem;
 }
 
-.hero-desc {
-  font-size: 0.95rem;
-  line-height: 1.8;
-  color: #c8c4b8;
-  margin: 0;
+/* Hero 按钮区 */
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.hero-welcome {
+  font-size: 0.9rem;
+  color: #a8c4b4;
+  letter-spacing: 0.05em;
+}
+
+.hero-btn {
+  padding: 0.5rem 1.75rem;
+  font-family: Georgia, 'Noto Serif SC', serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  color: #f4f1ea;
+  background: transparent;
+  border: 1px solid #a8c4b4;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-btn.primary {
+  background: #c8743b;
+  border-color: #c8743b;
+  color: #2d2620;
+}
+
+.hero-btn.primary:hover {
+  background: #c9a961;
 }
 
 /* 敬请期待 */
 .upcoming {
   flex: 1;
-  padding: 4rem var(--space-page);
-  background: var(--color-paper-light);
+  padding: 4rem 1.5rem;
+  background: #faf8f3;
 }
 
 .section-title {
   text-align: center;
-  font-family: var(--font-serif);
+  font-family: Georgia, 'Noto Serif SC', serif;
   font-size: 1.5rem;
-  color: var(--color-ink);
+  color: #2d2620;
   margin: 0 0 3rem;
   letter-spacing: 0.15em;
 }
@@ -148,8 +186,8 @@ const upcoming = [
 
 .upcoming-card {
   background: #fff;
-  border: 1px solid var(--color-card-border);
-  border-radius: var(--radius);
+  border: 1px solid #e8e4d8;
+  border-radius: 4px;
   padding: 2rem 1.5rem;
   text-align: center;
   position: relative;
@@ -161,32 +199,32 @@ const upcoming = [
   justify-content: center;
   width: 48px;
   height: 48px;
-  font-family: var(--font-serif);
+  font-family: Georgia, 'Noto Serif SC', serif;
   font-size: 1.4rem;
-  color: var(--color-ochre);
-  border: 1px solid var(--color-ochre);
+  color: #c8743b;
+  border: 1px solid #c8743b;
   border-radius: 50%;
   margin-bottom: 1.2rem;
 }
 
 .card-title {
   font-size: 1.1rem;
-  color: var(--color-ink);
+  color: #2d2620;
   margin: 0 0 0.6rem;
 }
 
 .card-desc {
   font-size: 0.88rem;
   line-height: 1.7;
-  color: var(--color-ink-soft);
+  color: #6b6358;
   margin: 0 0 1.2rem;
 }
 
 .card-badge {
   display: inline-block;
   font-size: 0.75rem;
-  color: var(--color-green-dim);
-  border: 1px dashed var(--color-green-dim);
+  color: #4a6b5a;
+  border: 1px dashed #4a6b5a;
   padding: 0.2rem 0.8rem;
   border-radius: 2px;
 }
@@ -210,13 +248,13 @@ const upcoming = [
 .egg-img {
   max-width: 400px;
   max-height: 60vh;
-  border-radius: var(--radius);
-  border: 3px solid var(--color-ochre);
+  border-radius: 4px;
+  border: 3px solid #c8743b;
 }
 
 .egg-text {
-  color: var(--color-paper);
-  font-family: var(--font-serif);
+  color: #f4f1ea;
+  font-family: Georgia, 'Noto Serif SC', serif;
   font-size: 1.3rem;
   margin: 1.5rem 0 1rem;
   letter-spacing: 0.1em;
@@ -224,8 +262,8 @@ const upcoming = [
 
 .egg-close {
   background: transparent;
-  color: var(--color-paper);
-  border: 1px solid var(--color-green-dim);
+  color: #f4f1ea;
+  border: 1px solid #4a6b5a;
   padding: 0.5rem 1.5rem;
   border-radius: 2px;
   cursor: pointer;
@@ -233,7 +271,7 @@ const upcoming = [
 }
 
 .egg-close:hover {
-  border-color: var(--color-green-light);
+  border-color: #a8c4b4;
 }
 
 /* 弹窗动画 */
