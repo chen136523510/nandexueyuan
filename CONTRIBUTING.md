@@ -98,20 +98,22 @@ GitHub 已不支持密码认证，需用 PAT 代替：
 git clone git@github.com:chen136523510/nandexueyuan.git
 cd nandexueyuan
 
-# 2. 安装前端依赖
-#    本项目用内置 pnpm bundle（规避 npm 11 兼容问题），不直接用 npm install
-node package/dist/pnpm.mjs install
+# 2. 启用 pnpm（Node >= 16.9 自带 corepack，无需全局安装）
+corepack enable pnpm
 
-# 3. 安装后端依赖
-cd server && node ../package/dist/pnpm.mjs install --ignore-workspace
+# 3. 安装前端依赖
+pnpm install
+
+# 4. 安装后端依赖
+cd server && pnpm install --ignore-workspace
 cd ..
 
-# 4. 配置环境变量
+# 5. 配置环境变量
 #    Windows:  copy .env.example .env
 #    macOS:    cp .env.example .env
 #    编辑 .env，填入本地实际值（数据库路径、JWT 密钥、端口等）
 
-# 5. 启动开发
+# 6. 启动开发
 #    前端：npm run dev          → http://localhost:5173
 #    后端：cd server && npm run dev  → http://localhost:3000
 ```

@@ -4,9 +4,16 @@
 
 ---
 
+## 2026-07-01 修复换设备依赖安装流程
+- [修改] `.trae/rules/git-manage.md` — 换设备流程改用 `corepack enable pnpm`，移除对 gitignore 的 `package/` bundle 依赖
+- [修改] `CONTRIBUTING.md` — 安装步骤同步改用 corepack，移除 pnpm bundle 说明
+- commit: 未提交
+
+---
+
 ## 2026-07-01 优化协作指南
 - [修改] `CONTRIBUTING.md` — 新增技术栈与项目结构说明；补充 Node 版本要求、Git 首次配置、SSH key/PAT 认证配置；合并重复的分支工作流章节；补充 commit scope 规范与 PR 描述模板；扩充常见问题（误提交大文件/commit 错分支/撤销提交）；修正跨平台命令（cp/copy）
-- commit: 未提交
+- commit: 0825466
 
 ---
 

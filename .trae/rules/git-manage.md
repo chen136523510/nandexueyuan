@@ -86,12 +86,16 @@ flowchart LR
 
 ```bash
 # 新设备克隆（从 GitHub）
-git clone https://github.com/chen136523510/nandexueyuan.git
+git clone git@github.com:chen136523510/nandexueyuan.git
+cd nandexueyuan
+
+# 启用 pnpm（Node >= 16.9 自带 corepack，无需全局安装）
+corepack enable pnpm
 
 # 安装依赖
-node package/dist/pnpm.mjs install        # 前端
-cd server && node ../package/dist/pnpm.mjs install --ignore-workspace  # 后端
+pnpm install                                    # 前端
+cd server && pnpm install --ignore-workspace    # 后端
 
 # 复制环境配置
-cp .env.example .env  # 填入本地实际值
+cp .env.example .env  # Windows 用 copy，填入本地实际值
 ```
