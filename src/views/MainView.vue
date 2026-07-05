@@ -72,6 +72,11 @@ function handleLogout() {
     <!-- 顶部导航 -->
     <nav class="topbar">
       <span class="topbar-brand" @click="router.push('/')">男德学院</span>
+      <div class="topbar-menu">
+        <router-link to="/home" class="menu-item">首页</router-link>
+        <router-link to="/chat" class="menu-item">男德通</router-link>
+        <span class="menu-item disabled">暂定</span>
+      </div>
       <div class="topbar-right">
         <UserAvatar @profile="showProfile = true" @logout="handleLogout" />
       </div>
@@ -140,6 +145,30 @@ function handleLogout() {
   font-weight: 700;
   color: var(--md-primary);
   cursor: pointer;
+}
+
+.topbar-menu {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.menu-item {
+  padding: 6px 14px;
+  font-size: 14px;
+  color: var(--md-text-secondary);
+  text-decoration: none;
+  border-radius: var(--md-radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.menu-item:hover,
+.menu-item.router-link-active {
+  color: var(--md-primary);
+  background: rgba(168, 197, 160, 0.12);
+}
+.menu-item.disabled {
+  color: var(--md-text-disabled);
+  cursor: not-allowed;
 }
 
 /* 内容区 */

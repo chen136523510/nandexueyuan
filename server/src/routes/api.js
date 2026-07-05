@@ -5,7 +5,10 @@ import { updateProfile, updatePassword } from '../controllers/userController.js'
 import { createInviteCode, listInviteCodes } from '../controllers/inviteCodeController.js'
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../controllers/adminController.js'
 import { getAnnouncement, updateAnnouncement } from '../controllers/announcementController.js'
+import { importChatCsv, listBatches, upload } from '../controllers/chatImportController.js'
+import { askChat, listSessions, getSession, deleteSession } from '../controllers/chatController.js'
 import { auth, requireRole } from '../middleware/auth.js'
+import { rateLimit } from '../middleware/rateLimit.js'
 
 const router = Router()
 
@@ -35,5 +38,17 @@ router.get('/admin/users', auth, requireRole('admin', 'super_admin'), listUsers)
 router.patch('/admin/users/:id/status', auth, requireRole('admin', 'super_admin'), updateUserStatus)
 router.post('/admin/users/:id/reset-password', auth, requireRole('admin', 'super_admin'), resetUserPassword)
 router.patch('/admin/users/:id/role', auth, requireRole('super_admin'), updateUserRole)
+
+// AI 助手 — 数据导入（admin+）
+router.post('/admin/chat/import', auth, requireRole('admin', 'super_admin'), upload.single('file'), importChatCsv)
+router.get('/admin/chat/batches', auth, requireRole('admin', 'super_admin'), listBatches)
+
+// AI 助手 — 问答（已登录 + 限流）
+router.post('/chat/ask', auth, rateLimit(10), askChat)
+
+// AI 助手 — 会话历史（已登录）
+router.get('/chat/sessions', auth, listSessions)
+router.get('/chat/sessions/:id', auth, getSession)
+router.delete('/chat/sessions/:id', auth, deleteSession)
 
 export default router

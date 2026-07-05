@@ -18,8 +18,10 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  createdCodes InviteCode[] @relation("CodeCreator")
-  usedCodes    InviteCode[] @relation("CodeUser")
+  createdCodes   InviteCode[]  @relation("CodeCreator")
+  usedCodes      InviteCode[]  @relation("CodeUser")
+  importBatches  ImportBatch[] @relation("BatchImporter")
+  chatSessions   ChatSession[] @relation("ChatOwner")
 
   @@map("users")
 }
@@ -45,4 +47,67 @@ model Announcement {
   updatedAt DateTime  @updatedAt
 
   @@map("announcements")
+}
+
+// ===== AI 助手 =====
+
+model ImportBatch {
+  id         Int      @id @default(autoincrement())
+  filename   String
+  importedBy Int
+  count      Int
+  skipped    Int
+  createdAt  DateTime @default(now())
+
+  user     User           @relation("BatchImporter", fields: [importedBy], references: [id])
+  messages GroupMessage[]
+
+  @@map("import_batches")
+}
+
+model GroupMessage {
+  id        Int      @id @default(autoincrement())
+  batchId   Int
+  talker    String
+  nickname  String?
+  content   String
+  msgTime   DateTime
+  type      String   @default("text")
+  createdAt DateTime @default(now())
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([talker, msgTime])
+  @@index([talker])
+  @@index([msgTime])
+  @@map("group_messages")
+}
+
+model ChatSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation("ChatOwner", fields: [userId], references: [id])
+  turns ChatTurn[]
+
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatTurn {
+  id        Int      @id @default(autoincrement())
+  sessionId Int
+  role      String   // user | assistant
+  content   String
+  intent    String?  // statistic | semantic | chat（仅 assistant）
+  sources   String?  // JSON 字符串，引用来源
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_turns")
 }
