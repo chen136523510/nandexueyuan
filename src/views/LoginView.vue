@@ -117,7 +117,7 @@ async function handleLogin() {
 }
 .qz-input:focus {
   border-color: var(--qz-primary);
-  box-shadow: 0 0 0 2px rgba(60, 140, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 197, 160, 0.15);
 }
 .auth-error {
   color: var(--qz-danger);

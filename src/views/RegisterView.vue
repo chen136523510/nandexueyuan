@@ -145,7 +145,7 @@ async function handleRegister() {
   box-shadow: var(--qz-shadow-hover);
 }
 .qz-btn-primary:disabled {
-  background: #a0c7ff;
+  background: var(--md-text-disabled);
   cursor: not-allowed;
 }
 .auth-footer {

@@ -102,7 +102,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   top: 44px;
   right: 0;
   width: 180px;
-  background: #fff;
+  background: var(--md-bg-card);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   overflow: hidden;
@@ -119,17 +119,17 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 .dropdown-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--md-text);
 }
 
 .dropdown-role {
   font-size: 12px;
-  color: #999;
+  color: var(--md-text-secondary);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: #f0f0f0;
+  background: var(--md-divider);
   margin: 4px 0;
 }
 
@@ -140,7 +140,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   border: none;
   text-align: left;
   font-size: 14px;
-  color: #333;
+  color: var(--md-text);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -150,7 +150,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .dropdown-item.danger {
-  color: #ff4d4f;
+  color: var(--md-danger);
 }
 
 .dropdown-item.danger:hover {

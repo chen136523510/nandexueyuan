@@ -6,6 +6,8 @@ import { getAnnouncement, updateAnnouncement } from '../api/announcement'
 import UserAvatar from '../components/UserAvatar.vue'
 import ProfileDialog from '../components/ProfileDialog.vue'
 import AppFooter from '../components/AppFooter.vue'
+import WordCloud from '../components/WordCloud.vue'
+import { Bell, GraduationCap } from 'lucide-vue-next'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -77,10 +79,13 @@ function handleLogout() {
 
     <!-- 内容区 -->
     <div class="main-container">
-      <!-- 公告栏 -->
+      <!-- 群聊高频词云(居中醒目) -->
+      <WordCloud />
+
+      <!-- 群公告(小模块) -->
       <section class="ann-card">
         <div class="ann-header">
-          <span class="ann-title">📢 公告</span>
+          <span class="ann-title"><Bell :size="16" style="vertical-align:-2px" /> 公告</span>
           <button v-if="canEditAnn() && !editingAnn" class="ann-edit-btn" @click="startEditAnn">编辑</button>
         </div>
 
@@ -119,8 +124,8 @@ function handleLogout() {
 /* 顶部导航 */
 .topbar {
   height: 52px;
-  background: #fff;
-  border-bottom: 1px solid #e8e8e8;
+  background: var(--md-bg-card);
+  border-bottom: 1px solid var(--md-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -133,7 +138,7 @@ function handleLogout() {
 .topbar-brand {
   font-size: 17px;
   font-weight: 700;
-  color: #3c8cff;
+  color: var(--md-primary);
   cursor: pointer;
 }
 
@@ -148,9 +153,10 @@ function handleLogout() {
 
 /* 公告栏 */
 .ann-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background: var(--md-bg-card);
+  border-radius: var(--md-radius-lg);
+  border: 1px solid var(--md-border);
+  box-shadow: var(--md-shadow-sm);
   overflow: hidden;
 }
 
@@ -159,29 +165,29 @@ function handleLogout() {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--md-divider);
 }
 
 .ann-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--md-text);
 }
 
 .ann-edit-btn {
   background: none;
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-sm);
   padding: 4px 12px;
   font-size: 13px;
-  color: #666;
+  color: var(--md-text-secondary);
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
 
 .ann-edit-btn:hover {
-  border-color: #3c8cff;
-  color: #3c8cff;
+  border-color: var(--md-primary);
+  color: var(--md-primary);
 }
 
 .ann-body {
@@ -190,15 +196,15 @@ function handleLogout() {
 
 .ann-content {
   font-size: 14px;
-  line-height: 1.8;
-  color: #333;
+  line-height: 1.75;
+  color: var(--md-text);
   margin: 0 0 12px;
   white-space: pre-wrap;
 }
 
 .ann-time {
   font-size: 12px;
-  color: #999;
+  color: var(--md-text-secondary);
 }
 
 .ann-edit {
@@ -208,10 +214,11 @@ function handleLogout() {
 .ann-textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius);
   font-size: 14px;
-  color: #333;
+  color: var(--md-text);
+  background: var(--md-bg-card);
   outline: none;
   resize: vertical;
   font-family: inherit;
@@ -219,13 +226,13 @@ function handleLogout() {
 }
 
 .ann-textarea:focus {
-  border-color: #3c8cff;
-  box-shadow: 0 0 0 2px rgba(60, 140, 255, 0.1);
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 3px rgba(168, 197, 160, 0.15);
 }
 
 .ann-msg {
   font-size: 13px;
-  color: #ff4d4f;
+  color: var(--md-danger);
   margin: 8px 0;
 }
 
@@ -238,24 +245,24 @@ function handleLogout() {
 
 .btn-cancel {
   padding: 6px 16px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
+  background: var(--md-bg-card);
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius);
   font-size: 14px;
-  color: #666;
+  color: var(--md-text-secondary);
   cursor: pointer;
   transition: border-color 0.2s;
 }
 
 .btn-cancel:hover {
-  border-color: #d9d9d9;
+  border-color: var(--md-border);
 }
 
 .btn-save {
   padding: 6px 16px;
-  background: #3c8cff;
+  background: var(--md-primary);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--md-radius);
   font-size: 14px;
   color: #fff;
   cursor: pointer;
@@ -263,11 +270,11 @@ function handleLogout() {
 }
 
 .btn-save:hover:not(:disabled) {
-  background: #1677ff;
+  background: var(--md-primary-hover);
 }
 
 .btn-save:disabled {
-  background: #a0c7ff;
+  background: var(--md-text-disabled);
   cursor: not-allowed;
 }
 </style>

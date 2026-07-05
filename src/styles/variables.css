@@ -1,59 +1,107 @@
-/* 设计令牌：Qzone 风格 */
+/* 设计令牌：莫兰迪风格（低饱和、柔和、松弛） */
 :root {
-  /* 主色 — Qzone 标志蓝 */
-  --qz-primary: #3c8cff;
-  --qz-primary-dark: #1677ff;
-  --qz-primary-light: #e8f2ff;
-  --qz-primary-bg: #f0f6ff;
+  /* ===== 莫兰迪核心色板 ===== */
+  --md-primary: #A8C5A0;           /* 主色:鼠尾草绿 */
+  --md-primary-hover: #94B48C;     /* 主色 hover */
+  --md-primary-bg: #EEF3EC;        /* 主色浅底(tag、选中态) */
+  --md-secondary: #AEC2CF;         /* 辅色:奶蓝 */
+  --md-secondary-bg: #EEF2F5;      /* 辅色浅底 */
+  --md-accent: #D4A574;            /* 点缀:暖赭(克制使用) */
 
-  /* 功能色 */
-  --qz-success: #00c853;
-  --qz-warning: #ff9800;
-  --qz-danger: #ff4d4f;
-  --qz-info: #8c8c8c;
+  /* 背景 */
+  --md-bg: #F5F2EC;                /* 页面背景:温暖米白 */
+  --md-bg-card: #FFFFFF;           /* 卡片背景 */
+  --md-bg-soft: #FAF8F3;           /* 次级背景(嵌套区域) */
 
-  /* 中性色 */
-  --qz-text-primary: #1a1a1a;
-  --qz-text-regular: #333;
-  --qz-text-secondary: #666;
-  --qz-text-placeholder: #999;
-  --qz-border: #e8e8e8;
-  --qz-border-light: #f0f0f0;
-  --qz-bg-page: #f5f5f5;
-  --qz-bg-card: #ffffff;
-  --qz-bg-hover: #fafafa;
+  /* 文字(非纯黑,柔和深灰) */
+  --md-text: #4A4A4A;              /* 主文字 */
+  --md-text-secondary: #8A8A8A;    /* 次文字 */
+  --md-text-disabled: #BFBFBF;     /* 禁用 */
+
+  /* 边框/分割(细线条) */
+  --md-border: #E8E4DC;            /* 边框 */
+  --md-divider: #EDE9E1;           /* 分割线(更轻) */
+
+  /* 功能色(莫兰迪化,不刺眼) */
+  --md-success: #A8C5A0;           /* 成功(复用主色) */
+  --md-warning: #D4A574;           /* 警告(复用点缀) */
+  --md-danger: #C9A0A0;            /* 危险(莫兰迪红) */
+  --md-info: #AEC2CF;              /* 信息(复用辅色) */
 
   /* 链接 */
-  --qz-link: #3c8cff;
-  --qz-link-hover: #1677ff;
+  --md-link: #94B48C;              /* 链接(主色深) */
+  --md-link-hover: #7A9E72;        /* 链接 hover */
 
-  /* 字体 */
-  --qz-font-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --qz-font-size-xs: 12px;
-  --qz-font-size-sm: 13px;
-  --qz-font-size-base: 14px;
-  --qz-font-size-md: 15px;
-  --qz-font-size-lg: 17px;
-  --qz-font-size-xl: 20px;
-  --qz-font-size-xxl: 24px;
+  /* 字体(无衬线,系统优先,零加载) */
+  --md-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --md-fs-xs: 12px;
+  --md-fs-sm: 13px;
+  --md-fs-base: 14px;
+  --md-fs-md: 16px;
+  --md-fs-lg: 18px;
+  --md-fs-xl: 22px;
+  --md-fs-2xl: 28px;
 
-  /* 间距 */
-  --qz-space-xs: 4px;
-  --qz-space-sm: 8px;
-  --qz-space-md: 12px;
-  --qz-space-lg: 16px;
-  --qz-space-xl: 24px;
-  --qz-space-xxl: 32px;
+  /* 间距(4 的倍数) */
+  --md-sp-1: 4px;
+  --md-sp-2: 8px;
+  --md-sp-3: 12px;
+  --md-sp-4: 16px;
+  --md-sp-5: 24px;
+  --md-sp-6: 32px;
+  --md-sp-7: 48px;
 
-  /* 圆角 */
-  --qz-radius-sm: 6px;
-  --qz-radius-md: 8px;
-  --qz-radius-lg: 12px;
-  --qz-radius-full: 999px;
+  /* 圆角(中等,温润) */
+  --md-radius-sm: 6px;
+  --md-radius: 8px;
+  --md-radius-lg: 12px;
+  --md-radius-full: 9999px;
 
-  /* 阴影 */
-  --qz-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --qz-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --qz-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
-  --qz-shadow-hover: 0 4px 12px rgba(60, 140, 255, 0.15);
+  /* 阴影(极轻,用 74,74,74 而非 0,0,0,更柔和) */
+  --md-shadow-sm: 0 1px 3px rgba(74, 74, 74, 0.04);
+  --md-shadow: 0 2px 8px rgba(74, 74, 74, 0.06);
+  --md-shadow-lg: 0 4px 16px rgba(74, 74, 74, 0.08);
+
+  /* ===== 向后兼容别名(旧 --qz- 指向新 --md-,平滑迁移) ===== */
+  --qz-primary: var(--md-primary);
+  --qz-primary-dark: var(--md-primary-hover);
+  --qz-primary-light: var(--md-primary-bg);
+  --qz-primary-bg: var(--md-primary-bg);
+  --qz-success: var(--md-success);
+  --qz-warning: var(--md-warning);
+  --qz-danger: var(--md-danger);
+  --qz-info: var(--md-info);
+  --qz-text-primary: var(--md-text);
+  --qz-text-regular: var(--md-text);
+  --qz-text-secondary: var(--md-text-secondary);
+  --qz-text-placeholder: var(--md-text-disabled);
+  --qz-border: var(--md-border);
+  --qz-border-light: var(--md-divider);
+  --qz-bg-page: var(--md-bg);
+  --qz-bg-card: var(--md-bg-card);
+  --qz-bg-hover: var(--md-bg-soft);
+  --qz-link: var(--md-link);
+  --qz-link-hover: var(--md-link-hover);
+  --qz-font-base: var(--md-font);
+  --qz-font-size-xs: var(--md-fs-xs);
+  --qz-font-size-sm: var(--md-fs-sm);
+  --qz-font-size-base: var(--md-fs-base);
+  --qz-font-size-md: var(--md-fs-md);
+  --qz-font-size-lg: var(--md-fs-lg);
+  --qz-font-size-xl: var(--md-fs-xl);
+  --qz-font-size-xxl: var(--md-fs-2xl);
+  --qz-space-xs: var(--md-sp-1);
+  --qz-space-sm: var(--md-sp-2);
+  --qz-space-md: var(--md-sp-3);
+  --qz-space-lg: var(--md-sp-4);
+  --qz-space-xl: var(--md-sp-5);
+  --qz-space-xxl: var(--md-sp-6);
+  --qz-radius-sm: var(--md-radius-sm);
+  --qz-radius-md: var(--md-radius);
+  --qz-radius-lg: var(--md-radius-lg);
+  --qz-radius-full: var(--md-radius-full);
+  --qz-shadow-sm: var(--md-shadow-sm);
+  --qz-shadow-md: var(--md-shadow);
+  --qz-shadow-lg: var(--md-shadow-lg);
+  --qz-shadow-hover: var(--md-shadow);
 }

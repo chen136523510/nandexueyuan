@@ -6,11 +6,11 @@
 }
 
 body {
-  font-family: var(--qz-font-base);
-  background: var(--qz-bg-page);
-  color: var(--qz-text-primary);
-  font-size: var(--qz-font-size-base);
-  line-height: 1.6;
+  font-family: var(--md-font);
+  background: var(--md-bg);
+  color: var(--md-text);
+  font-size: var(--md-fs-base);
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -19,11 +19,11 @@ button {
 }
 
 a {
-  color: var(--qz-link);
+  color: var(--md-link);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 a:hover {
-  color: var(--qz-link-hover);
+  color: var(--md-link-hover);
 }

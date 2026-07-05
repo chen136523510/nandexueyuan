@@ -194,7 +194,7 @@ async function handlePassword() {
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--md-divider);
   padding: 0 24px;
 }
 
@@ -204,18 +204,18 @@ async function handlePassword() {
   border: none;
   border-bottom: 2px solid transparent;
   font-size: 14px;
-  color: #666;
+  color: var(--md-text-secondary);
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
 }
 
 .tab:hover {
-  color: #3c8cff;
+  color: var(--md-primary);
 }
 
 .tab.active {
-  color: #3c8cff;
-  border-bottom-color: #3c8cff;
+  color: var(--md-primary);
+  border-bottom-color: var(--md-primary);
   font-weight: 500;
 }
 
@@ -232,12 +232,12 @@ async function handlePassword() {
 }
 
 .info-label {
-  color: #999;
+  color: var(--md-text-secondary);
   min-width: 3.5rem;
 }
 
 .info-value {
-  color: #333;
+  color: var(--md-text);
 }
 
 .role-tag {
@@ -250,12 +250,12 @@ async function handlePassword() {
 
 .role-admin {
   background: #e8f2ff;
-  color: #3c8cff;
+  color: var(--md-primary);
 }
 
 .role-sub {
   background: #e8f8ee;
-  color: #00c853;
+  color: var(--md-success);
 }
 
 .form-group {
