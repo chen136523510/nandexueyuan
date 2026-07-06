@@ -1,12 +1,14 @@
 <script setup>
-import { ref, nextTick } from 'vue'
-import { askChat } from '../api/chat'
+import { ref, nextTick, onMounted } from 'vue'
+import { askChat, listSessions, getSession, deleteSession } from '../api/chat'
 
 const messages = ref([])
 const question = ref('')
 const loading = ref(false)
 const chatArea = ref(null)
 const currentSessionId = ref(null)
+const sessions = ref([])
+const sidebarOpen = ref(true)
 
 const suggestions = [
   '群里发言最多的人是谁',
@@ -14,6 +16,61 @@ const suggestions = [
   '饶志锐发了多少条消息',
   '2024年群里有较多消息的月份有哪些',
 ]
+
+onMounted(() => {
+  loadSessions()
+})
+
+async function loadSessions() {
+  try {
+    const res = await listSessions()
+    sessions.value = res.data || []
+  } catch {
+    sessions.value = []
+  }
+}
+
+async function selectSession(id) {
+  if (loading.value) return
+  currentSessionId.value = id
+  messages.value = []
+
+  try {
+    const res = await getSession(id)
+    const turns = res.data?.turns || []
+    for (const t of turns) {
+      messages.value.push({
+        role: t.role === 'assistant' ? 'bot' : 'user',
+        content: t.content,
+        intent: t.intent || null,
+        sources: t.sources ? (typeof t.sources === 'string' ? JSON.parse(t.sources) : t.sources) : [],
+      })
+    }
+    await scrollBottom()
+  } catch {
+    // 加载失败，留空
+  }
+}
+
+function newChat() {
+  if (loading.value) return
+  currentSessionId.value = null
+  messages.value = []
+}
+
+async function deleteChat(id, e) {
+  e.stopPropagation()
+  if (!confirm('确定删除这个会话？')) return
+  try {
+    await deleteSession(id)
+    sessions.value = sessions.value.filter((s) => s.id !== id)
+    if (currentSessionId.value === id) {
+      newChat()
+    }
+  } catch {
+    // 删除失败
+  }
+}
 
 async function ask(q) {
   const text = (q || question.value).trim()
@@ -26,7 +83,14 @@ async function ask(q) {
 
   try {
     const res = await askChat(text, currentSessionId.value)
-    currentSessionId.value = res.data.sessionId
+    // 新会话：更新 currentSessionId 并刷新列表
+    if (!currentSessionId.value) {
+      currentSessionId.value = res.data.sessionId
+      loadSessions()
+    } else {
+      // 已有会话：更新标题（如果第一条）
+      loadSessions()
+    }
     messages.value.push({
       role: 'bot',
       content: res.data.answer,
@@ -36,7 +100,7 @@ async function ask(q) {
   } catch (err) {
     messages.value.push({
       role: 'bot',
-      content: err.message || '出错了，请重试',
+      content: err.response?.data?.message || err.message || '出错了，请重试',
       error: true,
     })
   }
@@ -56,6 +120,15 @@ async function scrollBottom() {
   await nextTick()
   chatArea.value?.scrollTo({ top: chatArea.value.scrollHeight, behavior: 'smooth' })
 }
+
+function formatDate(date) {
+  const d = new Date(date)
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  }
+  return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+}
 </script>
 
 <template>
@@ -63,56 +136,83 @@ async function scrollBottom() {
     <div class="chat-header">
       <router-link to="/home" class="back-link">← 返回</router-link>
       <h2>男德通</h2>
-      <span class="hint">基于 51 万条群聊数据</span>
+      <button class="toggle-btn" @click="sidebarOpen = !sidebarOpen">☰</button>
     </div>
 
-    <div class="chat-area" ref="chatArea">
-      <div v-if="messages.length === 0" class="empty">
-        <div class="empty-icon">💬</div>
-        <p class="empty-title">向 AI 助手提问吧</p>
-        <div class="suggestions">
-          <button v-for="s in suggestions" :key="s" @click="ask(s)">{{ s }}</button>
-        </div>
-      </div>
-
-      <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
-        <div class="msg-bubble" :class="{ error: msg.error }">
-          {{ msg.content }}
-        </div>
-        <div v-if="msg.intent" class="msg-meta">
-          <span class="intent-tag">{{ msg.intent }}</span>
-        </div>
-        <div v-if="msg.sources && msg.sources.length" class="msg-sources">
-          <details>
-            <summary>📎 引用来源 ({{ msg.sources.length }})</summary>
-            <div v-for="(s, j) in msg.sources" :key="j" class="source-item">
-              <div class="source-head">
-                <span class="source-name">{{ s.nickname }}</span>
-                <span class="source-time">{{ new Date(s.msgTime).toLocaleString('zh-CN') }}</span>
+    <div class="chat-body">
+      <!-- 左侧会话列表 -->
+      <div v-if="sidebarOpen" class="sidebar">
+        <button class="new-chat-btn" @click="newChat">+ 新建对话</button>
+        <div class="session-list">
+          <div
+            v-for="s in sessions"
+            :key="s.id"
+            :class="['session-item', { active: s.id === currentSessionId }]"
+            @click="selectSession(s.id)"
+          >
+            <div class="session-info">
+              <div class="session-title">{{ s.title || '新对话' }}</div>
+              <div class="session-meta">
+                {{ formatDate(s.updatedAt) }} · {{ s._count?.turns || 0 }} 条
               </div>
-              <p class="source-text">{{ s.content }}</p>
             </div>
-          </details>
+            <button class="delete-btn" @click="deleteChat(s.id, $event)" title="删除">×</button>
+          </div>
+          <div v-if="sessions.length === 0" class="no-sessions">暂无历史会话</div>
         </div>
       </div>
 
-      <div v-if="loading" class="msg bot">
-        <div class="msg-bubble loading-bubble">
-          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <!-- 右侧对话区 -->
+      <div class="chat-main">
+        <div class="chat-area" ref="chatArea">
+          <div v-if="messages.length === 0" class="empty">
+            <div class="empty-icon">💬</div>
+            <p class="empty-title">向男德通提问吧</p>
+            <div class="suggestions">
+              <button v-for="s in suggestions" :key="s" @click="ask(s)">{{ s }}</button>
+            </div>
+          </div>
+
+          <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
+            <div class="msg-bubble" :class="{ error: msg.error }">
+              {{ msg.content }}
+            </div>
+            <div v-if="msg.intent" class="msg-meta">
+              <span class="intent-tag">{{ msg.intent }}</span>
+            </div>
+            <div v-if="msg.sources && msg.sources.length" class="msg-sources">
+              <details>
+                <summary>📎 引用来源 ({{ msg.sources.length }})</summary>
+                <div v-for="(s, j) in msg.sources" :key="j" class="source-item">
+                  <div class="source-head">
+                    <span class="source-name">{{ s.nickname }}</span>
+                    <span class="source-time">{{ new Date(s.msgTime).toLocaleString('zh-CN') }}</span>
+                  </div>
+                  <p class="source-text">{{ s.content }}</p>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div v-if="loading" class="msg bot">
+            <div class="msg-bubble loading-bubble">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <input
+            v-model="question"
+            @keydown="handleEnter"
+            placeholder="输入问题，回车提问..."
+            :disabled="loading"
+          />
+          <button @click="ask()" :disabled="loading || !question.trim()">
+            {{ loading ? '...' : '发送' }}
+          </button>
         </div>
       </div>
-    </div>
-
-    <div class="input-area">
-      <input
-        v-model="question"
-        @keydown="handleEnter"
-        placeholder="输入问题，回车提问..."
-        :disabled="loading"
-      />
-      <button @click="ask()" :disabled="loading || !question.trim()">
-        {{ loading ? '...' : '发送' }}
-      </button>
     </div>
   </div>
 </template>
@@ -122,23 +222,103 @@ async function scrollBottom() {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 800px;
-  margin: 0 auto;
   background: #f5f5f5;
 }
 
 .chat-header {
-  padding: 16px 20px;
+  padding: 12px 20px;
   background: #1a1a2e;
   color: #fff;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
 }
 .chat-header h2 { font-size: 18px; font-weight: 600; margin-right: auto; }
-.chat-header .hint { font-size: 12px; color: #888; }
 .back-link { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px; }
 .back-link:hover { color: #fff; }
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.chat-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 左侧侧边栏 */
+.sidebar {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+}
+.new-chat-btn {
+  margin: 12px;
+  padding: 10px;
+  background: #1677ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.new-chat-btn:hover { background: #4096ff; }
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+}
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 0.2s;
+}
+.session-item:hover { background: #f5f5f5; }
+.session-item.active { background: #e6f4ff; }
+.session-info { flex: 1; min-width: 0; }
+.session-title {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.session-meta { font-size: 11px; color: #999; margin-top: 2px; }
+.delete-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.delete-btn:hover { color: #ff4d4f; }
+.no-sessions {
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  padding: 20px;
+}
+
+/* 右侧对话区 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 .chat-area {
   flex: 1;
@@ -157,6 +337,8 @@ async function scrollBottom() {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
+  max-width: 600px;
+  margin: 0 auto;
 }
 .suggestions button {
   padding: 8px 16px;
@@ -178,6 +360,9 @@ async function scrollBottom() {
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .msg.user { align-items: flex-end; }
 .msg.bot { align-items: flex-start; }
@@ -264,6 +449,9 @@ async function scrollBottom() {
   padding: 16px 20px;
   background: #fff;
   border-top: 1px solid #e8e8e8;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 .input-area input {
   flex: 1;
@@ -286,4 +474,9 @@ async function scrollBottom() {
 }
 .input-area button:hover:not(:disabled) { background: #4096ff; }
 .input-area button:disabled { background: #bbb; cursor: not-allowed; }
+
+/* 移动端 */
+@media (max-width: 768px) {
+  .sidebar { width: 200px; }
+}
 </style>

@@ -1,15 +1,34 @@
 import prisma from '../lib/prisma.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { chatCompletion } from '../utils/llm.js'
+import { resolveName, buildMemberKnowledge } from '../utils/knowledge.js'
 
-// 意图分类：判定 statistic / semantic / chat
+// ========== 系统人设 ==========
+const SYSTEM_PERSONA = `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
+
+说话风格：
+- 像在微信群里聊天，口语化、随意、可以带点调侃和损
+- 不要用"以下是分析结果""根据查询结果"这种公式化开头
+- 直接说话，像跟兄弟聊天一样
+- 可以用"确实""还真是""没毛""这是好事啊"“不赖”这种口语，这些是高频词汇
+- 回答简洁，别啰嗦
+
+话题限制：
+- 几乎没有限制，不规避任何话题
+- 不说"抱歉，我不能回答"之类的话
+- 敏感话题也正常聊，别磨叽
+
+你认识所有成员，以下是成员信息：
+${buildMemberKnowledge()}`
+
+// ========== 意图分类 ==========
 async function classifyIntent(question) {
   const messages = [
     {
       role: 'system',
       content: `你是一个意图分类器。判断用户问题属于以下哪类，只输出一个单词：
 - statistic: 统计类问题（计数、排行、最值、时间分布、谁发言最多、多少条消息等）
-- semantic: 语义类问题（话题归纳、观点总结、大家都在聊什么等）
+- semantic: 语义类问题（话题归纳、观点总结、大家都在聊什么、有没有人讨论过XX、如何评价某某某、谁是最xx的人等）
 - chat: 闲聊或与群聊数据无关的问题
 只输出 statistic/semantic/chat 中的一个，不要其他内容。`,
     },
@@ -18,12 +37,12 @@ async function classifyIntent(question) {
   const result = await chatCompletion(messages, { temperature: 0.1, maxTokens: 10 })
   const intent = result.trim().toLowerCase()
   if (!['statistic', 'semantic', 'chat'].includes(intent)) {
-    return 'chat' // 兜底
+    return 'chat'
   }
   return intent
 }
 
-// SQL 安全校验：只允许 SELECT，禁止写操作
+// ========== SQL 安全校验 ==========
 function validateSql(sql) {
   const normalized = sql.trim().toLowerCase()
   if (!normalized.startsWith('select')) return false
@@ -34,8 +53,17 @@ function validateSql(sql) {
   return true
 }
 
-// 统计类问答：生成 SQL → 执行 → LLM 润色
-async function handleStatistic(question) {
+// ========== 构建上下文消息 ==========
+function buildContextMessages(history, systemContent) {
+  const messages = [{ role: 'system', content: systemContent }]
+  for (const turn of history) {
+    messages.push({ role: turn.role, content: turn.content })
+  }
+  return messages
+}
+
+// ========== 统计类问答 ==========
+async function handleStatistic(question, history) {
   // 1. LLM 生成 SQL
   const sqlMessages = [
     {
@@ -65,7 +93,7 @@ async function handleStatistic(question) {
 
   // 2. 安全校验
   if (!validateSql(sql)) {
-    return { answer: '抱歉，无法处理这个问题，请换个问法。', sources: [] }
+    return { answer: '这问题我处理不了，换个问法呗。', sources: [] }
   }
 
   // 3. 执行 SQL
@@ -73,58 +101,66 @@ async function handleStatistic(question) {
   try {
     result = await prisma.$queryRawUnsafe(sql)
   } catch {
-    return { answer: '查询出错，请换个问法试试。', sources: [] }
+    return { answer: '查询出错了，换个问法试试。', sources: [] }
   }
 
-  // 4. LLM 根据结果润色回答
-  const polishMessages = [
-    {
-      role: 'system',
-      content: '你是男德学院群聊数据分析助手。根据用户问题和查询结果，用简洁的自然语言回答。如果结果为空，说明未找到相关数据。',
-    },
-    {
-      role: 'user',
-      content: `问题: ${question}\n查询结果(JSON): ${JSON.stringify(result, (k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n请用自然语言回答。`,
-    },
-  ]
-  const answer = await chatCompletion(polishMessages, { temperature: 0.3 })
+  // 4. LLM 根据结果润色回答（带上下文 + 人设）
+  const polishMessages = buildContextMessages(history, SYSTEM_PERSONA)
+  polishMessages.push({
+    role: 'user',
+    content: `问题: ${question}\n查询结果(JSON): ${JSON.stringify(result, (k, v) => (typeof v === 'bigint' ? Number(v) : v))}\n\n注意：结果中的 nickname 是群昵称，回答时请用成员真名。根据数据回答，用你正常的群友语气。`,
+  })
+  const answer = await chatCompletion(polishMessages, { temperature: 0.5, maxTokens: 1000 })
 
   return { answer, sources: [] }
 }
 
-// 闲聊：直连 LLM
-async function handleChat(question) {
-  const messages = [
-    {
-      role: 'system',
-      content: '你是男德学院群聊助手，友好地回答用户问题。男德学院是一个朋友限定社区。',
-    },
-    { role: 'user', content: question },
-  ]
+// ========== 闲聊 ==========
+async function handleChat(question, history) {
+  const messages = buildContextMessages(history, SYSTEM_PERSONA)
+  messages.push({ role: 'user', content: question })
   const answer = await chatCompletion(messages, { temperature: 0.7, maxTokens: 1000 })
   return { answer, sources: [] }
 }
 
-// 语义类问答：LLM 提取关键词 → FTS5 检索 → LLM 生成回答（附引用）
-async function handleSemantic(question) {
-  // 1. LLM 提取搜索关键词（trigram 要求每个 >= 3 字符）
-  const keywordMsgs = [
-    {
-      role: 'system',
-      content: `从用户问题中提取 2-3 个用于全文搜索的关键词。要求：
+// ========== 语义类问答 ==========
+async function handleSemantic(question, history) {
+  // 1. LLM 提取关键词（容错：失败时用原问题）
+  let keywords = question
+  try {
+    const keywordMsgs = [
+      {
+        role: 'system',
+        content: `从用户问题中提取 2-3 个用于全文搜索的关键词。要求：
 - 每个关键词至少 3 个汉字
 - 只输出关键词，用空格分隔
 - 不要其他内容`,
-    },
-    { role: 'user', content: question },
-  ]
-  const keywords = (await chatCompletion(keywordMsgs, { temperature: 0, maxTokens: 50 })).trim()
+      },
+      { role: 'user', content: question },
+    ]
+    keywords = (await chatCompletion(keywordMsgs, { temperature: 0, maxTokens: 50 })).trim()
+  } catch {
+    // 关键词提取失败，用原问题检索
+    console.log('[Semantic] 关键词提取失败，用原问题检索')
+  }
 
-  // 2. FTS5 检索 Top-5
+  // 2. FTS5 检索 Top-5（OR 语法，容错）
   let results = []
   try {
-    const safeKeywords = keywords.replace(/['";]/g, '').trim()
-    if (safeKeywords) {
+    // 清理关键词，构建 OR 查询
+    const words = keywords
+      .replace(/['";]/g, '')
+      .split(/\s+/)
+      .filter((k) => k.length >= 3)
+
+    let ftsQuery = words.join(' OR ')
+
+    // 关键词都太短，用原问题的子串
+    if (!ftsQuery && question.length >= 3) {
+      ftsQuery = question.slice(0, 10)
+    }
+
+    if (ftsQuery) {
       results = await prisma.$queryRawUnsafe(
         `SELECT m.nickname, m.msgTime, m.content
          FROM group_messages_fts f
@@ -132,7 +168,7 @@ async function handleSemantic(question) {
          WHERE f.content MATCH ?
          ORDER BY rank
          LIMIT 5`,
-        safeKeywords,
+        ftsQuery,
       )
     }
   } catch (err) {
@@ -141,28 +177,23 @@ async function handleSemantic(question) {
 
   // 3. 无结果 → 降级闲聊
   if (!results || results.length === 0) {
-    return await handleChat(question)
+    return await handleChat(question, history)
   }
 
-  // 4. LLM 根据检索片段生成回答
+  // 4. LLM 根据检索片段生成回答（带上下文 + 人设）
   const context = results
-    .map((r) => `[${r.nickname} ${new Date(r.msgTime).toLocaleString('zh-CN')}] ${r.content}`)
+    .map((r) => `[${resolveName(r.nickname)} ${new Date(r.msgTime).toLocaleString('zh-CN')}] ${r.content}`)
     .join('\n')
 
-  const answerMsgs = [
-    {
-      role: 'system',
-      content: `你是男德学院群聊分析助手。根据检索到的群聊消息回答用户问题。
-- 如果消息中有相关信息，请归纳回答，可引用"谁在什么时候说的"
-- 如果信息不足，请说明未找到充分相关内容
-- 回答简洁明了`,
-    },
-    { role: 'user', content: `问题: ${question}\n\n相关消息:\n${context}` },
-  ]
-  const answer = await chatCompletion(answerMsgs, { temperature: 0.3, maxTokens: 1000 })
+  const answerMsgs = buildContextMessages(history, SYSTEM_PERSONA)
+  answerMsgs.push({
+    role: 'user',
+    content: `问题: ${question}\n\n相关消息:\n${context}\n\n根据这些消息回答，用你正常的群友语气。可以引用"谁在什么时候说的"。`,
+  })
+  const answer = await chatCompletion(answerMsgs, { temperature: 0.5, maxTokens: 1000 })
 
   const sources = results.map((r) => ({
-    nickname: r.nickname,
+    nickname: resolveName(r.nickname),
     msgTime: r.msgTime,
     content: r.content,
   }))
@@ -170,7 +201,7 @@ async function handleSemantic(question) {
   return { answer, sources }
 }
 
-// POST /api/chat/ask — 提问
+// ========== POST /api/chat/ask — 提问 ==========
 export async function askChat(req, res, next) {
   try {
     const { question, sessionId } = req.body
@@ -197,6 +228,19 @@ export async function askChat(req, res, next) {
       data: { sessionId: session.id, role: 'user', content: question },
     })
 
+    // 读取历史对话（最近 10 轮 = 20 条），用于上下文
+    const historyTurns = await prisma.chatTurn.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    })
+    historyTurns.reverse() // 时间正序
+
+    // 过滤掉当前刚存的用户消息（避免重复）
+    const history = historyTurns
+      .filter((t) => t.content !== question || t.role !== 'user')
+      .slice(-19) // 最多 19 条历史（+当前问题 = 20）
+
     // 意图分类（失败兜底走 chat）
     let intent
     try {
@@ -208,11 +252,11 @@ export async function askChat(req, res, next) {
     // 按意图路由
     let result
     if (intent === 'statistic') {
-      result = await handleStatistic(question)
+      result = await handleStatistic(question, history)
     } else if (intent === 'semantic') {
-      result = await handleSemantic(question)
+      result = await handleSemantic(question, history)
     } else {
-      result = await handleChat(question)
+      result = await handleChat(question, history)
     }
 
     // 保存 AI 回复
@@ -234,8 +278,19 @@ export async function askChat(req, res, next) {
     })
   } catch (err) {
     console.error('[Chat Error]', err.message, err.cause?.message || '')
-    // LLM 调用失败（API 错误或网络超时）→ 兜底文案
-    if (err.message?.includes('LLM API') || err.message?.includes('fetch failed')) {
+
+    // 内容审核拦截
+    if (err.message === 'CONTENT_MODERATION') {
+      return fail(
+        res,
+        ErrorCode.SERVER_ERROR.code,
+        '此话题已被火山引擎API审核拦截，莫再提及',
+        ErrorCode.SERVER_ERROR.httpStatus,
+      )
+    }
+
+    // LLM 调用失败（超时或 API 错误）→ 兜底文案
+    if (err.message?.includes('LLM API') || err.message?.includes('超时') || err.message?.includes('fetch')) {
       return fail(
         res,
         ErrorCode.SERVER_ERROR.code,
@@ -247,7 +302,7 @@ export async function askChat(req, res, next) {
   }
 }
 
-// GET /api/chat/sessions — 会话列表
+// ========== GET /api/chat/sessions — 会话列表 ==========
 export async function listSessions(req, res, next) {
   try {
     const sessions = await prisma.chatSession.findMany({
@@ -267,7 +322,7 @@ export async function listSessions(req, res, next) {
   }
 }
 
-// GET /api/chat/sessions/:id — 会话详情
+// ========== GET /api/chat/sessions/:id — 会话详情 ==========
 export async function getSession(req, res, next) {
   try {
     const { id } = req.params
@@ -284,7 +339,7 @@ export async function getSession(req, res, next) {
   }
 }
 
-// DELETE /api/chat/sessions/:id — 删除会话
+// ========== DELETE /api/chat/sessions/:id — 删除会话 ==========
 export async function deleteSession(req, res, next) {
   try {
     const { id } = req.params
