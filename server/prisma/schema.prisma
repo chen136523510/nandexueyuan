@@ -111,3 +111,20 @@ model ChatTurn {
   @@index([sessionId])
   @@map("chat_turns")
 }
+
+// ===== 语义检索：消息分块 + 提示词 =====
+
+model MessageChunk {
+  id           Int      @id @default(autoincrement())
+  startMsgId   Int      // 起始消息 ID
+  endMsgId     Int      // 结束消息 ID
+  chunkDate    String?  // 日期（YYYY-MM-DD）
+  keywords     String   // 关键提示词（LLM 生成）
+  summary      String?  // 简要摘要
+  participants String?  // 参与者
+  msgCount     Int      // 消息数
+  createdAt    DateTime @default(now())
+
+  @@index([chunkDate])
+  @@map("message_chunks")
+}

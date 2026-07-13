@@ -10,7 +10,14 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
-        changeOrigin: true
+        changeOrigin: true,
+        ws: true,
+        // SSE 流式：阻止代理缓冲响应
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.removeHeader('accept-encoding')
+          })
+        },
       }
     }
   },

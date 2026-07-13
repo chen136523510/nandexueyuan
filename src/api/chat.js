@@ -17,7 +17,7 @@ export function listBatches() {
 
 // 提问（已登录）
 export function askChat(question, sessionId) {
-  return request.post('/chat/ask', { question, sessionId })
+  return request.post('/chat/ask', { question, sessionId }, { timeout: 120000 })
 }
 
 // 会话列表（已登录）

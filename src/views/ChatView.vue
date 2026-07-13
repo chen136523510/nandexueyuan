@@ -1,6 +1,6 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
-import { askChat, listSessions, getSession, deleteSession } from '../api/chat'
+import { listSessions, getSession, deleteSession } from '../api/chat'
 
 const messages = ref([])
 const question = ref('')
@@ -13,8 +13,8 @@ const sidebarOpen = ref(true)
 const suggestions = [
   '群里发言最多的人是谁',
   '大家讨论过打球吗',
+  '群里谁喷人最多',
   '饶志锐发了多少条消息',
-  '2024年群里有较多消息的月份有哪些',
 ]
 
 onMounted(() => {
@@ -48,7 +48,7 @@ async function selectSession(id) {
     }
     await scrollBottom()
   } catch {
-    // 加载失败，留空
+    // 加载失败
   }
 }
 
@@ -77,32 +77,92 @@ async function ask(q) {
   if (!text || loading.value) return
 
   messages.value.push({ role: 'user', content: text })
+
+  // 创建 bot 消息占位（用于流式更新）
+  const botMsg = {
+    role: 'bot',
+    content: '',
+    thinking: '',
+    intent: null,
+    sources: [],
+    showThinking: true,
+  }
+  messages.value.push(botMsg)
   question.value = ''
   loading.value = true
   await scrollBottom()
 
   try {
-    const res = await askChat(text, currentSessionId.value)
-    // 新会话：更新 currentSessionId 并刷新列表
-    if (!currentSessionId.value) {
-      currentSessionId.value = res.data.sessionId
-      loadSessions()
-    } else {
-      // 已有会话：更新标题（如果第一条）
-      loadSessions()
+    const token = localStorage.getItem('token')
+    const response = await fetch('/api/chat/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ question: text, sessionId: currentSessionId.value }),
+    })
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      botMsg.content = errData.message || `请求失败 (${response.status})`
+      botMsg.error = true
+      return
     }
-    messages.value.push({
-      role: 'bot',
-      content: res.data.answer,
-      intent: res.data.intent,
-      sources: res.data.sources || [],
-    })
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const blocks = buffer.split('\n\n')
+      buffer = blocks.pop()
+
+      for (const block of blocks) {
+        const lines = block.split('\n')
+        let eventType = ''
+        let dataStr = ''
+        for (const line of lines) {
+          if (line.startsWith('event: ')) eventType = line.slice(7).trim()
+          else if (line.startsWith('data: ')) dataStr = line.slice(6)
+        }
+        if (!eventType || !dataStr) continue
+
+        try {
+          const data = JSON.parse(dataStr)
+          if (eventType === 'thinking') {
+            if (data.step) {
+              botMsg.thinking += data.step + '\n'
+            }
+            if (data.content) {
+              botMsg.thinking += data.content + '\n'
+            }
+          } else if (eventType === 'token') {
+            botMsg.content += data.content
+            botMsg.showThinking = false
+          } else if (eventType === 'sources') {
+            botMsg.sources = data
+          } else if (eventType === 'done') {
+            currentSessionId.value = data.sessionId
+            botMsg.intent = data.intent
+            loadSessions()
+          } else if (eventType === 'error') {
+            botMsg.content = data.message
+            botMsg.error = true
+          }
+        } catch {
+          // 忽略解析错误
+        }
+      }
+      await scrollBottom()
+    }
   } catch (err) {
-    messages.value.push({
-      role: 'bot',
-      content: err.response?.data?.message || err.message || '出错了，请重试',
-      error: true,
-    })
+    botMsg.content = err.message || '网络错误，请重试'
+    botMsg.error = true
   }
 
   loading.value = false
@@ -140,7 +200,6 @@ function formatDate(date) {
     </div>
 
     <div class="chat-body">
-      <!-- 左侧会话列表 -->
       <div v-if="sidebarOpen" class="sidebar">
         <button class="new-chat-btn" @click="newChat">+ 新建对话</button>
         <div class="session-list">
@@ -162,7 +221,6 @@ function formatDate(date) {
         </div>
       </div>
 
-      <!-- 右侧对话区 -->
       <div class="chat-main">
         <div class="chat-area" ref="chatArea">
           <div v-if="messages.length === 0" class="empty">
@@ -174,9 +232,22 @@ function formatDate(date) {
           </div>
 
           <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
-            <div class="msg-bubble" :class="{ error: msg.error }">
-              {{ msg.content }}
+            <!-- 思考过程 -->
+            <div v-if="msg.thinking && msg.role === 'bot'" class="msg-thinking">
+              <details :open="msg.showThinking">
+                <summary>💭 思考过程</summary>
+                <pre class="thinking-content">{{ msg.thinking }}</pre>
+              </details>
             </div>
+
+            <!-- 回答气泡 -->
+            <div v-if="msg.content || !loading" class="msg-bubble" :class="{ error: msg.error }">
+              {{ msg.content }}
+              <span v-if="msg === messages[messages.length - 1] && loading && !msg.content && msg.role === 'bot'" class="typing">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </span>
+            </div>
+
             <div v-if="msg.intent" class="msg-meta">
               <span class="intent-tag">{{ msg.intent }}</span>
             </div>
@@ -191,12 +262,6 @@ function formatDate(date) {
                   <p class="source-text">{{ s.content }}</p>
                 </div>
               </details>
-            </div>
-          </div>
-
-          <div v-if="loading" class="msg bot">
-            <div class="msg-bubble loading-bubble">
-              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
             </div>
           </div>
         </div>
@@ -251,7 +316,6 @@ function formatDate(date) {
   overflow: hidden;
 }
 
-/* 左侧侧边栏 */
 .sidebar {
   width: 240px;
   background: #fff;
@@ -312,7 +376,6 @@ function formatDate(date) {
   padding: 20px;
 }
 
-/* 右侧对话区 */
 .chat-main {
   flex: 1;
   display: flex;
@@ -367,6 +430,35 @@ function formatDate(date) {
 .msg.user { align-items: flex-end; }
 .msg.bot { align-items: flex-start; }
 
+/* 思考过程 */
+.msg-thinking {
+  max-width: 75%;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.msg-thinking summary {
+  cursor: pointer;
+  color: #999;
+  padding: 4px 8px;
+  user-select: none;
+}
+.msg-thinking summary:hover { color: #666; }
+.thinking-content {
+  background: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .msg-bubble {
   max-width: 75%;
   padding: 12px 16px;
@@ -389,20 +481,22 @@ function formatDate(date) {
 }
 .msg-bubble.error { background: #fff2f0; border-color: #ffccc7; color: #cf1322; }
 
-.loading-bubble {
-  display: flex;
+/* 打字动画 */
+.typing {
+  display: inline-flex;
   gap: 4px;
   align-items: center;
+  padding-left: 4px;
 }
-.dot {
-  width: 8px;
-  height: 8px;
+.typing .dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #999;
   animation: bounce 1.4s infinite ease-in-out both;
 }
-.dot:nth-child(1) { animation-delay: -0.32s; }
-.dot:nth-child(2) { animation-delay: -0.16s; }
+.typing .dot:nth-child(1) { animation-delay: -0.32s; }
+.typing .dot:nth-child(2) { animation-delay: -0.16s; }
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
@@ -475,7 +569,6 @@ function formatDate(date) {
 .input-area button:hover:not(:disabled) { background: #4096ff; }
 .input-area button:disabled { background: #bbb; cursor: not-allowed; }
 
-/* 移动端 */
 @media (max-width: 768px) {
   .sidebar { width: 200px; }
 }

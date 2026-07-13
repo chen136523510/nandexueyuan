@@ -45,7 +45,8 @@ request.interceptors.response.use(
     }
     // 网络错误
     console.error('[Network Error]', error.message)
-    return Promise.reject({ code: -1, message: '网络异常，请稍后重试', data: null })
+    const msg = error.code === 'ECONNABORTED' ? '请求超时，请重试' : '网络连接失败，请检查网络'
+    return Promise.reject({ code: -1, message: msg, data: null })
   }
 )
 
