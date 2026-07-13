@@ -1,0 +1,204 @@
+/**
+ * Design Tokens - 工业控制系统设计变量
+ * 
+ * 这是整个设计系统的「原子」定义
+ * 所有组件样式都应该引用这些变量，而不是硬编码值
+ * 
+ * 分类：
+ * 1. 颜色系统 (Colors)
+ * 2. 间距系统 (Spacing)
+ * 3. 尺寸系统 (Sizing)
+ * 4. 圆角系统 (Border Radius)
+ * 5. 过渡系统 (Transitions)
+ * 6. 阴影系统 (Shadows)
+ * 7. 字体系统 (Typography)
+ * 8. 层级系统 (Z-Index)
+ * 9. 断点系统 (Breakpoints)
+ */
+
+:root {
+  /* ==========================================================================
+     1. 颜色系统 (Colors)
+     ========================================================================== */
+
+  /* --- 背景色 --- */
+  --color-bg-primary: #002621;      /* 页面主背景 - 深墨绿 */
+  --color-bg-secondary: #0a2e23;    /* 次级背景 */
+  --color-bg-navbar: #00332e;       /* 导航栏背景 */
+  --color-bg-page: #002b2b;         /* 页面背景（设备控制/数据初始化） */
+  --color-bg-overlay: #0a1a1a;      /* 弹窗遮罩背景 */
+  --page-tone: #00443f;             /* 页面色调 */
+
+  /* --- 强调色 --- */
+  --color-accent-primary: #f9b707;  /* 主强调色 - 金黄 */
+  --color-accent-hover: #f9b707;    /* 强调色悬停态 */
+  --color-accent-light: #ffc933;    /* 强调色浅色 */
+  --color-accent-dark: #b8860b;     /* 强调色深色（暗金） */
+
+  /* --- 文字色 --- */
+  --color-text-primary: #f9b707;    /* 主要文字 - 金黄 */
+  --color-text-secondary: #ffffff;  /* 次要文字 - 白色 */
+  --color-text-on-accent: #002621;  /* 强调色上的文字 - 深墨绿 */
+  --color-text-muted: #A0B0AF;      /* 弱化文字 */
+  --color-text-dark: #333333;       /* 深色文字（表单/弹窗） */
+  --color-text-gray: #666666;       /* 灰色文字 */
+  --color-text-light-gray: #b0b0b0; /* 浅灰文字 */
+
+  /* --- 状态色 --- */
+  --color-status-success: #4ade80;  /* 成功 - 绿色 */
+  --color-status-success-alt: #67c23a; /* 成功备选 */
+  --color-status-error: #f87171;    /* 错误 - 红色 */
+  --color-status-error-alt: #F56C6C; /* 错误备选 */
+  --color-status-warning: #FFB800;  /* 警告 - 橙黄 */
+  --color-status-info: #1890ff;     /* 信息 - 蓝色 */
+
+  /* --- 组件专用色 --- */
+  --color-active: var(--color-accent-primary);  /* 激活态 */
+  --color-status-bg: #336965;       /* 状态背景 */
+  --color-avatar-border: #193a37;   /* 头像边框 */
+
+  /* --- 卡片色 --- */
+  --color-card-bg-dark: #00332E;    /* 卡片深色背景 */
+  --color-card-bg-light: #003d3d;   /* 卡片浅色背景 */
+  --color-card-bg-alt: #005F59;     /* 卡片备选背景 */
+  --color-card-bg-active: #006666;  /* 卡片激活背景 */
+  --color-card-bg-hover: #007777;   /* 卡片悬停背景 */
+  --color-card-bg-closed: #4a4a4a;  /* 卡片关闭背景 */
+  --color-card-bg-closed-hover: #555555; /* 卡片关闭悬停 */
+  --color-card-border: #004d46;     /* 卡片边框 */
+
+  /* --- 表单色 --- */
+  --color-form-label-dark: #005F59; /* 表单标签深色 */
+  --color-form-input-bg: #f5f5f5;   /* 输入框背景 */
+  --color-form-border: #d9d9d9;     /* 表单边框 */
+  --color-form-border-light: #eee;  /* 表单边框浅色 */
+  --color-form-placeholder: #999;   /* 占位符颜色 */
+
+  /* --- 导航色 --- */
+  --color-nav-active: #ffcc00;      /* 导航激活色 */
+  --color-nav-icon: #f0f0f0;        /* 导航图标色 */
+  --color-nav-icon-active: #f9b707; /* 导航图标激活色 */
+
+  /* --- 状态指示器色 --- */
+  --color-dot-success: #22c55e;     /* 成功指示点 */
+  --color-dot-error: #f87171;       /* 错误指示点 */
+  --color-dot-muted: #A7A7A7;       /* 弱化指示点 */
+
+  /* ==========================================================================
+     2. 间距系统 (Spacing)
+     ========================================================================== */
+  --spacing-xs: 4px;    /* 极小间距 */
+  --spacing-sm: 8px;    /* 小间距 */
+  --spacing-md: 16px;   /* 中等间距 */
+  --spacing-lg: 24px;   /* 大间距 */
+  --spacing-xl: 32px;   /* 超大间距 */
+  --spacing-2xl: 40px;  /* 特大间距 */
+  --spacing-3xl: 48px;  /* 巨大间距 */
+
+  /* ==========================================================================
+     3. 尺寸系统 (Sizing)
+     ========================================================================== */
+  
+  /* 图标尺寸 */
+  --size-icon-xs: 16px;
+  --size-icon-sm: 20px;
+  --size-icon-md: 24px;
+  --size-icon-lg: 32px;
+  --size-icon-xl: 35px;
+  --size-icon-2xl: 56px;
+  --size-icon-3xl: 80px;
+
+  /* 导航栏尺寸 */
+  --size-navbar-height: 96px;
+  --size-navbar-height-sm: 100px;
+  --size-logo-circle: 96px;
+
+  /* 按钮尺寸 */
+  --size-btn-height: 36px;
+  --size-btn-height-lg: 40px;
+
+  /* 输入框尺寸 */
+  --size-input-height: 32px;
+  --size-input-height-lg: 36px;
+
+  /* 状态点尺寸 */
+  --size-dot-sm: 7px;
+  --size-dot-md: 12px;
+  --size-dot-lg: 28px;
+
+  /* ==========================================================================
+     4. 圆角系统 (Border Radius)
+     ========================================================================== */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 14px;
+  --radius-4xl: 16px;
+  --radius-full: 9999px;
+
+  /* ==========================================================================
+     5. 过渡系统 (Transitions)
+     ========================================================================== */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease;
+
+  /* ==========================================================================
+     6. 阴影系统 (Shadows)
+     ========================================================================== */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-modal-dark: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* ==========================================================================
+     7. 字体系统 (Typography)
+     ========================================================================== */
+  --font-family-base: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+  
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 32px;
+  --font-size-5xl: 36px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 900;
+
+  --line-height-tight: 1;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* ==========================================================================
+     8. 层级系统 (Z-Index)
+     ========================================================================== */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+
+  /* ==========================================================================
+     9. 断点系统 (Breakpoints)
+     ========================================================================== */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
