@@ -196,7 +196,7 @@ async function handleSemantic(question, history, send) {
       {
         role: 'system',
         content: `从用户问题中提取 2-3 个用于全文搜索的关键词。要求：
-- 每个关键词至少 3 个汉字
+- 每个关键词至少 2 个汉字
 - 只输出关键词，用空格分隔
 - 不要其他内容`,
       },
@@ -208,14 +208,17 @@ async function handleSemantic(question, history, send) {
     console.log('[Semantic] 关键词提取失败，用原问题检索')
   }
 
-  // 2. 检索提示词表（message_chunks_fts）
+  const rawWords = keywords.replace(/['";]/g, '').split(/\s+/).filter((k) => k.length >= 2)
+  const ftsWords = rawWords.filter((k) => k.length >= 3)
+
+  // 2. 检索提示词表（先 FTS5，再 LIKE 后备）
   send('thinking', { step: '检索相关话题块中...' })
   let chunks = []
-  try {
-    const words = keywords.replace(/['";]/g, '').split(/\s+/).filter((k) => k.length >= 3)
-    let ftsQuery = words.join(' OR ')
-    if (!ftsQuery && question.length >= 3) ftsQuery = question.slice(0, 10)
-    if (ftsQuery) {
+
+  // 2a. FTS5 检索（3字以上词）
+  if (ftsWords.length > 0) {
+    try {
+      const ftsQuery = ftsWords.join(' OR ')
       chunks = await prisma.$queryRawUnsafe(
         `SELECT c.id, c.startMsgId, c.endMsgId, c.chunkDate, c.keywords
          FROM message_chunks_fts f
@@ -225,21 +228,38 @@ async function handleSemantic(question, history, send) {
          LIMIT 3`,
         ftsQuery,
       )
+    } catch (err) {
+      console.error('[Chunks FTS5 Error]', err.message)
     }
-  } catch (err) {
-    console.error('[Chunks FTS5 Error]', err.message)
+  }
+
+  // 2b. LIKE 后备（2字以上词，扫 message_chunks.keywords 列）
+  if (!chunks || chunks.length === 0) {
+    try {
+      const likeConditions = rawWords.map((w) => `keywords LIKE '%${w.replace(/'/g, "''")}%'`).join(' OR ')
+      if (likeConditions) {
+        chunks = await prisma.$queryRawUnsafe(
+          `SELECT id, startMsgId, endMsgId, chunkDate, keywords
+           FROM message_chunks
+           WHERE ${likeConditions}
+           LIMIT 3`,
+        )
+      }
+    } catch (err) {
+      console.error('[Chunks LIKE Error]', err.message)
+    }
   }
   send('thinking', { step: `找到 ${chunks.length} 个相关话题块` })
 
-  // 3. 无结果 -> 降级原始 FTS5
+  // 3. 无结果 -> 降级原始消息检索
   if (!chunks || chunks.length === 0) {
     send('thinking', { step: '尝试直接检索原始消息...' })
     let results = []
-    try {
-      const words = keywords.replace(/['";]/g, '').split(/\s+/).filter((k) => k.length >= 3)
-      let ftsQuery = words.join(' OR ')
-      if (!ftsQuery && question.length >= 3) ftsQuery = question.slice(0, 10)
-      if (ftsQuery) {
+
+    // 3a. FTS5 原始消息
+    if (ftsWords.length > 0) {
+      try {
+        const ftsQuery = ftsWords.join(' OR ')
         results = await prisma.$queryRawUnsafe(
           `SELECT m.nickname, m.msgTime, m.content
            FROM group_messages_fts f
@@ -249,9 +269,26 @@ async function handleSemantic(question, history, send) {
            LIMIT 5`,
           ftsQuery,
         )
+      } catch (err) {
+        console.error('[FTS5 Error]', err.message)
       }
-    } catch (err) {
-      console.error('[FTS5 Error]', err.message)
+    }
+
+    // 3b. LIKE 原始消息（2字词）
+    if (!results || results.length === 0) {
+      try {
+        const likeConditions = rawWords.map((w) => `content LIKE '%${w.replace(/'/g, "''")}%'`).join(' OR ')
+        if (likeConditions) {
+          results = await prisma.$queryRawUnsafe(
+            `SELECT nickname, msgTime, content
+             FROM group_messages
+             WHERE ${likeConditions}
+             LIMIT 5`,
+          )
+        }
+      } catch (err) {
+        console.error('[Message LIKE Error]', err.message)
+      }
     }
 
     if (!results || results.length === 0) {
