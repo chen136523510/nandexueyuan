@@ -84,18 +84,43 @@ flowchart LR
 
 ## 换设备流程
 
+### 首次克隆（新设备）
+
 ```bash
-# 新设备克隆（从 GitHub）
 git clone git@github.com:chen136523510/nandexueyuan.git
 cd nandexueyuan
 
-# 启用 pnpm（Node >= 16.9 自带 corepack，无需全局安装）
 corepack enable pnpm
 
-# 安装依赖
 pnpm install                                    # 前端
 cd server && pnpm install --ignore-workspace    # 后端
 
-# 复制环境配置
 cp .env.example .env  # Windows 用 copy，填入本地实际值
 ```
+
+### 白机/黑机日常换机
+
+> 详见 `.trae/.rules/two-machine-collab.md`
+
+```mermaid
+flowchart TD
+    subgraph 白机[白机 · 白天]
+        A[feature 分支开发] --> B[commit + push]
+        B --> C[发起 PR]
+        C -.->|不合并| C2[等待黑机处理]
+    end
+    subgraph 黑机[黑机 · 晚上]
+        D[git checkout master] --> E[git pull origin master]
+        E --> F[git merge origin/feature/xxx]
+        F --> G{冲突?}
+        G -->|无| H[git push origin master]
+        G -->|有| I[解决冲突]
+        I --> H
+        H --> J[git branch -d feature/xxx]
+        J --> K[开始新开发]
+    end
+```
+
+**白机（白天）**：只开发不合并，所有改动走 feature 分支，禁止直接推 master。
+
+**黑机（晚上）**：先合并白机的 PR/分支，再开始新开发。
