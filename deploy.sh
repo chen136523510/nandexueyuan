@@ -16,6 +16,9 @@ cd server
 corepack enable pnpm 2>/dev/null || true
 pnpm install --frozen-lockfile
 
+echo "=== 2.5/7 生成 Prisma Client ==="
+npx prisma generate
+
 echo "=== 3/7 应用数据库迁移 ==="
 npx prisma migrate deploy
 
