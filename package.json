@@ -12,7 +12,7 @@
     "axios": "^1.18.1",
     "colyseus.js": "^0.16.0",
     "lucide-vue-next": "^1.0.0",
-    "phaser": "^4.2.1",
+    "phaser": "^4.0.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.13",
     "vue-router": "^5.1.0",
