@@ -26,7 +26,7 @@ export class Player {
 
   update(inputSystem) {
     const body = this.sprite.body
-    const onGround = body.blocked.down
+    const onGround = body.blocked.down || body.touching.down
 
     if (inputSystem.left.isDown) {
       this.sprite.setVelocityX(-PLAYER_SPEED)

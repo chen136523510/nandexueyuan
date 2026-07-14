@@ -143,8 +143,7 @@ export class WorldScene extends Phaser.Scene {
     this.lastPosEmit = 0
 
 // === Enter 键 - 聊天 ===
-    this.keyEnter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER)
-    this.keyEnter.on('down', () => {
+    this.input.keyboard.on('keydown-Enter', () => {
       const chatOpen = this.registry.get('chatOpen')
       if (chatOpen) return
       // 冷却检查：关闭聊天后 400ms 内不重开
@@ -237,6 +236,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.registry.get('chatOpen')) {
       this.player.update(this.inputSystem)
     }
+    this.inputSystem.update()
     this.checkInteraction()
     this.emitPosition()
     this.sendNetworkPosition()
@@ -379,7 +379,7 @@ export class WorldScene extends Phaser.Scene {
       this.interactPrompt.setPosition(nearest.target.x, nearest.target.y - 50)
       this.interactPrompt.setVisible(true)
 
-      if (Phaser.Input.Keyboard.JustDown(this.inputSystem.keyE)) {
+      if (this.inputSystem.keyE.justDown) {
         this.handleInteract(nearest)
       }
     } else {

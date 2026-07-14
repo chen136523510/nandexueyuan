@@ -18,7 +18,14 @@ export class NetworkSystem {
   }
 
   async connect(token, nickname) {
-    const wsUrl = import.meta.env.VITE_COLYSEUS_URL || `ws://${window.location.hostname}:2567`
+    const wsUrl = import.meta.env.VITE_COLYSEUS_URL || (() => {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      // 生产环境通过 Nginx /ws 代理，开发环境直连 2567
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return `${proto}//${window.location.hostname}:2567`
+      }
+      return `${proto}//${window.location.host}/ws`
+    })()
     console.log('[NetworkSystem] 连接:', wsUrl)
 
     this.client = new Client(wsUrl)
