@@ -65,3 +65,9 @@ prd/01-需求调研/成员分析/
 # 临时文件目录（保留目录,忽略内容）
 tmp/*
 !tmp/.gitkeep
+
+# ===== 德塔（NDO）游戏模块 =====
+# game-server/.env 各机器独立配置（已在上方 .env 规则中忽略）
+# 游戏资源（保留目录结构，忽略大文件）
+public/game/audio/**/*
+!public/game/audio/**/.gitkeep

@@ -1,0 +1,111 @@
+# 德塔（NDO）Bug Log
+
+> 倒序排列，最新在最上方。记录开发过程中遇到的 bug 及修复方式。
+
+---
+
+## 2026-07-14
+
+### BUG-13: 所有玩家昵称都显示"学员"
+- **编号**: BUG-13
+- **现象**: 两个不同账号进入德塔，所有玩家头顶都显示"学员"
+- **根因**: Express 签发 JWT 时只包含 `{ userId, role }`，没有 `nickname` 字段。Colyseus `verifyToken` 后 `payload.nickname` 为 undefined，回退到默认值"学员"
+- **修复**: WorldRoom onJoin 优先使用客户端连接时传入的 `options.nickname`（来自前端 auth store），JWT 只用于身份验证
+- **文件**: `game-server/src/rooms/WorldRoom.js` - onJoin
+- **状态**: 已修复
+
+### BUG-12: 多人同步玩家属性全为 undefined（type() 不存在）
+- **编号**: BUG-12
+- **现象**: 两个浏览器在同一房间（roomId 一致，players.size=2），但其他玩家的 nickname/x/y 全是 undefined，精灵创建在 NaN 位置
+- **根因**: `@colyseus/schema@3.0.76` 没有 `type()` 导出，用 `type('number', prototype, 'x')` 静默失败，Schema 字段未注册，客户端反序列化时拿不到值
+- **修复**: 改用 `defineTypes(PlayerState, { x: 'number', y: 'number', ... })` 正确注册字段
+- **文件**: `game-server/src/schema/PlayerState.js` / `game-server/src/schema/WorldState.js`
+- **状态**: 已修复
+
+### BUG-11: 两个浏览器地图不一致（云/树随机生成）
+- **编号**: BUG-11
+- **现象**: Chrome 和 Edge 进入德塔，看到的云和树位置不同
+- **根因**: `Phaser.Math.Between()` 随机生成云和树的位置，每次进入地图都不同，两个浏览器各自随机
+- **修复**: 云（6 朵）和树（6 棵）位置硬编码，所有浏览器看到同一张地图；同时固定世界尺寸 3200x700，groundY 固定为 636
+- **文件**: `game/scenes/WorldScene.js` - create()
+- **状态**: 已修复
+
+### BUG-10: 聊天框 Enter 发送后又自动重新打开
+- **编号**: BUG-10
+- **现象**: 聊天框中按 Enter 发送消息后，聊天框关闭又立刻重新打开
+- **根因**: Vue closeChat() 调用 enableKeyboard() 后，同一帧的 Enter keydown 事件传播到 Phaser，Phaser 检查 chatOpen=false 又触发 chat-open
+- **修复**: enableKeyboard() 时在 registry 设置 chatCooldown 时间戳，WorldScene 的 Enter 处理检查 400ms 冷却期
+- **文件**: `game/main.js` - enableKeyboard / `game/scenes/WorldScene.js` - Enter handler
+- **状态**: 已修复
+
+### BUG-09: 小地图玩家标记位置偏高
+- **编号**: BUG-09
+- **现象**: 小地图上玩家标记比实际位置偏高，与地面线不对应
+- **根因**: 地图 groundY 是动态计算的（`H - 64`，取决于浏览器窗口高度），但小地图使用静态 GROUND.y=636 和 WORLD_HEIGHT=700 做比例，导致比例不对
+- **修复**: Phaser emitPosition 传递实际 groundY，小地图用 `toMiniY()` 相对坐标函数计算，垂直范围固定为 640px（塔 576 + 地面 64）
+- **文件**: `game/scenes/WorldScene.js` - emitPosition / `src/views/GameView.vue` - drawMinimap
+- **状态**: 已修复
+
+### BUG-08: 多人同步看不到其他玩家
+- **编号**: BUG-08
+- **现象**: 两个浏览器进入德塔，看不到对方角色
+- **根因**: `physics.add.staticImage()` 创建的精灵带有静态物理 body，频繁调用 `body.reset()` 导致位置不刷新
+- **修复**: 改为 `add.image()`（普通 sprite），直接设置 x/y 坐标，不参与物理
+- **文件**: `game/systems/NetworkSystem.js` - `createOtherPlayer` / `updateOtherPlayer`
+- **状态**: 已修复
+
+### BUG-07: Colyseus state.players 为 undefined
+- **编号**: BUG-07
+- **现象**: `[NetworkSystem] 连接失败: Cannot set properties of undefined (setting 'onAdd')`
+- **根因**: `joinOrCreate` resolve 后 state 尚未同步到客户端，`this.room.state.players` 为 undefined
+- **修复**: 添加 `waitForState()` 轮询，state 同步后再设置监听器
+- **文件**: `game/systems/NetworkSystem.js` - `waitForState`
+- **状态**: 已修复
+
+### BUG-06: @colyseus/schema 版本不匹配导致 handshake.copy 错误
+- **编号**: BUG-06
+- **现象**: `handshake.copy is not a function`
+- **根因**: game-server 安装了 `@colyseus/schema@4.0.0`，但 `colyseus@0.16.0` 的 peerDependency 要求 `^3.0.0`，客户端 `colyseus.js@0.16.0` 也用 schema 3.x
+- **修复**: game-server 降级到 `@colyseus/schema@3.0.76`
+- **文件**: `game-server/package.json`
+- **状态**: 已修复
+
+### BUG-05: Colyseus 0.15 + schema 3.x 不兼容
+- **编号**: BUG-05
+- **现象**: `import_schema.Context is not a constructor`
+- **根因**: `colyseus@0.15.57` 不兼容 `@colyseus/schema@3.x`
+- **修复**: 升级到 `colyseus@0.16.0`
+- **文件**: `game-server/package.json`
+- **状态**: 已修复
+
+### BUG-04: @colyseus/ws-transport 0.17 依赖 uWebSockets.js 下载超时
+- **编号**: BUG-04
+- **现象**: `pnpm add colyseus@latest` 超时，uWebSockets.js 从 GitHub 下载失败
+- **根因**: `@colyseus/ws-transport@0.17` 依赖 `@colyseus/uwebsockets-transport`，需从 GitHub 下载 40MB 二进制
+- **修复**: 锁定 `colyseus@0.16.0` + `@colyseus/ws-transport@0.16.0`（使用标准 ws 库）
+- **文件**: `game-server/package.json`
+- **状态**: 已修复
+
+### BUG-03: WorldScene create() 重复声明 nickname
+- **编号**: BUG-03
+- **现象**: `SyntaxError: Identifier 'nickname' has already been declared`
+- **根因**: `create()` 方法中 line 88 和 line 142 都声明了 `const nickname`
+- **修复**: 删除 line 142 的重复声明，复用 line 88 的变量
+- **文件**: `game/scenes/WorldScene.js`
+- **状态**: 已修复
+
+### BUG-02: Colyseus 0.16 CommonJS 导入问题
+- **编号**: BUG-02
+- **现象**: `Named export 'Room' not found. The requested module 'colyseus' is a CommonJS module`
+- **根因**: `colyseus@0.15` 是 CommonJS，ESM `import { Room }` 不兼容
+- **修复**: 升级到 `colyseus@0.16.0`（支持 ESM named exports）
+- **文件**: `game-server/src/index.js` / `game-server/src/rooms/WorldRoom.js`
+- **状态**: 已修复
+
+### BUG-01: 全屏黑边
+- **编号**: BUG-01
+- **现象**: 游戏两侧有大黑块，未填充浏览器
+- **根因**: `Scale.FIT` 模式保持宽高比，两侧留黑
+- **修复**: 改为 `Scale.RESIZE`，填充整个容器
+- **文件**: `game/config.js`
+- **状态**: 已修复

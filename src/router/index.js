@@ -20,6 +20,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('../views/AdminView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/nde',
+    name: 'nde',
+    component: () => import('../views/GameView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),
@@ -48,6 +60,10 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.requiresAdmin && auth.role !== 'super_admin' && auth.role !== 'admin') {
+    return { name: 'home' }
   }
 
   if (to.meta.guestOnly && auth.isLoggedIn) {
