@@ -34,9 +34,9 @@ flowchart LR
 - [ ] 德塔 P5：美术资源替换（黑机 ComfyUI 生图）
 
 ## 进行中（未完成，切勿遗漏）
-- 德塔多人同步已跑通，但未 commit。需要白机 commit + push 后黑机才能拉取
+- 德塔 P0+P1 已提交推送，分支 `feature/ndo-mvp`，黑机需合并此 PR
 - Colyseus 服务器依赖版本已锁定：`colyseus@0.16.0` + `@colyseus/schema@3.0.76` + `colyseus.js@0.16.0`
-- `game-server/node_modules` 已安装（含 `jsonwebtoken`），黑机 pull 后需执行 `cd game-server && pnpm install --ignore-workspace`
+- `game-server/node_modules` 未提交（gitignore），黑机 pull 后需执行 `cd game-server && pnpm install --ignore-workspace`
 
 ## 已完成（本次会话）
 
