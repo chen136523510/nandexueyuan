@@ -1,7 +1,7 @@
 /**
  * 德塔（NDO）Phaser 游戏配置
  */
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 import { BootScene } from './scenes/BootScene.js'
 import { PreloadScene } from './scenes/PreloadScene.js'
 import { WorldScene } from './scenes/WorldScene.js'

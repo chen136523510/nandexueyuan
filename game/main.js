@@ -1,7 +1,7 @@
 /**
  * 德塔（NDO）游戏入口
  */
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 import { createGameConfig } from './config.js'
 import * as events from './events.js'
 

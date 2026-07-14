@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 import { PLAYER_SPEED, JUMP_VELOCITY } from '../../shared/constants.js'
 
 /**

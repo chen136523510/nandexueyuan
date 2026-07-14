@@ -1,4 +1,4 @@
-import Phaser from 'phaser'
+import * as Phaser from 'phaser'
 
 /**
  * UIScene - HUD 层（固定在屏幕上的 UI）
