@@ -4,6 +4,50 @@
 
 ---
 
+## #23 两机协作规则更新 + .trae 目录优化 + bug-log 补全
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `.trae/rules/two-machine-collab.md` 全面重写：白机也可合并 PR + push master + SSH 部署，两机能力对等
+  2. `.trae/rules/deploy-discipline.md` 新增部署流程模板（构建→SSH→拉代码→安装依赖→重启→验证）
+  3. `.trae` 目录结构优化：`.rules` → `rules`，`.skills` → `skills`
+  4. `.gitignore` 新增 `askpass.bat`
+  5. `prd/01-需求文档/04-德塔/bug-log.md` 补充 BUG-14~19 记录
+  6. `prd/05-开发规范/ai-collab.md`、`git-manage.md` 同步 `.trae` 路径引用
+- **影响范围**：开发规范、双机协作流程
+- commit: `9330170`
+
+---
+
+## #22 页签切换清理 + 聊天 Enter 修复 + JWT 运行时读取
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `game/scenes/WorldScene.js` — 移除错误的 `visibilitychange` 监听，改用 `shutdown` + `destroy` 双重事件处理 Vue 路由切换时的网络清理
+  2. `game/scenes/WorldScene.js` — 删除 `keydown-Enter` 监听，改用 `InputSystem.keyEnter.justDown` 在 `update()` 中检测 Enter 打开聊天
+  3. `game/systems/NetworkSystem.js` — `disconnect()` 新增清理 `knownPlayers.clear()` + `stateReady = false`，确保重连后 diff 正确
+  4. `game/main.js` — `destroyGame()` 添加日志
+  5. `game-server/src/lib/auth.js` — `const SECRET` 改为 `function getSecret()` 运行时读取，修复 ESM 模块导入顺序导致的 JWT 密钥回退
+- **影响范围**：Vue 路由切换 → Phaser 清理链、Enter 聊天键、JWT 验证
+- commit: `45156b3`（已部署到生产环境）
+
+---
+
+## #21 生产环境首次部署 game-server + 多人同步修复
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `game-server/src/index.js` 添加 dotenv，加载 `server/.env` 确保 JWT_SECRET 一致
+  2. `game-server/package.json` 新增 `dotenv` 依赖
+  3. `deploy.sh` 从 7 步扩展到 9 步，新增 game-server 安装 + PM2 启动
+  4. `deploy.sh` 中 Express 改为 `--cwd server` 启动，正确加载 `server/.env`
+  5. deploy.sh 全部从 pnpm 改为 npm（与黑机切换一致）
+  6. 服务器 Nginx 新增 `/ws` WebSocket 代理配置（`proxy_pass http://127.0.0.1:2567/;`）
+- **影响范围**：生产部署流程、Colyseus 多人同步、JWT 密钥一致性
+- commit: `eb5772c` + `2586e83`
+
+---
+
 ## #20 修复生产环境多人同步 + 部署脚本完善
 
 - **日期**：2026-07-15
