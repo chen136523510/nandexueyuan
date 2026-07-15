@@ -112,12 +112,17 @@ function handleChatSend() {
 function handleChatKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault()
-    handleChatSend()
+    const text = chatInput.value.trim()
+    if (text) {
+      handleChatSend()
+    } else {
+      closeChat()
+    }
     return
   }
   if (e.key === 'Escape' || e.key === 'Tab') {
     e.preventDefault()
-    handleChatSend()  // 退出时也发送内容
+    closeChat()
   }
 }
 
