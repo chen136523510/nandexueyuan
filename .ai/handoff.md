@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-07-14 22:00
+> 最后更新：2026-07-15 10:00
 > 提交人：陈梓键
 > 所在设备：白机（白天）
 
@@ -24,7 +24,7 @@ flowchart LR
 **白机铁律**：只开发不合并，所有改动走 feature 分支，禁止推 master。
 **黑机铁律**：先合并白机的 PR，再开始新开发。
 
-> 详细规则见：`.trae/.rules/two-machine-collab.md`
+> 详细规则见：`.trae/rules/two-machine-collab.md`
 
 ---
 
@@ -34,9 +34,9 @@ flowchart LR
 - [ ] 德塔 P5：美术资源替换（黑机 ComfyUI 生图）
 
 ## 进行中（未完成，切勿遗漏）
-- 德塔 P0+P1 已提交推送，分支 `feature/ndo-mvp`，黑机需合并此 PR
+- 分支 `feature/refactor-trae-dir` 已推送，黑机需合并此 PR（含 E 键修复 + .trae 目录优化）
 - Colyseus 服务器依赖版本已锁定：`colyseus@0.16.0` + `@colyseus/schema@3.0.76` + `colyseus.js@0.16.0`
-- `game-server/node_modules` 未提交（gitignore），黑机 pull 后需执行 `cd game-server && pnpm install --ignore-workspace`
+- `game-server/node_modules` 未提交（gitignore），黑机 pull 后需执行 `cd game-server && npm install`
 
 ## 已完成（本次会话）
 
@@ -72,12 +72,16 @@ flowchart LR
 - [x] 地图固定化（世界 3200x700，云树硬编码，所有浏览器同一张地图）
 - [x] 昵称修复（`options.nickname` 优先于 JWT payload）
 
+### 白机修复 + 目录优化（07-15）
+- [x] 修复按 E 无法交互（`checkInteraction` 需在 `inputSystem.update()` 之前执行）
+- [x] `.trae` 目录结构优化（`.rules→rules` / `.skills→skills`）
+
 ## 环境状态
-- 分支：待 commit（当前在 feature 分支上）
+- 分支：`feature/refactor-trae-dir`（已推送，等待黑机合并）
 - 端口：前端 4396 / 后端 3000 / 游戏服务器 2567
 - 数据库：已初始化（4 个迁移已应用，21 个种子账号 + testuser）
 - 依赖：
-  - 前端：`phaser@4.2.1` + `colyseus.js@0.16.0`（已安装）
+  - 前端：`phaser@^4.0.0` + `colyseus.js@0.16.0`（黑机已切 npm）
   - 后端：现有依赖不变
   - game-server：`colyseus@0.16.0` + `@colyseus/schema@3.0.76` + `@colyseus/ws-transport@0.16.0` + `jsonwebtoken`（已安装）
 - `server/.env` 未配置 VOLC_API_KEY，AI 助手功能不可用
@@ -101,12 +105,12 @@ cd game-server && node src/index.js
 git checkout master
 git pull origin master
 git fetch origin
-git merge origin/feature/xxx    # 白机 push 后补充分支名
+git merge origin/feature/refactor-trae-dir
 git push origin master
 
 # 2. 安装 game-server 依赖
 cd game-server
-pnpm install --ignore-workspace
+npm install
 
 # 3. 验证德塔多人同步
 # 终端 1: cd game-server && node src/index.js
@@ -128,6 +132,7 @@ pnpm install --ignore-workspace
 | 地图不一致 | 云树 `Phaser.Math.Between()` 随机 | 硬编码固定位置 |
 | 聊天框重开 | `enableKeyboard()` 后同帧 Enter 又触发 | 400ms 冷却时间戳 |
 | 小地图偏高 | `groundY` 随浏览器变化 | 固定世界 3200x700 |
+| 按 E 无效 | `inputSystem.update()` 在 `checkInteraction()` 之前重置了 `_eJustDown` | 调换执行顺序 |
 
 > 完整记录见：`prd/01-需求文档/04-德塔/changelog.md` 和 `bug-log.md`
 
