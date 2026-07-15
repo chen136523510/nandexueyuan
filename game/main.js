@@ -20,6 +20,7 @@ export function createGame(parent, token, nickname) {
 
 export function destroyGame() {
   if (gameInstance) {
+    console.log('[main] destroyGame: 正在销毁 Phaser 实例')
     gameInstance.destroy(true)
     gameInstance = null
   }

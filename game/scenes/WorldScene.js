@@ -145,37 +145,15 @@ export class WorldScene extends Phaser.Scene {
     // === 网络连接 ===
     const token = this.registry.get('token')
     this.network = new NetworkSystem(this)
-    this._initialConnected = false
-    this.network.connect(token, nickname).then(() => {
-      this._initialConnected = true
-    }).catch(() => {})
+    this.network.connect(token, nickname)
 
-    // === 页签切换时断开/重连 ===
-    this._visibilityHandler = () => {
-      // 初始连接未完成时不响应
-      if (!this._initialConnected) return
-      if (document.hidden) {
-        console.log('[WorldScene] 页签隐藏，断开连接')
-        if (this.network?.connected) {
-          this.network.disconnect()
-          this._initialConnected = false
-        }
-      } else {
-        console.log('[WorldScene] 页签恢复，重新连接')
-        if (this.network && !this.network.connected) {
-          this.network.connect(token, nickname).then(() => {
-            this._initialConnected = true
-          }).catch(() => {})
-        }
-      }
-    }
-    document.addEventListener('visibilitychange', this._visibilityHandler)
-
-    // 场景销毁时断开网络 + 移除监听
-    this.events.on('shutdown', () => {
-      document.removeEventListener('visibilitychange', this._visibilityHandler)
+    // 场景关闭/销毁时断开网络（Vue 路由切换触发 destroyGame -> game.destroy -> shutdown）
+    const cleanup = () => {
+      console.log('[WorldScene] 清理网络连接')
       if (this.network) this.network.disconnect()
-    })
+    }
+    this.events.on('shutdown', cleanup)
+    this.events.on('destroy', cleanup)
 
     events.emit('game-ready', {})
   }
