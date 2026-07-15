@@ -142,24 +142,28 @@ export class WorldScene extends Phaser.Scene {
     // === 位置发射节流 ===
     this.lastPosEmit = 0
 
-// === Enter 键 - 聊天 ===
-    this.input.keyboard.on('keydown-Enter', () => {
-      const chatOpen = this.registry.get('chatOpen')
-      if (chatOpen) return
-      // 冷却检查：关闭聊天后 400ms 内不重开
-      const cooldown = this.registry.get('chatCooldown') || 0
-      if (Date.now() - cooldown < 400) return
-      this.registry.set('chatOpen', true)
-      events.emit('chat-open', {})
-    })
-
     // === 网络连接 ===
     const token = this.registry.get('token')
     this.network = new NetworkSystem(this)
     this.network.connect(token, nickname)
 
-    // 场景销毁时断开网络
+    // === 页签切换时断开/重连 ===
+    this._visibilityHandler = () => {
+      if (document.hidden) {
+        console.log('[WorldScene] 页签隐藏，断开连接')
+        if (this.network?.connected) this.network.disconnect()
+      } else {
+        console.log('[WorldScene] 页签恢复，重新连接')
+        if (this.network && !this.network.connected) {
+          this.network.connect(token, nickname)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', this._visibilityHandler)
+
+    // 场景销毁时断开网络 + 移除监听
     this.events.on('shutdown', () => {
+      document.removeEventListener('visibilitychange', this._visibilityHandler)
       if (this.network) this.network.disconnect()
     })
 
@@ -237,10 +241,21 @@ export class WorldScene extends Phaser.Scene {
       this.player.update(this.inputSystem)
     }
     this.checkInteraction()
+    this.checkChatToggle()
     this.inputSystem.update()
     this.emitPosition()
     this.sendNetworkPosition()
     this.updateChatBubble()
+  }
+
+  /** Enter 键打开聊天（通过 InputSystem 检测，兼容 Phaser 4） */
+  checkChatToggle() {
+    if (!this.inputSystem.keyEnter.justDown) return
+    if (this.registry.get('chatOpen')) return
+    const cooldown = this.registry.get('chatCooldown') || 0
+    if (Date.now() - cooldown < 400) return
+    this.registry.set('chatOpen', true)
+    events.emit('chat-open', {})
   }
 
   /** 聊天气泡跟随角色 */
