@@ -4,6 +4,14 @@
 
 ---
 
+## BUG-14：按 E 无法交互（线上）
+
+- **日期**：2026-07-15
+- **现象**：线上环境按 E 键，NPC/物品/大门交互无反应
+- **根因**：`WorldScene.update()` 中 `inputSystem.update()` 在 `checkInteraction()` 之前执行，导致 `_eJustDown` 在被检查前就被重置为 `false`
+- **修复**：调换执行顺序，`checkInteraction()` 移到 `inputSystem.update()` 之前
+- **文件**：`game/scenes/WorldScene.js`
+
 ## 2026-07-14
 
 ### BUG-13: 所有玩家昵称都显示"学员"

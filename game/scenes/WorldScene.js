@@ -236,8 +236,8 @@ export class WorldScene extends Phaser.Scene {
     if (!this.registry.get('chatOpen')) {
       this.player.update(this.inputSystem)
     }
-    this.inputSystem.update()
     this.checkInteraction()
+    this.inputSystem.update()
     this.emitPosition()
     this.sendNetworkPosition()
     this.updateChatBubble()

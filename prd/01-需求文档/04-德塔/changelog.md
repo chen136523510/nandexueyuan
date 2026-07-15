@@ -4,6 +4,13 @@
 
 ---
 
+## #19 修复按 E 无法交互（线上）
+
+- **日期**：2026-07-15
+- **变更**：`WorldScene.update()` 中调换 `checkInteraction()` 和 `inputSystem.update()` 执行顺序
+- **原因**：`inputSystem.update()` 会重置 `_eJustDown = false`，若在 `checkInteraction()` 之前执行，E 键的 justDown 永远检测不到
+- **影响**：NPC 对话、物品查看、大门彩蛋全部恢复正常
+
 ## 2026-07-14
 
 ### #18 昵称修复（JWT 不含 nickname，改用 options.nickname）
