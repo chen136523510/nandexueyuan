@@ -22,6 +22,19 @@ const chatMessages = ref([])
 const chatInputRef = ref(null)
 const chatMessagesRef = ref(null)
 
+/** 格式化时间戳：2026/7/15 17:30:30 */
+function formatTime() {
+  const d = new Date()
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+}
+
+/** 收到聊天消息（来自服务器广播，包括自己） */
+function onChatReceived(data) {
+  const time = formatTime()
+  chatMessages.value.push({ sender: data.nickname, text: data.text, time })
+  scrollChatBottom()
+}
+
 // 角色信息
 const nickname = ref(auth.user?.nickname || auth.user?.username || '学员')
 
@@ -47,6 +60,7 @@ onMounted(async () => {
   gameOn('npc-interact', onNpcInteract)
   gameOn('item-interact', onItemInteract)
   gameOn('chat-open', onChatOpen)
+  gameOn('chat-received', onChatReceived)
   gameOn('player-position', onPlayerPosition)
   gameOn('game-ready', onGameReady)
 })
@@ -56,6 +70,7 @@ onUnmounted(() => {
   gameOff('npc-interact', null)
   gameOff('item-interact', null)
   gameOff('chat-open', null)
+  gameOff('chat-received', null)
   gameOff('player-position', null)
   gameOff('game-ready', null)
 })
@@ -97,16 +112,15 @@ function handleChatSend() {
   const text = chatInput.value.trim()
   if (!text || text.length > 100) {
     if (text.length > 100) {
-      chatMessages.value.push({ sender: '系统', text: '消息不能超过 100 字', system: true })
+      chatMessages.value.push({ sender: '系统', text: '消息不能超过 100 字', system: true, time: formatTime() })
       scrollChatBottom()
     }
     return
   }
-  chatMessages.value.push({ sender: nickname.value, text })
+  // 发送到服务器，服务器广播后由 onChatReceived 统一添加时间戳
   sendMsg(nickname.value, text)
   chatInput.value = ''
-  scrollChatBottom()
-  closeChat()  // 发送后关闭
+  closeChat()
 }
 
 function handleChatKeydown(e) {
@@ -278,7 +292,8 @@ function drawMinimap() {
       <div class="panel-chat">
         <div class="chat-messages" ref="chatMessagesRef">
           <div v-for="(msg, i) in chatMessages" :key="i" class="chat-msg" :class="{ system: msg.system }">
-            <span v-if="!msg.system" class="msg-sender">{{ msg.sender }}:</span>
+            <span class="msg-time">{{ msg.time ? '【' + msg.time + '】' : '' }}</span>
+            <span v-if="!msg.system" class="msg-sender">{{ msg.sender }}：</span>
             <span class="msg-text">{{ msg.text }}</span>
           </div>
         </div>
@@ -536,6 +551,11 @@ function drawMinimap() {
   color: #6b8e6b;
   font-weight: 600;
   margin-right: 4px;
+}
+.msg-time {
+  color: #888;
+  font-size: 10px;
+  margin-right: 2px;
 }
 .msg-text {
   color: #eee;

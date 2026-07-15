@@ -1,4 +1,5 @@
 import { Client } from 'colyseus.js'
+import { emit } from '../events.js'
 
 /**
  * NetworkSystem - Colyseus 客户端
@@ -105,10 +106,14 @@ export class NetworkSystem {
 
   setupMessageListeners() {
     this.room.onMessage('chat', (data) => {
-      if (data.sessionId === this.room.sessionId) return
-      const other = this.otherPlayers.get(data.sessionId)
-      if (other) {
-        this.showOtherChatBubble(other, data.text)
+      // 广播给 Vue 聊天框（所有人可见）
+      emit('chat-received', { nickname: data.nickname, text: data.text })
+      // 他人消息显示气泡
+      if (data.sessionId !== this.room.sessionId) {
+        const other = this.otherPlayers.get(data.sessionId)
+        if (other) {
+          this.showOtherChatBubble(other, data.text)
+        }
       }
     })
 
