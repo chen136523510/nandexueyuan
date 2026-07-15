@@ -27,7 +27,7 @@ npm install
 
 echo "=== 5/9 安装前端依赖 ==="
 cd ..
-npm install
+npm install --legacy-peer-deps
 
 echo "=== 6/9 构建前端 ==="
 NODE_OPTIONS=--max-old-space-size=512 npm run build
