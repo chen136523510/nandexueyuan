@@ -145,17 +145,27 @@ export class WorldScene extends Phaser.Scene {
     // === 网络连接 ===
     const token = this.registry.get('token')
     this.network = new NetworkSystem(this)
-    this.network.connect(token, nickname)
+    this._initialConnected = false
+    this.network.connect(token, nickname).then(() => {
+      this._initialConnected = true
+    }).catch(() => {})
 
     // === 页签切换时断开/重连 ===
     this._visibilityHandler = () => {
+      // 初始连接未完成时不响应
+      if (!this._initialConnected) return
       if (document.hidden) {
         console.log('[WorldScene] 页签隐藏，断开连接')
-        if (this.network?.connected) this.network.disconnect()
+        if (this.network?.connected) {
+          this.network.disconnect()
+          this._initialConnected = false
+        }
       } else {
         console.log('[WorldScene] 页签恢复，重新连接')
         if (this.network && !this.network.connected) {
-          this.network.connect(token, nickname)
+          this.network.connect(token, nickname).then(() => {
+            this._initialConnected = true
+          }).catch(() => {})
         }
       }
     }

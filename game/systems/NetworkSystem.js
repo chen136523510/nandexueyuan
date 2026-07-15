@@ -238,6 +238,8 @@ export class NetworkSystem {
     for (const [sessionId] of this.otherPlayers) {
       this.removeOtherPlayer(sessionId)
     }
+    this.knownPlayers.clear()
+    this.stateReady = false
     this.connected = false
   }
 
