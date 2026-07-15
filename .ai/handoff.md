@@ -12,17 +12,22 @@
 flowchart LR
     subgraph 白机[白机 · 白天]
         A[feature 分支开发] --> B[commit + push]
-        B --> C[发起 PR 不合并]
+        B --> C[合并 PR 到 master]
+        C --> D[push master]
+        D --> E[SSH 部署上线]
     end
     subgraph 黑机[黑机 · 晚上]
-        D[pull master] --> E[合并 PR]
-        E --> F[push master]
+        F[pull master] --> G[合并白机遗留 PR 如有]
+        G --> H[feature 分支开发]
+        H --> I[commit + push]
+        I --> J[合并到 master]
+        J --> K[push master]
+        K --> L[SSH 部署上线]
     end
-    C -->|GitHub PR| D
 ```
 
-**白机铁律**：只开发不合并，所有改动走 feature 分支，禁止推 master。
-**黑机铁律**：先合并白机的 PR，再开始新开发。
+**两机能力对等**：均可开发、合并 PR、push master、部署上线。
+**换机铁律**：接手第一件事先合并对方遗留的 PR，再开始自己的开发。
 
 > 详细规则见：`.trae/rules/two-machine-collab.md`
 
