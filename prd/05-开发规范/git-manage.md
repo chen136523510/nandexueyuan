@@ -70,7 +70,7 @@ flowchart LR
 - `*.db` — SQLite 数据库文件
 - `public/media/**/*` — 媒体文件（仅保留目录结构）
 - `package/` — pnpm standalone bundle（临时方案）
-- `.trae/*`（除 .rules/.skills 外）— Trae IDE 个人配置（共享 `.trae/.rules/` 和 `.trae/.skills/`，其余忽略）
+- `.trae/*`（除 rules/skills 外）— Trae IDE 个人配置（共享 `.trae/rules/` 和 `.trae/skills/`，其余忽略）
 
 ## 部署流程
 
@@ -100,7 +100,7 @@ cp .env.example .env  # Windows 用 copy，填入本地实际值
 
 ### 白机/黑机日常换机
 
-> 详见 `.trae/.rules/two-machine-collab.md`
+> 详见 `.trae/rules/two-machine-collab.md`
 
 ```mermaid
 flowchart TD
