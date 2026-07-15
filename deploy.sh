@@ -33,7 +33,8 @@ echo "=== 6/9 构建前端 ==="
 NODE_OPTIONS=--max-old-space-size=512 npm run build
 
 echo "=== 7/9 重启后端 ==="
-pm2 restart nandexueyuan-api 2>/dev/null || pm2 start server/src/index.js --name nandexueyuan-api
+pm2 delete nandexueyuan-api 2>/dev/null
+pm2 start src/index.js --name nandexueyuan-api --cwd server
 pm2 save
 
 echo "=== 8/9 重启游戏服务器 ==="
