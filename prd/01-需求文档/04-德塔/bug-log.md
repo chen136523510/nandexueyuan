@@ -4,6 +4,47 @@
 
 ---
 
+## BUG-18：JWT 密钥运行时读取（ESM 模块导入顺序）
+
+- **日期**：2026-07-15
+- **现象**：Express 和 game-server 的 JWT_SECRET 都来自同一个 `server/.env`，但 game-server 验证始终 `invalid signature`
+- **根因**：ESM 模块的 import 是提升的（hoisted），`auth.js` 中的 `const SECRET = process.env.JWT_SECRET || 'change-me-in-production'` 在 `index.js` 的 `dotenv.config()` 执行之前就已求值，SECRET 永远是回退值
+- **修复**：把 `const SECRET` 改成 `function getSecret()`，在 `verifyToken()` 调用时才读取 `process.env.JWT_SECRET`
+- **文件**：`game-server/src/lib/auth.js`
+- **教训**：ESM 中不能在顶层 const 中依赖 dotenv 加载的环境变量，必须改为运行时读取
+
+---
+
+## BUG-19：切换页签留残影 + 聊天 Enter 无反应
+
+- **日期**：2026-07-15
+- **现象**：
+  1. 切换浏览器页签后，德塔中留下角色残影，再次进入会重新生成角色
+  2. 按 Enter 键无法打开聊天框
+- **根因**：
+  1. 页签隐藏时 Phaser 场景不会触发 `shutdown`，WebSocket 连接保持，角色残留在服务器；切回来时客户端重新连接，创建新角色
+  2. `this.input.keyboard.on('keydown-Enter')` 在 Phaser 4 不生效，InputSystem 已捕获 Enter 但 WorldScene 没用它
+- **修复**：
+  1. 监听 `document.visibilitychange`：页签隐藏时 `network.disconnect()`，恢复时 `network.connect()`
+  2. 删除 `keydown-Enter` 监听，改用 `InputSystem.keyEnter.justDown` 在 `update()` 中检测
+- **文件**：`game/scenes/WorldScene.js`
+- **教训**：Phaser 4 键盘事件 API 与 3.x 不同，统一用 InputSystem 的 `keydown` + `event.key` 方式
+
+---
+
+- **日期**：2026-07-15
+- **现象**：两个不同设备登录不同账号进入德塔，看不到彼此
+- **根因**：两个独立问题叠加：
+  1. **JWT 密钥不匹配**：Express 从根目录启动，`dotenv/config` 找不到 `.env`，回退到 `change-me-in-production`；game-server 正确加载 `server/.env` 得到 `nande-secret-2026-change-me`。签名和验证密钥不同，连接全部被拒绝
+  2. **Nginx proxy_pass 缺少尾部斜杠**：`proxy_pass http://127.0.0.1:2567;` 保留了 `/ws` 前缀，Colyseus 收到 `/ws/matchmake/world` 而它不是 `/matchmake/world`，路由完全不匹配
+- **修复**：
+  1. Express 改为从 `server/` 目录启动（`pm2 start --cwd server`），正确加载 `server/.env`
+  2. Nginx `proxy_pass http://127.0.0.1:2567/;` 加尾部斜杠，剥离 `/ws` 前缀
+  3. `deploy.sh` 同步更新：Express 用 `--cwd server` + `src/index.js`
+- **文件**：`deploy.sh`、`/etc/nginx/sites-available/default`
+
+---
+
 ## BUG-15：生产环境多人同步不生效
 
 - **日期**：2026-07-15
