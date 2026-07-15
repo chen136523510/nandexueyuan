@@ -25,10 +25,13 @@
   1. 页签隐藏时 Phaser 场景不会触发 `shutdown`，WebSocket 连接保持，角色残留在服务器；切回来时客户端重新连接，创建新角色
   2. `this.input.keyboard.on('keydown-Enter')` 在 Phaser 4 不生效，InputSystem 已捕获 Enter 但 WorldScene 没用它
 - **修复**：
-  1. 监听 `document.visibilitychange`：页签隐藏时 `network.disconnect()`，恢复时 `network.connect()`
-  2. 删除 `keydown-Enter` 监听，改用 `InputSystem.keyEnter.justDown` 在 `update()` 中检测
-- **文件**：`game/scenes/WorldScene.js`
-- **教训**：Phaser 4 键盘事件 API 与 3.x 不同，统一用 InputSystem 的 `keydown` + `event.key` 方式
+  1. ~~监听 `document.visibilitychange`~~ → **已废弃**：visibilitychange 是浏览器 tab 级别事件，不适用于 Vue 路由切换（从德塔切到主页）
+  2. **正确方案**：Vue `onUnmounted` → `destroyGame()` → `game.destroy(true)` → Phaser scene `shutdown` + `destroy` 事件 → `network.disconnect()`。双重注册确保至少触发一次
+  3. 删除 `keydown-Enter` 监听，改用 `InputSystem.keyEnter.justDown` 在 `update()` 中检测
+- **文件**：`game/scenes/WorldScene.js`、`game/main.js`、`game/systems/NetworkSystem.js`
+- **教训**：
+  1. Phaser 4 键盘事件 API 与 3.x 不同，统一用 InputSystem 的 `keydown` + `event.key` 方式
+  2. 切换场景的正确清理链是组件卸载 → 游戏销毁 → 场景事件，不要混用 DOM 级别事件
 
 ---
 
