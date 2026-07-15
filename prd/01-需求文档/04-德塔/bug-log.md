@@ -4,6 +4,22 @@
 
 ---
 
+## BUG-15：生产环境多人同步不生效
+
+- **日期**：2026-07-15
+- **现象**：不同电脑进入德塔，看不到彼此
+- **根因**：生产服务器从未部署 Colyseus 游戏服务器，三个缺失：
+  1. Nginx 未配置 `/ws` WebSocket 代理到 2567
+  2. Colyseus 进程未通过 PM2 启动
+  3. `game-server` 依赖未安装
+- **修复**：
+  1. `game-server/src/index.js` 添加 dotenv 加载 `server/.env`（JWT 密钥一致）
+  2. `deploy.sh` 新增 game-server 安装和 PM2 启动步骤
+  3. 服务器需手动添加 Nginx `/ws` WebSocket 代理配置
+- **文件**：`game-server/src/index.js`, `game-server/package.json`, `deploy.sh`
+
+---
+
 ## BUG-14：按 E 无法交互（线上）
 
 - **日期**：2026-07-15

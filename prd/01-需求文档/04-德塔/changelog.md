@@ -4,6 +4,19 @@
 
 ---
 
+## #20 修复生产环境多人同步 + 部署脚本完善
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `game-server/src/index.js` 添加 dotenv，加载 `server/.env` 确保 JWT_SECRET 一致
+  2. `game-server/package.json` 新增 `dotenv` 依赖
+  3. `deploy.sh` 从 7 步扩展到 9 步，新增 game-server 安装 + PM2 启动
+  4. deploy.sh 全部从 pnpm 改为 npm（与黑机切换一致）
+- **影响范围**：生产部署流程、Colyseus 多人同步
+- **服务器待办**：Nginx 需手动添加 `/ws` WebSocket 代理配置
+
+---
+
 ## #19 修复按 E 无法交互（线上）
 
 - **日期**：2026-07-15

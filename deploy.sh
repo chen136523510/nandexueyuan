@@ -8,42 +8,54 @@ set -e
 DEPLOY_DIR=/root/projects/www.nandexueyuan.top
 cd "$DEPLOY_DIR"
 
-echo "=== 1/7 拉取最新代码 ==="
+echo "=== 1/9 拉取最新代码 ==="
 git pull origin master
 
-echo "=== 2/7 安装后端依赖 ==="
+echo "=== 2/9 安装后端依赖 ==="
 cd server
-corepack enable pnpm 2>/dev/null || true
-pnpm install --frozen-lockfile
+npm install
 
-echo "=== 2.5/7 生成 Prisma Client ==="
+echo "=== 2.5/9 生成 Prisma Client ==="
 npx prisma generate
 
-echo "=== 3/7 应用数据库迁移 ==="
+echo "=== 3/9 应用数据库迁移 ==="
 npx prisma migrate deploy
 
-echo "=== 4/7 安装前端依赖 ==="
+echo "=== 4/9 安装游戏服务器依赖 ==="
+cd ../game-server
+npm install
+
+echo "=== 5/9 安装前端依赖 ==="
 cd ..
-pnpm install --frozen-lockfile
+npm install
 
-echo "=== 5/7 构建前端 ==="
-NODE_OPTIONS=--max-old-space-size=512 pnpm build
+echo "=== 6/9 构建前端 ==="
+NODE_OPTIONS=--max-old-space-size=512 npm run build
 
-echo "=== 6/7 重启后端 ==="
+echo "=== 7/9 重启后端 ==="
 pm2 restart nandexueyuan-api 2>/dev/null || pm2 start server/src/index.js --name nandexueyuan-api
 pm2 save
 
-echo "=== 7/7 验证 ==="
+echo "=== 8/9 重启游戏服务器 ==="
+pm2 restart nandexueyuan-game 2>/dev/null || pm2 start game-server/src/index.js --name nandexueyuan-game
+pm2 save
+
+echo "=== 9/9 验证 ==="
 sleep 2
 if curl -s http://localhost:3000/api/hello | grep -q "message"; then
-  echo "✓ 后端正常"
+  echo "✓ 后端 API 正常"
 else
-  echo "✗ 后端异常"
+  echo "✗ 后端 API 异常"
 fi
 if curl -sI http://localhost/ | grep -q "200\|301\|302"; then
   echo "✓ 前端正常"
 else
   echo "✗ 前端异常"
+fi
+if curl -s http://localhost:2567/matchmake | grep -q "."; then
+  echo "✓ 游戏服务器正常"
+else
+  echo "✗ 游戏服务器异常（可能未启动或端口未开放）"
 fi
 
 # 可选:数据重新导入 + FTS5 重建

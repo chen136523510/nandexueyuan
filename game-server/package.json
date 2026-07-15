@@ -10,6 +10,7 @@
     "@colyseus/schema": "^3.0.76",
     "@colyseus/ws-transport": "^0.16.0",
     "colyseus": "^0.16.0",
+    "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.3"
   }
 }
