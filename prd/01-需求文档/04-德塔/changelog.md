@@ -4,6 +4,21 @@
 
 ---
 
+### [文档更新] ComfyUI 像素风生图工作流调研完成
+
+- **时间**：2026-07-16
+- **变更人**：陈梓键
+- **背景**：德塔 P5 美术资源替换需要黑机 ComfyUI 生图，需明确工作流搭建方案、模型选择、抠图方案
+- **变更内容**：
+  - 新建调研文档 `prd/01-需求文档/04-德塔/03-调研/comfyui-pixel-art-generation-workflow.md`
+  - 确定三个工作流：场景贴图（SDXL+Pixel-Art LoRA）、角色精灵表（+ControlNet OpenPose）、二次元立绘（Illustrious XL）
+  - 抠图方案：BiRefNet（ComfyUI 内置），不用 RemBG
+  - 立绘画风从像素风改为二次元美少女画风
+  - 工作流 JSON 存放 `.ai/comfyui-workflows/`（gitignore）
+  - 混合搭建模式：用户导出空工作流 JSON -> AI 读取扩展 -> 用户拖入 ComfyUI
+- **影响范围**：德塔 P5 美术资源替换、黑机 ComfyUI 工作流搭建
+- **验证方式**：黑机实际搭建工作流后出图验证
+
 ## #25 聊天框显示所有人消息 + 时间戳前缀
 
 - **日期**：2026-07-15
