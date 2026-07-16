@@ -4,6 +4,29 @@
 
 ---
 
+## #25 聊天框显示所有人消息 + 时间戳前缀
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `game/systems/NetworkSystem.js` — 收到服务器广播的 `chat` 消息时 `emit('chat-received')` 给 Vue 层
+  2. `src/views/GameView.vue` — 移除本地 push，统一由 `chat-received` 事件处理（自己发的也等服务器广播回来）
+  3. `src/views/GameView.vue` — 每条消息加时间戳前缀，格式：`【2026/7/15 17:30:30】昵称：内容`
+- **影响范围**：多人聊天可见性、消息格式
+- commit: `fbbe785`（已部署到生产环境）
+
+---
+
+## #24 聊天框空内容 Enter/Esc/Tab 死锁修复
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `src/views/GameView.vue` — Enter + 空内容直接 `closeChat()`，不再调用 `handleChatSend()`
+  2. `src/views/GameView.vue` — Esc/Tab 直接 `closeChat()`，不再调用 `handleChatSend()`
+- **影响范围**：聊天框关闭逻辑
+- commit: `73db13e`（已部署到生产环境）
+
+---
+
 ## #23 两机协作规则更新 + .trae 目录优化 + bug-log 补全
 
 - **日期**：2026-07-15

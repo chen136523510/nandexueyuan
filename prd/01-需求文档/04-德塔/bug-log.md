@@ -8,6 +8,33 @@
 
 ---
 
+### BUG-21：聊天框只显示自己消息，看不到别人发的
+
+- **现象**：两个设备进入德塔，A 发消息只有 A 自己的聊天框能看到，B 完全收不到
+- **根因**：
+  1. `NetworkSystem` 收到服务器广播的 `chat` 消息时没有 `emit` 给 Vue 层，消息被丢弃
+  2. 自己发送的消息在 `GameView` 中直接本地 `push`，而非通过服务器广播回来统一处理
+- **修复**：
+  1. `NetworkSystem` 收到 `chat` 消息时 `emit('chat-received', { nickname, text })` 给 Vue
+  2. `GameView` 移除本地 push，统一由 `chat-received` 事件处理（自己发的也等服务器广播回来）
+  3. 每条消息加时间戳前缀，格式：`【2026/7/15 17:30:30】昵称：内容`
+- **文件**：`game/systems/NetworkSystem.js`、`src/views/GameView.vue`
+- **状态**：已修复
+
+---
+
+### BUG-20：聊天框空内容按 Enter 无法关闭（Esc/Tab 也不行）
+
+- **现象**：按 Enter 打开聊天框后，不输入任何内容再按 Enter 无法关闭，Esc 和 Tab 键也无法关闭，聊天框死锁
+- **根因**：`handleChatKeydown` 无论 Enter/Esc/Tab 都调用 `handleChatSend()`，但 `handleChatSend()` 在内容为空时 `return` 不执行 `closeChat()`，导致聊天框无法关闭
+- **修复**：
+  1. Enter + 空内容 -> 直接 `closeChat()`
+  2. Esc/Tab -> 直接 `closeChat()`，不再调用 `handleChatSend()`
+- **文件**：`src/views/GameView.vue`
+- **状态**：已修复
+
+---
+
 ### BUG-19：切换页签留残影 + 聊天 Enter 无反应
 
 - **现象**：
