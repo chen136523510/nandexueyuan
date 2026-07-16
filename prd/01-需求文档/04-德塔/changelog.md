@@ -4,6 +4,44 @@
 
 ---
 
+### [文档更新] ComfyUI 像素风生图工作流调研完成
+
+- **时间**：2026-07-16
+- **变更人**：陈梓键
+- **背景**：德塔 P5 美术资源替换需要黑机 ComfyUI 生图，需明确工作流搭建方案、模型选择、抠图方案
+- **变更内容**：
+  - 新建调研文档 `prd/01-需求文档/04-德塔/03-调研/comfyui-pixel-art-generation-workflow.md`
+  - 确定三个工作流：场景贴图（SDXL+Pixel-Art LoRA）、角色精灵表（+ControlNet OpenPose）、二次元立绘（Illustrious XL）
+  - 抠图方案：BiRefNet（ComfyUI 内置），不用 RemBG
+  - 立绘画风从像素风改为二次元美少女画风
+  - 工作流 JSON 存放 `.ai/comfyui-workflows/`（gitignore）
+  - 混合搭建模式：用户导出空工作流 JSON -> AI 读取扩展 -> 用户拖入 ComfyUI
+- **影响范围**：德塔 P5 美术资源替换、黑机 ComfyUI 工作流搭建
+- **验证方式**：黑机实际搭建工作流后出图验证
+
+## #25 聊天框显示所有人消息 + 时间戳前缀
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `game/systems/NetworkSystem.js` — 收到服务器广播的 `chat` 消息时 `emit('chat-received')` 给 Vue 层
+  2. `src/views/GameView.vue` — 移除本地 push，统一由 `chat-received` 事件处理（自己发的也等服务器广播回来）
+  3. `src/views/GameView.vue` — 每条消息加时间戳前缀，格式：`【2026/7/15 17:30:30】昵称：内容`
+- **影响范围**：多人聊天可见性、消息格式
+- commit: `fbbe785`（已部署到生产环境）
+
+---
+
+## #24 聊天框空内容 Enter/Esc/Tab 死锁修复
+
+- **日期**：2026-07-15
+- **变更内容**：
+  1. `src/views/GameView.vue` — Enter + 空内容直接 `closeChat()`，不再调用 `handleChatSend()`
+  2. `src/views/GameView.vue` — Esc/Tab 直接 `closeChat()`，不再调用 `handleChatSend()`
+- **影响范围**：聊天框关闭逻辑
+- commit: `73db13e`（已部署到生产环境）
+
+---
+
 ## #23 两机协作规则更新 + .trae 目录优化 + bug-log 补全
 
 - **日期**：2026-07-15

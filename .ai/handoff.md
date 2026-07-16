@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-07-15 22:30
+> 最后更新：2026-07-16 17:00
 > 提交人：陈梓键
 > 所在设备：白机（白天）
 > 稳定版本：`45156b3`（已部署到生产环境）
@@ -57,6 +57,54 @@ flowchart LR
 - [ ] 德塔 P2：NPC AI 对话接入（优先级：高）
 - [ ] 德塔 P4：角色创建系统（优先级：中）
 - [ ] 德塔 P5：美术资源替换（黑机 ComfyUI 生图）
+
+### P5 美术资源 · 黑机 ComfyUI 工作流搭建步骤
+
+完整调研文档见：`prd/01-需求文档/04-德塔/03-调研/comfyui-pixel-art-generation-workflow.md`
+
+**共识**：
+1. ComfyUI 工作流本质是 JSON 文件，AI 可直接生成 JSON，用户拖入 ComfyUI 界面加载
+2. 混合搭建模式：用户先在 ComfyUI 界面搭一个最简工作流并导出 JSON → AI 读取该 JSON 理解节点命名 → AI 扩展生成完整工作流 → 用户拖入加载
+3. 工作流 JSON 存放在 `.ai/comfyui-workflows/`（gitignore，黑机专用）
+4. 立绘画风改为二次元（Illustrious XL），不走像素风
+
+**三个工作流**：
+| 工作流 | 用途 | 模型 | 抠图 |
+|--------|------|------|:--:|
+| 一 | 场景贴图（瓦片/物件/物品） | SDXL + Pixel-Art-XL LoRA | 瓦片不需要，物件需要 |
+| 二 | 角色精灵表（四方向行走） | SDXL + LoRA + ControlNet OpenPose | 需要 |
+| 三 | 二次元美少女立绘 | Illustrious XL | 需要 |
+
+**黑机需要下载的模型**：
+- Pixel-Art-XL LoRA → `models/loras/`
+- Illustrious XL → `models/checkpoints/`
+- Control-LoRA OpenPose（SDXL 版）→ `models/controlnet/`
+- BiRefNet → `models/background_removal/`
+- `comfyui_controlnet_aux` 自定义节点
+
+**黑机搭好后第一步**：在 ComfyUI 界面建一个最简工作流（加载模型 -> KSampler -> SaveImage），导出 JSON 到 `.ai/comfyui-workflows/base_empty.json`，让 AI 读取后生成三个完整工作流。
+
+**美术资源目录管理**：
+
+```
+public/game/
+├── tilesets/              ← 工作流一：瓦片（草地/泥土/石墙/木板/天空）
+├── sprites/
+│   ├── objects/           ← 工作流一：物件（树木/云朵/大门）
+│   ├── items/             ← 工作流一：物品（公告牌/日程板/打卡点）
+│   ├── players/           ← 工作流二：玩家角色精灵表
+│   └── npcs/              ← 工作流二：NPC 角色精灵表
+├── portraits/             ← 工作流三：NPC 立绘（二次元半身像）
+├── audio/                 ← （暂不涉及）
+├── maps/                  ← 地图数据（JSON，非美术资源）
+└── ui/                    ← UI 元素（暂不涉及）
+```
+
+- 目录结构通过 `.gitkeep` 入库，黑机 `git pull` 后自动获得空目录
+- PNG 文件**直接入库**（黑机无法直连服务器，必须走 GitHub 部署链路）
+- 总量约 1-2MB，不会导致仓库膨胀
+- 部署流程：黑机 `git add PNG + commit + push` → 服务器 `git pull`
+- ComfyUI 不迁移到项目目录，JSON 文件就是 AI 与 ComfyUI 的桥梁
 
 ## 下一步开发建议
 1. **P2 NPC AI 对话**：男德通 NPC 接入后端 AI 接口（需配置 VOLC_API_KEY）
