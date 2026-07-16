@@ -4,6 +4,23 @@
 
 ---
 
+### [文档更新] P2 NPC AI 对话接入需求调研完成
+
+- **时间**：2026-07-16
+- **变更人**：陈梓键（黑机）
+- **背景**：德塔 P2 NPC AI 对话是下一优先级任务，需在开发前完成需求调研，明确技术方案和待决策事项
+- **变更内容**：
+  - 新建调研文档 `prd/01-需求文档/04-德塔/03-调研/npc-ai-chat-integration.md`
+  - 完成 NPC 系统现状调研（含代码行号引用）
+  - 完成 AI 对话系统现状调研（SSE 流式、意图分类、RAG 检索）
+  - 对比三方案：A. GameView 内嵌对话（推荐） / B. 路由跳转 / C. iframe
+  - 梳理 5 步实现路线：useChatSSE composable → NPCDialog 组件 → 后端人设参数 → greetText 自动发送 → 联调
+  - 列出 5 项待决策清单，需白机逐项拍板
+- **影响范围**：P2 开发任务、`src/views/GameView.vue`、`src/views/ChatView.vue`、`server/src/controllers/chatController.js`
+- **验证方式**：白机评审待决策清单后进入开发
+
+---
+
 ### [文档更新] ComfyUI 像素风生图工作流调研完成
 
 - **时间**：2026-07-16
