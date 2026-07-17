@@ -25,11 +25,11 @@
 | 维度 | 现状 |
 |------|------|
 | 已部署 NPC | 1 个（男德通），`interactType='ai_chat'` |
-| 渲染位置 | `x=360, y=620`（塔楼底层左侧），[WorldScene.js L73-L82](file:///g:/UGit/nandexueyuan/game/scenes/WorldScene.js#L73-L82) |
-| 交互方式 | 按 E 键，距离检测 48px，[WorldScene.js L347-L401](file:///g:/UGit/nandexueyuan/game/scenes/WorldScene.js#L347-L401) |
+| 渲染位置 | `x=360, y=620`（塔楼底层左侧），[WorldScene.js L73-L82](file:///d:/product/nande/game/scenes/WorldScene.js#L73-L82) |
+| 交互方式 | 按 E 键，距离检测 48px，[WorldScene.js L347-L401](file:///d:/product/nande/game/scenes/WorldScene.js#L347-L401) |
 | 事件传递 | Phaser `events.emit('npc-interact', { npcId })` → Vue `onNpcInteract()` |
-| 对话弹窗 | **占位态**（显示 npcId + "开发中"），[GameView.vue L327-L337](file:///g:/UGit/nandexueyuan/src/views/GameView.vue#L327-L337) |
-| 游戏暂停 | `pauseGame()` / `resumeGame()` 已实现，[main.js L29-L37](file:///g:/UGit/nandexueyuan/game/main.js#L29-L37) |
+| 对话弹窗 | **占位态**（显示 npcId + "开发中"），[GameView.vue L327-L337](file:///d:/product/nande/src/views/GameView.vue#L327-L337) |
+| 游戏暂停 | `pauseGame()` / `resumeGame()` 已实现，[main.js L29-L37](file:///d:/product/nande/game/main.js#L29-L37) |
 | NPC 配置 | `shared/npcs.js` 含 `greetText` 字段，**未被使用** |
 
 ### 2.2 AI 对话系统现状
@@ -37,9 +37,9 @@
 | 维度 | 现状 |
 |------|------|
 | 入口 | `src/views/ChatView.vue`（独立路由页面） |
-| 后端端点 | `POST /api/chat/ask`（SSE分类 | statistic / semanticat，[chatController.js L32-L50](file:///g:/UGit/nandexueyuan/server/src/controllers/chatController.js#L32-L50) |
-| 系统人设 | 硬编码单一 "男德通"，[chatController.js L7-L29](file:///g:/UGit/nandexueyuan/server/src/controllers/chatController.js#L7-L29) |
-| 会话管理 | ChatSession/ChatTurn 模型，关联 userId，[schema.prisma L86-L113](file:///g:/UGit/nandexueyuan/server/prisma/schema.prisma#L86-L113) |
+| 后端端点 | `POST /api/chat/ask`（SSE分类 | statistic / semanticat，[chatController.js L32-L50](file:///d:/product/nande/server/src/controllers/chatController.js#L32-L50) |
+| 系统人设 | 硬编码单一 "男德通"，[chatController.js L7-L29](file:///d:/product/nande/server/src/controllers/chatController.js#L7-L29) |
+| 会话管理 | ChatSession/ChatTurn 模型，关联 userId，[schema.prisma L86-L113](file:///d:/product/nande/server/prisma/schema.prisma#L86-L113) |
 | RAG 检索 | FTS5 + LIKE 两级检索，51万条群聊消息索引 |
 | SSE 消费 | 前端直接 fetch 流式读取，ChatView.vue L96-L162 |
 | 认证 | JWT，所有端点需 Authorization header |
@@ -188,7 +188,7 @@ function useChatSSE(options: {
 
 #### 步骤 3：后端支持 NPC 人设参数
 
-**问题**：当前系统人设硬编码为"男德通"（[chatController.js L7](file:///g:/UGit/nandexueyuan/server/src/controllers/chatController.js#L7)），无法动态切换。
+**问题**：当前系统人设硬编码为"男德通"（[chatController.js L7](file:///d:/product/nande/server/src/controllers/chatController.js#L7)），无法动态切换。
 
 **最小改动方案**：在 `POST /api/chat/ask` 的请求体中新增可选参数 `npcId`，后端根据 `npcId` 选择对应人设。
 
