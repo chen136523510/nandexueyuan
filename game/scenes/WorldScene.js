@@ -5,6 +5,7 @@ import { Player } from '../objects/Player.js'
 import { InputSystem } from '../systems/InputSystem.js'
 import { NetworkSystem } from '../systems/NetworkSystem.js'
 import { NPCS, ITEMS } from '../../shared/npcs.js'
+import { PORTAL_POSITION } from '../mapData.js'
 import * as events from '../events.js'
 
 /**
@@ -98,6 +99,15 @@ export class WorldScene extends Phaser.Scene {
       fontSize: '10px', color: '#aaa', stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(20)
     this.doorNameText = doorName
+
+    // === 传送门（大厅出生点） ===
+    const portalX = PORTAL_POSITION.x
+    const portalY = groundY - 24  // 传送门贴地，48px 高
+    this.portal = this.add.image(portalX, portalY, 'portal').setDepth(5)
+    const portalName = this.add.text(portalX, portalY - 32, '传送门', {
+      fontSize: '10px', color: '#9b59ff', stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5, 1).setDepth(20)
+    this.portalNameText = portalName
 
     // === 玩家 ===
     const nickname = this.registry.get('nickname') || '学员'
@@ -371,11 +381,19 @@ export class WorldScene extends Phaser.Scene {
       nearest = { type: 'door', target: this.door, dist: doorDist }
     }
 
+    // 传送门检测
+    const portalDist = Phaser.Math.Distance.Between(px, py, this.portal.x, this.portal.y)
+    if (portalDist < nearestDist) {
+      nearest = { type: 'portal', target: this.portal, dist: portalDist }
+    }
+
     if (nearest) {
       const label = nearest.type === 'npc'
         ? `按 E 与${nearest.target.config.name}对话`
         : nearest.type === 'item'
         ? `按 E 查看${nearest.target.config.name}`
+        : nearest.type === 'portal'
+        ? `按 E 返回男德学院`
         : `按 E 开门`
 
       this.interactPrompt.setText(label)
@@ -397,6 +415,8 @@ export class WorldScene extends Phaser.Scene {
       events.emit('item-interact', { itemId: nearest.target.config.id })
     } else if (nearest.type === 'door') {
       this.showDoorBubble()
+    } else if (nearest.type === 'portal') {
+      events.emit('portal-interact', {})
     }
   }
 

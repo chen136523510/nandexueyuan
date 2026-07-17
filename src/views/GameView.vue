@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { createGame, destroyGame, pauseGame, resumeGame, disableKeyboard, enableKeyboard, sendChatMessage as sendMsg, closeChat as closeChatFn } from '../../game/main.js'
 import { on as gameOn, off as gameOff } from '../../game/events.js'
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND, TOWER, NPC_POSITIONS, ITEM_POSITIONS, DOOR_POSITION } from '../../game/mapData.js'
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND, TOWER, NPC_POSITIONS, ITEM_POSITIONS, DOOR_POSITION, PORTAL_POSITION } from '../../game/mapData.js'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -14,6 +14,7 @@ const showNpcDialog = ref(false)
 const npcId = ref('')
 const showItemDialog = ref(false)
 const itemId = ref('')
+const showPortalDialog = ref(false)
 
 // 聊天
 const chatOpen = ref(false)
@@ -59,6 +60,7 @@ onMounted(async () => {
 
   gameOn('npc-interact', onNpcInteract)
   gameOn('item-interact', onItemInteract)
+  gameOn('portal-interact', onPortalInteract)
   gameOn('chat-open', onChatOpen)
   gameOn('chat-received', onChatReceived)
   gameOn('player-position', onPlayerPosition)
@@ -69,6 +71,7 @@ onUnmounted(() => {
   destroyGame()
   gameOff('npc-interact', null)
   gameOff('item-interact', null)
+  gameOff('portal-interact', null)
   gameOff('chat-open', null)
   gameOff('chat-received', null)
   gameOff('player-position', null)
@@ -84,6 +87,19 @@ function onItemInteract(data) {
   itemId.value = data.itemId
   showItemDialog.value = true
   pauseGame()
+}
+function onPortalInteract() {
+  showPortalDialog.value = true
+  pauseGame()
+}
+function confirmLeavePortal() {
+  showPortalDialog.value = false
+  resumeGame()
+  router.push('/home')
+}
+function cancelLeavePortal() {
+  showPortalDialog.value = false
+  resumeGame()
 }
 function onChatOpen() {
   chatOpen.value = true
@@ -224,6 +240,11 @@ function drawMinimap() {
   const dy = toMiniY(DOOR_POSITION.y + yOffset)
   ctx.fillRect(DOOR_POSITION.x * ratioX - 2, dy - 2, 4, 4)
 
+  // 传送门点
+  ctx.fillStyle = PORTAL_POSITION.color
+  const py_pt = toMiniY(PORTAL_POSITION.y + yOffset)
+  ctx.fillRect(PORTAL_POSITION.x * ratioX - 2, py_pt - 2, 4, 4)
+
   // 玩家位置
   const px = playerPos.value.x * ratioX
   const py = toMiniY(playerPos.value.y)
@@ -347,6 +368,22 @@ function drawMinimap() {
         <div class="nde-dialog-body">
           <p>与 <strong>{{ itemId }}</strong> 的交互界面（开发中）</p>
           <p class="nde-hint">后续将接入公告功能</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 传送门弹窗 -->
+    <div v-if="showPortalDialog" class="nde-dialog-overlay">
+      <div class="nde-dialog">
+        <div class="nde-dialog-header">
+          <span>传送门</span>
+        </div>
+        <div class="nde-dialog-body" style="text-align: center;">
+          <p>确定要离开德塔吗？</p>
+          <div style="display: flex; gap: 16px; justify-content: center; margin-top: 16px;">
+            <button @click="confirmLeavePortal" class="nde-btn nde-btn-primary">是</button>
+            <button @click="cancelLeavePortal" class="nde-btn nde-btn-secondary">否</button>
+          </div>
         </div>
       </div>
     </div>
@@ -658,5 +695,24 @@ function drawMinimap() {
   color: #666;
   font-size: 12px;
   margin-top: 8px;
+}
+
+/* 按钮样式 */
+.nde-btn {
+  padding: 6px 24px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+.nde-btn:hover { opacity: 0.85; }
+.nde-btn-primary {
+  background: #6b8e6b;
+  color: #fff;
+}
+.nde-btn-secondary {
+  background: #444;
+  color: #ccc;
 }
 </style>

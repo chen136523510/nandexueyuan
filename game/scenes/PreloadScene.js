@@ -68,6 +68,16 @@ export class PreloadScene extends Phaser.Scene {
     gfx.fillCircle(16, 16, 16)
     gfx.generateTexture('avatar_placeholder', 32, 32)
 
+    // 传送门（紫色旋涡）
+    gfx.clear()
+    gfx.fillStyle(0x9b59ff)
+    gfx.fillCircle(24, 24, 24)
+    gfx.fillStyle(0x7d3c98)
+    gfx.fillCircle(24, 24, 16)
+    gfx.fillStyle(0xbb8fce)
+    gfx.fillCircle(24, 24, 8)
+    gfx.generateTexture('portal', 48, 48)
+
     gfx.destroy()
   }
 }

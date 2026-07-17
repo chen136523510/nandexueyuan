@@ -31,3 +31,6 @@ export const ITEM_POSITIONS = [
 
 // 大门位置
 export const DOOR_POSITION = { x: 824, y: 588, color: '#aaa' }
+
+// 传送门位置（大厅出生点附近）
+export const PORTAL_POSITION = { x: 520, y: 620, color: '#9b59ff' }

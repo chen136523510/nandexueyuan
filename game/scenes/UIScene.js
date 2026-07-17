@@ -49,6 +49,9 @@ export class UIScene extends Phaser.Scene {
     // 大门点
     this.add.circle(mapX + mapSize - 15, mapY + mapSize - 30, 2, 0x654321).setScrollFactor(0).setDepth(1002)
 
+    // 传送门点（紫色）
+    this.add.circle(mapX + mapSize / 2, mapY + mapSize - 30, 2, 0x9b59ff).setScrollFactor(0).setDepth(1002)
+
     // 存储引用
     this.mapX = mapX
     this.mapY = mapY
