@@ -89,7 +89,7 @@ async function handleStatistic(question, history, send) {
       content: `你是一个群聊数据分析助手。分析用户问题，制定查询计划。
 
 表: group_messages
-字段: id, talker(发言者), nickname(昵称), content(消息内容), msgTime(时间), type(类型)
+字段: id, talker(发言者), nickname(昵称), content(消息内容), msgTime(时间，Unix毫秒时间戳整数), type(类型)
 
 分析要求：
 1. 抓住核心问题，忽略"再次回答""帮我查"等修饰语
@@ -124,7 +124,7 @@ async function handleStatistic(question, history, send) {
 - talker: 发言者标识 (字符串)
 - nickname: 发言者昵称 (字符串，可空)
 - content: 消息内容 (字符串)
-- msgTime: 消息时间 (DateTime，格式 'YYYY-MM-DD HH:MM:SS')
+- msgTime: 消息时间 (整数，Unix 毫秒时间戳，例如 1657524075000 表示 2022-07-11)
 - type: 消息类型 (字符串)
 
 规则:
@@ -132,7 +132,11 @@ async function handleStatistic(question, history, send) {
 - nickname 可能为空，用 COALESCE(nickname, talker) 处理
 - 模糊匹配用 LIKE，多个词用 OR 连接
 - 排行用 GROUP BY + COUNT + ORDER BY DESC
-- 时间用 strftime/date 函数
+- 【时间查询非常重要】msgTime 是 Unix 毫秒时间戳(整数)，绝对不能用 substr/like 当字符串处理，必须用 datetime() 函数转换：datetime(msgTime/1000, 'unixepoch', 'localtime')
+  - 按年份统计: SELECT strftime('%Y', datetime(msgTime/1000,'unixepoch','localtime')) AS year, COUNT(*) FROM group_messages GROUP BY year
+  - 按年月统计: SELECT strftime('%Y-%m', datetime(msgTime/1000,'unixepoch','localtime')) AS ym, COUNT(*) FROM group_messages GROUP BY ym
+  - 筛选某年: WHERE strftime('%Y', datetime(msgTime/1000,'unixepoch','localtime')) = '2023'
+  - 数据时间范围: 2022年 ~ 2026年
 - 只生成 SELECT 语句
 - 结果限制最多 100 行 (LIMIT 100)
 - 只输出 SQL，不要 markdown 标记，不要解释`,
