@@ -4,7 +4,8 @@
 > 提交人：陈梓键（白机）
 > 所在设备：白机（白天）
 > 稳定版本：`45156b3`（已部署到生产环境）
-> 最新提交：`c759274`（已推送 GitHub，**未部署**，含传送门功能 + 文档 + ZCode 配置）
+> 最新提交：`5c3daee`（已推送 GitHub，**未部署**，含传送门功能 + 文档 + ZCode 配置）
+> **移交黑机**：P2 NPC AI 对话已完成需求确认+代码探索+决策锁定，实现蓝图见下文「当前任务」
 
 ---
 
@@ -55,25 +56,93 @@ flowchart LR
 ---
 
 ## 当前任务
-- [ ] 德塔 P2：NPC AI 对话接入（优先级：高）— **调研已完成，待白机评审决策清单**
+- [ ] 德塔 P2：NPC AI 对话接入（优先级：高）— **白机已完成需求确认+代码探索+决策锁定，移交黑机实现**（蓝图见下）
 - [ ] 德塔 P4：角色创建系统（优先级：中）
 - [ ] 德塔 P5：美术资源替换（黑机 ComfyUI 生图）
 - [ ] **传送门功能待部署**：代码已推 GitHub（`d9621b3`），待用户确认后执行 `bash deploy.sh`
 
-### P2 NPC AI 对话 · 白机待评审
+### P2 NPC AI 对话 · 黑机实现蓝图
 
-完整调研文档见：`prd/01-需求文档/04-德塔/03-调研/npc-ai-chat-integration.md`
+> 本次白机会话（07-17）产出。需求文档 `prd/01-需求文档/04-德塔/01-需求/德塔男德通交互需求.md` 为准（黑机调研方案已废弃）。
 
-**推荐方案**：GameView 内嵌对话（方案 A），提取 `useChatSSE` composable + 新建 `NPCDialog.vue`
+#### 一、已锁定的 8 项决策（黑机照此执行，无需重新评审）
 
-**5 项待决策清单**（需白机逐项拍板）：
-1. NPC 人设切换方式：复用 `/chat/ask` + `npcId` 参数（推荐）
-2. NPC 对话会话管理：MVP 与普通聊天共用 ChatSession（推荐）
-3. NPCDialog 组件位置：`src/components/NPCDialog.vue`（推荐）
-4. greetText 发送方式：弹窗打开自动发送（推荐）
-5. useChatSSE composable 位置：`src/composables/useChatSSE.js`（推荐）
+| # | 决策项 | 结论 |
+|:-:|------|------|
+| 1 | 方案选型 | **白机需求方案**（HUD 聊天框 @ 机器人模式），废弃黑机调研的 NPCDialog 弹窗方案 |
+| 2 | 上下文来源 | 德塔文档知识库（MVP需求 + 世界观 + 操作指南 + 开发路线§5） |
+| 3 | 回复风格 | 美少女口吻，50字以内，禁换行，超纲兜底「这个问题我还不太清楚呢~问问院长吧！」 |
+| 4 | 会话管理 | MVP **无状态**，不存历史；私聊+每用户上下文列入未来调研 |
+| 5 | 打招呼气泡 | **后端预定义文案库随机返回**（不调 LLM，零 token） |
+| 6 | 流式体验 | 发送者看逐 token 流式，其他玩家看完整消息（流结束后广播） |
+| 7 | 操作指南 | 先补一份简易版（后续会做功能按钮正式展示） |
+| 8 | npcId 区分 | `nandetong`（站外 ChatView）/ `nandetong_game`（德塔内） |
 
-**文件变更预估**：2 新增 + 4 修改
+#### 二、实现阶段（建议按顺序）
+
+**阶段 0：文档准备**
+- 新建 `prd/01-需求文档/04-德塔/02-设计/德塔操作指南.md`（简易版：键位/移动/聊天/交互/传送门，后续会做功能按钮）
+- 修复 `prd/01-需求文档/04-德塔/02-设计/德塔世界观.md` **L194 损坏 FAQ**（"德塔是什么？| 德塔是男德学院..."截断）
+
+**阶段 1：后端 `server/src/controllers/chatController.js`**
+- 人设参数化：`SYSTEM_PERSONA`（L7-29）4 处硬编码（L161/L178/L302/L345）改为 `getPersona(npcKey)` 函数
+- `askChat`（L380）入参新增 `npcId` 解析
+- 新增 `buildGamePersona()`：用 `new URL('../../prd/...', import.meta.url)` 读 4 份 markdown 拼 system prompt（加内存缓存）
+- `nandetong_game` 分支：纯角色扮演，**不走 statistic/semantic 三分类**，直接调 LLM 流式
+- 新增打招呼文案接口：`GET /api/chat/npc/greet?npcId=nandetong_game` 返回随机文案（预定义文案库）
+- 异常兜底：API Key 缺失/超时/文档缺失 → 返回「男德通暂时走神了，请稍后再试~」
+
+**阶段 2：前端 `src/views/GameView.vue`**
+- 监听新事件 `npc-chat-open`（区别现有 `npc-interact`）
+- 监听后：激活 HUD 聊天框 + 预填 `@ 男德通 ` 蓝色前缀（不可删除）+ 光标定位前缀后方
+- 发送时携带 `npcId: 'nandetong_game'`
+- SSE 消费：复用 `ChatView.vue` L75-170 的 fetch+reader+decoder 逻辑（可提取 `src/composables/useChatSSE.js`，可选）
+- 男德通回复渲染：前缀 `@玩家昵称` 蓝色
+- 流结束后通过 Colyseus 广播给其他玩家
+
+**阶段 3：Phaser `game/scenes/WorldScene.js`**
+- `handleInteract`（L411-421）：npc 分支按 `config.interactType === 'ai_chat'` 分流，emit `npc-chat-open`
+- 按 E 时男德通头顶冒打招呼气泡（广播全服可见，5s 淡隐）
+- 气泡实现：复用 `showDoorBubble`（L423-439）模式，为 `this.npcs[0]` 加 `bubble` 字段
+
+**阶段 4：Colyseus 广播 `game-server/src/rooms/WorldRoom.js`**
+- AI 回复是 HTTP SSE（Vue 层），不在 Colyseus 内
+- 方案：发起者收到完整回复后，`room.send('npc-reply', {nickname, text})` → 服务器 `onMessage('npc-reply')` 广播 → 其他玩家渲染
+- 仿照现有 `onMessage('chat')`（L28-34）模式
+
+**阶段 5：联调验证（按需求文档 AC-N1~N7）**
+- AC-N1：@ 前缀预填不可删
+- AC-N2：发送携带 npcId
+- AC-N3：回复美少女口吻 50字内无换行
+- AC-N4：上下文正确（问"怎么移动"答对）
+- AC-N5：超纲兜底
+- AC-N6：广播全服可见
+- AC-N7：异常兜底
+
+#### 三、关键技术坑（黑机必读）
+
+| 坑 | 说明 | 对策 |
+|----|------|------|
+| 后端读文档路径 | server cwd 是 `server/`（deploy.sh L37 `--cwd server`），prd 在 `../prd/`；ESM 无 `__dirname` | 用 `new URL('../../prd/...', import.meta.url)` |
+| 文档注入量 | 3 份合计约 3万 token 偏大 | 摘要核心章节：MVP §4.2/4.4/4.10/4.12 + 世界观 §5/§8 + 开发路线 §5 |
+| NPC 位置死字段 | `shared/npcs.js` 的 x:1000/y:800 未使用，实际硬编码在 WorldScene（towerX+160=360, groundY-16=620） | 三个预留字段 `portraitKey`/`greetText`/`interactType` 也未使用，本次会激活 `interactType` |
+| SSE 不走 axios | 现有 `src/api/chat.js` 的 axios 封装无法消费流 | 用原生 fetch+reader（仿 ChatView L96-162） |
+| nickname 来源 | JWT 不含 nickname，来自 Pinia `auth.user.nickname` | GameView L40 已有 `nickname` 变量 |
+| 生产环境 VOLC_API_KEY | 未配置（handoff 已记录） | 黑机测试前确认 `server/.env` 已填 |
+
+#### 四、文件变更预估
+
+| 文件 | 动作 |
+|------|------|
+| `prd/01-需求文档/04-德塔/02-设计/德塔操作指南.md` | 新增 |
+| `prd/01-需求文档/04-德塔/02-设计/德塔世界观.md` | 修改（修复 L194） |
+| `server/src/controllers/chatController.js` | 修改（人设参数化 + nandetong_game 分支 + 文档读取 + greet 接口） |
+| `server/src/routes/api.js` | 修改（新增 greet 路由） |
+| `src/views/GameView.vue` | 修改（@ 前缀 + SSE 消费 + npcId 传递 + 广播） |
+| `game/scenes/WorldScene.js` | 修改（interactType 分流 + NPC 气泡） |
+| `game-server/src/rooms/WorldRoom.js` | 修改（npc-reply 广播） |
+| `src/composables/useChatSSE.js` | 可选新增（提取 SSE 逻辑） |
+| `shared/npcs.js` | 可选修改（加 greetBubbles 文案或修位置死字段） |
 
 ### P5 美术资源 · 黑机 ComfyUI 工作流搭建步骤
 
@@ -124,9 +193,9 @@ public/game/
 - ComfyUI 不迁移到项目目录，JSON 文件就是 AI 与 ComfyUI 的桥梁
 
 ## 下一步开发建议
-1. **P2 NPC AI 对话**：男德通 NPC 接入后端 AI 接口（需配置 VOLC_API_KEY）
+1. **【移交黑机】P2 NPC AI 对话**：白机已锁定 8 项决策 + 完整实现蓝图（见上方「当前任务」），黑机接手按阶段 0~5 实现。测试前确认 `server/.env` 已配置 `VOLC_API_KEY`
 2. **P5 美术资源**：黑机 ComfyUI 生成像素风资源（瓦片/角色/NPC/立绘），替换色块占位
-3. **传送门部署**：待用户确认后，SSH 到服务器执行 `bash deploy.sh`（含 `d9621b3` 传送门功能 + `c759274` 文档）
+3. **传送门部署**：待用户确认后，SSH 到服务器执行 `bash deploy.sh`（含 `d9621b3` 传送门功能 + `c759274` 文档 + `5c3daee` ZCode 配置）
 4. **服务器 SSH**：当前白机 IP `113.98.191.139` 已加入安全组，IP 变化时需更新阿里云安全组
 
 ---
@@ -152,7 +221,14 @@ public/game/
 ### 服务器验证
 - [x] SSH 通畅：`ssh root@47.96.158.104`
 - [x] 服务全绿：Nginx (80) ✅ | API (3000) ✅ | Colyseus (2567) ✅
-- [x] 服务器代码停留在 `fbbe785`，落后 GitHub 3 个提交（传送门功能未部署）
+- [x] 服务器代码停留在 `fbbe785`，落后 GitHub 4 个提交（传送门功能 + 文档 + ZCode 配置未部署）
+
+### P2 NPC AI 对话 · 需求确认与实现蓝图（移交黑机）
+- [x] 确认以白机需求文档为准（HUD 聊天框 @ 机器人模式），废弃黑机调研的 NPCDialog 弹窗方案
+- [x] 锁定 8 项关键决策（方案/上下文/风格/会话/气泡/流式/操作指南/npcId 区分）
+- [x] 完成代码探索：后端 chatController（人设硬编码 4 处、SSE 流式、RAG 链路）、前端 GameView/WorldScene（NPC 交互链路、事件总线、气泡实现）、文档注入路径评估（ESM 用 `import.meta.url`）
+- [x] 产出实现蓝图：6 阶段（文档准备 → 后端 → 前端 → Phaser → Colyseus → 联调）+ 6 个技术坑 + 9 文件变更预估
+- [x] 明确未来调研项：私聊模式 + 每用户独立上下文（不纳入 MVP）
 
 ---
 
