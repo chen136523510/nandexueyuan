@@ -55,6 +55,14 @@ pnpm.tgz
 # AI 本地状态（各机器独立，不跟踪）
 .ai/local/
 
+# ZCode 工程配置
+# 纳入 git 跟踪：
+#   .zcode/skills/   - ZCode 技能库（项目共享）
+#   AGENTS.md        - ZCode 项目指令（项目共享）
+# 不跟踪：
+#   .zcode/plans/    - Plan 模式生成的临时计划草稿（执行完即失效，堆积无价值）
+.zcode/plans/
+
 # ComfyUI 工作流 JSON（黑机专用，不入库）
 .ai/comfyui-workflows/
 
