@@ -4,6 +4,27 @@
 
 ---
 
+### [feat] P2 NPC AI 对话功能接入（全栈 6 阶段完成）
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：实现德塔大厅男德通 NPC 的 AI 对话功能（按 E 触发立绘弹窗 + 输入问题 + AI 流式回复 + 全服广播）
+- **变更内容**（全栈 6 层）：
+  1. **Phaser 层**（`WorldScene.js`）：`handleInteract` 加 `showNpcBubble`，按 E 时 NPC 头顶冒打招呼气泡（5秒淡隐）
+  2. **Vue 层**（`GameView.vue`）：NPC 弹窗从"占位"改为"立绘+聊天"双栏布局；加 `sendNpcMessage`、`streamNpcReply`（SSE 流式消费）、`handleNpcKeydown`、思考动画；`@ 男德通` 前缀预填不可删
+  3. **后端 API**（`chatController.js`）：新增 `buildGamePersona()`（读 4 份德塔文档拼 system prompt，启动时内存缓存）；新增 `talkNpc()`（SSE 流式，德塔专用，不走三分类，美少女口吻 50 字内禁换行）
+  4. **路由**（`api.js`）：新增 `POST /api/chat/npc/talk`（带 auth + rateLimit）
+  5. **Colyseus**（`WorldRoom.js` + `NetworkSystem.js`）：新增 `npc-reply` 消息类型；玩家问完男德通后，AI 回复广播给全服（其他玩家头顶气泡 + 聊天框）
+  6. **桥接**（`main.js`）：导出 `sendNpcReply` 供 Vue 调用
+- **关键设计**：
+  - 复用站外 ChatSession（`intent='npc_talk'` 标记区分），不污染站外对话
+  - API 额度/quota 错误友好提示（"男德通暂时走神了，过两天再找我聊~"）
+  - 第一个 token 到时停止思考动画，避免空白等待
+- **状态**：代码完成，**待 API 额度重置后联调测试**（AC-N1~N7 验收）
+- **关联文档**：`德塔男德通交互需求.md`
+
+---
+
 ### [feat] 男德通像素精灵定稿 + 滚轮缩放 + 塔楼精简
 
 - **时间**：2026-07-18
