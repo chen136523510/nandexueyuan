@@ -66,6 +66,9 @@ pnpm.tgz
 # ComfyUI 工作流 JSON（黑机专用，不入库）
 .ai/comfyui-workflows/
 
+# ComfyUI 原始输出图（验证前暂存，不入库；验证通过后移动到 public/game/ 正式入库）
+.ai/comfyui-output/
+
 # Trae IDE 内置技能/工具（非项目共享，不跟踪）
 .trae/tool-WeChatMsg-master/
 .trae/rules/directory-rules.md

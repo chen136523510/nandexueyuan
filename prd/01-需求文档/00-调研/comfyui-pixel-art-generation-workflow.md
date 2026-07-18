@@ -9,16 +9,18 @@
 
 ## 一、硬件现状
 
+> **2026-07-18 黑机实际盘点更新**：黑机为秋叶整合包（ComfyUI-aki-v3），已有 FLUX.1 dev、SD1.5、并通过 `extra_model_paths.yaml` 共享了 SD WebUI 的 waiIllustriousSDXL_v160 等 4 个二次元模型。原计划的 SDXL Base / Pixel-Art-XL LoRA / ControlNet OpenPose（SDXL版）尚未下载。
+
 | 维度 | 现状 |
 |------|------|
 | GPU | RTX 4070（12GB 显存） |
 | 操作系统 | Windows |
-| ComfyUI | 已部署，版本待确认 |
-| SDXL 基础模型 | 已下载 |
-| 像素风工作流 | **无**（待搭建） |
-| 抠图方案 | **无**（待搭建） |
+| ComfyUI | 已部署（秋叶整合包 ComfyUI-aki-v3） |
+| 二次元立绘模型 | **已有**（waiIllustriousSDXL_v160，共享自 SD WebUI） |
+| 像素风工作流 | **无**（待搭建，SDXL Base + Pixel-Art-XL LoRA 待下载） |
+| 抠图方案 | **已有**（ComfyUI-RMBG 节点，含 BiRefNet-portrait 模型 843MB） |
 
-> 4070 12GB 跑 SDXL + LoRA + 抠图节点完全可行。SDXL 模型本身约 6.5GB 显存，加 LoRA + BiRefNet 抠图节点峰值约 9-10GB，12GB 余量充足。单张 512×512 出图约 15-30 秒（视采样步数）。
+> 4070 12GB 跑 SDXL + LoRA + 抠图节点完全可行。SDXL 模型本身约 6.5GB 显存，加 LoRA + BiRefNet 抠图节点峰值约 9-10GB，12GB 余量充足。单张 1024×1024 出图约 15-30 秒（视采样步数）。
 
 ---
 
@@ -60,41 +62,41 @@
 
 ### 3.1 方案对比
 
-项目现状：PRD 写了「ComfyUI Remove BG Node」，但黑机没有安装任何抠图节点。
-
-截至 2026 年 7 月，ComfyUI 生态中可用的抠图方案如下：
+> **2026-07-18 更新**：经黑机实际盘点，整合包已预装 `ComfyUI-RMBG` 自定义节点（v3.0.0），内置 7 种 BiRefNet 变体（general/portrait/matting 等），能力远超原计划的"原生 BiRefNet 单节点"方案。最终选用此方案。
 
 | 方案 | 类型 | 精度 | 安装难度 | 推荐度 |
 |------|------|:--:|:--:|:--:|
-| **BiRefNet（内置）** | ComfyUI 原生节点 | 高（发丝级） | 零（内置） | **强烈推荐** |
-| ComfyUI-Easy-Use RemBg | 自定义节点 | 中高 | 低（ComfyUI Manager） | 推荐 |
+| **ComfyUI-RMBG 节点（含 BiRefNet）** | 自定义节点 | 高（发丝级，7 变体） | 已预装（整合包自带） | **最终采用** |
+| ComfyUI 原生 BiRefNet | ComfyUI 原生节点 | 高 | 零（内置） | 备选 |
+| ComfyUI-Easy-Use RemBg | 自定义节点 | 中高 | 低（ComfyUI Manager） | 备选 |
 | comfyui_remove_background（rembg） | 自定义节点 | 中高 | 中（pip install） | 可选 |
 | RemBG 独立 Python 脚本 | 独立工具 | 中高 | 中（额外工具链） | 不推荐 |
 
-### 3.2 推荐方案：BiRefNet（ComfyUI 内置）
+### 3.2 最终方案：ComfyUI-RMBG 节点（BiRefNet 变体）
 
-ComfyUI 从 2025 年某个版本起原生集成了 BiRefNet（Bilateral Reference Network），这是一个专门用于高质量背景移除的模型：
+整合包预装的 [ComfyUI-RMBG](https://github.com/AILab-AI/ComfyUI-RMBG)（v3.0.0）内置多个抠图模型，项目选用：
 
-- **节点名**：`Remove Background (BiRefNet)`（子图内包含 `RemoveBackground` 节点）
-- **输出**：RGBA 透明背景图像 + 前景遮罩
-- **模型**：`birefnet.safetensors`（≈150MB），放入 `ComfyUI/models/background_removal/`
+- **节点名**：`BiRefNetRMBG`（在画布搜索 `BiRefNet` 或 `RMBG` 即可找到）
+- **推荐变体**：`BiRefNet-portrait`（人物立绘/角色专用，精度最高）
+- **输出**：IMAGE（抠图结果）+ MASK（前景遮罩）+ MASK_IMAGE（遮罩可视化）
+- **模型存放**：`ComfyUI/models/RMBG/BiRefNet/`（首次使用自动创建，本机已手动下载）
 - **优势**：
-  - 原生支持，无需安装任何自定义节点
+  - 7 种变体可选（general/portrait/matting/hair/face/clothes/fashion），针对性更强
   - 发丝、毛发、复杂边缘检测精度高
   - 对像素风硬边完全够用
   - 输出 RGBA，直接可存为透明 PNG
-- **模型下载**：[HuggingFace - Comfy-Org/BiRefNet](https://huggingface.co/Comfy-Org/BiRefNet)
+- **网络约束**：模型首次使用会从 HuggingFace（`1038lab/BiRefNet`）自动下载，**黑机无法直连 HF**，已改用 `hf-mirror.com` 镜像手动下载 `BiRefNet-portrait.safetensors`（843MB）+ 3 个配置文件到本地缓存
 
-### 3.3 为什么不选 RemBG
+### 3.3 为什么不用 ComfyUI 原生 BiRefNet
 
-| 对比维度 | BiRefNet（内置） | RemBG（独立库） |
+| 对比维度 | ComfyUI-RMBG（采用） | ComfyUI 原生 BiRefNet |
 |----------|------|------|
-| 安装 | ComfyUI 内置 | 需额外 `pip install rembg` |
-| 工作流集成 | 无缝，拖拽节点即可 | 需自己写脚本串联 |
-| 维护 | 随 ComfyUI 更新 | 独立维护依赖 |
-| 像素风效果 | 足够 | 足够（优势无法体现） |
+| 变体数量 | 7 种（按场景优化） | 单一通用版 |
+| 安装 | 已预装 | 已预装 |
+| 模型体积 | 843MB（portrait） | 150MB |
+| 集成度 | 多输出（IMAGE/MASK/MASK_IMAGE） | 双输出 |
 
-结论：**BiRefNet 是最优解**，不需要 RemBG。PRD §6.3 中「ComfyUI Remove BG Node」的描述应更新为 BiRefNet。
+结论：**ComfyUI-RMBG 是最优解**，多变体针对性更强。PRD §6.3 中「ComfyUI Remove BG Node」的描述应更新为 ComfyUI-RMBG。
 
 ---
 
@@ -348,59 +350,43 @@ ControlNet 生成的最小分辨率建议为 64×64（SDXL 本身对过小的分
 
 ---
 
-### 4.4 工作流三：二次元美少女立绘生成（512×512 透明 PNG）
+### 4.4 工作流三：二次元美少女立绘生成（1024×1024 透明 PNG）
 
-**目标**：生成正常二次元画风的美少女 NPC 半身像，不是像素风。透明背景，用于对话框立绘。
+**目标**：生成正常二次元画风的美少女 NPC 立绘，不是像素风。透明背景，用于对话框立绘。
 
-**核心方案**：使用 Illustrious XL（SDXL 的动漫微调模型）直出，Booru Tags 提示词，接 BiRefNet 抠图。
+**核心方案**：使用 waiIllustriousSDXL（Illustrious XL 微调版）直出，Booru Tags 提示词，接 ComfyUI-RMBG（BiRefNet-portrait）抠图。
+
+> **2026-07-18 更新**：立绘模型从原计划的 `divingIllustriousAnime_v11` 改为黑机已有的 `waiIllustriousSDXL_v160`（wai 系列是 Illustrious XL 的高质量微调，质量通常略优于原版，且免去下载）。分辨率从 512 改为 **1024**（SDXL 原生分辨率，512 会糊）。抠图从"ComfyUI 原生 BiRefNet"改为"ComfyUI-RMBG 节点的 portrait 变体"。
 
 #### 4.4.1 推荐模型
 
-| 模型 | 通称 | 风格 | 下载 | 存放位置 |
+| 模型 | 通称 | 风格 | 状态 | 存放位置 |
 |------|------|------|------|------|
-| `divingIllustriousAnime_v11.safetensors` | Illustrious XL | 二次元动漫 | [Tensor.Art](https://tensor.art/models/858535093042441156) 或 CivitAI | `models/checkpoints/` |
-| `animagineXL_v40.safetensors` | Animagine XL 4.0 | 日系插画 | [HuggingFace](https://huggingface.co/cagliostrolab/animagine-xl-4.0) | `models/checkpoints/` |
+| `Qpipi.com_waiIllustriousSDXL_v160.safetensors` | waiIllustrious XL v160 | 二次元动漫 | **本机已有**（SD WebUI 共享） | `models/checkpoints/` |
+| `divingIllustriousAnime_v11.safetensors` | Illustrious XL 原版 | 二次元动漫 | 备选（未下载） | `models/checkpoints/` |
 
-> 二选一即可。Illustrious XL 角色识别能力更强（能识别 Danbooru 角色名），Animagine XL 4.0 画风更稳定。本项目推荐 **Illustrious XL**。
-
-**为什么不用 SDXL Base + LoRA？**
-- Illustrious XL 本身就是用海量 Danbooru 动漫图训练过的 SDXL 微调版，二次元画风是内置的
-- 不需要额外加载 LoRA，减少显存占用
-- Booru Tags 提示词比自然语言更精准控制角色特征
+> 项目采用 waiIllustrious XL v160，与原版 Illustrious XL 兼容同一套 Booru Tags。
 
 #### 4.4.2 节点链路
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│  CheckpointLoaderSimple                                          │
-│  加载模型：divingIllustriousAnime_v11.safetensors                │
-│  ├─ MODEL ──┐                                                    │
-│  ├─ CLIP  ──┤                                                    │
-│  │          │                                                     │
-│  │  CLIPTextEncode (positive) ── CONDITIONING ──┐               │
-│  │  CLIPTextEncode (negative) ── CONDITIONING ──┤               │
-│  │                                               │               │
-│  │  EmptyLatentImage ── LATENT ──┐              │               │
-│  │                                │              │               │
-│  │  ┌─────────── KSampler ───────┘              │               │
-│  │  │  steps=28, cfg=7, sampler=dpmpp_2m,       │               │
-│  │  │  scheduler=karras, denoise=1.0            │               │
-│  │  │  width=512, height=512                    │               │
-│  │  └── LATENT ── VAEDecode ── IMAGE            │               │
-│  │                                                │               │
-│  │  ┌── Remove Background (BiRefNet) ────────────────────────────┘ │
-│  │  │  output: RGBA 透明 PNG                                       │
-│  │  └── SaveImage (命名：portrait_{npc_id}.png)                    │
-│  └──────────────────────────────────────────────────────────────────┘
-└──────────────────────────────────────────────────────────────────┘
+CheckpointLoaderSimple (waiIllustriousSDXL_v160)
+├─ MODEL → KSampler
+├─ CLIP → CLIPTextEncode ×2 (positive/negative)
+└─ VAE → VAEDecode
+EmptyLatentImage (1024×1024) → KSampler
+KSampler → VAEDecode → IMAGE
+                              ├─ SaveImage (portrait_nandetong_raw)
+                              └─ BiRefNetRMBG (portrait 变体) → SaveImage (portrait_nandetong_cutout)
+
+参数：steps=30, cfg=6, sampler=dpmpp_2m, scheduler=karras
 ```
 
-#### 4.4.3 提示词（Booru Tags 风格）
+#### 4.4.3 提示词（男德通专属，Booru Tags 风格）
 
-**注意**：Illustrious XL 使用 Danbooru 标签系统，提示词用逗号分隔的标签，不是自然语言。
-
-```
-正向（通用美少女）：
+**男德通人设**（来源：德塔世界观 + 用户口述）：
+- 性格：古灵精怪、爱开玩笑、学识渊博、善良正直
+- 形象：参考 MyGo 的千早爱音 —— 粉毛、戴眼镜、糖糖的笑、有虎牙
 1girl, portrait, half body, school uniform, blue skirt,
 looking at viewer, smile, gentle expression,
 simple background, white background, soft lighting,
@@ -429,34 +415,72 @@ text, signature, artist name, censored, mosaic
 
 | 参数 | 值 | 说明 |
 |------|------|------|
-| 模型 | Illustrious XL | 二次元专用 |
-| 分辨率 | 512×512 | 匹配项目美术规范 |
-| Steps | 28 | DPM++ 2M Karras 下 28 步稳定 |
-| CFG | 7 | 标准值 |
+| 模型 | waiIllustriousSDXL_v160 | Illustrious XL 微调，二次元专用 |
+| 分辨率 | 1024×1024 | SDXL 原生分辨率（512 会糊） |
+| Steps | 30 | DPM++ 2M Karras 下 30 步，Illustrious 官方推荐 |
+| CFG | 6 | Illustrious 官方推荐 |
 | 采样器 | dpmpp_2m + karras | 二次元画风推荐 |
+| 种子 | 先固定（如 88888888）便于复现 | 确认效果后改 randomize |
 
-#### 4.4.5 显示名称注入
+#### 4.4.5 NPC 人设与提示词（男德通）
 
-对于立绘，需要在提示词中加入 Danbooru 角色名以利用 Illustrious 的字符识别能力：
+**男德通人设**（用户 2026-07-18 确认）：
 
-| NPC | 提示词追加 |
+| 维度 | 设定 |
 |------|------|
-| 男德通 | `male focus, 1boy, black hair, glasses, gentle smile, butler uniform` |
-| 院长 | `1girl, silver hair, long hair, red eyes, white dress, elegant` |
+| 性格 | 古灵精怪、爱开玩笑、学识渊博、善良正直 |
+| 形象参考 | MyGo 的**千早爱音**（美少女，非男性管家） |
+| 发色 | 粉色，中长发 |
+| 配饰 | 戴眼镜 |
+| 表情 | 糖糖的笑（甜美的闭口笑） |
+| 特征 | 有虎牙 |
 
-> 如果生成了不想要的暴露内容，在负向提示词中加 `nsfw, nude, bikini, lingerie`。
+**正向提示词（男德通专属）**：
+
+```
+1girl, solo, pink hair, medium hair, glasses, sweet smile, closed mouth smile,
+canine tooth, fang, playful expression, mischievous, clever eyes, kind,
+school uniform, cardigan, holding a glowing staff, holding a book,
+full body, standing, simple background, looking at viewer,
+anime style, high detail, masterpiece, best quality
+```
+
+**负向提示词（通用）**：
+
+```
+lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
+fewer digits, cropped, worst quality, low quality, normal quality,
+jpeg artifacts, signature, watermark, username, blurry,
+complex background, multiple characters, nsfw, nude, bikini, lingerie
+```
+
+**Booru Tags 速查（未来扩展其他 NPC 用）**：
+
+| 维度 | 常用标签 |
+|------|------|
+| 发型 | `long hair` / `short hair` / `ponytail` / `twin tails` |
+| 眼睛颜色 | `blue eyes` / `red eyes` / `green eyes` / `purple eyes` |
+| 眼镜 | `glasses` |
+| 表情 | `smile` / `sweet smile` / `serious` / `embarrassed` |
+| 特征 | `canine tooth, fang`（虎牙） |
+
+> ⚠️ **2026-07-18 修正**：原文档把男德通误设为"1boy, black hair, butler uniform"（男性管家），与最新人设（千早爱音式粉发美少女）严重不符，已删除。
 
 ---
 
-### 4.5 模型下载清单（汇总）
+### 4.5 模型/节点清单（黑机实际盘点 2026-07-18）
 
-| 模型 | 用途 | 工作流 | 存放位置 |
-|------|------|:--:|------|
-| SDXL 1.0 Base | 基础生成 | 一、二 | `models/checkpoints/` |
-| Pixel-Art-XL LoRA | 像素风风格化 | 一、二 | `models/loras/` |
-| Control-LoRA OpenPose（SDXL） | 角色姿势约束 | 二 | `models/controlnet/` |
-| BiRefNet | 背景移除 | 一、二、三 | `models/background_removal/` |
-| Illustrious XL | 二次元立绘 | 三 | `models/checkpoints/` |
+| 模型/节点 | 用途 | 工作流 | 状态 | 存放位置 |
+|------|------|:--:|:--:|------|
+| waiIllustriousSDXL_v160 | 二次元立绘 | 三 | ✅ 已有（SD WebUI 共享） | `models/checkpoints/` |
+| ComfyUI-RMBG（含 BiRefNet） | 背景移除 | 一、二、三 | ✅ 已装（整合包预装） | `custom_nodes/` + `models/RMBG/` |
+| BiRefNet-portrait 模型 | 人像抠图 | 三 | ✅ 已下（843MB，hf-mirror） | `models/RMBG/BiRefNet/` |
+| comfyui_controlnet_aux | OpenPose 预处理 | 二 | ✅ 已装（整合包预装） | `custom_nodes/` |
+| SDXL 1.0 Base | 基础生成 | 一、二 | ⏳ 待下载 | `models/checkpoints/` |
+| Pixel-Art-XL LoRA | 像素风风格化 | 一、二 | ⏳ 待下载 | `models/loras/` |
+| Control-LoRA OpenPose（SDXL） | 角色姿势约束 | 二 | ⏳ 待下载 | `models/controlnet/` |
+
+> 模型通过 `extra_model_paths.yaml` 共享 SD WebUI 秋叶整合包目录，避免重复下载。
 
 ### 4.6 自定义节点安装清单
 
@@ -505,24 +529,42 @@ public/game/
 
 > 整合包覆盖时注意保留已有的 `models/` 目录和 `output/` 目录，避免重新下载模型。
 
-### 5.2 下载所需模型
+### 5.2 模型下载状态
+
+**已完成（2026-07-18）**：
 
 ```powershell
-# 1. SDXL Base（如已有可跳过）
+# 1. waiIllustriousSDXL_v160（立绘模型，共享自 SD WebUI）
+#    原位置：E:\ai\sd-webui-aki-v4.10\models\Stable-diffusion\
+#    通过 extra_model_paths.yaml 共享给 ComfyUI
+
+# 2. BiRefNet-portrait（抠图模型，843MB）
+#    通过 hf-mirror.com 镜像下载（黑机无法直连 HuggingFace）
+#    存放：E:\ai\ComfyUI-aki(1)\ComfyUI-aki-v3\ComfyUI\models\RMBG\BiRefNet\
+#    含 4 个文件：BiRefNet-portrait.safetensors, birefnet.py, BiRefNet_config.py, config.json
+```
+
+**待下载（阶段 B、C）**：
+
+```powershell
+# 3. SDXL 1.0 Base（基础生成）
+# 备选下载源（黑机网络受限，优先用国内站）：
+#   - ModelScope（魔搭，国内最快）: https://modelscope.cn/models/stabilityai/stable-diffusion-xl-base-1.0
+#   - hf-mirror: https://hf-mirror.com/stabilityai/stable-diffusion-xl-base-1.0
 # 放入 ComfyUI/models/checkpoints/
 
-# 2. Pixel-Art-XL LoRA
-# 下载地址：https://civitai.com/models/120096
+# 4. Pixel-Art-XL LoRA（像素风风格化）
+# 下载地址：https://civitai.com/models/120096（需科学上网）
+# 国内备选：吹牛 TusiArt 或 liblib 搜索 "Pixel-Art-XL"
 # 放入 ComfyUI/models/loras/
 
-# 3. SD_PixelArt_SpriteSheet_Generator
-# 在 CivitAI 搜索下载
-# 放入 ComfyUI/models/loras/
-
-# 4. BiRefNet 模型
-# 下载地址：https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors
-# 放入 ComfyUI/models/background_removal/
+# 5. Control-LoRA OpenPose（SDXL 版）
+# 下载地址：https://huggingface.co/stabilityai/control-lora
+# 国内备选：https://hf-mirror.com/stabilityai/control-lora
+# 放入 ComfyUI/models/controlnet/
 ```
+
+> **网络策略**：黑机无法直连 HuggingFace/GitHub，统一用国内镜像：HuggingFace 类资源用 `hf-mirror.com`，国内站优先级 ModelScope > 吹牛 TusiArt > liblib。
 
 ### 5.3 验证 BiRefNet 节点
 
@@ -635,31 +677,49 @@ git add + commit + push（PNG 随代码一起入库）
 
 ## 八、关键决策记录
 
+> 2026-07-18 黑机实际盘点后，对若干决策进行了修正（见各行标注）。
+
 | 决策 | 结论 | 核心理由 |
 |------|------|------|
 | 本地 vs API | 本地 | 4070 已购，12GB 足够跑 SDXL，总量小，需频繁调参 |
-| 抠图方案 | BiRefNet（内置） | 原生支持，零安装，像素风够用 |
-| 是否用 RemBG | 否 | BiRefNet 已覆盖需求，不引入额外依赖 |
+| 抠图方案 | **ComfyUI-RMBG 节点（BiRefNet-portrait）** | 整合包已预装，7 种变体比原生单节点更强 |
+| 立绘模型 | **waiIllustriousSDXL_v160**（替代原计划 Illustrious XL 原版） | 黑机已有，免去下载；wai 系列是 Illustrious 高质量微调 |
+| 立绘分辨率 | **1024×1024**（替代原计划 512） | SDXL 原生分辨率，512 会糊 |
+| 立绘画风 | **Illustrious XL 二次元画风** | 需求明确：立绘不走像素风 |
+| 男德通形象 | **粉发美少女**（参考 MyGo 千早爱音，戴眼镜+虎牙） | 用户 2026-07-18 口述确认（非原计划的男性管家） |
+| 模型共享 | **extra_model_paths.yaml 共享 SD WebUI 目录** | 避免重复下载 27GB 模型，软链接权限不足改用配置 |
 | 工作流存储 | 导出 JSON 入仓库 | 双机协作需要版本同步 |
 | 精灵表方案 | **ControlNet OpenPose 逐帧生成** | 需定制角色外观 + 零美术功底，ControlNet 保证一致性 |
-| 立绘画风 | **Illustrious XL 二次元画风** | 需求明确：立绘不走像素风 |
 | 场景贴图抠图 | **瓦片类不抠，物件/物品类必抠** | 瓦片满铺无需透明，物件浮在背景上需要透明 |
 | 图片版本管理 | **Git 入库，随代码一起部署** | 黑机无法直连服务器，必须走 GitHub 链路；总量仅 1-2MB |
 | Git LFS | **不需要** | 单文件最大 200KB，不值得引入额外复杂度 |
 | ComfyUI 迁移 | **不迁移** | 独立工具，JSON 文件就是桥梁 |
 | AI 搭建工作流 | **混合模式** | 用户导出空 JSON → AI 扩展 → 用户拖入加载 |
+| 网络下载 | **hf-mirror.com 镜像** | 黑机无法直连 HuggingFace/GitHub |
 
 ---
 
 ## 九、待办事项
 
-- [ ] 黑机确认 ComfyUI 版本，升级到支持 BiRefNet 的版本
-- [ ] 下载 BiRefNet 模型到 `models/background_removal/`
-- [ ] 下载 Pixel-Art-XL LoRA 到 `models/loras/`
-- [ ] 下载 Illustrious XL 到 `models/checkpoints/`
-- [ ] 下载 Control-LoRA OpenPose（SDXL 版）到 `models/controlnet/`
-- [ ] 安装 `comfyui_controlnet_aux` 自定义节点
+> 2026-07-18 更新：阶段 A（立绘）所需模型与节点全部就位，待验证出图。
+
+**阶段 A（立绘）**：
+- [x] 立绘模型就位（waiIllustriousSDXL_v160，SD WebUI 共享）
+- [x] 抠图模型就位（ComfyUI-RMBG + BiRefNet-portrait 843MB，hf-mirror 下载）
+- [x] 工作流三 JSON 生成（`.ai/comfyui-workflows/wf3_npc_portrait.json`）
+- [ ] **验证**：用工作流三生男德通立绘，确认画风可接受（in_progress）
+
+**阶段 B（场景贴图）**：
+- [ ] 下载 SDXL 1.0 Base（ModelScope/hf-mirror）
+- [ ] 下载 Pixel-Art-XL LoRA
 - [ ] 搭建工作流一（场景贴图），逐个生成瓦片和物件，导出 JSON
+- [ ] 验证像素风瓦片效果
+
+**阶段 C（角色精灵表）**：
+- [x] comfyui_controlnet_aux 节点已装
+- [ ] 下载 Control-LoRA OpenPose（SDXL 版）
 - [ ] 搭建工作流二（角色精灵表），调试 ControlNet 流程，导出 JSON
-- [ ] 搭建工作流三（二次元立绘），调试 Illustrious XL，导出 JSON
-- [ ] 更新 `美术设计规范.md`：§6.3 抠图改为 BiRefNet；立绘画风改为二次元
+- [ ] 验证精灵表四方向一致性
+
+**其他**：
+- [ ] 更新 `美术设计规范.md`：§6.3 抠图改为 ComfyUI-RMBG；立绘画风改为二次元；男德通形象改为粉发美少女
