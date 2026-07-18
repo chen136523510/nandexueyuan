@@ -29,8 +29,10 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('tile_wood', '/game/tilesets/sliced/tile_wood.png')
 
     // === NPC 与立绘 ===
-    this.load.image('npc_nandetong', '/game/sprites/npcs/nandetong.png')
+    // 立绘（对话框用，已验证质量好）
     this.load.image('portrait_nandetong', '/game/portraits/nandetong.png')
+    // NPC 像素精灵（地图显示用，32×32，AI 生成降采样）
+    this.load.image('npc_nandetong', '/game/sprites/npcs/nandetong.png')
 
     this.load.on('loaderror', (file) => {
       console.warn('[PreloadScene] 资源加载失败，将使用占位色块:', file.key)

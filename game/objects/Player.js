@@ -3,7 +3,8 @@ import { PLAYER_SPEED, JUMP_VELOCITY } from '../../shared/constants.js'
 
 /**
  * Player - 玩家角色
- * 色块占位：32x32 蓝色方块
+ * 色块占位：32×32（1 格），body 32×32 稳定状态
+ * 换真实精灵时再处理高度（届时统一用 origin 脚底对齐）
  */
 export class Player {
   constructor(scene, x, y, nickname) {

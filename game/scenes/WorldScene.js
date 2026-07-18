@@ -74,10 +74,14 @@ export class WorldScene extends Phaser.Scene {
     this.npcs = []
     const npcConfig = NPCS[0] || { id: 'nandetong', name: '男德通', spriteKey: 'npc_nandetong' }
     const npcX = towerX + 160
-    const npcY = groundY - 16
+    // NPC 脚底贴草地表面（groundY），origin(0.5,1) 让 sprite 底边对齐 y
+    const npcY = groundY
     const npcSprite = this.add.image(npcX, npcY, npcConfig.spriteKey || 'npc_nandetong').setDepth(5)
-    // NPC 头顶名称
-    const npcName = this.add.text(npcX, npcY - 22, npcConfig.name, {
+    // 2 格高（64×64），裁切透明边后 origin(0.5,1) 让脚底贴地
+    npcSprite.setOrigin(0.5, 1)
+    npcSprite.setDisplaySize(64, 64)
+    // NPC 头顶名称（脚底上方 64+8=72px）
+    const npcName = this.add.text(npcX, npcY - 72, npcConfig.name, {
       fontSize: '10px', color: '#FFD700', stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(20)
     this.npcs.push({ sprite: npcSprite, config: npcConfig, nameText: npcName })
@@ -122,6 +126,22 @@ export class WorldScene extends Phaser.Scene {
     // === 摄像机 ===
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1)
     this.cameras.main.setBounds(0, 0, 3200, H)
+    // 初始缩放（让像素世界看得更清楚）
+    this.cameras.main.setZoom(1.5)
+    this.minZoom = 0.75  // 最远（看到更大范围）
+    this.maxZoom = 3.0   // 最近（看到更多细节）
+
+    // 滚轮缩放
+    this.input.on('wheel', (pointer, over, deltaX, deltaY) => {
+      const cam = this.cameras.main
+      const cur = cam.zoom
+      // 滚轮向上 deltaY < 0 放大，向下 deltaY > 0 缩小
+      let next = cur * (deltaY > 0 ? 0.9 : 1.1)
+      // 限制在 min/max 之间
+      next = Phaser.Math.Clamp(next, this.minZoom, this.maxZoom)
+      // 平滑过渡
+      cam.zoomTo(next, 100, 'Linear', true)
+    })
 
     // 窗口大小变化时更新相机
     this.scale.on('resize', (gameSize) => {
@@ -169,67 +189,24 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * 构建三层塔楼
-   * 底层大厅 / 中层房间 / 高层哨位
-   * 层间用梯子（木平台）连接
+   * 构建底层大厅（外墙 + 顶部封顶）
+   * 二三层/梯子/层级标签已移除——等正式楼层切换功能再做
    */
   buildTower(ground, towerX, groundY, towerW, floorH) {
     const towerWpx = towerW * TILE_SIZE
     const floorHpx = floorH * TILE_SIZE
-    const totalHpx = floorHpx * 3 // 三层总高
 
-    // 外墙（左右两堵，从地面到塔顶）
-    for (let y = 0; y < 3 * floorH; y++) {
+    // 外墙（左右两堵，只建底层高度，不再建三层）
+    for (let y = 0; y < floorH; y++) {
       const wy = groundY - 16 - y * TILE_SIZE
       ground.create(towerX + 16, wy, 'tile_stone')              // 左墙
       ground.create(towerX + towerWpx - 16, wy, 'tile_stone')   // 右墙
     }
 
-    // 顶部封顶
-    const topY = groundY - 16 - 3 * floorH * TILE_SIZE
+    // 顶部封顶（只盖底层大厅的天花板）
+    const topY = groundY - 16 - floorH * TILE_SIZE
     for (let i = 0; i <= towerW; i++) {
       ground.create(towerX + 16 + i * TILE_SIZE, topY, 'tile_stone')
-    }
-
-    // 楼层地板（中层、高层）—— 留出梯子口
-    for (let floor = 1; floor <= 2; floor++) {
-      const floorY = groundY - 16 - floor * floorH * TILE_SIZE
-      // 左半段地板
-      for (let i = 1; i < 6; i++) {
-        ground.create(towerX + 16 + i * TILE_SIZE, floorY, 'tile_wood')
-      }
-      // 右半段地板（留出中间 4 格做梯子口）
-      for (let i = 10; i < towerW; i++) {
-        ground.create(towerX + 16 + i * TILE_SIZE, floorY, 'tile_wood')
-      }
-    }
-
-    // 梯子（视觉装饰，非物理碰撞，玩家跳跃上楼）
-    for (let floor = 0; floor < 2; floor++) {
-      const ladderBaseY = groundY - 16 - floor * floorH * TILE_SIZE
-      for (let step = 1; step <= floorH; step++) {
-        const ly = ladderBaseY - step * TILE_SIZE
-        // 梯子在中间偏左
-        this.add.image(towerX + 7 * TILE_SIZE, ly, 'tile_wood').setAlpha(0.5).setTint(0x8B6914).setDepth(0)
-      }
-      // 梯子扶手（两侧）
-      for (let step = 1; step <= floorH; step++) {
-        const ly = ladderBaseY - step * TILE_SIZE
-        this.add.image(towerX + 6 * TILE_SIZE, ly, 'tile_wood').setAlpha(0.3).setDepth(0)
-        this.add.image(towerX + 8 * TILE_SIZE, ly, 'tile_wood').setAlpha(0.3).setDepth(0)
-      }
-    }
-
-    // 层级标签（装饰文字）
-    const floors = [
-      { y: groundY - 32, name: '底层 · 大厅' },
-      { y: groundY - 32 - floorHpx, name: '中层 · 房间' },
-      { y: groundY - 32 - 2 * floorHpx, name: '高层 · 哨位' },
-    ]
-    for (const f of floors) {
-      this.add.text(towerX + towerWpx / 2, f.y - floorHpx + 16, f.name, {
-        fontSize: '10px', color: '#888', stroke: '#000', strokeThickness: 1,
-      }).setOrigin(0.5).setDepth(1).setAlpha(0.4)
     }
   }
 
