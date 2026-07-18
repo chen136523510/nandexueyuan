@@ -75,6 +75,14 @@ export function sendChatMessage(nickname, text) {
   }
 }
 
+/** Vue → Phaser：发送 NPC AI 回复广播（AI 回复完调用，其他玩家可见）*/
+export function sendNpcReply(nickname, npcId, text) {
+  const world = gameInstance?.scene.getScene('WorldScene')
+  if (world?.network) {
+    world.network.sendNpcReply(nickname, npcId, text)
+  }
+}
+
 /** Vue → Phaser：关闭聊天 */
 export function closeChat() {
   const world = gameInstance?.scene.getScene('WorldScene')

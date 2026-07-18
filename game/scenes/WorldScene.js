@@ -387,6 +387,9 @@ export class WorldScene extends Phaser.Scene {
 
   handleInteract(nearest) {
     if (nearest.type === 'npc') {
+      const npc = this.npcs.find(n => n.config.id === nearest.target.config.id)
+      const greetText = nearest.target.config.greetText || '嘿！'
+      this.showNpcBubble(npc, greetText)
       events.emit('npc-interact', { npcId: nearest.target.config.id })
     } else if (nearest.type === 'item') {
       events.emit('item-interact', { itemId: nearest.target.config.id })
@@ -412,6 +415,38 @@ export class WorldScene extends Phaser.Scene {
     if (this.doorBubbleTimer) this.doorBubbleTimer.remove()
     this.doorBubbleTimer = this.time.delayedCall(3000, () => {
       this.doorBubble.setVisible(false)
+    })
+  }
+
+  /**
+   * NPC 头顶打招呼气泡（按 E 触发时显示，5 秒淡隐）
+   */
+  showNpcBubble(npc, text) {
+    if (!npc) return
+    // 复用现有气泡或创建新的
+    if (!npc.bubble) {
+      npc.bubble = this.add.text(0, 0, '', {
+        fontSize: '11px',
+        color: '#fff',
+        backgroundColor: '#000000cc',
+        padding: { x: 8, y: 4 },
+        borderRadius: 4,
+      }).setOrigin(0.5, 1).setDepth(30)
+    }
+    npc.bubble.setText(text)
+    npc.bubble.setPosition(npc.sprite.x, npc.sprite.y - 80)  // NPC 头顶上方
+    npc.bubble.setVisible(true)
+    npc.bubble.setAlpha(1)
+
+    // 淡隐动画
+    if (npc.bubbleTimer) npc.bubbleTimer.remove()
+    npc.bubbleTimer = this.time.delayedCall(5000, () => {
+      this.tweens.add({
+        targets: npc.bubble,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => npc.bubble.setVisible(false)
+      })
     })
   }
 }

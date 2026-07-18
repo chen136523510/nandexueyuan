@@ -117,6 +117,18 @@ export class NetworkSystem {
       }
     })
 
+    // NPC 回复广播：所有人看到男德通头顶气泡 + Vue 聊天框收到回复
+    this.room.onMessage('npc-reply', (data) => {
+      // 推到 Vue 聊天框（NPC 名义）
+      emit('chat-received', { nickname: '男德通', text: data.text })
+      // NPC 头顶气泡（所有玩家都看到）
+      const world = this.scene
+      const npc = world?.npcs?.find(n => n.config.id === 'nandetong')
+      if (npc) {
+        world.showNpcBubble(npc, data.text)
+      }
+    })
+
     this.room.onMessage('player-joined', (data) => {
       if (data.sessionId === this.room.sessionId) return
       console.log('[NetworkSystem] 广播:玩家加入', data.nickname)
@@ -190,6 +202,14 @@ export class NetworkSystem {
   sendChat(nickname, text) {
     if (!this.connected || !this.room) return
     this.room.send('chat', { nickname, text })
+  }
+
+  /**
+   * 发送 NPC AI 回复广播（玩家问完男德通后，AI 回复全服可见）
+   */
+  sendNpcReply(nickname, npcId, text) {
+    if (!this.connected || !this.room) return
+    this.room.send('npc-reply', { nickname, npcId, text })
   }
 
   showOtherChatBubble(other, text) {

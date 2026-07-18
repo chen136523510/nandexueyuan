@@ -32,6 +32,16 @@ export class WorldRoom extends Room {
         text: data.text,
       })
     })
+
+    // NPC AI 回复广播（玩家在德塔里问男德通，AI 回复全服可见）
+    this.onMessage('npc-reply', (client, data) => {
+      this.broadcast('npc-reply', {
+        sessionId: client.sessionId,
+        nickname: data.nickname,    // 提问者昵称
+        npcId: data.npcId,          // NPC id（如 nandetong_game）
+        text: data.text,            // NPC 的完整回复文本
+      })
+    })
   }
 
   onJoin(client, options) {
