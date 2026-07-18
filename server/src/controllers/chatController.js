@@ -2,6 +2,15 @@ import prisma from '../lib/prisma.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { chatCompletion, chatCompletionStream } from '../utils/llm.js'
 import { resolveName, buildMemberKnowledge } from '../utils/knowledge.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+// ESM __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+// chatController.js 在 server/src/controllers/，到 prd/ 要 ../../../
+const PRD_ROOT = resolve(__dirname, '../../../prd')
 
 // ========== 系统人设 ==========
 const SYSTEM_PERSONA = `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
@@ -27,6 +36,47 @@ ${buildMemberKnowledge()}
 - 绝对不能编造任何数字、人名、发言内容
 - 你可以认识成员（名字、外号、现状），但不能编造他们的发言数据
 - 被问到"谁发言最多""XX发了多少条""大家聊过什么"这类数据问题时，如果手里没有查询结果，就说需要查数据库`
+
+// ========== 德塔游戏 NPC 人设（男德通游戏版）==========
+function readDoc(relPath) {
+  try {
+    return readFileSync(resolve(PRD_ROOT, relPath), 'utf-8')
+  } catch (e) {
+    console.warn(`[GamePersona] 文档读取失败: ${relPath}`, e.message)
+    return ''
+  }
+}
+
+function buildGamePersona() {
+  const worldView = readDoc('01-需求文档/04-德塔/02-设计/德塔世界观.md')
+  const interactReq = readDoc('01-需求文档/04-德塔/01-需求/德塔男德通交互需求.md')
+
+  return `你是「男德通」，男德学院德塔世界里的 NPC 美少女 AI 助手。你的形象是参考 MyGo 千早爱音的粉发眼镜少女，性格古灵精怪、爱开玩笑、学识渊博、善良正直。
+
+【说话风格】
+- 美少女口吻，俏皮可爱，爱用「~」「哦」「啦」等语气词
+- 简短直接，每次回复不超过 50 字
+- 绝对禁止换行（整段输出，不要 \\n）
+- 可以开玩笑、调侃，但不损人
+
+【知识范围】
+- 你是德塔世界的向导，了解德塔的世界观、地点、玩法
+- 超出德塔范围的问题（如现实世界的事），用俏皮口吻引导回德塔话题
+- 不说"我是 AI""我是语言模型"等破坏沉浸感的话
+
+【兜底规则】
+- 不知道的问题，说类似「这个我也不太清楚呢~要不你先去大厅转转？」
+- 不要编造德塔里没有的功能或地点
+
+【世界观参考】
+${worldView.slice(0, 3000)}
+
+【交互需求参考】
+${interactReq.slice(0, 2000)}`
+}
+
+// 内存缓存：启动时读一次
+const GAME_PERSONA = buildGamePersona()
 
 // ========== 意图分类 ==========
 async function classifyIntent(question) {
@@ -467,6 +517,118 @@ export async function askChat(req, res, next) {
       send('error', { message: `AI 服务异常: ${err.message}` })
     } else if (err.message?.includes('fetch') || err.message?.includes('network')) {
       send('error', { message: '无法连接 AI 服务，请稍后重试' })
+    } else {
+      send('error', { message: `出错了: ${err.message}` })
+    }
+  } finally {
+    res.end()
+  }
+}
+
+// ========== POST /api/chat/npc/talk - NPC AI 对话（SSE 流式，德塔专用）==========
+export async function talkNpc(req, res, next) {
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+
+  function send(event, data) {
+    res.write(`event: ${event}\n`)
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  try {
+    const { npcId, question, sessionId } = req.body
+
+    // 入参校验
+    if (!question || !question.trim()) {
+      send('error', { message: '问题不能为空' })
+      return res.end()
+    }
+    if (!npcId) {
+      send('error', { message: '缺少 npcId' })
+      return res.end()
+    }
+
+    // 当前只支持男德通（npcId=nandetong_game）
+    if (npcId !== 'nandetong_game' && npcId !== 'nandetong') {
+      send('error', { message: '未知 NPC' })
+      return res.end()
+    }
+
+    // 复用站外 ChatSession（intent='npc_talk' 区分），不污染站外会话历史
+    let session = null
+    if (sessionId) {
+      session = await prisma.chatSession.findFirst({
+        where: { id: parseInt(sessionId), userId: req.user.id },
+      })
+    }
+    if (!session) {
+      session = await prisma.chatSession.create({
+        data: { userId: req.user.id, title: `[NPC] ${question.slice(0, 20)}` },
+      })
+    }
+
+    // 保存用户消息
+    await prisma.chatTurn.create({
+      data: { sessionId: session.id, role: 'user', content: question },
+    })
+
+    // 读取近期历史（NPC 对话最多 10 轮）
+    const historyTurns = await prisma.chatTurn.findMany({
+      where: { sessionId: session.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    })
+    historyTurns.reverse()
+    const history = historyTurns
+      .filter((t) => t.content !== question || t.role !== 'user')
+      .slice(-19)
+      .map((t) => ({ role: t.role, content: t.content }))
+
+    // 直接流式调 LLM（不走三分类，NPC 只做德塔世界内的闲聊）
+    const messages = [
+      { role: 'system', content: GAME_PERSONA },
+      ...history,
+      { role: 'user', content: question },
+    ]
+
+    let answer = ''
+    try {
+      for await (const chunk of chatCompletionStream(messages, { temperature: 0.8, maxTokens: 200 })) {
+        send('token', { content: chunk })
+        answer += chunk
+      }
+    } catch (llmErr) {
+      // API 额度/quota 错误的友好提示
+      if (llmErr.message?.includes('quota') || llmErr.message?.includes('403') || llmErr.message?.includes('429')) {
+        send('error', { message: '男德通暂时走神了，过两天再找我聊~' })
+        return res.end()
+      }
+      throw llmErr
+    }
+
+    // 保存 AI 回复
+    await prisma.chatTurn.create({
+      data: {
+        sessionId: session.id,
+        role: 'assistant',
+        content: answer,
+        intent: 'npc_talk',
+      },
+    })
+
+    // 发送完成事件
+    send('done', { sessionId: session.id, npcId })
+  } catch (err) {
+    console.error('[NPC Talk Error]', err.message, err.stack || '')
+
+    if (err.message === 'CONTENT_MODERATION') {
+      send('error', { message: '这个话题男德通不太方便聊哦~' })
+    } else if (err.message?.includes('超时')) {
+      send('error', { message: '男德通思考太久了，再试一次~' })
+    } else if (err.message?.includes('LLM API')) {
+      send('error', { message: '男德通暂时连不上，稍后再试~' })
     } else {
       send('error', { message: `出错了: ${err.message}` })
     }
