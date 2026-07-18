@@ -4,7 +4,42 @@
 
 ---
 
-## 2026-07-18（黑机 P5 美术 + 场景瓦片接入）
+## 2026-07-18（黑机 P5 美术 + 精灵调试）
+
+---
+
+### BUG-25：玩家跳跃后踏空（body offset 错位）
+
+- **现象**：玩家视觉拉伸到 64 高后，跳跃落地时踏空（视觉上有悬空感）
+- **根因**：`body.setOffset(0, 16)` 把物理 body 下移 16px，导致跳跃落地时 body 底部和视觉脚底错位 16px
+- **修复**：回退玩家为 32×32 色块稳定状态（视觉 + body 统一），去掉所有 body offset 和 displaySize 改动
+- **教训**：色块阶段不要动 body offset，等换真实精灵时统一用 origin 脚底对齐方案。Body 和视觉的耦合容易出问题
+- **状态**：已修复
+
+---
+
+### 踩坑：AI 生 32×32 精灵反复调试过程
+
+- **背景**：男德通像素精灵需要 32×32，尝试了多种方案
+- **过程**：
+  - v1 prompt：`pixel art, sprite, 8-bit, 512×512` → 比基尼 + 金属杆幻觉，质量差
+  - v2 prompt：去掉 pixel art 标签，改为普通二次元 + 白底 → 不是像素风
+  - v3 prompt：`1024×1024` + `pixel art, game sprite, RPG character, full clothes, chihaya anon` + 强 NSFW 过滤 → 效果略好但仍有闭眼问题
+  - 最终 prompt：加 `open eyes, gentle smile, front view, character fills frame` → 0003 立姿效果好
+- **教训**：
+  - 32×32 太小，AI 生 1024 再降 32 倍，细节必然丢失。关键在于 prompt 填满画面 + 服饰约束 + NSFW 严格过滤
+  - 不用 `pixel art` 标签时画风不对，用太强 NSFW 也不够，需平衡
+  - 最终方案：1024×1024 生成 → 裁切透明边 → 降采样到 32×32
+- **状态**：已定稿（0003 立姿）
+
+---
+
+### 踩坑：Office Objects 素材包弃用
+
+- **背景**：为三层塔楼改造找室内家具，试了 OpenGameArt 的 Office Objects（20 号素材）
+- **现象**：画风为黑白线条图标风，与 Tiny Town 的彩色像素风完全不搭
+- **应对**：弃用，继续搜索或手绘
+- **状态**：素材等待中
 
 ---
 

@@ -4,8 +4,8 @@
 > 提交人：陈梓键（黑机）
 > 所在设备：黑机（晚上，RTX 4070 + ComfyUI）
 > 稳定版本：`45156b3`（生产环境，未变）
-> 最新提交：`57cf645`（已推送 GitHub，**未部署**，含男德通立绘+像素图+美术文档+BUG-22 修复+ComfyUI 配置）
-> **当前阶段**：P5 美术资源进行中（立绘完成、场景瓦片接入中）；P2 NPC 交互计划已批准但**挂起**（等美术资源全接入再实施）
+> 最新提交：`eb81dfd`（已推送 GitHub，**未部署**）
+> **当前阶段**：P5 美术资源（立绘+像素精灵+瓦片接入完成，未部署）；P2 NPC 交互计划已批准但**挂起**（待场景完整后实施）
 > **上轮移交**：白机 07-17 移交 P2 NPC AI 对话蓝图（见下文「P2 NPC AI 对话 · 黑机实现蓝图」），黑机本轮因先做 P5 美术而暂缓 P2
 
 ---
@@ -62,10 +62,11 @@ flowchart LR
 
 - [x] **BUG-22 修复**：男德通统计查询把毫秒时间戳当字符串切片，误报"只有 2022 年 7 月数据"（`chatController.js` 两处 prompt 修正，已部署）
 - [x] **P5 立绘生成**：男德通立绘 1024×1024（waiIllustriousSDXL + mygo LoRA + BiRefNet 抠图），入库 `public/game/portraits/nandetong.png`
-- [x] **P5 像素精灵**：128×128 像素版（降采样保 alpha），入库 `public/game/sprites/npcs/nandetong.png`
-- [x] **P5 文档体系**：美术资源索引（跨学院+德塔）、ComfyUI 工作流目录重组、像素化脚本 `scripts/portrait_to_pixel.py`、调研文档 7 处修正
-- [x] **场景瓦片接入（进行中）**：Tiny Town CC0 素材包，4 个瓦片（grass/dirt/stone/wood）切片入库 + PreloadScene 改造完成，**待验证显示效果**
-- [x] **ComfyUI 环境搭建**：`extra_model_paths.yaml` 共享 SD WebUI 模型、BiRefNet-portrait 模型离线下载（hf-mirror）
+- [x] **P5 像素精灵定稿**：AI 生 1024 像素风 → PIL 裁切透明边 → 降采样 32×32（**v3 prompt 0003 立姿**），入库 `public/game/sprites/npcs/nandetong.png`
+- [x] **P5 场景瓦片**：Tiny Town CC0 包切片（grass/dirt/stone/wood），PreloadScene 加载真实 PNG
+- [x] **游戏交互改进**：滚轮缩放（0.75~3.0，初始 1.5）、NPC 脚底贴地（origin 0.5,1）、塔楼精简（删梯子/二三层/层级标签）
+- [x] **P5 文档体系**：美术资源索引、ComfyUI 工作流目录重组、`scripts/portrait_to_pixel.py` + `sprite_32.py`、调研文档 7 处修正、ADR-001/002
+- [x] **素材储备**：Tiny Town（室外）+ Tiny Dungeon（地牢）下载，仍缺家具（火把/桌子/床/柜台/楼梯）
 
 ### 待办（按优先级）
 
