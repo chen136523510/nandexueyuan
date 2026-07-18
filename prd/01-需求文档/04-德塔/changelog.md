@@ -4,6 +4,48 @@
 
 ---
 
+### [feat] P5 场景瓦片接入：Tiny Town CC0 素材包
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：原计划用 SDXL + Pixel-Art-XL LoRA AI 生瓦片，调研发现瓦片需无缝拼接（AI 做不到），改用 Kenney Tiny Town CC0 素材包（免费可商用）
+- **变更内容**：
+  - 下载 Tiny Town 瓦片包（177KB，136 个瓦片），用 PIL 放大 2 倍（16→32px）并切片为 4 个独立 PNG（grass/dirt/stone/wood），用项目原有 key 名避免改 WorldScene
+  - 改造 `game/scenes/PreloadScene.js`：加载真实 PNG，色块作 fallback（用 `textures.exists()` 判断不覆盖）
+  - 入库 `public/game/tilesets/tiny_town.png` + `public/game/tilesets/sliced/*.png`
+- **关联决策**：见 ADR-001（CC0 素材包替代 AI 生瓦片）
+- **状态**：接入完成，待用户验证显示效果
+
+---
+
+### [feat] P5 男德通立绘 + 像素精灵生成入库
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：德塔 NPC 男德通需要立绘（对话框）和像素精灵（地图显示）两种美术资源
+- **变更内容**：
+  - 立绘 1024×1024 透明 PNG：waiIllustriousSDXL_v160 + mygo LoRA（千早爱音，强度 0.7）+ ComfyUI-RMBG（BiRefNet-portrait）抠图，入库 `public/game/portraits/nandetong.png`
+  - 像素精灵 128×128 透明 PNG：立绘降采样（PIL nearest 保 alpha），入库 `public/game/sprites/npcs/nandetong.png`
+  - 新增 `scripts/portrait_to_pixel.py` 可复用脚本（支持任意立绘转像素）
+  - ComfyUI 工作流目录重组：`lib/`（通用）、`npc/`（角色）、`scene/`、`effects/`，含 README
+  - 新增 `prd/01-需求文档/00-基础数据/美术资源索引.md`（全项目美术资源单一信息源）
+- **人设锁定**：千早爱音参考，触发词 `chihaya anon`，粉发/眼镜/虎牙/糖糖笑
+- **状态**：资源已入库，**未接入游戏代码**（坐标问题阻塞，见下条）
+
+---
+
+### [回退] 角色坐标系调试失败回退（BUG-23）
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：接入立绘后发现玩家掉入虚空，坐标调试失败
+- **变更内容**：`game/objects/Player.js` 和 `game/scenes/WorldScene.js` 的坐标系改动全部回退到 `ff28d79`（色块稳定状态）
+- **失败原因**：`body.setOffset(0, -16)` 把物理 body 推到 sprite 上方，导致下落时错过地面碰撞体；改用 `origin(0.5, 1)` 后仍异常
+- **教训**：色块时代坐标都是凑合的，换 PNG 后问题集中爆发。不应逐个素材调坐标，应等场景瓦片全接入后一次性规范
+- **详见**：`bug-log.md` BUG-23
+
+---
+
 ### [Bug修复] BUG-22 男德通时间查询误报"只有 2022 年 7 月数据"
 
 - **时间**：2026-07-17

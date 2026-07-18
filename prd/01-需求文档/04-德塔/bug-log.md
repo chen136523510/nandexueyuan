@@ -4,7 +4,32 @@
 
 ---
 
-## 2026-07-17
+## 2026-07-18（黑机 P5 美术 + 场景瓦片接入）
+
+---
+
+### BUG-24：ComfyUI 绘世启动器覆盖 output_directory 配置
+
+- **现象**：在 `preference.json` 的 `args` 里加了 `output_directory` 指向项目目录，重启 ComfyUI 后配置被还原
+- **根因**：绘世启动器在关闭时用自己的内存状态覆盖 `preference.json`，不认识手动加的键
+- **应对**：放弃改配置，改为 AI 直接读 ComfyUI 默认 output 目录（`E:/ai/ComfyUI-aki(1)/ComfyUI-aki-v3/ComfyUI/output/`），验证后手动复制到项目
+- **教训**：整合包的启动器配置文件不能直接手改，得通过启动器 UI 设置；或用 ComfyUI 原生命令行启动绕过启动器
+
+---
+
+### BUG-23：角色坐标系调试失败，玩家掉入虚空（已回退）
+
+- **现象**：接入男德通像素精灵后，调整玩家/NPC 坐标到 64px 高（2 格）规范，玩家出生后直接掉入虚空
+- **根因**：
+  1. 第一版用 `body.setOffset(0, -16)` 把物理 body 推到 sprite 上方，导致下落时 body 错过草地碰撞体
+  2. 第二版改用 `setOrigin(0.5, 1)` 脚底对齐 + 传入脚底 Y 坐标，仍异常（具体机制未定位，可能 Phaser 4 的 body 与 origin 配合有坑）
+- **失败调试**：加了 console.log 打印出生点和 groundY，但未深挖 Phaser 4 physics body 与 sprite origin 的精确关系
+- **应对**：回退 `Player.js` 和 `WorldScene.js` 到 `ff28d79`（色块稳定状态），美术资源只入库不接入
+- **教训**：
+  1. 色块时代坐标都是凑合的，换真实素材后问题集中爆发，不应逐个素材调
+  2. 应等所有美术资源（瓦片+角色）就绪后，一次性设计坐标系规范（参考 ADR-002）
+  3. Phaser 4 的 Arcade physics body 与 sprite origin 配合需要专门验证，不能想当然
+- **状态**：已回退，待场景瓦片接入后重新设计（见 ADR-002）
 
 ---
 
