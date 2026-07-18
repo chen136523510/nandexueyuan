@@ -4,6 +4,24 @@
 
 ---
 
+### [feat] 三层塔楼改造（爬梯机制 + 物理门 + Tiny Dungeon 素材）
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：原塔楼是火柴盒单层，用户要求做回三层架构，有楼梯攀爬、房间门可交互、室内家具装饰
+- **变更内容**（7 阶段）：
+  1. **素材切片**（`scripts/slice_tileset.py`）：从 Tiny Dungeon tilemap 切出 36 个瓦片（16×16 放大 2 倍到 32×32），含石墙 3 色调、木地板、楼梯、门、火把、窗户、桌椅、床、宝箱、书架、木桶、骷髅
+  2. **PreloadScene**：加载 36 个新瓦片（`wall_dark_1` 等）
+  3. **Player 爬梯能力**（`Player.js` + `InputSystem.js`）：新增 `isClimbing` 状态 + `setClimbing()` 方法；爬梯时关闭重力，上下键控制 Y 速度；左右键/跳跃键退出爬梯；InputSystem 新增 S/↓ 键支持
+  4. **buildTower 三层重建**（`WorldScene.js`）：底层会客厅（柜台+桌椅+火把+木桶）、中层房间区（床+宝箱+书架+2 道物理门）、顶层哨位（窗户+发光宝箱+骷髅）；每层 6 格高，梯子连接层间（带梯子口）
+  5. **门交互**（`WorldScene.js`）：`createDoor()` + `toggleRoomDoor()`；门初始为 ground 碰撞体（挡路），按 E 切换 `body.enable` + 换贴图
+  6. **塔内背景**：tileSprite 平铺深色石墙，替换原天空背景
+  7. **梯子检测**：`updateLadderState()` + `physics.add.overlap(player, ladders)`，按 ↑ 进入爬梯，着地/离开自动退出
+- **关键设计**：见 ADR-003（梯子机制 + 物理门）
+- **状态**：代码完成，待用户验证爬梯手感和门交互
+
+---
+
 ### [feat] P2 NPC AI 对话功能接入（全栈 6 阶段完成）
 
 - **时间**：2026-07-18
