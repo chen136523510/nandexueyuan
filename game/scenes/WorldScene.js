@@ -192,28 +192,201 @@ export class WorldScene extends Phaser.Scene {
    * 构建底层大厅（外墙 + 顶部封顶）
    * 二三层/梯子/层级标签已移除——等正式楼层切换功能再做
    */
+  /**
+   * 构建三层塔楼：底层会客厅 / 中层房间区 / 顶层哨位
+   * 每层 6 格高（floorH），层间用梯子连接（带梯子口）
+   */
   buildTower(ground, towerX, groundY, towerW, floorH) {
-    const towerWpx = towerW * TILE_SIZE
-    const floorHpx = floorH * TILE_SIZE
+    const TS = TILE_SIZE
+    const towerWpx = towerW * TS
+    const floorHpx = floorH * TS
+    const ladderX = towerX + 8 * TS  // 梯子在塔楼中间偏左（第 8 格）
 
-    // 外墙（左右两堵，只建底层高度，不再建三层）
-    for (let y = 0; y < floorH; y++) {
-      const wy = groundY - 16 - y * TILE_SIZE
-      ground.create(towerX + 16, wy, 'tile_stone')              // 左墙
-      ground.create(towerX + towerWpx - 16, wy, 'tile_stone')   // 右墙
+    // === 塔内背景：石墙平铺（替换原天空背景）===
+    const towerBgHeight = 3 * floorHpx + 32
+    this.add.tileSprite(
+      towerX + towerWpx / 2,        // 中心 X
+      groundY - towerBgHeight / 2,  // 中心 Y（从地面往上 towerBgHeight）
+      towerWpx - 32,                // 宽度（塔内，减去墙厚）
+      towerBgHeight,                // 高度
+      'wall_dark_1'                 // 深色石墙纹理
+    ).setDepth(-1)  // 在所有元素后面
+
+    // 梯子碰撞体组（透明 zone，玩家 overlap 时触发爬梯）
+    this.ladders = this.physics.add.staticGroup()
+
+    // ===== 三层外墙 + 楼层地板 =====
+    for (let floor = 0; floor < 3; floor++) {
+      const floorTopY = groundY - 16 - floor * floorHpx  // 该层顶部 Y
+      const floorBottomY = groundY - 16 - (floor + 1) * floorHpx  // 该层底部（上层地板）Y
+
+      // 选择该层的墙体色调
+      let wallKey
+      if (floor === 0) wallKey = 'wall_dark_1'       // 底层深蓝灰
+      else if (floor === 1) wallKey = 'wall_brown_1' // 中层棕砖
+      else wallKey = 'wall_light_1'                  // 顶层浅灰
+
+      // 左右外墙（每层 6 格高）
+      for (let y = 0; y < floorH; y++) {
+        const wy = floorTopY - y * TS
+        ground.create(towerX + 16, wy, wallKey)
+        ground.create(towerX + towerWpx - 16, wy, wallKey)
+      }
+
+      // 楼层地板（除底层地面外，中层/顶层需要地板）
+      // 底层地面已有 grass+dirt，跳过
+      if (floor > 0) {
+        for (let i = 1; i < towerW; i++) {
+          // 梯子口位置（ladderX 对应的格子）缺一格地板
+          if (i === 8) continue  // 梯子口
+          ground.create(towerX + 16 + i * TS, floorTopY, 'floor_wood_1')
+        }
+      }
+
+      // 装饰该层
+      this.decorateFloor(floor, towerX, groundY, floorHpx, TS, towerWpx, wallKey)
     }
 
-    // 顶部封顶（只盖底层大厅的天花板）
-    const topY = groundY - 16 - floorH * TILE_SIZE
+    // ===== 顶部封顶 =====
+    const topY = groundY - 16 - 3 * floorHpx
     for (let i = 0; i <= towerW; i++) {
-      ground.create(towerX + 16 + i * TILE_SIZE, topY, 'tile_stone')
+      ground.create(towerX + 16 + i * TS, topY, 'wall_light_1')
     }
+
+    // ===== 梯子（每层一个，连接上下层）=====
+    // 底层->中层、中层->顶层，各一个梯子（6 格高）
+    for (let floor = 0; floor < 2; floor++) {
+      const ladderTopY = groundY - 16 - floor * floorHpx  // 该层地面
+      const ladderBottomY = ladderTopY - floorHpx          // 上层地面
+      // 视觉：楼梯瓦片（6 个，从下到上）
+      for (let i = 0; i < floorH; i++) {
+        const sy = ladderTopY - i * TS
+        this.add.image(ladderX, sy, 'stair_up').setDepth(2)
+      }
+      // 梯子碰撞体（透明 zone，1 格宽，6 格高）
+      const ladderZone = this.add.rectangle(ladderX, ladderTopY - floorHpx / 2 + TS / 2, TS * 0.6, floorHpx, 0x000000, 0)
+      this.physics.add.existing(ladderZone, true)  // static
+      this.ladders.add(ladderZone)
+    }
+
+    // 注册梯子 overlap 检测（玩家进入梯子区域时切换爬梯状态）
+    this.physics.add.overlap(this.player.sprite, this.ladders, (playerSprite, ladder) => {
+      // 在 update 里通过 this.nearLadder 标记，不在这里直接改状态
+      this.nearLadder = ladder
+    })
+  }
+
+  /**
+   * 装饰每层楼（家具、火把、门等）
+   */
+  decorateFloor(floor, towerX, groundY, floorHpx, TS, towerWpx, wallKey) {
+    const floorTopY = groundY - 16 - floor * floorHpx  // 该层地面
+
+    if (floor === 0) {
+      // ===== 底层会客厅 =====
+      // 火把 ×4（墙上）
+      for (let i = 2; i < towerWpx / TS; i += 4) {
+        this.add.image(towerX + 16 + i * TS, floorTopY - 2 * TS, 'torch_wall').setDepth(3)
+      }
+      // 柜台（左墙边）
+      this.add.image(towerX + 3 * TS, floorTopY - TS / 2, 'counter').setDepth(3)
+      // 桌椅（中央偏右）
+      this.add.image(towerX + 10 * TS, floorTopY - TS / 2, 'table_tl').setDepth(3)
+      this.add.image(towerX + 11 * TS, floorTopY - TS / 2, 'table_tr').setDepth(3)
+      this.add.image(towerX + 10 * TS, floorTopY - TS / 2 + TS, 'table_bl').setDepth(3)
+      // 木桶装饰（右墙边）
+      this.add.image(towerX + (towerWpx / TS - 2) * TS, floorTopY - TS / 2, 'barrel').setDepth(3)
+      // 告示牌挂右墙
+      this.add.image(towerX + towerWpx - 16, floorTopY - 3 * TS, 'item_board').setDepth(3)
+    } else if (floor === 1) {
+      // ===== 中层房间区 =====
+      // 火把 ×4
+      for (let i = 2; i < towerWpx / TS; i += 4) {
+        this.add.image(towerX + 16 + i * TS, floorTopY - 2 * TS, 'torch_wall').setDepth(3)
+      }
+      // 左房间：床 + 宝箱
+      this.add.image(towerX + 3 * TS, floorTopY - TS / 2, 'bed_head').setDepth(3)
+      this.add.image(towerX + 4 * TS, floorTopY - TS / 2, 'bed_foot').setDepth(3)
+      this.add.image(towerX + 2 * TS, floorTopY - TS / 2, 'chest_closed').setDepth(3)
+      // 右房间：书架 + 宝箱
+      this.add.image(towerX + (towerWpx / TS - 4) * TS, floorTopY - TS / 2, 'shelf_1').setDepth(3)
+      this.add.image(towerX + (towerWpx / TS - 3) * TS, floorTopY - TS / 2, 'shelf_2').setDepth(3)
+      this.add.image(towerX + (towerWpx / TS - 5) * TS, floorTopY - TS / 2, 'chest_open').setDepth(3)
+      // 门（隔断左右房间，物理障碍，阶段 5 处理交互）
+      this.createDoor(ground, towerX + 6 * TS, floorTopY - TS / 2)
+      this.createDoor(ground, towerX + 12 * TS, floorTopY - TS / 2)
+    } else {
+      // ===== 顶层哨位 =====
+      // 窗户 ×4（四面墙位置）
+      this.add.image(towerX + 16, floorTopY - 3 * TS, 'window').setDepth(3)
+      this.add.image(towerX + towerWpx - 16, floorTopY - 3 * TS, 'window').setDepth(3)
+      this.add.image(towerX + 10 * TS, floorTopY - 5 * TS, 'window').setDepth(3)
+      this.add.image(towerX + 4 * TS, floorTopY - 5 * TS, 'window').setDepth(3)
+      // 发光宝箱（中央，奖励宝物）
+      this.add.image(towerX + (towerWpx / TS / 2) * TS, floorTopY - TS / 2, 'chest_open').setDepth(3)
+      // 骷髅装饰（氛围）
+      this.add.image(towerX + 3 * TS, floorTopY - TS / 2, 'skull').setDepth(3)
+      this.add.image(towerX + (towerWpx / TS - 2) * TS, floorTopY - TS / 2, 'skull').setDepth(3)
+    }
+  }
+
+  /**
+   * 创建门（物理障碍，可交互开关）
+   * 门初始加入 ground staticGroup（挡路），按 E 后 body.enable=false 可通行
+   */
+  createDoor(ground, x, y) {
+    if (!this.doors) this.doors = []
+    // 门用 3 段拼接视觉（左中右）
+    const doorSprite = this.add.image(x, y, 'door_mid').setDepth(4)
+    // 加入 ground 作为碰撞体
+    const doorBody = ground.create(x, y, 'door_mid')
+    this.doors.push({
+      sprite: doorSprite,
+      body: doorBody,
+      isOpen: false,
+      x, y,
+    })
+  }
+
+  /**
+   * 更新梯子状态：
+   * - 玩家在梯子区域 + 按 ↑ -> 进入爬梯
+   * - 玩家不在梯子区域 + 正在爬梯 -> 退出爬梯
+   * - 爬梯中走到梯子顶端地面 -> 自动退出
+   */
+  updateLadderState() {
+    if (!this.ladders) return
+
+    const playerSprite = this.player.sprite
+    const isNear = this.nearLadder != null
+
+    if (isNear && this.inputSystem.up.isDown && !this.player.isClimbing) {
+      // 进入爬梯
+      this.player.setClimbing(true)
+    }
+
+    // 退出爬梯：玩家不在梯子区域了
+    if (this.player.isClimbing && !isNear) {
+      this.player.setClimbing(false)
+    }
+
+    // 爬梯中着地（到达上层地板）-> 自动退出
+    if (this.player.isClimbing) {
+      const body = playerSprite.body
+      if (body.blocked.down || body.touching.down) {
+        this.player.setClimbing(false)
+      }
+    }
+
+    // 重置 nearLadder（每帧由 overlap 回调设置）
+    this.nearLadder = null
   }
 
   update() {
     // 聊天模式不移动
     if (!this.registry.get('chatOpen')) {
       this.player.update(this.inputSystem)
+      this.updateLadderState()
     }
     this.checkInteraction()
     this.checkChatToggle()
@@ -358,6 +531,17 @@ export class WorldScene extends Phaser.Scene {
       nearest = { type: 'door', target: this.door, dist: doorDist }
     }
 
+    // 新增：中层房间门检测（物理障碍门）
+    if (this.doors) {
+      for (const door of this.doors) {
+        const dist = Phaser.Math.Distance.Between(px, py, door.x, door.y)
+        if (dist < INTERACT_DISTANCE && dist < nearestDist) {
+          nearest = { type: 'roomDoor', target: door, dist }
+          nearestDist = dist
+        }
+      }
+    }
+
     // 传送门检测
     const portalDist = Phaser.Math.Distance.Between(px, py, this.portal.x, this.portal.y)
     if (portalDist < nearestDist) {
@@ -371,6 +555,8 @@ export class WorldScene extends Phaser.Scene {
         ? `按 E 查看${nearest.target.config.name}`
         : nearest.type === 'portal'
         ? `按 E 返回男德学院`
+        : nearest.type === 'roomDoor'
+        ? (nearest.target.isOpen ? '按 E 关门' : '按 E 开门')
         : `按 E 开门`
 
       this.interactPrompt.setText(label)
@@ -395,8 +581,32 @@ export class WorldScene extends Phaser.Scene {
       events.emit('item-interact', { itemId: nearest.target.config.id })
     } else if (nearest.type === 'door') {
       this.showDoorBubble()
+    } else if (nearest.type === 'roomDoor') {
+      // 新增：房间门物理开关
+      this.toggleRoomDoor(nearest.target)
     } else if (nearest.type === 'portal') {
       events.emit('portal-interact', {})
+    }
+  }
+
+  /**
+   * 切换房间门状态（物理障碍门）
+   * 关 -> body.enable=false（可通行）+ 换打开贴图
+   * 开 -> body.enable=true（挡路）+ 换关闭贴图
+   */
+  toggleRoomDoor(door) {
+    if (door.isOpen) {
+      // 关门
+      door.body.body.enable = true
+      door.sprite.setTexture('door_mid')
+      door.isOpen = false
+      console.log('[Door] 关门', door.x)
+    } else {
+      // 开门
+      door.body.body.enable = false
+      door.sprite.setTexture('chest_open')  // 临时用打开宝箱当开门视觉（无专用开门贴图）
+      door.isOpen = true
+      console.log('[Door] 开门', door.x)
     }
   }
 

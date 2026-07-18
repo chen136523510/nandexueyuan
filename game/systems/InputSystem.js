@@ -8,6 +8,7 @@ export class InputSystem {
     this._leftDown = false
     this._rightDown = false
     this._upDown = false
+    this._downDown = false  // 新增：向下（爬梯用）
     this._eJustDown = false
     this._eWasDown = false
     this._enterJustDown = false
@@ -20,6 +21,7 @@ export class InputSystem {
         case 'a': case 'A': case 'ArrowLeft': this._leftDown = true; break
         case 'd': case 'D': case 'ArrowRight': this._rightDown = true; break
         case 'w': case 'W': case 'ArrowUp': this._upDown = true; break
+        case 's': case 'S': case 'ArrowDown': this._downDown = true; break  // 新增
         case ' ': this._upDown = true; break
         case 'e': case 'E': if (!this._eWasDown) this._eJustDown = true; this._eWasDown = true; break
         case 'Enter': if (!this._enterWasDown) this._enterJustDown = true; this._enterWasDown = true; break
@@ -31,6 +33,7 @@ export class InputSystem {
         case 'a': case 'A': case 'ArrowLeft': this._leftDown = false; break
         case 'd': case 'D': case 'ArrowRight': this._rightDown = false; break
         case 'w': case 'W': case 'ArrowUp': this._upDown = false; break
+        case 's': case 'S': case 'ArrowDown': this._downDown = false; break  // 新增
         case ' ': this._upDown = false; break
         case 'e': case 'E': this._eWasDown = false; break
         case 'Enter': this._enterWasDown = false; break
@@ -42,6 +45,7 @@ export class InputSystem {
     this.left = { get isDown() { return self._leftDown } }
     this.right = { get isDown() { return self._rightDown } }
     this.up = { get isDown() { return self._upDown } }
+    this.down = { get isDown() { return self._downDown } }  // 新增
     this.space = { get isDown() { return self._upDown } }
 
     // 兼容 WorldScene 的 JustDown 检测
