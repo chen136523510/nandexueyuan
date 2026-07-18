@@ -106,3 +106,6 @@ public/game/audio/**/*
 # 原因：黑机无法直连服务器，PNG 必须随代码一起 push 才能部署到服务器
 # 总量约 1-2MB，不会导致仓库膨胀
 askpass.bat
+
+# CC0 素材包原始下载（解压后的源文件，不入库，只保留切片）
+.ai/asset-staging/
