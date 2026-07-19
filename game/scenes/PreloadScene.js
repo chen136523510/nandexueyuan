@@ -33,6 +33,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('wall_dark_1', '/game/tilesets/sliced/wall_dark_1.png')
     this.load.image('wall_dark_2', '/game/tilesets/sliced/wall_dark_2.png')
     this.load.image('wall_dark_3', '/game/tilesets/sliced/wall_dark_3.png')
+    // 塔内背景专用（最暗最低调，不晃眼）
+    this.load.image('wall_bg_dark', '/game/tilesets/sliced/wall_bg_dark.png')
     this.load.image('wall_brown_1', '/game/tilesets/sliced/wall_brown_1.png')
     this.load.image('wall_brown_2', '/game/tilesets/sliced/wall_brown_2.png')
     this.load.image('wall_brown_3', '/game/tilesets/sliced/wall_brown_3.png')
@@ -45,10 +47,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('floor_wood_4', '/game/tilesets/sliced/floor_wood_4.png')
     this.load.image('floor_wood_5', '/game/tilesets/sliced/floor_wood_5.png')
     this.load.image('floor_wood_6', '/game/tilesets/sliced/floor_wood_6.png')
-    // 门（3 段）
+    // 门（3 段拼接用 + 2 格高单门）
     this.load.image('door_left', '/game/tilesets/sliced/door_left.png')
     this.load.image('door_mid', '/game/tilesets/sliced/door_mid.png')
     this.load.image('door_right', '/game/tilesets/sliced/door_right.png')
+    this.load.image('door_full', '/game/tilesets/sliced/door_full.png')
     // 楼梯
     this.load.image('stair_up', '/game/tilesets/sliced/stair_up.png')
     this.load.image('stair_down', '/game/tilesets/sliced/stair_down.png')

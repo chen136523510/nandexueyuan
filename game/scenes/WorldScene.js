@@ -18,6 +18,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create() {
+    // 爬梯冷却变量（在 create 最开头初始化，避免 buildTower 异常时未定义）
+    this.climbEnterCooldown = 0
+    this.climbExitCooldown = 0
+    this.ladderPositions = []
+    this.doors = []
     // 固定世界尺寸（不随浏览器变化）
     const W = 3200
     const H = 700
@@ -58,9 +63,6 @@ export class WorldScene extends Phaser.Scene {
       this.ground.create(x + 16, groundY + 48, 'tile_dirt')
     }
 
-    // === 德塔三层塔楼 ===
-    this.buildTower(this.ground, towerX, groundY, towerW, floorH)
-
     // === 外部树木（固定位置） ===
     const treePositions = [
       { x: 40 }, { x: 90 }, { x: 150 },           // 塔楼左侧
@@ -98,7 +100,10 @@ export class WorldScene extends Phaser.Scene {
     this.items.push({ sprite: itemSprite, config: itemConfig, nameText: itemName })
 
     // === 大门（右墙底层开门） ===
-    this.door = this.add.image(towerX + towerWpx - 16, groundY - 48, 'tile_door').setDepth(5)
+    // 大门（塔楼入口，用 2 格高拱顶门 door_full）
+    const doorX = towerX + towerWpx - 16
+    const doorY = groundY - 32  // 门高 64，中心在地板上方 32
+    this.door = this.add.image(doorX, doorY, 'door_full').setOrigin(0.5, 0.5).setDepth(5)
     const doorName = this.add.text(this.door.x, this.door.y - 40, '大门', {
       fontSize: '10px', color: '#aaa', stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(20)
@@ -122,6 +127,9 @@ export class WorldScene extends Phaser.Scene {
 
     // === 碰撞 ===
     this.physics.add.collider(this.player.sprite, this.ground)
+
+    // === 德塔三层塔楼（必须在 player 创建后调用，因为 buildTower 里注册 overlap 依赖 player）===
+    this.buildTower(this.ground, towerX, groundY, towerW, floorH)
 
     // === 摄像机 ===
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1)
@@ -200,20 +208,23 @@ export class WorldScene extends Phaser.Scene {
     const TS = TILE_SIZE
     const towerWpx = towerW * TS
     const floorHpx = floorH * TS
-    const ladderX = towerX + 8 * TS  // 梯子在塔楼中间偏左（第 8 格）
+    const ladderX = towerX + 16 + 8 * TS  // 梯子在塔楼中间偏左（第 8 格，对齐梯子口）
 
-    // === 塔内背景：石墙平铺（替换原天空背景）===
+    // === 塔内背景：纯色矩形（深蓝黑，无缝衔接）===
     const towerBgHeight = 3 * floorHpx + 32
-    this.add.tileSprite(
+    const bg = this.add.rectangle(
       towerX + towerWpx / 2,        // 中心 X
-      groundY - towerBgHeight / 2,  // 中心 Y（从地面往上 towerBgHeight）
-      towerWpx - 32,                // 宽度（塔内，减去墙厚）
+      groundY - towerBgHeight / 2,  // 中心 Y
+      towerWpx - 32,                // 宽度
       towerBgHeight,                // 高度
-      'wall_dark_1'                 // 深色石墙纹理
-    ).setDepth(-1)  // 在所有元素后面
+      0x1a1f2e                      // 深蓝黑（RGB 26,31,46）
+    )
+    bg.setDepth(-1)  // 在所有元素后面
 
     // 梯子碰撞体组（透明 zone，玩家 overlap 时触发爬梯）
     this.ladders = this.physics.add.staticGroup()
+    this.climbExitCooldown = 0    // 进入爬梯后的冷却（避免立刻被着地退出）
+    this.climbEnterCooldown = 0   // 退出爬梯后的冷却（避免立刻又进入）
 
     // ===== 三层外墙 + 楼层地板 =====
     for (let floor = 0; floor < 3; floor++) {
@@ -237,8 +248,8 @@ export class WorldScene extends Phaser.Scene {
       // 底层地面已有 grass+dirt，跳过
       if (floor > 0) {
         for (let i = 1; i < towerW; i++) {
-          // 梯子口位置（ladderX 对应的格子）缺一格地板
-          if (i === 8) continue  // 梯子口
+          // 梯子口位置（ladderX 对应的格子 + 左右各一格）缺地板，方便玩家爬上爬下不被卡
+          if (i === 7 || i === 8 || i === 9) continue  // 梯子口（3 格宽，比梯子宽 2 格，留余量）
           ground.create(towerX + 16 + i * TS, floorTopY, 'floor_wood_1')
         }
       }
@@ -254,6 +265,8 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // ===== 梯子（每层一个，连接上下层）=====
+    // 记录梯子位置供 updateLadderState 距离检测用
+    this.ladderPositions = []
     // 底层->中层、中层->顶层，各一个梯子（6 格高）
     for (let floor = 0; floor < 2; floor++) {
       const ladderTopY = groundY - 16 - floor * floorHpx  // 该层地面
@@ -267,6 +280,12 @@ export class WorldScene extends Phaser.Scene {
       const ladderZone = this.add.rectangle(ladderX, ladderTopY - floorHpx / 2 + TS / 2, TS * 0.6, floorHpx, 0x000000, 0)
       this.physics.add.existing(ladderZone, true)  // static
       this.ladders.add(ladderZone)
+      // 记录位置供距离检测
+      this.ladderPositions.push({
+        x: ladderX,
+        centerY: ladderTopY - floorHpx / 2 + TS / 2,
+        halfHeight: floorHpx / 2,
+      })
     }
 
     // 注册梯子 overlap 检测（玩家进入梯子区域时切换爬梯状态）
@@ -284,9 +303,9 @@ export class WorldScene extends Phaser.Scene {
 
     if (floor === 0) {
       // ===== 底层会客厅 =====
-      // 火把 ×4（墙上）
+      // 火把 ×4（贴天花板上方的墙）
       for (let i = 2; i < towerWpx / TS; i += 4) {
-        this.add.image(towerX + 16 + i * TS, floorTopY - 2 * TS, 'torch_wall').setDepth(3)
+        this.add.image(towerX + 16 + i * TS, floorTopY - 5 * TS, 'torch_wall').setDepth(3)
       }
       // 柜台（左墙边）
       this.add.image(towerX + 3 * TS, floorTopY - TS / 2, 'counter').setDepth(3)
@@ -300,9 +319,9 @@ export class WorldScene extends Phaser.Scene {
       this.add.image(towerX + towerWpx - 16, floorTopY - 3 * TS, 'item_board').setDepth(3)
     } else if (floor === 1) {
       // ===== 中层房间区 =====
-      // 火把 ×4
+      // 火把 ×4（贴天花板墙）
       for (let i = 2; i < towerWpx / TS; i += 4) {
-        this.add.image(towerX + 16 + i * TS, floorTopY - 2 * TS, 'torch_wall').setDepth(3)
+        this.add.image(towerX + 16 + i * TS, floorTopY - 5 * TS, 'torch_wall').setDepth(3)
       }
       // 左房间：床 + 宝箱
       this.add.image(towerX + 3 * TS, floorTopY - TS / 2, 'bed_head').setDepth(3)
@@ -312,9 +331,10 @@ export class WorldScene extends Phaser.Scene {
       this.add.image(towerX + (towerWpx / TS - 4) * TS, floorTopY - TS / 2, 'shelf_1').setDepth(3)
       this.add.image(towerX + (towerWpx / TS - 3) * TS, floorTopY - TS / 2, 'shelf_2').setDepth(3)
       this.add.image(towerX + (towerWpx / TS - 5) * TS, floorTopY - TS / 2, 'chest_open').setDepth(3)
-      // 门（隔断左右房间，物理障碍，阶段 5 处理交互）
-      this.createDoor(ground, towerX + 6 * TS, floorTopY - TS / 2)
-      this.createDoor(ground, towerX + 12 * TS, floorTopY - TS / 2)
+      // 门（隔断左右房间，2 格高物理障碍，按 E 切换开关）
+      // floorTopY 是地板中心，门脚底要贴地板表面 = floorTopY - 16
+      this.createDoor(this.ground, towerX + 6 * TS, floorTopY - 16)
+      this.createDoor(this.ground, towerX + 12 * TS, floorTopY - 16)
     } else {
       // ===== 顶层哨位 =====
       // 窗户 ×4（四面墙位置）
@@ -334,17 +354,23 @@ export class WorldScene extends Phaser.Scene {
    * 创建门（物理障碍，可交互开关）
    * 门初始加入 ground staticGroup（挡路），按 E 后 body.enable=false 可通行
    */
-  createDoor(ground, x, y) {
+  /**
+   * 创建门（2 格高 64px，单张 door_full 图，独立站立不镶嵌，物理障碍可交互开关）
+   * @param ground staticGroup
+   * @param x 门中心 X
+   * @param floorY 该层地板表面 Y（门脚底位置）
+   */
+  createDoor(ground, x, floorY) {
     if (!this.doors) this.doors = []
-    // 门用 3 段拼接视觉（左中右）
-    const doorSprite = this.add.image(x, y, 'door_mid').setDepth(4)
-    // 加入 ground 作为碰撞体
-    const doorBody = ground.create(x, y, 'door_mid')
+    // 视觉+物理：单张 32×64 门图，origin 0.5,0.5，中心 Y = floorY - 32
+    const doorSprite = this.add.image(x, floorY - 32, 'door_full').setOrigin(0.5, 0.5).setDepth(4)
+    const doorBody = ground.create(x, floorY - 32, 'door_full')
     this.doors.push({
       sprite: doorSprite,
       body: doorBody,
       isOpen: false,
-      x, y,
+      x,
+      y: floorY - 32,
     })
   }
 
@@ -353,33 +379,52 @@ export class WorldScene extends Phaser.Scene {
    * - 玩家在梯子区域 + 按 ↑ -> 进入爬梯
    * - 玩家不在梯子区域 + 正在爬梯 -> 退出爬梯
    * - 爬梯中走到梯子顶端地面 -> 自动退出
+   *
+   * 关键：用 physics.collide/overlap 实时检测，不依赖回调缓存（避免离开梯子后状态残留）
    */
   updateLadderState() {
-    if (!this.ladders) return
+    if (!this.ladders || !this.ladderPositions) return
 
     const playerSprite = this.player.sprite
-    const isNear = this.nearLadder != null
 
-    if (isNear && this.inputSystem.up.isDown && !this.player.isClimbing) {
-      // 进入爬梯
-      this.player.setClimbing(true)
-    }
+    // 冷却倒计时（确保数值有效）
+    this.climbEnterCooldown = Math.max(0, (this.climbEnterCooldown || 0) - 1)
+    this.climbExitCooldown = Math.max(0, (this.climbExitCooldown || 0) - 1)
 
-    // 退出爬梯：玩家不在梯子区域了
-    if (this.player.isClimbing && !isNear) {
-      this.player.setClimbing(false)
-    }
-
-    // 爬梯中着地（到达上层地板）-> 自动退出
-    if (this.player.isClimbing) {
-      const body = playerSprite.body
-      if (body.blocked.down || body.touching.down) {
-        this.player.setClimbing(false)
+    // 实时检测玩家是否在梯子区域
+    let isNear = false
+    for (const pos of this.ladderPositions) {
+      const dx = Math.abs(playerSprite.x - pos.x)
+      const dy = playerSprite.y - pos.centerY
+      if (dx < 24 && dy > -pos.halfHeight && dy < pos.halfHeight) {
+        isNear = true
+        break
       }
     }
 
-    // 重置 nearLadder（每帧由 overlap 回调设置）
-    this.nearLadder = null
+    if (this.player.isClimbing) {
+      // === 爬梯中：检查退出（冷却期内不检查）===
+      if (this.climbExitCooldown === 0) {
+        const body = playerSprite.body
+        const grounded = body.blocked.down || body.touching.down
+        // 退出条件：离开梯子区域 / 按空格跳出去 / 着地且不按上键
+        const shouldExit = !isNear || this.inputSystem.space.isDown || (grounded && !this.inputSystem.up.isDown)
+        if (shouldExit) {
+          this.player.setClimbing(false)
+          this.climbEnterCooldown = 30
+          // 按空格退出时给跳跃速度
+          if (this.inputSystem.space.isDown) {
+            this.player.sprite.setVelocityY(-300)
+          }
+        }
+      }
+    } else {
+      // === 非爬梯：检查进入（冷却期内不进入）===
+      if (this.climbEnterCooldown === 0 && isNear && this.inputSystem.up.isDown) {
+        this.player.setClimbing(true)
+        this.climbExitCooldown = 20
+      }
+    }
   }
 
   update() {
@@ -591,20 +636,20 @@ export class WorldScene extends Phaser.Scene {
 
   /**
    * 切换房间门状态（物理障碍门）
-   * 关 -> body.enable=false（可通行）+ 换打开贴图
-   * 开 -> body.enable=true（挡路）+ 换关闭贴图
+   * 关 -> body.enable=true（挡路）+ 不透明
+   * 开 -> body.enable=false（可通行）+ 半透明
    */
   toggleRoomDoor(door) {
     if (door.isOpen) {
       // 关门
-      door.body.body.enable = true
-      door.sprite.setTexture('door_mid')
+      if (door.body.body) door.body.body.enable = true
+      door.sprite.setAlpha(1)
       door.isOpen = false
       console.log('[Door] 关门', door.x)
     } else {
       // 开门
-      door.body.body.enable = false
-      door.sprite.setTexture('chest_open')  // 临时用打开宝箱当开门视觉（无专用开门贴图）
+      if (door.body.body) door.body.body.enable = false
+      door.sprite.setAlpha(0.3)
       door.isOpen = true
       console.log('[Door] 开门', door.x)
     }

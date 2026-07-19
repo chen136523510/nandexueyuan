@@ -58,7 +58,7 @@ export class Player {
 
     if (this.isClimbing) {
       // === 爬梯模式 ===
-      // 上下键控制 Y 速度，左右键无效（或允许缓慢横移出梯子）
+      // 垂直：上下键控制
       if (inputSystem.up.isDown) {
         this.sprite.setVelocityY(-CLIMB_SPEED)
       } else if (inputSystem.down.isDown) {
@@ -67,28 +67,23 @@ export class Player {
         this.sprite.setVelocityY(0)  // 静止悬挂
       }
 
-      // 左右键退出爬梯（允许离开梯子横移）
-      if (inputSystem.left.isDown || inputSystem.right.isDown) {
-        this.setClimbing(false)
-        // 给一个横向速度，让玩家真的离开梯子
-        if (inputSystem.left.isDown) this.sprite.setVelocityX(-PLAYER_SPEED)
-        else this.sprite.setVelocityX(PLAYER_SPEED)
+      // 水平：允许缓慢横移（方便对准梯子口）
+      const CLIMB_DRIFT = PLAYER_SPEED * 0.4
+      if (inputSystem.left.isDown) {
+        this.sprite.setVelocityX(-CLIMB_DRIFT)
+      } else if (inputSystem.right.isDown) {
+        this.sprite.setVelocityX(CLIMB_DRIFT)
+      } else {
+        this.sprite.setVelocityX(0)
       }
 
-      // 跳跃键退出爬梯（向上跳）
-      if (inputSystem.up.isDown && inputSystem.space.isDown) {
-        this.setClimbing(false)
-        this.sprite.setVelocityY(JUMP_VELOCITY)
-      }
-      // 单按空格也退出爬梯
-      if (inputSystem.space.isDown && !inputSystem.up.isDown) {
-        this.setClimbing(false)
-        this.sprite.setVelocityY(JUMP_VELOCITY * 0.7)  // 爬梯跳弱一点
-      }
+      // 注意：退出爬梯由 WorldScene.updateLadderState 统一管理，Player 不主动退出
+      // 这样避免 Player.update 和 WorldScene 同时改状态导致刷屏
     } else {
       // === 正常模式 ===
       const onGround = body.blocked.down || body.touching.down
 
+      // 水平移动（独立判定，不受垂直碰撞影响）
       if (inputSystem.left.isDown) {
         this.sprite.setVelocityX(-PLAYER_SPEED)
         this.sprite.setFlipX(true)
@@ -99,6 +94,7 @@ export class Player {
         this.sprite.setVelocityX(0)
       }
 
+      // 垂直移动（独立判定，贴墙时也能跳）
       if ((inputSystem.up.isDown || inputSystem.space.isDown) && onGround) {
         this.sprite.setVelocityY(JUMP_VELOCITY)
       }
