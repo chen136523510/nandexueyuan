@@ -4,6 +4,23 @@
 
 ---
 
+### [fix] 三层塔楼改造收尾（爬梯/门/墙/背景多项修复）
+
+- **时间**：2026-07-18
+- **变更人**：陈梓键（黑机）
+- **背景**：三层塔楼首版上线后，发现 6+ 个 bug，集中修复
+- **变更内容**：
+  1. **爬梯逻辑重写**：`updateLadderState` 改用距离检测（不依赖 overlap 回调）；冷却变量 `climbEnterCooldown/climbExitCooldown` 在 create() 开头初始化；Player.update 不再主动退出爬梯（统一由 WorldScene 管理，避免双重改状态刷屏）
+  2. **墙瓦片选错修复**：`wall_dark_1` 从 Tiny Dungeon (9,0)（火炉装饰）改为 (0,0)（纯色墙砖），不再像铁路
+  3. **塔内背景**：从 tileSprite 平铺改为 `rectangle` 纯色矩形（`0x1a1f2e` 深蓝黑），无缝不晃眼
+  4. **门重做**：放弃拼接 2 个 door_mid（像柜子），改为 PIL 手绘 32×64 拱顶单门 `door_full.png`（拱顶+单把手+横向装饰条）
+  5. **门坐标修复**：`floorTopY` 是地板中心不是表面，门 Y 从 `floorTopY` 改为 `floorTopY - 16`（贴地板表面）
+  6. **buildTower 调用顺序**：从 player 创建前移到创建后（修 BUG-26 卡加载界面）
+  7. **塔楼入口大门**：从 `tile_door` 色块改为 `door_full` 拱顶门
+- **状态**：代码完成，待用户最终验证
+
+---
+
 ### [feat] 三层塔楼改造（爬梯机制 + 物理门 + Tiny Dungeon 素材）
 
 - **时间**：2026-07-18

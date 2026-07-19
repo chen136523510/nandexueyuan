@@ -4,7 +4,66 @@
 
 ---
 
-## 2026-07-18（黑机 P5 美术 + 精灵调试）
+## 2026-07-18（黑机 P5 美术 + 三层塔楼改造）
+
+---
+
+### BUG-31：塔楼入口大门是色块 + 室内门像柜子
+
+- **现象**：塔楼入口大门是 `tile_door` 色块；室内门用 2 个 door_mid 拼接，视觉识别成"双门柜子"
+- **根因**：
+  1. 入口大门没替换素材
+  2. Tiny Dungeon 没有原生 1×2 门，用 2 个 1×1 拼接必然像两个物体叠起来
+- **修复**：用 PIL 手绘 32×64 拱顶单门 `door_full.png`（拱顶+门框+门板纹理+单把手+横向装饰条）；入口大门和室内门统一用 `door_full`
+- **教训**：素材包没有的形状，直接 PIL 画比拼接好
+
+---
+
+### BUG-30：门嵌进地板半格
+
+- **现象**：室内门下段嵌进地板上半部分
+- **根因**：`floorTopY` 是地板瓦片的中心 Y（不是表面），因为 Phaser static body 默认 origin (0.5, 0.5)。传给 createDoor 的 `floorY = floorTopY`，门底段在 `floorTopY - 0.5*TS`，嵌进地板上半部
+- **修复**：调用 createDoor 时传 `floorTopY - 16`（地板表面 Y）
+
+---
+
+### BUG-29：塔内背景瓦片有接缝 + wall_dark_1 选错坐标
+
+- **现象**：塔内背景用 tileSprite 平铺，瓦片间有明显接缝；外墙瓦片看起来像铁路/管道
+- **根因**：
+  1. `wall_dark_1` 切的是 Tiny Dungeon (9,0)，实际是**火炉/管道装饰物**，不是纯墙
+  2. tileSprite 平铺时瓦片边缘有 1px 错位
+- **修复**：
+  1. 重新切 (0,0) 作为 wall_dark_1（纯色墙砖，色彩方差 0.0）
+  2. 背景从 tileSprite 改为 `rectangle` 纯色矩形（`0x1a1f2e`），完全无缝
+- **教训**：切瓦片前必须用 PIL 分析每个瓦片的颜色均匀度，不能靠行号猜
+
+---
+
+### BUG-28：爬梯状态反复进入退出（F12 刷屏）
+
+- **现象**：按一次 W 爬梯，F12 出现几十条"进入/退出爬梯状态"日志
+- **根因**：爬梯状态被两个地方同时修改--Player.update 里按空格自己调 setClimbing(false)，WorldScene.updateLadderState 同一帧又检查到条件调 setClimbing(true)，isClimbing 在 true/false 横跳
+- **修复**：爬梯状态切换全部收归 WorldScene.updateLadderState 统一管理，Player.update 只负责"爬梯中怎么移动"不主动退出；加双向冷却（进入后 20 帧不退出，退出后 30 帧不进入）
+- **教训**：状态机只能有一个管理者，不能多处修改同一状态
+
+---
+
+### BUG-27：decorateFloor 引用未定义的 ground
+
+- **现象**：进入游戏卡在加载界面，F12 报 `Uncaught ReferenceError: ground is not defined`
+- **根因**：`decorateFloor(floor, towerX, ...)` 函数签名没有 ground 参数，但函数体内调 `createDoor(ground, ...)` 引用了它
+- **修复**：`createDoor(ground, ...)` -> `createDoor(this.ground, ...)`（用实例属性）
+- **教训**：改完代码后应该用浏览器跑一次看 F12，而不是改完就提交
+
+---
+
+### BUG-26：buildTower 在 player 创建前调用，卡加载界面
+
+- **现象**：进入德塔卡在加载进度条，F12 无明显报错
+- **根因**：`buildTower()` 里注册 `physics.add.overlap(this.player.sprite, ladders)`，但 buildTower 在 L62 调用时 `this.player` 还没创建（L120 才创建），访问 undefined.sprite 抛异常中断 create()
+- **修复**：把 buildTower 调用从 L62 移到 player 创建 + collider 注册之后
+- **教训**：依赖 player 的函数必须在 player 创建后调用；create() 里的执行顺序要仔细核对
 
 ---
 
