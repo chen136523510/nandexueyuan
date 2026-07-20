@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-07-20 NPC思考状态spinner优化 + 传送门交互修复
+
+### NPC 思考状态 UI 优化（ChatView + GameView）
+- [修改] `src/views/ChatView.vue` - AI 思考中改用纯 CSS spinner 替代文字点号；修复气泡渲染条件（空 content + loading 时显示"正在思考..."）
+- [修改] `src/views/GameView.vue` - 去掉 `startThinkingAnimation`/`stopThinkingAnimation` + `setInterval` 定时器 + `thinkingDots`/`thinkingTimer` 变量；模板改用 `nde-spinner` CSS 旋转圈
+- [修复] `src/views/GameView.vue` - `closeNpcDialog` 引用已删除的 `thinkingTimer` 导致 `ReferenceError`，已清理
+
+### 传送门交互修复（WorldScene）
+- [修复] `game/scenes/WorldScene.js` - 出生点从 `towerX+320`(520) 移到 `towerX+200`(400)，远离传送门触发范围
+- [修复] `game/scenes/WorldScene.js` - 大门交互判断缺少 `< nearestDist` 条件，会覆盖更近的 NPC，已统一为 `doorDist < INTERACT_DISTANCE && doorDist < nearestDist`
+- [修复] `game/scenes/WorldScene.js` - 传送门交互判断缺少 `< INTERACT_DISTANCE` 上限，已统一为 `portalDist < INTERACT_DISTANCE && portalDist < nearestDist`
+
+### 工程配置
+- [修改] `.gitignore` - `*.png` 改为 `/*.png`（仅忽略根目录临时截图，不影响 `public/game/` 下游戏资源）
+- commit: `6bf5e57`（已部署）
+
+---
+
 ## 2026-07-05 P3-P5:语义检索 + 对话 UI + 会话历史
 - [新增] P3: `server/scripts/buildFtsIndex.js` — FTS5 trigram 索引构建(51万条,1.8s)
 - [新增] P3: `chatController.js` handleSemantic — LLM 提取关键词 → FTS5 检索 Top-5 → LLM 生成(附引用)
