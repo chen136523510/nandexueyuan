@@ -49,6 +49,19 @@ model Announcement {
   @@map("announcements")
 }
 
+model Version {
+  id        Int      @id @default(autoincrement())
+  version   String   @unique // "v1.1.0"
+  date      DateTime // 发版日期
+  summary   String   @default("") // 公告栏摘要（一句话）
+  updates   String   @default("[]") // 本次更新（JSON 数组）
+  plans     String   @default("[]") // 未来规划（JSON 数组）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("versions")
+}
+
 // ===== AI 助手 =====
 
 model ImportBatch {

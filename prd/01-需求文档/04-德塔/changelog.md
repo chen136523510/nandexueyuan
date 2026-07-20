@@ -4,6 +4,23 @@
 
 ---
 
+### [feat] 版本公告系统（R-004）
+
+- **时间**：2026-07-20
+- **变更人**：陈梓键（白机）
+- **背景**：原首页公告为单条文本、纯人工维护，无法体现版本迭代历程。需要将版本信息同步到公告系统，让用户了解更新内容与未来规划
+- **变更内容**：
+  1. **数据库**（`schema.prisma` + 迁移）：新增 `Version` 模型（id/version/date/summary/updates/plans），`updates` 和 `plans` 用 JSON 字符串存储数组；旧 `Announcement` 表保留兼容
+  2. **后端 API**（`announcementController.js` + `api.js`）：重构为 5 个接口 — `GET /announcement`（最新版本摘要，向后兼容旧格式）、`GET /announcement/versions`（版本列表）、`POST /announcement/versions`（新增）、`PUT /announcement/versions/:id`（编辑）、`DELETE /announcement/versions/:id`（删除）
+  3. **前端 API**（`announcement.js`）：新增 `getVersions`/`createVersion`/`updateVersion`/`deleteVersion` 4 个函数
+  4. **版本历史弹窗**（`VersionHistoryDialog.vue` 新增）：参考 ProfileDialog 模式（Transition 动画 + overlay），列表态展示版本号/日期/摘要/更新项/规划项，编辑态支持动态增删更新项和规划项
+  5. **首页公告栏改造**（`MainView.vue`）：公告栏展示版本徽章 + 日期 + 摘要，新增「版本历史」按钮（全员可见），admin 可在弹窗内增删改版本
+- **验证**：首页公告栏显示 `v1.1.0 (2026/7/20)` + 摘要；版本历史弹窗展示 3 条更新 + 2 条规划；admin 新增/编辑/删除功能正常
+- **状态**：代码完成，已验证（本地浏览器端到端通过）
+- **关联文档**：`需求池.md` R-004
+
+---
+
 ### [feat] NPC 广播 @ 提问者 + 身份感知 + 花名册注入
 
 - **时间**：2026-07-20

@@ -4,7 +4,7 @@ import { register, login, logout, me } from '../controllers/authController.js'
 import { updateProfile, updatePassword } from '../controllers/userController.js'
 import { createInviteCode, listInviteCodes } from '../controllers/inviteCodeController.js'
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../controllers/adminController.js'
-import { getAnnouncement, updateAnnouncement } from '../controllers/announcementController.js'
+import { getAnnouncement, getVersions, createVersion, updateVersion, deleteVersion } from '../controllers/announcementController.js'
 import { importChatCsv, listBatches, upload } from '../controllers/chatImportController.js'
 import { askChat, talkNpc, listSessions, getSession, deleteSession } from '../controllers/chatController.js'
 import { auth, requireRole } from '../middleware/auth.js'
@@ -15,9 +15,12 @@ const router = Router()
 // 联通性测试
 router.get('/hello', getHello)
 
-// 公告栏
+// 公告栏 + 版本管理
 router.get('/announcement', getAnnouncement)
-router.put('/announcement', auth, requireRole('admin', 'super_admin'), updateAnnouncement)
+router.get('/announcement/versions', getVersions)
+router.post('/announcement/versions', auth, requireRole('admin', 'super_admin'), createVersion)
+router.put('/announcement/versions/:id', auth, requireRole('admin', 'super_admin'), updateVersion)
+router.delete('/announcement/versions/:id', auth, requireRole('admin', 'super_admin'), deleteVersion)
 
 // 认证相关
 router.post('/auth/register', register)
