@@ -119,13 +119,15 @@ export class NetworkSystem {
 
     // NPC 回复广播：所有人看到男德通头顶气泡 + Vue 聊天框收到回复
     this.room.onMessage('npc-reply', (data) => {
+      // 广播文本加 @提问者： 前缀，让世界频道里能看到 NPC 在回复谁
+      const broadcastText = `@${data.nickname}：${data.text}`
       // 推到 Vue 聊天框（NPC 名义）
-      emit('chat-received', { nickname: '男德通', text: data.text })
+      emit('chat-received', { nickname: '男德通', text: broadcastText })
       // NPC 头顶气泡（所有玩家都看到）
       const world = this.scene
       const npc = world?.npcs?.find(n => n.config.id === 'nandetong')
       if (npc) {
-        world.showNpcBubble(npc, data.text)
+        world.showNpcBubble(npc, broadcastText)
       }
     })
 

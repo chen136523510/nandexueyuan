@@ -109,3 +109,11 @@ askpass.bat
 
 # CC0 素材包原始下载（解压后的源文件，不入库，只保留切片）
 .ai/asset-staging/
+
+# Playwright MCP 临时截图/快照
+.playwright-mcp/
+# 临时测试截图
+*-test-*.png
+deta-*.png
+broadcast-*.png
+e2e-test.png
