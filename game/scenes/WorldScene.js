@@ -120,9 +120,10 @@ export class WorldScene extends Phaser.Scene {
 
     // === 玩家 ===
     const nickname = this.registry.get('nickname') || '学员'
+    const skinId = this.registry.get('skinId') || '1'
     const startX = towerX + 200   // 400，远离传送门(520)和男德通NPC(360)，出生后需走几步才能交互
     const startY = groundY - 32
-    this.player = new Player(this, startX, startY, nickname)
+    this.player = new Player(this, startX, startY, nickname, skinId)
     this.inputSystem = new InputSystem(this)
 
     // === 碰撞 ===
@@ -183,7 +184,7 @@ export class WorldScene extends Phaser.Scene {
     // === 网络连接 ===
     const token = this.registry.get('token')
     this.network = new NetworkSystem(this)
-    this.network.connect(token, nickname)
+    this.network.connect(token, nickname, skinId)
 
     // 场景关闭/销毁时断开网络（Vue 路由切换触发 destroyGame -> game.destroy -> shutdown）
     const cleanup = () => {
@@ -464,7 +465,8 @@ export class WorldScene extends Phaser.Scene {
   sendNetworkPosition() {
     if (!this.network || !this.player?.sprite) return
     const sprite = this.player.sprite
-    const facing = sprite.flipX ? 'left' : 'right'
+    // 优先用 Player 内部维护的 facing（4 方向），回退到 flipX（2 方向）
+    const facing = this.player.facing || (sprite.flipX ? 'left' : 'right')
     const vx = sprite.body.velocity.x
     const vy = sprite.body.velocity.y
     let anim = 'idle'

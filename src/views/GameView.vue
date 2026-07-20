@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { createGame, destroyGame, pauseGame, resumeGame, disableKeyboard, enableKeyboard, sendChatMessage as sendMsg, sendNpcReply, closeChat as closeChatFn } from '../../game/main.js'
@@ -16,6 +16,9 @@ const npcId = ref('')
 const showItemDialog = ref(false)
 const itemId = ref('')
 const showPortalDialog = ref(false)
+
+// 玩家形象选择弹窗（查看立绘 / 切换形象）
+const showSkinDialog = ref(false)
 
 // NPC 对话
 const npcConfig = ref(null)           // 当前交互的 NPC 配置（从 shared/npcs.js 匹配）
@@ -49,6 +52,44 @@ function onChatReceived(data) {
 // 角色信息
 const nickname = ref(auth.user?.nickname || auth.user?.username || '学员')
 
+// 玩家形象（skinId 1-5）：HUD 头像 / 立绘 URL
+const skinId = ref(auth.skinId || '1')
+const avatarUrl = computed(() => `/game/sprites/avatars/player_set${skinId.value}.png`)
+const portraitUrl = computed(() => `/game/portraits/player_set${skinId.value}.png`)
+
+/** 打开形象弹窗（查看立绘） */
+function openSkinDialog() {
+  showSkinDialog.value = true
+  pauseGame()
+}
+
+/** 关闭形象弹窗 */
+function closeSkinDialog() {
+  showSkinDialog.value = false
+  resumeGame()
+}
+
+/** 切换玩家形象（1-5） */
+function switchSkin(id) {
+  const newId = String(id)
+  if (newId === skinId.value) return
+  auth.setSkinId(newId)
+  skinId.value = newId
+  // 本会话内仅更新 HUD；下次进入德塔（重连 Colyseus）时精灵表才会切换
+  // 因为 Phaser 纹理在 PreloadScene 加载后不易热替换，建议玩家主动重进德塔
+  console.log('[GameView] 切换形象:', newId, '（重进德塔生效）')
+}
+
+/** 头像加载失败 → 用占位图（避免 broken image） */
+function onAvatarError(e) {
+  e.target.src = '/game/sprites/avatars/player_set1.png'
+}
+
+/** 立绘加载失败 → 用占位立绘 */
+function onPortraitError(e) {
+  e.target.src = '/game/portraits/player_set1.png'
+}
+
 // 小地图
 const minimapCanvas = ref(null)
 const playerPos = ref({ x: 520, y: 600, groundY: 636 })
@@ -66,7 +107,8 @@ onMounted(async () => {
   const token = auth.token
   const name = auth.user?.nickname || auth.user?.username || '学员'
   nickname.value = name
-  createGame('game-container', token, name)
+  skinId.value = auth.skinId || '1'
+  createGame('game-container', token, name, skinId.value)
 
   gameOn('npc-interact', onNpcInteract)
   gameOn('item-interact', onItemInteract)
@@ -409,8 +451,8 @@ function drawMinimap() {
     <div class="nde-panel">
       <!-- 1. 角色信息 -->
       <div class="panel-char">
-        <div class="char-avatar">
-          <canvas width="40" height="40" class="avatar-canvas"></canvas>
+        <div class="char-avatar" @click="openSkinDialog" :title="`点击查看立绘 / 切换形象（当前 ${skinId}/5）`">
+          <img :src="avatarUrl" :alt="`形象 ${skinId}`" @error="onAvatarError" />
         </div>
         <div class="char-info">
           <div class="char-name">{{ nickname }}</div>
@@ -550,6 +592,32 @@ function drawMinimap() {
         </div>
       </div>
     </div>
+
+    <!-- 玩家形象弹窗（查看立绘 + 切换形象） -->
+    <div v-if="showSkinDialog" class="nde-dialog-overlay" @click.self="closeSkinDialog">
+      <div class="nde-dialog nde-skin-dialog">
+        <div class="nde-dialog-header">
+          <span>玩家形象 · {{ skinId }}/5</span>
+          <button @click="closeSkinDialog" class="nde-dialog-close">✕</button>
+        </div>
+        <div class="nde-skin-body">
+          <!-- 左侧：立绘 -->
+          <div class="nde-skin-portrait">
+            <img :src="portraitUrl" :alt="`形象 ${skinId} 立绘`" @error="onPortraitError" />
+          </div>
+          <!-- 右侧：5 套头像列表（点击切换） -->
+          <div class="nde-skin-list">
+            <div class="nde-skin-list-title">选择形象（重进德塔生效）</div>
+            <div v-for="i in 5" :key="i" class="nde-skin-item"
+                 :class="{ active: String(i) === skinId }"
+                 @click="switchSkin(i)">
+              <img :src="`/game/sprites/avatars/player_set${i}.png`" :alt="`形象 ${i}`" @error="onAvatarError" />
+              <span>形象 {{ i }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -629,6 +697,20 @@ function drawMinimap() {
   border-radius: 3px;
   background: #1a1a22;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  position: relative;
+}
+.char-avatar:hover {
+  border-color: #c9a96e;
+  box-shadow: 0 0 8px rgba(201, 169, 110, 0.4);
+}
+.char-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .char-info {
   flex: 1;
@@ -906,6 +988,82 @@ function drawMinimap() {
 .nde-portrait-placeholder {
   color: #555;
   font-size: 14px;
+}
+
+/* ===== 玩家形象弹窗 ===== */
+.nde-skin-dialog {
+  width: 720px;
+  max-width: 92vw;
+  max-height: 90vh;
+}
+.nde-skin-body {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  min-height: 480px;
+}
+.nde-skin-portrait {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a22;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 0;
+}
+.nde-skin-portrait img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.nde-skin-list {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.nde-skin-list-title {
+  font-size: 13px;
+  color: #c9a96e;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.nde-skin-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #2a2a32;
+  border: 1px solid #3a3a44;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.nde-skin-item:hover {
+  border-color: #c9a96e;
+  background: #353540;
+}
+.nde-skin-item.active {
+  border-color: #c9a96e;
+  background: #3a3530;
+  box-shadow: 0 0 6px rgba(201, 169, 110, 0.3);
+}
+.nde-skin-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  object-fit: cover;
+  background: #1a1a22;
+}
+.nde-skin-item span {
+  color: #e0d8c0;
+  font-size: 13px;
+}
+.nde-skin-item.active span {
+  color: #c9a96e;
+  font-weight: 600;
 }
 .nde-npc-chat {
   flex: 1;

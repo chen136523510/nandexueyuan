@@ -11,6 +11,8 @@ export class PlayerState extends Schema {
     this.nickname = data.nickname || '学员'
     this.facing = data.facing || 'right'
     this.anim = data.anim || 'idle'
+    // 玩家形象 ID（1-5），决定使用哪一套精灵表/立绘/头像
+    this.skinId = data.skinId || '1'
   }
 }
 
@@ -20,4 +22,5 @@ defineTypes(PlayerState, {
   nickname: 'string',
   facing: 'string',
   anim: 'string',
+  skinId: 'string',
 })

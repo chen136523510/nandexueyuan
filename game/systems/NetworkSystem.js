@@ -18,7 +18,7 @@ export class NetworkSystem {
     this.sendInterval = 50
   }
 
-  async connect(token, nickname) {
+  async connect(token, nickname, skinId) {
     const wsUrl = import.meta.env.VITE_COLYSEUS_URL || (() => {
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       // 生产环境通过 Nginx /ws 代理，开发环境直连 2567
@@ -27,12 +27,12 @@ export class NetworkSystem {
       }
       return `${proto}//${window.location.host}/ws`
     })()
-    console.log('[NetworkSystem] 连接:', wsUrl)
+    console.log('[NetworkSystem] 连接:', wsUrl, 'skinId:', skinId)
 
     this.client = new Client(wsUrl)
 
     try {
-      this.room = await this.client.joinOrCreate('world', { token, nickname })
+      this.room = await this.client.joinOrCreate('world', { token, nickname, skinId: skinId || '1' })
       this.connected = true
       console.log('[NetworkSystem] 连接成功, sessionId:', this.room.sessionId, 'roomId:', this.room.roomId)
 
@@ -144,17 +144,26 @@ export class NetworkSystem {
   createOtherPlayer(sessionId, state) {
     if (this.otherPlayers.has(sessionId)) return
 
-    const colors = [0xFF6B6B, 0x4ECDC4, 0xFFD93D, 0xA8E6CF, 0xFF8A65]
-    const color = colors[Math.abs(this.hashCode(sessionId)) % colors.length]
+    // 优先使用对应 skinId 的 spritesheet 纹理（已由 PreloadScene 加载并注册 anims）
+    const skinId = String(state.skinId || '1')
+    const textureKey = `player_set${skinId}`
+    const hasRealTexture = this.scene.textures.exists(textureKey)
+    const hasAnims = this.scene.anims.exists(`${textureKey}_idle_down`)
 
-    const textureKey = `player_${sessionId}`
-    const gfx = this.scene.make.graphics({ add: false })
-    gfx.fillStyle(color)
-    gfx.fillRect(0, 0, 32, 32)
-    gfx.generateTexture(textureKey, 32, 32)
-    gfx.destroy()
+    // 兜底：若 spritesheet 未加载，生成 sessionId 专属色块（旧逻辑）
+    let finalTextureKey = textureKey
+    if (!hasRealTexture) {
+      const colors = [0xFF6B6B, 0x4ECDC4, 0xFFD93D, 0xA8E6CF, 0xFF8A65]
+      const color = colors[Math.abs(this.hashCode(sessionId)) % colors.length]
+      finalTextureKey = `player_${sessionId}`
+      const gfx = this.scene.make.graphics({ add: false })
+      gfx.fillStyle(color)
+      gfx.fillRect(0, 0, 32, 32)
+      gfx.generateTexture(finalTextureKey, 32, 32)
+      gfx.destroy()
+    }
 
-    const sprite = this.scene.add.image(state.x, state.y, textureKey)
+    const sprite = this.scene.add.image(state.x, state.y, finalTextureKey)
     sprite.setDepth(8)
 
     const nameText = this.scene.add.text(state.x, state.y - 22, state.nickname, {
@@ -164,8 +173,26 @@ export class NetworkSystem {
       strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(20)
 
-    this.otherPlayers.set(sessionId, { sprite, nameText, state: { ...state }, textureKey })
-    console.log('[NetworkSystem] 创建其他玩家精灵:', state.nickname, 'at', state.x, state.y)
+    this.otherPlayers.set(sessionId, {
+      sprite,
+      nameText,
+      state: { ...state },
+      textureKey: finalTextureKey,
+      isOwnTexture: !hasRealTexture,  // 标记是否是 sessionId 专属色块（需在 remove 时清理）
+      currentAnimKey: null,
+    })
+
+    // 初始动画（朝右站立）
+    if (hasAnims) {
+      const animKey = `${textureKey}_idle_${state.facing || 'right'}`
+      if (this.scene.anims.exists(animKey)) {
+        sprite.anims.play(animKey, true)
+        this.otherPlayers.get(sessionId).currentAnimKey = animKey
+      }
+    }
+
+    console.log('[NetworkSystem] 创建其他玩家精灵:', state.nickname,
+      `skinId=${skinId}`, `texture=${finalTextureKey}`, 'at', state.x, state.y)
   }
 
   updateOtherPlayer(sessionId, state) {
@@ -175,6 +202,17 @@ export class NetworkSystem {
     other.sprite.x = state.x
     other.sprite.y = state.y
     other.nameText.setPosition(state.x, state.y - 22)
+
+    // 消费 facing + anim 字段，切换动画
+    const skinId = String(state.skinId || '1')
+    const expectedAnim = state.anim === 'walk' ? 'walk' : 'idle'
+    const facing = state.facing || 'right'
+    const animKey = `player_set${skinId}_${expectedAnim}_${facing}`
+    if (animKey !== other.currentAnimKey && this.scene.anims.exists(animKey)) {
+      other.sprite.anims.play(animKey, true)
+      other.currentAnimKey = animKey
+    }
+
     other.state = { ...state }
 
     if (other.bubble) {
@@ -189,7 +227,10 @@ export class NetworkSystem {
     other.sprite.destroy()
     other.nameText.destroy()
     if (other.bubble) other.bubble.destroy()
-    this.scene.textures.remove(other.textureKey)
+    // 仅清理 sessionId 专属动态色块（player_${sessionId}），不删除 player_setN spritesheet
+    if (other.isOwnTexture && other.textureKey.startsWith('player_') && !other.textureKey.startsWith('player_set')) {
+      this.scene.textures.remove(other.textureKey)
+    }
     this.otherPlayers.delete(sessionId)
   }
 

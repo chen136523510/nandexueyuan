@@ -1,32 +1,55 @@
 # AI 交接单
 
-> 最后更新：2026-07-20 晚
-> 提交人：陈梓键（白机）
-> 所在设备：白机（白天，荣耀便携本）
+> 最后更新：2026-07-20 晚（黑机接手）
+> 提交人：陈梓键（黑机）
+> 所在设备：黑机（晚上，RTX 4070 主力机 + ComfyUI）
 > 稳定版本：`6bf5e57`（生产环境，已部署）
-> 最新提交：`6d4e86a`（文档同步，已推送；生产环境代码停留在 `6bf5e57`）
+> 最新提交：`13b99da`（白机 07-20 晚同步文档，黑机已 pull）
 > **当前阶段**：
 > - P5 美术：立绘 + 像素精灵 + 场景瓦片 + 三层塔楼改造 **全部完成**
-> - P2 NPC AI 对话：**白机 07-20 晚 spinner 优化 + 传送门修复**
-> - 版本公告系统（R-004）：**白机 07-20 下午开发完成**
+> - P2 NPC AI 对话：白机 07-20 晚完成 spinner 优化 + 传送门修复
+> - 版本公告系统（R-004）：白机 07-20 下午开发完成
 > - 三层塔楼改造：7 阶段完成 + 6 个 bug 修复完成，**待用户最终验证**
-> **本轮（白机 07-20 下午）要点**：
+> - **R-003 玩家精灵系统（黑机 07-20 晚开发中）**：代码接入完成（schema + PreloadScene + Player + WorldScene + NetworkSystem + GameView + auth store），5 套立绘工作流 JSON 生成完成，**待用户启动 ComfyUI 跑真实美术资源 + 下载 ControlNet 模型做精灵表**
+
+> **本轮（黑机 07-20 晚）要点**：
+> - **架构级 - 首次启用 Phaser 动画系统**：项目历史 0 处 `anims.create`/`anims.play`，本次从零搭建。PreloadScene 注册 40 个 anims（5 套 × 4 方向 × 2 状态），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画
+> - **schema 变更**：`PlayerState` 加 `skinId: 'string'`（默认 '1'），WorldRoom.onJoin 接收 `options.skinId`，向后兼容
+> - **HUD 头像接入**：`GameView.vue` 原 `<canvas 40×40>` 空白从未绘制改为 `<img>` 显示真实头像；点击头像弹出立绘弹窗 + 5 套形象切换（重进德塔生效）
+> - **auth store 加 skinId**：localStorage 持久化，待 P4 角色创建系统接入后端
+> - **5 套少女形象人设**：粉双马尾学园 / 黑长直巫女 / 金单马尾骑士 / 银短发法师 / 蓝双长辫机甲（set5 参考金克丝发型）
+> - **5 套立绘工作流 JSON**：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`，删除 mygo LoRA，改用纯 waiIllustriousSDXL_v160 大模型，每套 seed 100001~100005
+> - **配套脚本**：`scripts/gen_player_portrait_workflows.py`（批量生成 JSON）、`scripts/portrait_to_avatar.py`（立绘截头像）、`scripts/download_models.sh`（hf-mirror 下载 SDXL/Pixel-Art LoRA/ControlNet OpenPose）
+> - **BUG-35**：Edit 工具误删 NetworkSystem.js L29 的 IIFE 右括号 `})()` -> `}()`，已修复
+> - **验证**：`npx vite build` 通过，GameView chunk 1859.88 kB 正常打包
+
+> **下一步（黑机或下个会话）待办**：
+> ⚠️ **优先级说明**：白机 2026-07-21 白天将处理其他模块需求，**玩家精灵任务暂停**，等黑机下次会话继续。白机接手时只需 pull master，无需继续本任务。
+>
+> 1. 用户启动 ComfyUI -> 加载 5 套 portrait_player_set{N}.json -> 跑出 5 张 1024 立绘
+> 2. AI 从 ComfyUI output 复制到 `public/game/portraits/player_set{1..5}.png`
+> 3. 跑 `scripts/portrait_to_avatar.py` 生成 5 张 40×40 头像到 `public/game/sprites/avatars/`
+> 4. 用户执行 `bash scripts/download_models.sh` 下载 SDXL Base + Pixel-Art LoRA + ControlNet OpenPose（约 8GB，hf-mirror 镜像）
+> 5. 设计 ControlNet 精灵表工作流 JSON（4 方向 × 4 帧 = 16 帧/套）
+> 6. 准备 OpenPose 骨架参考图（16 张/套，可用 OpenposePreprocessor 从 RPG Maker 行走 spritesheet 提取）
+> 7. 生成 5 套精灵表（80 帧，约 40 分钟）+ PIL 拼 128×128 网格 -> 入库 `public/game/sprites/players/player_set{N}_walk.png`
+> 8. 启动本地三服务联调验证（npm run dev + game-server + Express）
+
+> **生产环境状态**：
+> - 稳定版仍为 `6bf5e57`（白机 07-20 部署）
+> - 本次黑机代码改动（R-003 玩家精灵系统接入）**未部署**，仅在本地 + GitHub master
+> - 当前 master HEAD 代码功能：NPC 对话/版本公告/塔楼 + 玩家精灵系统（用色块 fallback，无真实美术资源）
+> - 下次部署时机：等玩家精灵表生成完成后一起部署，或用户明确要求时
+
+> **本轮（白机 07-20 下午/晚）已完成的上下文**：
 > - **NPC 广播 @ 提问者**：`NetworkSystem.js` 收到 npc-reply 广播时自动拼接 `@提问者昵称：` 前缀，程序统一处理，AI 不再自行写 @（修复 BUG-32 双重 @）
 > - **身份感知**：`buildGamePersona()` 改为每次请求动态构建，从 `req.user.nickname` 注入提问者真实身份，AI 能识破冒充（"系统告诉我你是陈梓键哦~"）
-> - **花名册注入**：新增 `parseRoster()` 从 `成员信息填写表.md` 解析 21 人列表（含外号/绰号/现状），注入 prompt 末尾，AI 可查任意成员（如"马逸杰在干嘛"->"马哥在澳洲留学"）
-> - **Prompt 调优**：禁止 AI 使用 @ 符号；缩短参考文档（3000->800、2000->500），花名册置于 prompt 末尾
-> - **版本公告系统（R-004）**：新增 `Version` 表（版本号/日期/摘要/更新项/规划项），5 个 REST API，`VersionHistoryDialog.vue` 版本历史弹窗，首页公告栏改造（版本徽章 + 「版本历史」按钮），admin 可在弹窗内增删改版本，已 seed v1.1.0 数据
-> - **文档同步**：新增 sync-docs 技能（`.zcode/skills/sync-docs/`），后续说"同步文档"即可触发；已同步 changelog + bug-log + 交互需求 + 需求池 + 交接单
-> - R-002（NPC AI 对话接入）、R-001（立绘）、R-004（版本公告系统）标记为已完成
-
-> **本轮（白机 07-20 晚）要点**：
-> - **NPC 思考状态 spinner 优化**：ChatView + GameView 的"正在思考"动画从文字点号（`setInterval` 轮询 `. .. ...`）改为纯 CSS spinner（0.8s 线性旋转），消除内存泄漏风险，视觉更专业
-> - **传送门交互修复**：
->   - 出生点从 `towerX+320`(520) 移到 `towerX+200`(400)，远离传送门(520)触发范围
->   - 统一大门/传送门交互距离判断（均需 `< INTERACT_DISTANCE` 且 `< nearestDist`），修复出生即触发传送门、大门覆盖 NPC 优先级的问题
-> - **closeNpcDialog bug 修复**：删除 `thinkingTimer` 变量后 `closeNpcDialog` 仍引用它导致 `ReferenceError`，已清理
+> - **花名册注入**：新增 `parseRoster()` 从 `成员信息填写表.md` 解析 21 人列表（含外号/绰号/现状），注入 prompt 末尾，AI 可查任意成员
+> - **版本公告系统（R-004）**：新增 `Version` 表 + 5 个 REST API + `VersionHistoryDialog.vue` 版本历史弹窗 + 首页公告栏改造（版本徽章 + 「版本历史」按钮），admin 可在弹窗内增删改版本，已 seed v1.1.0
+> - **NPC 思考状态 spinner 优化**：ChatView + GameView 的"正在思考"动画从文字点号改为纯 CSS spinner（0.8s 线性旋转）
+> - **传送门交互修复**：出生点移到 `towerX+200`(400)，统一大门/传送门交互距离判断（`< INTERACT_DISTANCE` 且 `< nearestDist`）
 > - **.gitignore 修正**：`*.png` 改为 `/*.png`（仅忽略根目录临时截图，不影响 `public/game/` 下游戏资源）
-> - 已端到端浏览器验证：NPC 对话弹窗正常弹出、发送消息 AI 正常回复、控制台零报错
+> - R-002（NPC AI 对话接入）、R-001（立绘）、R-004（版本公告系统）标记为已完成
 
 ---
 

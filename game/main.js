@@ -7,7 +7,7 @@ import * as events from './events.js'
 
 let gameInstance = null
 
-export function createGame(parent, token, nickname) {
+export function createGame(parent, token, nickname, skinId) {
   if (gameInstance) {
     destroyGame()
   }
@@ -15,6 +15,7 @@ export function createGame(parent, token, nickname) {
   gameInstance = new Phaser.Game(config)
   gameInstance.registry.set('token', token)
   gameInstance.registry.set('nickname', nickname)
+  gameInstance.registry.set('skinId', skinId || '1')
   return gameInstance
 }
 

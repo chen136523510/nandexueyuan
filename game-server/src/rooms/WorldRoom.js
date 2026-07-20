@@ -52,11 +52,13 @@ export class WorldRoom extends Room {
 
     // 优先用客户端传来的昵称（来自 auth store），JWT 中不包含 nickname
     const nickname = options.nickname || payload.nickname || payload.username || '学员'
-    console.log(`[WorldRoom] ${nickname} 加入 (session: ${client.sessionId})`)
+    // 玩家形象 ID（1-5），由客户端 auth store 传入，默认 '1'
+    const skinId = options.skinId || '1'
+    console.log(`[WorldRoom] ${nickname} 加入 (session: ${client.sessionId}, skinId: ${skinId})`)
     console.log(`[WorldRoom] 当前房间总人数: ${this.clients.length}`)
 
-    const player = new PlayerState({ nickname, x: 520, y: 600 })
-    console.log(`[WorldRoom] 创建玩家: ${player.nickname}, x=${player.x}, y=${player.y}`)
+    const player = new PlayerState({ nickname, skinId, x: 520, y: 600 })
+    console.log(`[WorldRoom] 创建玩家: ${player.nickname}, x=${player.x}, y=${player.y}, skinId=${player.skinId}`)
     this.state.players.set(client.sessionId, player)
     console.log(`[WorldRoom] state.players.size = ${this.state.players.size}`)
 

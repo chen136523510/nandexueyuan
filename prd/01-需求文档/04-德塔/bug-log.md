@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-07-20 晚（黑机 玩家精灵系统接入）
+
+---
+
+### BUG-35：NetworkSystem IIFE 误删右括号导致 vite build 失败
+
+- **现象**：玩家精灵系统接入后，`npx vite build` 失败，报错 `NetworkSystem.js:29:5: ERROR: Expected ")" but found "("`
+- **根因**：使用 Edit 工具替换 NetworkSystem.js 的 connect 函数（加 skinId 参数）时，把原代码 L29 的 IIFE 结尾 `})()` 误删一个右括号变成 `}()`，破坏了立即执行函数表达式语法
+- **修复**：恢复 `})()` 完整括号配对
+- **文件**：`game/systems/NetworkSystem.js` L29
+- **验证**：重新 `npx vite build` 通过，GameView chunk 1859.88 kB 正常打包
+- **教训**：
+  1. Edit 工具替换时若上下文含特殊语法（IIFE、模板字符串），必须用 `git diff` 复核所有改动行
+  2. 项目已积累足够代码量，每次大改动后必须 `vite build` 而非仅靠 `node --check`（Node check 不支持 ESM 顶层 IIFE）
+  3. `node --check` 报此类错误时，不要假设是"Node 不支持 ESM"，应直接 vite build 验证
+- **状态**：已修复
+
+---
+
 ## 2026-07-20（白机 spinner 优化 + 传送门修复）
 
 ---

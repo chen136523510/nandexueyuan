@@ -81,6 +81,21 @@ export class PreloadScene extends Phaser.Scene {
     // NPC 像素精灵（地图显示用，32×32，AI 生成降采样）
     this.load.image('npc_nandetong', '/game/sprites/npcs/nandetong.png')
 
+    // === 玩家形象 5 套（R-003 角色精灵表）===
+    // spritesheet 4×4 网格（128×128，每格 32×32）
+    // 行 = 方向（0:down, 1:up, 2:left, 3:right），列 = 帧（0:stand, 1:midL, 2:stand, 3:midR）
+    for (let i = 1; i <= 5; i++) {
+      this.load.spritesheet(
+        `player_set${i}`,
+        `/game/sprites/players/player_set${i}_walk.png`,
+        { frameWidth: 32, frameHeight: 32 }
+      )
+      // 立绘（角色信息面板「查看立绘」用）
+      this.load.image(`portrait_set${i}`, `/game/portraits/player_set${i}.png`)
+      // 头像（HUD char-avatar 用，40×40）
+      this.load.image(`avatar_set${i}`, `/game/sprites/avatars/player_set${i}.png`)
+    }
+
     this.load.on('loaderror', (file) => {
       console.warn('[PreloadScene] 资源加载失败，将使用占位色块:', file.key)
     })
@@ -88,6 +103,7 @@ export class PreloadScene extends Phaser.Scene {
 
   create() {
     this.generateFallbackTextures()
+    this.createPlayerAnimations()
     this.scene.start('WorldScene')
   }
 
@@ -108,7 +124,6 @@ export class PreloadScene extends Phaser.Scene {
       ['tile_tree', 0x228B22, 32, 64],
       ['tile_cloud', 0xFFFFFF, 64, 24],
       ['tile_door', 0x654321, 32, 64],
-      ['player_default', 0x2196F3, 32, 32], // 玩家色块
       ['npc_nandetong', 0xFFD700, 32, 32],  // NPC fallback
       ['item_board', 0xFF5722, 32, 32],     // 物品
     ]
@@ -121,7 +136,51 @@ export class PreloadScene extends Phaser.Scene {
       }
     }
 
-    // 头像占位（始终生成）
+    // === 5 套玩家形象 fallback ===
+    // 玩家精灵表 fallback：32×32 单色块（真实资源是 128×128 4×4 网格 spritesheet）
+    // anims 注册时会自适应检测 frame 数量，fallback 只有 1 帧时退化为静态显示
+    const playerColors = [
+      0xF48FB1,  // set1 粉
+      0x424242,  // set2 黑（带红高光）
+      0xFFD54F,  // set3 金
+      0xB0BEC5,  // set4 银
+      0x4FC3F7,  // set5 蓝
+    ]
+    for (let i = 0; i < 5; i++) {
+      const skinKey = `player_set${i + 1}`
+      if (!this.textures.exists(skinKey)) {
+        gfx.clear()
+        gfx.fillStyle(playerColors[i])
+        gfx.fillRect(0, 0, 32, 32)
+        gfx.generateTexture(skinKey, 32, 32)
+      }
+      // 立绘 fallback（深灰色矩形，含 "set N" 文字）
+      const portraitKey = `portrait_set${i + 1}`
+      if (!this.textures.exists(portraitKey)) {
+        gfx.clear()
+        gfx.fillStyle(0x333333)
+        gfx.fillRect(0, 0, 256, 256)
+        gfx.generateTexture(portraitKey, 256, 256)
+      }
+      // 头像 fallback（纯色圆）
+      const avatarKey = `avatar_set${i + 1}`
+      if (!this.textures.exists(avatarKey)) {
+        gfx.clear()
+        gfx.fillStyle(playerColors[i])
+        gfx.fillCircle(20, 20, 20)
+        gfx.generateTexture(avatarKey, 40, 40)
+      }
+    }
+
+    // 旧版玩家色块（兼容，防止 Player.js 旧引用）
+    if (!this.textures.exists('player_default')) {
+      gfx.clear()
+      gfx.fillStyle(0x2196F3)
+      gfx.fillRect(0, 0, 32, 32)
+      gfx.generateTexture('player_default', 32, 32)
+    }
+
+    // 头像占位（始终生成，向后兼容）
     gfx.clear()
     gfx.fillStyle(0x2196F3)
     gfx.fillCircle(16, 16, 16)
@@ -139,5 +198,75 @@ export class PreloadScene extends Phaser.Scene {
 
     gfx.destroy()
     console.log('[PreloadScene] 资源加载完成，可用纹理:', this.textures.getTextureKeys().length, '个')
+  }
+
+  /**
+   * 注册玩家精灵动画（5 套 × 4 方向 × 2 状态 = 40 个 anim）
+   *
+   * spritesheet 布局（128×128，每格 32×32）：
+   *   行 0: down  | 帧 0(stand) 1(midL) 2(stand) 3(midR)
+   *   行 1: up    | 帧 4(stand) 5(midL) 6(stand) 7(midR)
+   *   行 2: left  | 帧 8(stand) 9(midL) 10(stand) 11(midR)
+   *   行 3: right | 帧 12(stand) 13(midL) 14(stand) 15(midR)
+   *
+   * anim key 命名：player_set{N}_{state}_{direction}
+   *   state: idle（1 帧静止）/ walk（4 帧循环）
+   *
+   * 自适应：fallback 色块只有 1 帧，idle/walk 都退化为静态显示
+   */
+  createPlayerAnimations() {
+    const directions = ['down', 'up', 'left', 'right']
+    const states = ['idle', 'walk']
+
+    for (let n = 1; n <= 5; n++) {
+      const skinKey = `player_set${n}`
+      const tex = this.textures.get(skinKey)
+      if (!tex || tex.key === '__MISSING') {
+        console.warn(`[PreloadScene] 纹理 ${skinKey} 不存在，跳过 anims 注册`)
+        continue
+      }
+
+      // frameTotal 包含 __BASE，所以实际 frame 数 = frameTotal - 1
+      // 真实 spritesheet: 16 帧；fallback 色块: 1 帧
+      const totalFrames = tex.frameTotal - 1
+      const hasAnimFrames = totalFrames >= 16
+      console.log(`[PreloadScene] ${skinKey} frameTotal=${tex.frameTotal}, hasAnimFrames=${hasAnimFrames}`)
+
+      for (const dir of directions) {
+        const dirIndex = directions.indexOf(dir)  // 0=down, 1=up, 2=left, 3=right
+        const standFrame = dirIndex * 4 + 0       // 站立帧
+        const walkFrames = [dirIndex * 4 + 0, dirIndex * 4 + 1, dirIndex * 4 + 2, dirIndex * 4 + 3]
+
+        for (const state of states) {
+          const animKey = `${skinKey}_${state}_${dir}`
+          // 防止重复注册（热重载场景）
+          if (this.anims.exists(animKey)) {
+            this.anims.remove(animKey)
+          }
+
+          let frames
+          if (state === 'idle') {
+            // idle 用站立帧（1 帧）
+            frames = [{ key: skinKey, frame: hasAnimFrames ? standFrame : 0 }]
+          } else {
+            // walk 用 4 帧循环
+            if (hasAnimFrames) {
+              frames = this.anims.generateFrameNumbers(skinKey, { frames: walkFrames })
+            } else {
+              // fallback：只有 1 帧，退化为静态
+              frames = [{ key: skinKey, frame: 0 }]
+            }
+          }
+
+          this.anims.create({
+            key: animKey,
+            frames,
+            frameRate: state === 'walk' ? 8 : 1,
+            repeat: state === 'walk' ? -1 : 0,
+          })
+        }
+      }
+    }
+    console.log('[PreloadScene] 玩家动画注册完成，共', this.anims.getAllAnims().length, '个')
   }
 }

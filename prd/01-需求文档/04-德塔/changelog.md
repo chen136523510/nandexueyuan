@@ -4,6 +4,45 @@
 
 ---
 
+### [feat] 玩家精灵四方向行走系统 + 5 套少女形象（R-003 阶段 1）
+
+- **时间**：2026-07-20 晚
+- **变更人**：陈梓键（黑机）
+- **背景**：原玩家为 32×32 蓝色色块，无形象差异，无行走动画（仅靠 `flipX` 翻贴）。需为 20 人社区提供 5 套少女形象（鸣潮/原神风），支持四方向行走动画，HUD 头像框显示真实头像
+- **变更内容**：
+  1. **架构级 - 启用 Phaser 动画系统**（首次）：项目历史 0 处 `anims.create`/`anims.play` 调用，本次从零搭建。PreloadScene 注册 40 个 anim（5 套 × 4 方向 × 2 状态 idle/walk），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画
+  2. **schema 变更**（`game-server/src/schema/PlayerState.js`）：新增 `skinId: 'string'` 字段（默认 '1'），WorldRoom.onJoin 接收 `options.skinId`，向后兼容（旧客户端自动得默认值）
+  3. **资源加载**（`game/scenes/PreloadScene.js`）：preload 加载 5 套 spritesheet（128×128，4×4 网格，每格 32×32）+ 5 张立绘 + 5 张头像；generateFallbackTextures 为每套生成色块兜底；createPlayerAnimations 自适应检测 frame 数量，真实资源 16 帧时启用循环，fallback 1 帧时退化静态
+  4. **玩家逻辑**（`game/objects/Player.js`）：构造函数加 `skinId` 参数；新增 `facing` + `anim` 内部状态字段（避免每帧重复 `anims.play` 抖动）；update() 把 `setFlipX` 替换为 `_playAnim(state, facing)`，正常/爬梯模式都支持 4 方向（上下左右）判定
+  5. **场景**（`game/scenes/WorldScene.js`）：从 registry 取 skinId 传给 Player + NetworkSystem.connect；sendNetworkPosition facing 优先用 `this.player.facing`（4 方向），回退 `sprite.flipX`
+  6. **网络同步**（`game/systems/NetworkSystem.js`）：createOtherPlayer 优先用对应 skinId 的 spritesheet 纹理（不再动态色块）；updateOtherPlayer 消费 `state.facing` + `state.anim` 切换 anim（修复 schema 字段在前端被丢弃的最后一公里）；removeOtherPlayer 仅清理 sessionId 专属色块，不删共享 spritesheet
+  7. **HUD 头像**（`src/views/GameView.vue`）：原 `<canvas 40×40>` 空白从未绘制改为 `<img :src="avatarUrl">`；点击头像打开「玩家形象弹窗」显示 1024 立绘 + 5 套头像选择列表；切换形象写入 auth store 持久化（重进德塔生效）
+  8. **auth store**（`src/stores/auth.js`）：新增 `skinId` ref（localStorage 持久化）+ `setSkinId` 方法
+  9. **main.js**：createGame 加 `skinId` 第 4 参数，写入 Phaser registry
+- **5 套人设**（鸣潮/原神风少女，AI 默认设计）：
+  | 套 | 发色 | 发型 | 服装 | 风格 |
+  |---|---|---|---|---|
+  | set1 | 粉色 | 双马尾 | 学院制服（西装+短裙+长袜） | 学园少女 |
+  | set2 | 黑色 | 长直 | 巫女服（红白袴+白衣） | 和风神职 |
+  | set3 | 金色 | 单马尾 | 骑士轻甲（胸甲+披风） | 西幻骑士 |
+  | set4 | 银色 | 短发 | 法师长袍（宽袖+星纹） | 魔导师 |
+  | set5 | 蓝色 | 双长辫（参考金克丝 Jinx） | 战斗机甲服（机械臂+发光纹） | 赛博机甲 |
+- **配套资源**：
+  - 5 套立绘工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`（基于 `npc/portrait_illustrious.json` 模板，删除 mygo LoRA，改用纯 waiIllustriousSDXL_v160 大模型；每套 seed 100001~100005 保证差异化）
+  - 生成脚本：`scripts/gen_player_portrait_workflows.py`（批量生成 5 套 JSON，未来扩展皮肤复用）
+  - PIL 头像脚本：`scripts/portrait_to_avatar.py`（从立绘截取头部上 35% 区域，nearest 降采样到 40×40）
+  - ComfyUI 模型下载脚本：`scripts/download_models.sh`（hf-mirror 镜像，下载 SDXL Base + Pixel-Art-XL LoRA + ControlNet OpenPose SDXL）
+- **验证**：`npx vite build` 通过（构建无错），GameView chunk 1.86MB（含 5 套 spritesheet 加载逻辑）
+- **未完成（待模型下载后下一会话继续）**：
+  - 阶段 C：用工作流 JSON 在 ComfyUI 中跑出 5 套真实立绘（1024×1024 抠图透明 PNG）
+  - 阶段 E：ControlNet OpenPose 精灵表工作流 JSON（4 方向 × 4 帧 = 16 帧/套）
+  - 阶段 F：OpenPose 骨架参考图（16 张）
+  - 阶段 G：生成 5 套精灵表（80 帧）+ PIL 拼 4×4 网格
+- **状态**：代码接入完成（本地构建通过），美术资源待 ComfyUI 生成
+- **关联文档**：`bug-log.md` BUG-35（NetworkSystem IIFE 误删右括号）；根 `CHANGELOG.md`；`.ai/handoff.md`
+
+---
+
 ### [fix] NPC 思考状态 spinner 优化 + 传送门交互修复
 
 - **时间**：2026-07-20

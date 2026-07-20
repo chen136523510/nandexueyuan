@@ -5,6 +5,8 @@ import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
   const user = ref(null)
+  // 玩家形象 ID（1-5），本地存储，后续 P4 角色创建系统接入后端
+  const skinId = ref(localStorage.getItem('skinId') || '1')
 
   const isLoggedIn = computed(() => !!token.value)
   const role = computed(() => user.value?.role || '')
@@ -50,5 +52,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
   }
 
-  return { token, user, isLoggedIn, role, displayName, login, register, fetchMe, logout }
+  /** 设置玩家形象 ID（1-5），同步到 localStorage */
+  function setSkinId(id) {
+    skinId.value = String(id)
+    localStorage.setItem('skinId', String(id))
+  }
+
+  return { token, user, skinId, isLoggedIn, role, displayName, login, register, fetchMe, logout, setSkinId }
 })

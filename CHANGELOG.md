@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-07-20 晚 玩家精灵四方向行走系统 + 5 套形象（R-003 阶段 1）
+
+### 决策依据
+- **背景**：原玩家为 32×32 蓝色色块（`player_default`），无形象差异、无行走动画（仅靠 `setFlipX` 翻贴），20 人社区无法体现个人特色
+- **触发**：用户拉取最新代码后明确需求："玩家精灵先全作为少女形象，5 套差异化，参考鸣潮/原神风，四方向行走动画用于玩家行动"
+- **现状核查**：项目历史 0 处 `anims.create`/`anims.play` 调用，Phaser 动画系统从未启用；PlayerState schema 有 `facing`/`anim` 字段但前端 `updateOtherPlayer` 完全丢弃；HUD `<canvas class="avatar-canvas">` 空白从未绘制
+
+### 替代方案对比
+| 方案 | 描述 | 优点 | 缺点 | 选择 |
+|---|---|---|---|---|
+| A. ControlNet OpenPose 逐帧 | SDXL + ControlNet 约束 16 帧姿势 | 角色一致性最强 | 需下载 8GB 模型，调试 2-4 小时 | ✅ 采用（待模型下载） |
+| B. waiIllustriousSDXL 直出 spritesheet | 复用现有二次元大模型 | 无需下载 | 角色一致性差，像素感弱 | ❌ 否决 |
+| C. 立绘降采样单帧 + flipX | 复用现有立绘直接降采样 | 最快 | 无真正动画感 | ❌ 否决 |
+
+### 影响评估
+- **架构级**：首次启用 Phaser 动画系统，新增 `createPlayerAnimations` 模块（40 anims）
+- **schema 变更**：PlayerState 加 `skinId: 'string'` 字段，向后兼容（默认 '1'，旧客户端自动得默认值）
+- **资源目录**：`public/game/sprites/players/` + `public/game/sprites/avatars/` + `public/game/portraits/player_set{N}.png` 新增 5 套资源位（现仅 .gitkeep，待 ComfyUI 生成）
+- **跨机影响**：白机无需改动，schema 默认值兼容；黑机需下载 SDXL/Pixel-Art-XL LoRA/ControlNet OpenPose SDXL 共 8GB
+- **关联文档**：`prd/01-需求文档/04-德塔/changelog.md` 详细技术方案；`bug-log.md` BUG-35
+
+### 关键决策
+1. **5 套全少女**：用户明确要求"玩家精灵先全作为少女形象"，社区 20 人共用 5 套（后续 P4 角色创建系统可扩展到每人独立）
+2. **set5 参考金克丝发型**：用户指定双长辫子（two long braids）配赛博机甲服
+3. **立绘与精灵分离**：立绘摆很多 pose（鸣潮/原神风），精灵是常态动作（行走），两者 prompt 不同
+4. **skinId 走 localStorage**：不进后端用户表，后续 P4 接入时再迁移
+5. **切换形象重进生效**：Phaser 纹理加载后不易热替换，HUD 切换立绘+头像，精灵需重连 Colyseus 触发 PreloadScene
+
+---
+
 ## 2026-07-20 NPC思考状态spinner优化 + 传送门交互修复
 
 ### NPC 思考状态 UI 优化（ChatView + GameView）
