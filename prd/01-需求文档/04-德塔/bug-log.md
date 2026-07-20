@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-07-20（白机 spinner 优化 + 传送门修复）
+
+---
+
+### BUG-33：closeNpcDialog 引用已删除的 thinkingTimer 导致 ReferenceError
+
+- **现象**：GameView 中 NPC 对话弹窗关闭时报错 `ReferenceError: thinkingTimer is not defined`，弹窗无法正常关闭
+- **根因**：删除 `thinkingTimer` 变量和 `setInterval` 定时器后，`closeNpcDialog` 函数中仍残留 `if (thinkingTimer) { clearInterval(thinkingTimer); thinkingTimer = null }` 引用
+- **修复**：删除 `closeNpcDialog` 中对 `thinkingTimer` 的引用，只保留 `showNpcDialog.value = false` + `npcThinking.value = false` + `resumeGame()`
+- **文件**：`src/views/GameView.vue`
+- **验证**：打开 NPC 对话弹窗后点 × 关闭，控制台零报错
+- **教训**：删除变量后需全局搜索残留引用，Vue 组件方法中的引用不会在编译期报错，只在运行时触发
+- **状态**：已修复
+
+---
+
+### BUG-34：角色出生点与传送门坐标重合，按 E 永远触发传送门
+
+- **现象**：进入德塔后角色出生在传送门正上方，按 E 总是弹出"确定要离开塔吗？"传送门弹窗，无法走到男德通 NPC 旁边触发对话
+- **根因**：
+  1. 出生点 `startX = towerX + 320 = 520`，传送门 `PORTAL_POSITION.x = 520`，两者完全重合
+  2. 传送门交互判断 `portalDist < nearestDist` 缺少 `< INTERACT_DISTANCE` 上限检查
+  3. 大门交互判断 `doorDist < INTERACT_DISTANCE` 缺少 `< nearestDist` 条件，会强行覆盖更近的 NPC
+- **修复**：
+  1. 出生点从 `towerX+320`(520) 移到 `towerX+200`(400)，距传送门 120px（超出 48px 交互范围）
+  2. 统一大门/传送门判断条件为 `dist < INTERACT_DISTANCE && dist < nearestDist`
+- **文件**：`game/scenes/WorldScene.js`
+- **验证**：刷新页面后按 E 不触发传送门；向左走 6 步到男德通 NPC 旁按 E，正常弹出 NPC 对话弹窗
+- **教训**：交互对象的距离判断需要同时满足"在交互范围内"和"是最近的"两个条件，缺少任一都会导致优先级混乱
+- **状态**：已修复
+
+---
+
 ## 2026-07-20（白机 NPC AI 对话优化）
 
 ---

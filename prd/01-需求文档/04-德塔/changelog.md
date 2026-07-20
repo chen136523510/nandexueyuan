@@ -4,6 +4,21 @@
 
 ---
 
+### [fix] NPC 思考状态 spinner 优化 + 传送门交互修复
+
+- **时间**：2026-07-20
+- **变更人**：陈梓键（白机）
+- **背景**：NPC AI 对话"正在思考"动画使用 `setInterval` 轮询文字点号（`. .. ...`），存在内存泄漏风险且视觉不够专业；角色出生点与传送门坐标重合，按 E 永远触发传送门而非男德通 NPC
+- **变更内容**：
+  1. **NPC 思考状态 spinner 优化**（`src/views/ChatView.vue` + `src/views/GameView.vue`）：AI 思考中改用纯 CSS spinner（0.8s 线性旋转金色圆圈）替代文字点号动画；去掉 `setInterval` 定时器 + `thinkingDots`/`thinkingTimer` 变量；ChatView 修复气泡渲染条件（空 content + loading 时显示 spinner + "正在思考..."）
+  2. **传送门出生点修复**（`game/scenes/WorldScene.js`）：出生点从 `towerX+320`(520) 移到 `towerX+200`(400)，远离传送门(520)触发范围
+  3. **交互距离判断统一**（`game/scenes/WorldScene.js`）：大门判断缺少 `< nearestDist` 条件（会覆盖更近的 NPC），传送门判断缺少 `< INTERACT_DISTANCE` 上限，统一为 `dist < INTERACT_DISTANCE && dist < nearestDist`
+- **验证**：浏览器端到端验证 - NPC 对话弹窗正常弹出（男德通立绘 + 欢迎消息 + 输入框），发送"你是谁"-> AI 正常回复，控制台零报错
+- **状态**：代码完成，已验证（本地浏览器端到端通过），已部署（`6bf5e57`）
+- **关联文档**：`bug-log.md` BUG-33、BUG-34
+
+---
+
 ### [feat] 版本公告系统（R-004）
 
 - **时间**：2026-07-20
