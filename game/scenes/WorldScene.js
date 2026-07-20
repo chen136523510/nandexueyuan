@@ -120,7 +120,7 @@ export class WorldScene extends Phaser.Scene {
 
     // === 玩家 ===
     const nickname = this.registry.get('nickname') || '学员'
-    const startX = towerX + 320
+    const startX = towerX + 200   // 400，远离传送门(520)和男德通NPC(360)，出生后需走几步才能交互
     const startY = groundY - 32
     this.player = new Player(this, startX, startY, nickname)
     this.inputSystem = new InputSystem(this)
@@ -572,8 +572,9 @@ export class WorldScene extends Phaser.Scene {
     }
 
     const doorDist = Phaser.Math.Distance.Between(px, py, this.door.x, this.door.y)
-    if (doorDist < INTERACT_DISTANCE) {
+    if (doorDist < INTERACT_DISTANCE && doorDist < nearestDist) {
       nearest = { type: 'door', target: this.door, dist: doorDist }
+      nearestDist = doorDist
     }
 
     // 新增：中层房间门检测（物理障碍门）
@@ -589,8 +590,9 @@ export class WorldScene extends Phaser.Scene {
 
     // 传送门检测
     const portalDist = Phaser.Math.Distance.Between(px, py, this.portal.x, this.portal.y)
-    if (portalDist < nearestDist) {
+    if (portalDist < INTERACT_DISTANCE && portalDist < nearestDist) {
       nearest = { type: 'portal', target: this.portal, dist: portalDist }
+      nearestDist = portalDist
     }
 
     if (nearest) {

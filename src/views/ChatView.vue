@@ -241,11 +241,11 @@ function formatDate(date) {
             </div>
 
             <!-- 回答气泡 -->
-            <div v-if="msg.content || !loading" class="msg-bubble" :class="{ error: msg.error }">
-              {{ msg.content }}
-              <span v-if="msg === messages[messages.length - 1] && loading && !msg.content && msg.role === 'bot'" class="typing">
-                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-              </span>
+            <div class="msg-bubble" :class="{ error: msg.error }">
+              <template v-if="msg.content">{{ msg.content }}</template>
+              <div v-else-if="loading && msg.role === 'bot'" class="msg-thinking-placeholder">
+                <span class="spinner"></span> 正在思考...
+              </div>
             </div>
 
             <div v-if="msg.intent" class="msg-meta">
@@ -501,6 +501,25 @@ function formatDate(date) {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
 }
+
+/* 正在思考 spinner */
+.msg-thinking-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--md-text-secondary, #8A8A8A);
+  font-size: 14px;
+}
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e8e8e8;
+  border-top-color: var(--md-primary, #A8C5A0);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .msg-meta { margin-top: 4px; }
 .intent-tag {

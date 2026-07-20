@@ -23,9 +23,7 @@ const npcMessages = ref([])           // 对话消息列表
 const npcInput = ref('')             // 输入框
 const npcInputRef = ref(null)        // 输入框 ref
 const npcMessagesRef = ref(null)     // 消息列表 ref
-const npcThinking = ref(false)       // AI 思考中（占位，阶段 4 接 SSE）
-const thinkingDots = ref('')         // 思考动画中
-let thinkingTimer = null             // 思考动画定时器
+const npcThinking = ref(false)       // AI 思考中（控制输入框禁用）
 const npcSessionId = ref(null)       // NPC 对话会话 ID（跨多轮对话复用）
 
 // 聊天
@@ -137,7 +135,6 @@ function onGameReady() {
 function closeNpcDialog() {
   showNpcDialog.value = false
   npcThinking.value = false
-  if (thinkingTimer) { clearInterval(thinkingTimer); thinkingTimer = null }
   resumeGame()
 }
 function closeItemDialog() {
@@ -170,7 +167,6 @@ function sendNpcMessage() {
   npcMessages.value.push(aiMsg)
   scrollNpcMessages()
 
-  startThinkingAnimation()
   streamNpcReply(text, aiMsg)
 }
 
@@ -194,7 +190,6 @@ async function streamNpcReply(question, aiMsg) {
     })
 
     if (!response.ok) {
-      stopThinkingAnimation()
       aiMsg.text = `请求失败 (${response.status})`
       npcThinking.value = false
       return
@@ -226,10 +221,7 @@ async function streamNpcReply(question, aiMsg) {
         try {
           const data = JSON.parse(dataStr)
           if (eventType === 'token') {
-            if (firstToken) {
-              stopThinkingAnimation() // 第一个 token 到，停止思考动画
-              firstToken = false
-            }
+            firstToken = false
             aiMsg.text += data.content
             scrollNpcMessages()
           } else if (eventType === 'done') {
@@ -239,7 +231,6 @@ async function streamNpcReply(question, aiMsg) {
               sendNpcReply(nickname.value, data.npcId || 'nandetong', aiMsg.text)
             }
           } else if (eventType === 'error') {
-            stopThinkingAnimation()
             aiMsg.text = data.message || '出错了'
           }
         } catch {
@@ -250,32 +241,15 @@ async function streamNpcReply(question, aiMsg) {
 
     // 如果一个 token 都没收到（API 额度错误等），保留占位提示
     if (firstToken && !aiMsg.text) {
-      stopThinkingAnimation()
       aiMsg.text = '男德通暂时没回应，稍后再试~'
     }
   } catch (err) {
-    stopThinkingAnimation()
     aiMsg.text = err.message?.includes('fetch') || err.message?.includes('network')
       ? '网络错误，请检查连接'
       : (err.message || '未知错误')
   } finally {
     npcThinking.value = false
-    stopThinkingAnimation()
   }
-}
-
-function startThinkingAnimation() {
-  let dots = 0
-  thinkingDots.value = ''
-  thinkingTimer = setInterval(() => {
-    dots = (dots + 1) % 4
-    thinkingDots.value = '.'.repeat(dots) || '·'
-  }, 300)
-}
-
-function stopThinkingAnimation() {
-  if (thinkingTimer) { clearInterval(thinkingTimer); thinkingTimer = null }
-  thinkingDots.value = ''
 }
 
 function scrollNpcMessages() {
@@ -524,11 +498,8 @@ function drawMinimap() {
             <div class="nde-npc-messages" ref="npcMessagesRef">
               <div v-for="(msg, i) in npcMessages" :key="i" class="nde-npc-msg" :class="msg.role">
                 <span class="nde-npc-role">{{ msg.role === 'user' ? nickname : (npcConfig?.name || '男德通') }}：</span>
-                <span class="nde-npc-text" v-html="msg.text"></span>
-              </div>
-              <div v-if="npcThinking" class="nde-npc-msg assistant">
-                <span class="nde-npc-role">{{ npcConfig?.name || '男德通' }}：</span>
-                <span class="nde-npc-thinking">{{ thinkingDots }}</span>
+                <span v-if="msg.text" class="nde-npc-text" v-html="msg.text"></span>
+                <span v-else class="nde-npc-thinking"><span class="nde-spinner"></span> 正在思考...</span>
               </div>
             </div>
             <div class="nde-npc-input-row">
@@ -960,9 +931,22 @@ function drawMinimap() {
   color: #ddd;
 }
 .nde-npc-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #888;
   font-style: italic;
 }
+.nde-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #444;
+  border-top-color: #FFD700;
+  border-radius: 50%;
+  animation: nde-spin 0.8s linear infinite;
+}
+@keyframes nde-spin { to { transform: rotate(360deg); } }
 .nde-npc-input-row {
   display: flex;
   align-items: center;

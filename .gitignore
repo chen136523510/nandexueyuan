@@ -112,8 +112,9 @@ askpass.bat
 
 # Playwright MCP 临时截图/快照
 .playwright-mcp/
-# 临时测试截图
-*-test-*.png
+# 临时测试截图（根目录下的调试截图，不包含 public/ 目录下的游戏资源）
+/*.png
+/*-test-*.png
 deta-*.png
 broadcast-*.png
 e2e-test.png
