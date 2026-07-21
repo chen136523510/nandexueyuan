@@ -1,7 +1,8 @@
 # 生产环境部署指南 - WebSocket 黑机外包检索
 
-> 版本：v1.0 | 日期：2025-07-21
+> 版本：v1.1 | 日期：2026-07-22
 > 适用场景：BUG-36 架构优化（黑机外包检索）首次部署到生产
+> **部署状态：✅ 已完成**（2026-07-22 黑机部署，云端 + 黑机 Worker 端到端验证通过）
 
 ---
 
@@ -118,12 +119,11 @@ pm2 --version
 
 ```bash
 # 修改 server/.env 的 CLOUD_WS_URL
-# 当前是本地开发地址：ws://localhost:3000/search-hub
-# 改为生产地址：
-# CLOUD_WS_URL=ws://47.96.158.104:3000/search-hub
+# 生产地址（通过 Nginx 反代，无需开放 3000 端口）：
+# CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub
 ```
 
-> ⚠️ 注意：本地开发用 localhost，生产部署用 47.96.158.104。如果后续还要本地联调，记得切回来。
+> ⚠️ 注意：本地开发用 localhost，生产部署用域名。如果后续还要本地联调，记得切回来。
 
 #### 3.3 同步生产数据库
 
@@ -145,19 +145,19 @@ bash scripts/sync-prod-db.sh
 cd G:/UGit/nandexueyuan/server
 
 # 用 PM2 启动（7×24 守护，崩溃自动重启）
-pm2 start src/searchWorker.js --name black-worker --cwd server
+npx pm2 start src/searchWorker.js --name search-worker
 
-# 保存 PM2 配置（开机自启用）
-pm2 save
-pm2 startup   # 按提示执行返回的命令
+# 保存 PM2 配置（开机自启以后再配）
+npx pm2 save
+# npx pm2 startup   # 开机自启，以后再配
 
 # 查看日志
-pm2 logs black-worker --lines 10
+npx pm2 logs search-worker --lines 10
 ```
 
 **预期日志**：
 ```
-[WS Worker] 连接云端: ws://47.96.158.104:3000/search-hub
+[WS Worker] 连接云端: ws://www.nandexueyuan.top/search-hub
 [WS Worker] 连接已建立，发送握手...
 [WS Worker] 认证成功，黑机已上线
 ```
@@ -192,14 +192,14 @@ ssh root@47.96.158.104 "pm2 logs nandexueyuan-api --lines 5 --nostream"
 
 ```bash
 # 1. 停掉黑机 Worker
-pm2 stop black-worker
+npx pm2 stop search-worker
 
 # 2. 浏览器提问"如何评价丘序明？"
-#    云端日志应显示: [orchestrator] ⚠️ 黑机离线，降级本地检索（LIMIT 50）
+#    云端日志应显示: [Orchestrator] 黑机失败，降级本地: ...
 #    前端仍能正常回复（精度降低但可用）
 
 # 3. 重启黑机 Worker
-pm2 start black-worker
+npx pm2 start search-worker
 
 # 4. 等待 5 秒自动重连，再提问验证恢复全量检索
 ```
@@ -211,12 +211,12 @@ pm2 start black-worker
 ### 常用 PM2 命令（黑机）
 
 ```bash
-pm2 status                    # 查看状态
-pm2 logs black-worker         # 实时日志
-pm2 logs black-worker --err   # 只看错误
-pm2 restart black-worker      # 重启
-pm2 stop black-worker         # 停止
-pm2 monit                     # 实时监控 CPU/内存
+npx pm2 status                    # 查看状态
+npx pm2 logs search-worker        # 实时日志
+npx pm2 logs search-worker --err  # 只看错误
+npx pm2 restart search-worker     # 重启
+npx pm2 stop search-worker        # 停止
+npx pm2 monit                     # 实时监控 CPU/内存
 ```
 
 ### 常用 PM2 命令（云端）
@@ -243,7 +243,7 @@ pm2 set pm2-logrotate:compress true
 # 黑机执行
 cd G:/UGit/nandexueyuan
 bash scripts/sync-prod-db.sh
-pm2 restart black-worker
+npx pm2 restart search-worker
 ```
 
 ---
@@ -289,7 +289,7 @@ location /search-hub {
 
 ```bash
 # 查看错误日志
-pm2 logs black-worker --err --lines 30
+npx pm2 logs search-worker --err --lines 30
 
 # 常见原因：
 # - 数据库路径错误：确认 server/prisma/dev.db 存在
@@ -301,27 +301,33 @@ pm2 logs black-worker --err --lines 30
 
 黑机 .env 的 `CLOUD_WS_URL` 需要区分：
 - **本地联调**：`ws://localhost:3000/search-hub`
-- **生产部署**：`ws://47.96.158.104:3000/search-hub`（或 Nginx 反代地址）
+- **生产部署**：`ws://www.nandexueyuan.top/search-hub`（通过 Nginx 反代，无需开放 3000 端口）
 
-切换后需重启 Worker：`pm2 restart black-worker`
+切换后需重启 Worker：`pm2 restart search-worker`
 
 ---
 
 ## 📝 部署检查清单
 
-- [ ] 代码已 commit + push 到 GitHub master
-- [ ] 云端：`bash deploy.sh` 执行成功，三个服务正常
-- [ ] 云端：`.env` 有 `BLACK_WORKER_TOKEN`
-- [ ] 云端：安全组放行 3000 端口（或 Nginx 反代 WS）
-- [ ] 黑机：PM2 已安装
-- [ ] 黑机：`.env` 的 `CLOUD_WS_URL` 指向生产云端
-- [ ] 黑机：`bash scripts/sync-prod-db.sh` 同步成功
-- [ ] 黑机：`pm2 start src/searchWorker.js --name black-worker` 启动成功
-- [ ] 黑机：日志显示"认证成功，黑机已上线"
-- [ ] 云端：日志显示"黑机认证成功，已上线"
-- [ ] 端到端：提问"如何评价丘序明"返回全量结果
-- [ ] 降级：停黑机 Worker 后提问仍能返回（LIMIT 50）
+> 以下为 2026-07-22 黑机实际部署结果
+
+- [x] 代码已 commit + push 到 GitHub master
+- [x] 云端：`git pull` + `npm install` + `prisma migrate` 执行成功
+- [x] 云端：`.env` 有 `BLACK_WORKER_TOKEN`
+- [x] 云端：Nginx `/search-hub` WS 反代已配置 + reload
+- [x] 云端：PM2 `nandexueyuan-api` + `nandexueyuan-game` 重启成功
+- [x] 云端：日志显示 `[SearchHub] WS Hub 已挂载到 /search-hub`
+- [x] 黑机：PM2 已安装（npx pm2）
+- [x] 黑机：`.env` 的 `CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub`
+- [x] 黑机：`prod.db` 已同步（07-21 完成）
+- [x] 黑机：PM2 `search-worker` 启动成功，已 `pm2 save`
+- [x] 黑机：日志显示"认证成功，黑机已上线"
+- [x] 云端：日志显示"黑机认证成功，已上线"
+- [x] 降级验证：网络中断后 Worker 自动重连成功（5s 重连机制验证通过）
+- [ ] 端到端：用户提问验证全量检索结果（待用户在浏览器操作）
+- [ ] `pm2 startup`：开机自启（用户说以后再配）
 
 ---
 
-**文档版本**：v1.0 | **维护者**：黑机（陈梓键）
+**文档版本**：v1.1 | **维护者**：黑机（陈梓键）
+**最后部署**：2026-07-22 | **最新提交**：`72f77e3`

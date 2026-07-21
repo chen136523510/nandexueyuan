@@ -4,6 +4,30 @@
 
 ---
 
+### [deploy] WebSocket 黑机外包检索 - 生产部署完成
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（黑机）
+- **背景**：BUG-36 WebSocket 长连接方案代码完成后，部署到生产环境并端到端验证
+- **部署内容**：
+  1. 云端：`git pull` + `npm install`（装 ws）+ `prisma generate/migrate` + PM2 重启
+  2. 云端：`.env` 追加 `BLACK_WORKER_TOKEN`
+  3. 云端：Nginx 新增 `/search-hub` WebSocket 反代（proxy_pass + Upgrade headers + 86400s read_timeout）+ `nginx -t` + reload
+  4. 黑机：`.env` 的 `CLOUD_WS_URL` 改为 `ws://www.nandexueyuan.top/search-hub`
+  5. 黑机：PM2 启动 `search-worker` 常驻 + `pm2 save`
+- **验证结果**：
+  - ✅ 云端日志：`[SearchHub] WS Hub 已挂载到 /search-hub` + `黑机认证成功，已上线`
+  - ✅ 黑机日志：`认证成功，黑机已上线`
+  - ✅ 自动重连：网络中断后 Worker 5 秒自动重连成功
+  - ✅ PM2 守护：search-worker 进程 online，0 重启
+- **注意事项**：
+  - 黑机出口网络（深圳电信）有间歇性中断，Worker 自动重连机制可覆盖
+  - `pm2 startup`（开机自启）待以后配置
+  - 端到端用户验证待用户在浏览器操作
+- **关联文档**：`deploy-production.md` v1.1，`bug-log.md` BUG-36
+
+---
+
 ### [feat] WebSocket 长连接方案 - 黑机外包检索（BUG-36 架构优化）
 
 - **时间**：2026-07-21

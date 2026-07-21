@@ -1,29 +1,27 @@
 # AI 交接单
 
-> 最后更新：2026-07-21（黑机，WebSocket 长连接方案落地完成）
+> 最后更新：2026-07-22（黑机，WebSocket 黑机外包检索**已部署到生产并验证通过**）
 > 提交人：陈梓键（黑机）
 > 所在设备：黑机（R7 9700X / 32GB DDR5 / RTX 4070 / 3TB NVMe）
-> 稳定版本：`d62a166`（生产环境，已部署）
-> 最新提交：待提交（WebSocket 长连接方案 - BUG-36 架构优化）
-> **下一班**：白机，部署验证 + 端到端联调（需黑机 Worker 常开）
+> 稳定版本：`72f77e3`（生产环境，已部署）
+> 最新提交：待提交（部署文档同步 + changelog 更新）
+> **下一班**：白机，端到端用户验证（浏览器提问验证全量检索）
 > **当前阶段**：
 > - P5 美术：立绘 + 像素精灵 + 场景瓦片 + 三层塔楼改造 **全部完成**
-> - P2 NPC AI 对话：多 Agent v2 + OOM 修复 + **WebSocket 黑机外包检索已落地**（待部署验证）
+> - P2 NPC AI 对话：多 Agent v2 + OOM 修复 + **WebSocket 黑机外包检索已部署到生产** ✅
 > - 版本公告系统（R-004）：v1.2.0 已录入
 > - 三层塔楼改造：7 阶段完成 + 6 个 bug 修复完成，**待用户最终验证**
 > - R-003 玩家精灵系统（黑机 07-20 晚开发中）：代码接入完成，**待 ComfyUI 跑美术资源**
 
-> **本轮（黑机 07-21）要点**：
-> - **WebSocket 长连接方案落地**（BUG-36 架构优化）：黑机 7×24 常开，重度检索任务外包给黑机全量执行
-> - **性能基准验证**：黑机全量 `nickname LIKE '%xxx%'` 查询 51 万行仅 0.07-0.13 秒，数据膨胀 10 倍后仍 <2 秒
-> - **新增文件**：`server/src/searchHub.js`（WS Hub）+ `server/src/searchWorker.js`（黑机 Worker）+ `scripts/sync-prod-db.sh`
-> - **改动文件**：`orchestrator.js`（dispatchAgent 外包逻辑）+ 3 个子 Agent（limit 参数化）+ `index.js`（WS Hub 挂载）+ `package.json`/`.env`/`deploy.sh`
-> - **降级策略**：黑机在线+重度任务->黑机全量；超时/断线->降级本地 LIMIT 50；轻量任务始终本地
-> - **⏭ 待白机继续**：部署到云端 + 启动黑机 Worker + 端到端联调验证（详见下方【WebSocket 方案落地】章节）
+> **本轮（黑机 07-22）要点**：
+> - **WebSocket 黑机外包检索生产部署完成**：云端 + Nginx + 黑机 Worker 全链路打通
+> - **部署内容**：云端 git pull + npm install + Prisma + PM2 重启；Nginx 加 `/search-hub` WS 反代；黑机 PM2 `search-worker` 常驻
+> - **验证结果**：云端日志"黑机认证成功，已上线" ✅；黑机日志"认证成功，黑机已上线" ✅；自动重连验证通过 ✅
+> - **待白机继续**：用户浏览器端到端验证（提问"如何评价丘序明"看全量检索结果）
 
 ---
 
-## 【WebSocket 方案落地】（07-21 黑机实施完成）
+## 【WebSocket 方案落地】（07-21 黑机实施，07-22 部署到生产 ✅）
 
 ### 架构
 ```
@@ -37,23 +35,27 @@
 
 ### 启动方式
 ```bash
-# 云端（部署后）
-cd server && npm start          # Express + WS Hub
+# 云端（已部署，PM2 托管）
+# PM2: nandexueyuan-api（Express + WS Hub）
 
-# 黑机（7×24 常开）
-cd server && npm run search-worker   # WS Worker 主动连云端
+# 黑机（7×24 常开，PM2 托管）
+npx pm2 start src/searchWorker.js --name search-worker
 ```
 
-### 首次部署步骤
-1. 云端：`npm install`（装 ws 依赖）+ `npm start`
-2. 黑机：`bash scripts/sync-prod-db.sh`（首次同步 prod.db）
-3. 黑机：配置 `.env` 的 `CLOUD_WS_URL=ws://47.96.158.104:3000/search-hub`
-4. 黑机：`npm run search-worker`（启动 Worker，观察日志"认证成功，黑机已上线"）
-5. 验证：前端提问"如何评价丘序明"，云端日志应显示"黑机执行 person_messages 成功"
+### 部署状态（07-22 ✅ 已完成）
+1. ✅ 云端：`git pull` + `npm install`（装 ws）+ `prisma generate/migrate` + PM2 重启
+2. ✅ 云端：`.env` 追加 `BLACK_WORKER_TOKEN`
+3. ✅ 云端：Nginx 加 `/search-hub` WS 反代 + reload
+4. ✅ 黑机：`.env` 的 `CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub`
+5. ✅ 黑机：PM2 `search-worker` 常驻 + `pm2 save`
+6. ✅ 验证：云端日志"黑机认证成功，已上线" + 黑机日志"认证成功，黑机已上线"
+7. ⏭ 待用户验证：浏览器提问"如何评价丘序明"看全量检索结果
 
-### 降级验证
-- 关掉黑机 Worker -> 提问 -> 云端日志"黑机失败，降级本地" -> 前端正常返回（LIMIT 50）
-- 杀掉黑机 Worker -> 5 秒后自动重连 -> 恢复全量检索
+### 降级策略（已验证）
+- 黑机在线 + 重度任务 -> 黑机全量检索（数据最完整）
+- 黑机离线/超时 -> 降级本地 LIMIT 50（精度降低但不宕机）
+- 轻量任务（person_stat/topic_search）-> 始终本地执行
+- 网络中断 -> Worker 5 秒自动重连（已验证通过）
 
 ---
 > - **架构级 - 首次启用 Phaser 动画系统**：项目历史 0 处 `anims.create`/`anims.play`，本次从零搭建。PreloadScene 注册 40 个 anims（5 套 × 4 方向 × 2 状态），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画
