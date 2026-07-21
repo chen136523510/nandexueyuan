@@ -83,6 +83,7 @@ async function ask(q) {
     role: 'bot',
     content: '',
     thinking: '',
+    agentSteps: {},  // { router: [...], statistic: [...], semantic: [...], main: [...] }
     intent: null,
     sources: [],
     showThinking: true,
@@ -134,7 +135,17 @@ async function ask(q) {
 
         try {
           const data = JSON.parse(dataStr)
-          if (eventType === 'thinking') {
+          if (eventType === 'agent_thinking') {
+            // 多 Agent 结构化思考过程
+            const agent = data.agent || 'unknown'
+            if (!botMsg.agentSteps[agent]) botMsg.agentSteps[agent] = []
+            botMsg.agentSteps[agent].push({
+              phase: data.phase,
+              content: data.content,
+              data: data.data,
+            })
+          } else if (eventType === 'thinking') {
+            // 兼容旧版 thinking 事件
             if (data.step) {
               botMsg.thinking += data.step + '\n'
             }
@@ -232,8 +243,58 @@ function formatDate(date) {
           </div>
 
           <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
-            <!-- 思考过程 -->
-            <div v-if="msg.thinking && msg.role === 'bot'" class="msg-thinking">
+            <!-- 多 Agent 思考过程 -->
+            <div v-if="(msg.agentSteps && Object.keys(msg.agentSteps).length > 0) && msg.role === 'bot'" class="msg-agent-thinking">
+              <details :open="msg.showThinking">
+                <summary>💭 思考过程</summary>
+                <div class="agent-steps">
+                  <!-- 路由 -->
+                  <div v-if="msg.agentSteps.router" class="agent-group agent-router">
+                    <div class="agent-label">🧭 路由分析</div>
+                    <div v-for="(step, si) in msg.agentSteps.router" :key="'r'+si" class="agent-step">
+                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
+                    </div>
+                  </div>
+                  <!-- 统计 Agent -->
+                  <div v-if="msg.agentSteps.statistic" class="agent-group agent-statistic">
+                    <div class="agent-label">📊 数据统计 Agent</div>
+                    <div v-for="(step, si) in msg.agentSteps.statistic" :key="'s'+si" class="agent-step">
+                      <span v-if="step.content" class="step-content" :class="{ 'step-sql': step.content.startsWith('SQL:') }">{{ step.content }}</span>
+                      <div v-if="step.data && Array.isArray(step.data)" class="step-data">
+                        <div v-for="(row, ri) in step.data.slice(0, 5)" :key="ri" class="data-row">
+                          {{ JSON.stringify(row) }}
+                        </div>
+                        <span v-if="step.data.length > 5" class="data-more">...共 {{ step.data.length }} 条</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 语义 Agent -->
+                  <div v-if="msg.agentSteps.semantic" class="agent-group agent-semantic">
+                    <div class="agent-label">🔍 语义检索 Agent</div>
+                    <div v-for="(step, si) in msg.agentSteps.semantic" :key="'m'+si" class="agent-step">
+                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
+                      <div v-if="step.data && Array.isArray(step.data)" class="step-data">
+                        <div v-for="(msg2, mi) in step.data.slice(0, 3)" :key="mi" class="msg-row">
+                          <span class="msg-row-name">{{ msg2.nickname }}</span>
+                          <span class="msg-row-text">{{ (msg2.content || '').slice(0, 60) }}</span>
+                        </div>
+                        <span v-if="step.data.length > 3" class="data-more">...共 {{ step.data.length }} 条</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 主 Agent -->
+                  <div v-if="msg.agentSteps.main" class="agent-group agent-main">
+                    <div class="agent-label">🧠 主 Agent</div>
+                    <div v-for="(step, si) in msg.agentSteps.main" :key="'a'+si" class="agent-step">
+                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <!-- 兼容旧版思考过程（纯文本） -->
+            <div v-else-if="msg.thinking && msg.role === 'bot'" class="msg-thinking">
               <details :open="msg.showThinking">
                 <summary>💭 思考过程</summary>
                 <pre class="thinking-content">{{ msg.thinking }}</pre>
@@ -457,6 +518,93 @@ function formatDate(date) {
   word-break: break-word;
   max-height: 200px;
   overflow-y: auto;
+}
+
+/* 多 Agent 思考过程 */
+.msg-agent-thinking {
+  width: 100%;
+  margin-bottom: 4px;
+}
+.msg-agent-thinking details {
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.msg-agent-thinking summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  user-select: none;
+  font-weight: 500;
+}
+.agent-steps {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.agent-group {
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.agent-router { background: #f0f5ff; border-left: 3px solid #1677ff; }
+.agent-statistic { background: #fff7e6; border-left: 3px solid #fa8c16; }
+.agent-semantic { background: #f6ffed; border-left: 3px solid #52c41a; }
+.agent-main { background: #f9f0ff; border-left: 3px solid #722ed1; }
+.agent-label {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+.agent-step {
+  color: #555;
+  margin-bottom: 2px;
+}
+.step-content {
+  display: block;
+  word-break: break-word;
+}
+.step-sql {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #d46b08;
+  background: rgba(250, 140, 22, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+.step-data {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid rgba(0,0,0,0.08);
+}
+.data-row {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #666;
+  padding: 1px 0;
+}
+.msg-row {
+  font-size: 11px;
+  padding: 2px 0;
+  color: #555;
+}
+.msg-row-name {
+  font-weight: 600;
+  color: #389e0d;
+  margin-right: 6px;
+}
+.msg-row-text {
+  color: #666;
+}
+.data-more {
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
 }
 
 .msg-bubble {

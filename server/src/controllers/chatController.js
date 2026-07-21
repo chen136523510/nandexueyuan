@@ -5,6 +5,7 @@ import { resolveName, buildMemberKnowledge } from '../utils/knowledge.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { orchestrate } from '../agents/orchestrator.js'
 
 // ESM __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -504,26 +505,8 @@ export async function askChat(req, res, next) {
       .filter((t) => t.content !== question || t.role !== 'user')
       .slice(-19)
 
-    // 意图分类
-    let intent
-    try {
-      intent = await classifyIntent(question)
-    } catch {
-      intent = 'chat'
-    }
-    if (intent === 'chat' && looksLikeDataQuestion(question)) {
-      intent = 'statistic'
-    }
-
-    // 按意图路由（传 send 函数）
-    let result
-    if (intent === 'statistic') {
-      result = await handleStatistic(question, history, send)
-    } else if (intent === 'semantic') {
-      result = await handleSemantic(question, history, send)
-    } else {
-      result = await handleChat(question, history, send)
-    }
+    // 多 Agent 协调器（并行检索 + 主 Agent 综合回答）
+    const result = await orchestrate(question, history, send)
 
     // 发送引用来源
     if (result.sources?.length) {
@@ -536,13 +519,13 @@ export async function askChat(req, res, next) {
         sessionId: session.id,
         role: 'assistant',
         content: result.answer,
-        intent,
+        intent: result.intent,
         sources: result.sources?.length ? JSON.stringify(result.sources) : null,
       },
     })
 
     // 发送完成事件
-    send('done', { sessionId: session.id, intent })
+    send('done', { sessionId: session.id, intent: result.intent })
   } catch (err) {
     console.error('[Chat Error]', err.message, err.stack || '')
 
