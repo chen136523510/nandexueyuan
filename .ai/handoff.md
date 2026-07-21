@@ -1,10 +1,11 @@
 # AI 交接单
 
-> 最后更新：2026-07-21（白机）
+> 最后更新：2026-07-21（白机，工作告一段落）
 > 提交人：陈梓键（白机）
 > 所在设备：白机（白天，荣耀便携本）
 > 稳定版本：`d62a166`（生产环境，已部署）
-> 最新提交：`d62a166`（已部署）
+> 最新提交：`1227223`（文档同步，黑机硬件配置 + 外包检索调研）
+> **下一班**：黑机续接，调研外包检索可行性 + 验证黑机全量查询性能
 > **当前阶段**：
 > - P5 美术：立绘 + 像素精灵 + 场景瓦片 + 三层塔楼改造 **全部完成**
 > - P2 NPC AI 对话：多 Agent v2 + OOM 修复已上线，**精度受限于条数限制，待架构优化**
@@ -19,7 +20,64 @@
 > - **BUG-36 修复**（`d62a166`）：多 Agent 全量检索导致服务器 OOM 崩溃，临时方案限制条数（person_messages LIMIT 50, mentioned LIMIT 30, fetchWithContext 改 IN 查询）
 > - **服务器故障处理**：首页 500（`chmod o+x /root`）、SSH 超时（磁盘 IO 瓶颈）、LLM 429 配额超限（已恢复）
 > - **全量检索配置调研**：当前 2 核机器扛不住全量检索，瓶颈是 `nickname LIKE '%xxx%'` 全表扫描 + SQLite cache 仅 2MB。优化方向：映射表 + PRAGMA 调优（零成本）或升级 4核8GB ESSD
-> - **待用户决策**：全量检索架构方案（用户给了调研方向，待确认）
+> - **黑机硬件配置写入**（`1227223`）：R7 9700X / 32GB DDR5 / RTX 4070 / 3TB NVMe，写入 `.trae/rules/two-machine-collab.md`
+> - **⏭ 待黑机继续**：黑机外包检索算力方案调研（详见下方【黑机外包检索调研】章节）
+
+---
+
+## 【黑机外包检索调研】（07-21 白机初步调研，待黑机续接）
+
+### 背景
+2 核 2G 服务器无法承受全量检索（BUG-36 OOM 崩溃）。黑机 32GB 内存可将 700MB `prod.db` 完全常驻内存，全量检索从"磁盘全表扫描"变"内存遍历"，提速 100 倍+。方案是把检索算力从云端外包给黑机。
+
+### 关键技术现状（调研结论）
+- **检索本质是本地 SQLite 查询**：子 Agent 直接 `prisma.$queryRawUnsafe`，含 FTS5 全文检索
+- **orchestrate 的 `send` 回调是天然外包边界**：`orchestrate(question, history, send)`，send 是纯函数回调，可替换为远程调用
+- **项目零微服务基础设施**：无 RPC、无消息队列、后端连 axios 都没装，LLM 调用用原生 fetch
+- **黑机无公网 IP，无内网穿透配置**（frp/ngrok 全无）
+- **检索阶段代码位置**：`orchestrator.js` 的 `dispatchAgent` + `Promise.all` 并行调度子 Agent
+- **数据同步难点**：黑机需拿到线上 `prod.db`（SQLite 单文件，可 scp 复制，51 万条约 700MB）
+
+### 方案 A：frp 内网穿透
+```
+用户 -> 云端Express(规划/分析/SSE) -> HTTP调黑机检索服务(:4001) -> 返回JSON -> 云端大Agent分析
+```
+- 云端跑 frps，黑机跑 frpc（黑机出站连接，不需要公网 IP）
+- 黑机新增精简 Express 检索服务（Prisma 全量查询 + SQLite cache 开 2GB）
+- 云端 orchestrator 的 `dispatchAgent` 改为 `fetch` 远程调用
+- **优点**：改动小，标准 HTTP 可 curl 调试；**缺点**：需自己写降级逻辑，依赖 frp 进程
+
+### 方案 B：WebSocket 长连接
+```
+黑机WS Worker主动连云端WS Hub(:3001) <- 云端推检索任务 -> 黑机执行 -> WS回传结果
+```
+- 云端新增 WS Hub（`server/src/searchHub.js`），黑机新增 WS Worker（`search-worker/index.js`）
+- 黑机主动出站连接，天然穿透 NAT，不需要公网 IP
+- `sendSearchTask(task)` + `isBlackOnline()` 供 orchestrator 调用
+- **优点**：天然降级（黑机离线自动切本地 LIMIT 50）、断线自动重连、更健壮；**缺点**：改动偏大，WS 调试难度高
+
+### A vs B 决策要点
+| 维度 | A. frp | B. WebSocket |
+|------|--------|-------------|
+| 黑机需公网 IP | 否（frp 隧道） | 否（WS 出站） |
+| 实现复杂度 | 低 | 中 |
+| 降级策略 | 需自写 | 天然支持 |
+| 调试难度 | 低（curl 可测） | 中 |
+| 稳定性 | 依赖 frp 进程 | 自动重连更健壮 |
+| 额外依赖 | frp 二进制 | ws npm 包（有 Colyseus 经验） |
+
+### 共同待解决问题
+1. **数据同步机制**：如何把线上 `prod.db` 同步到黑机（首次 scp + 后续增量？定时拉取？）
+2. **黑机常开假设**：两方案都要求黑机在线，需确认黑机是否 7×24 常开，或只在晚上开发时可用
+3. **降级兜底**：黑机不在线时，云端 fallback 到当前 LIMIT 50 本地检索（BUG-36 修复版）
+4. **鉴权**：token 校验防止外部滥用检索接口
+
+### 黑机续接建议
+- 先验证黑机把 700MB prod.db 加载到内存后，全量 `nickname LIKE '%xxx%'` 查询实际耗时
+- 若耗时可接受（<2 秒），再决定 A 还是 B
+- 用户倾向：黑机常开选 A（简单），需自动降级选 B（健壮）
+
+---
 > - **架构级 - 首次启用 Phaser 动画系统**：项目历史 0 处 `anims.create`/`anims.play`，本次从零搭建。PreloadScene 注册 40 个 anims（5 套 × 4 方向 × 2 状态），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画
 > - **schema 变更**：`PlayerState` 加 `skinId: 'string'`（默认 '1'），WorldRoom.onJoin 接收 `options.skinId`，向后兼容
 > - **HUD 头像接入**：`GameView.vue` 原 `<canvas 40×40>` 空白从未绘制改为 `<img>` 显示真实头像；点击头像弹出立绘弹窗 + 5 套形象切换（重进德塔生效）
