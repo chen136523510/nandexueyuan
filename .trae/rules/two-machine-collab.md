@@ -16,12 +16,27 @@ description: |
 | 角色 | 设备 | 配置 | 职责 |
 |------|------|------|------|
 | 白机 | 荣耀笔记本 X16 Plus | 便携本 | 白天开发、合并 PR、部署上线、需求沟通 |
-| 黑机 | 主力机 | RTX 4070，ComfyUI 已部署 | 晚上开发、合并 PR、部署上线、AI 生图 |
-| 服务器 | 阿里云 ECS | 2核2G，40G 系统盘 | 网站部署（Nginx + Express + Colyseus） |
+| 黑机 | 主力机 | AMD R7 9700X / 32GB DDR5 6000 / RTX 4070 12GB / 3TB NVMe SSD / 750W 金牌 | 晚上开发 + AI 生图（ComfyUI）+ **检索算力节点（规划中）** |
+| 服务器 | 阿里云 ECS | 2核2G，ESSD Entry 40GB，3Mbps | 网站部署（Nginx + Express + Colyseus） |
+
+### 黑机硬件详情
+
+| 部件 | 型号 | 规格 |
+|------|------|------|
+| CPU | AMD Ryzen 7 9700X | 8核16线程，Zen 5 架构 |
+| 主板 | 微星 B650M GAMING WIFI | AM5，DDR5，WiFi |
+| 内存 | 阿斯加特 32GB（16G×2）DDR5 6000 | 金仑加&TUF 联名 |
+| GPU | 技嘉 RTX 4070 WF3OC 12G V2 | 12GB GDDR6X |
+| 固态硬盘 1 | 阿斯加特女武神 V3 1TB | NVMe PCIe 3.0 |
+| 固态硬盘 2 | 西数蓝盘 2TB | NVMe PCIe 4.0 |
+| 电源 | 航嘉 WD750K 金牌 750W | 80PLUS 金牌，原生 PCIe 5.0 |
+| 机箱 | 航嘉 S980 龙卷风海景房 | 360 水冷位，10 风扇位 |
+| 散热 | 利民 Frozen Infinity 360 白色 | 一体式水冷，幻彩无限镜 |
+| 显示器 | AOC Q27G11E | 27英寸 2K 210Hz Fast IPS |
 
 **分工原则**：
 - 白机：白天全流程（开发 + 合并 + 部署），不跑 AI 模型
-- 黑机：晚上全流程（开发 + 合并 + 部署）+ ComfyUI 生图
+- 黑机：晚上全流程（开发 + 合并 + 部署）+ ComfyUI 生图 + **全量检索算力（规划中，利用 32GB 内存把 700MB 数据库常驻内存）**
 - 服务器：仅运行生产服务，不跑 AI 模型，不存储 ComfyUI 模型
 
 ---
