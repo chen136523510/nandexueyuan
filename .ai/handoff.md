@@ -1,81 +1,59 @@
 # AI 交接单
 
-> 最后更新：2026-07-21（白机，工作告一段落）
-> 提交人：陈梓键（白机）
-> 所在设备：白机（白天，荣耀便携本）
+> 最后更新：2026-07-21（黑机，WebSocket 长连接方案落地完成）
+> 提交人：陈梓键（黑机）
+> 所在设备：黑机（R7 9700X / 32GB DDR5 / RTX 4070 / 3TB NVMe）
 > 稳定版本：`d62a166`（生产环境，已部署）
-> 最新提交：`1227223`（文档同步，黑机硬件配置 + 外包检索调研）
-> **下一班**：黑机续接，调研外包检索可行性 + 验证黑机全量查询性能
+> 最新提交：待提交（WebSocket 长连接方案 - BUG-36 架构优化）
+> **下一班**：白机，部署验证 + 端到端联调（需黑机 Worker 常开）
 > **当前阶段**：
 > - P5 美术：立绘 + 像素精灵 + 场景瓦片 + 三层塔楼改造 **全部完成**
-> - P2 NPC AI 对话：多 Agent v2 + OOM 修复已上线，**精度受限于条数限制，待架构优化**
+> - P2 NPC AI 对话：多 Agent v2 + OOM 修复 + **WebSocket 黑机外包检索已落地**（待部署验证）
 > - 版本公告系统（R-004）：v1.2.0 已录入
 > - 三层塔楼改造：7 阶段完成 + 6 个 bug 修复完成，**待用户最终验证**
 > - R-003 玩家精灵系统（黑机 07-20 晚开发中）：代码接入完成，**待 ComfyUI 跑美术资源**
 
-> **本轮（白机 07-21）要点**：
-> - **多 Agent 协作检索 v1**（`956aad2`）：从串行三分类改为统计+语义并行检索
-> - **多 Agent 协作检索 v2**（`ed4fa8d`）：大 Agent 动态规划子 Agent 任务，4 种子 Agent 类型，大 Agent 三阶段
-> - **BUG-35 修复**：intent 变量未定义 + 线上未 build + 路由判断不精确
-> - **BUG-36 修复**（`d62a166`）：多 Agent 全量检索导致服务器 OOM 崩溃，临时方案限制条数（person_messages LIMIT 50, mentioned LIMIT 30, fetchWithContext 改 IN 查询）
-> - **服务器故障处理**：首页 500（`chmod o+x /root`）、SSH 超时（磁盘 IO 瓶颈）、LLM 429 配额超限（已恢复）
-> - **全量检索配置调研**：当前 2 核机器扛不住全量检索，瓶颈是 `nickname LIKE '%xxx%'` 全表扫描 + SQLite cache 仅 2MB。优化方向：映射表 + PRAGMA 调优（零成本）或升级 4核8GB ESSD
-> - **黑机硬件配置写入**（`1227223`）：R7 9700X / 32GB DDR5 / RTX 4070 / 3TB NVMe，写入 `.trae/rules/two-machine-collab.md`
-> - **⏭ 待黑机继续**：黑机外包检索算力方案调研（详见下方【黑机外包检索调研】章节）
+> **本轮（黑机 07-21）要点**：
+> - **WebSocket 长连接方案落地**（BUG-36 架构优化）：黑机 7×24 常开，重度检索任务外包给黑机全量执行
+> - **性能基准验证**：黑机全量 `nickname LIKE '%xxx%'` 查询 51 万行仅 0.07-0.13 秒，数据膨胀 10 倍后仍 <2 秒
+> - **新增文件**：`server/src/searchHub.js`（WS Hub）+ `server/src/searchWorker.js`（黑机 Worker）+ `scripts/sync-prod-db.sh`
+> - **改动文件**：`orchestrator.js`（dispatchAgent 外包逻辑）+ 3 个子 Agent（limit 参数化）+ `index.js`（WS Hub 挂载）+ `package.json`/`.env`/`deploy.sh`
+> - **降级策略**：黑机在线+重度任务->黑机全量；超时/断线->降级本地 LIMIT 50；轻量任务始终本地
+> - **⏭ 待白机继续**：部署到云端 + 启动黑机 Worker + 端到端联调验证（详见下方【WebSocket 方案落地】章节）
 
 ---
 
-## 【黑机外包检索调研】（07-21 白机初步调研，待黑机续接）
+## 【WebSocket 方案落地】（07-21 黑机实施完成）
 
-### 背景
-2 核 2G 服务器无法承受全量检索（BUG-36 OOM 崩溃）。黑机 32GB 内存可将 700MB `prod.db` 完全常驻内存，全量检索从"磁盘全表扫描"变"内存遍历"，提速 100 倍+。方案是把检索算力从云端外包给黑机。
-
-### 关键技术现状（调研结论）
-- **检索本质是本地 SQLite 查询**：子 Agent 直接 `prisma.$queryRawUnsafe`，含 FTS5 全文检索
-- **orchestrate 的 `send` 回调是天然外包边界**：`orchestrate(question, history, send)`，send 是纯函数回调，可替换为远程调用
-- **项目零微服务基础设施**：无 RPC、无消息队列、后端连 axios 都没装，LLM 调用用原生 fetch
-- **黑机无公网 IP，无内网穿透配置**（frp/ngrok 全无）
-- **检索阶段代码位置**：`orchestrator.js` 的 `dispatchAgent` + `Promise.all` 并行调度子 Agent
-- **数据同步难点**：黑机需拿到线上 `prod.db`（SQLite 单文件，可 scp 复制，51 万条约 700MB）
-
-### 方案 A：frp 内网穿透
+### 架构
 ```
-用户 -> 云端Express(规划/分析/SSE) -> HTTP调黑机检索服务(:4001) -> 返回JSON -> 云端大Agent分析
+用户浏览器 -> SSE -> 云端 Express :3000
+  ├─ WS Hub (:3000/search-hub) <- 黑机 WS Worker 主动连接
+  ├─ orchestrator.dispatchAgent()
+  │    ├─ 在线 + 重度任务(person_messages/mentioned) -> WS 下发黑机 -> 全量检索 -> 回传
+  │    └─ 离线/超时/轻量任务 -> 本地 LIMIT 50
+  └─ 大 Agent 分析 -> SSE 流式输出
 ```
-- 云端跑 frps，黑机跑 frpc（黑机出站连接，不需要公网 IP）
-- 黑机新增精简 Express 检索服务（Prisma 全量查询 + SQLite cache 开 2GB）
-- 云端 orchestrator 的 `dispatchAgent` 改为 `fetch` 远程调用
-- **优点**：改动小，标准 HTTP 可 curl 调试；**缺点**：需自己写降级逻辑，依赖 frp 进程
 
-### 方案 B：WebSocket 长连接
+### 启动方式
+```bash
+# 云端（部署后）
+cd server && npm start          # Express + WS Hub
+
+# 黑机（7×24 常开）
+cd server && npm run search-worker   # WS Worker 主动连云端
 ```
-黑机WS Worker主动连云端WS Hub(:3001) <- 云端推检索任务 -> 黑机执行 -> WS回传结果
-```
-- 云端新增 WS Hub（`server/src/searchHub.js`），黑机新增 WS Worker（`search-worker/index.js`）
-- 黑机主动出站连接，天然穿透 NAT，不需要公网 IP
-- `sendSearchTask(task)` + `isBlackOnline()` 供 orchestrator 调用
-- **优点**：天然降级（黑机离线自动切本地 LIMIT 50）、断线自动重连、更健壮；**缺点**：改动偏大，WS 调试难度高
 
-### A vs B 决策要点
-| 维度 | A. frp | B. WebSocket |
-|------|--------|-------------|
-| 黑机需公网 IP | 否（frp 隧道） | 否（WS 出站） |
-| 实现复杂度 | 低 | 中 |
-| 降级策略 | 需自写 | 天然支持 |
-| 调试难度 | 低（curl 可测） | 中 |
-| 稳定性 | 依赖 frp 进程 | 自动重连更健壮 |
-| 额外依赖 | frp 二进制 | ws npm 包（有 Colyseus 经验） |
+### 首次部署步骤
+1. 云端：`npm install`（装 ws 依赖）+ `npm start`
+2. 黑机：`bash scripts/sync-prod-db.sh`（首次同步 prod.db）
+3. 黑机：配置 `.env` 的 `CLOUD_WS_URL=ws://47.96.158.104:3000/search-hub`
+4. 黑机：`npm run search-worker`（启动 Worker，观察日志"认证成功，黑机已上线"）
+5. 验证：前端提问"如何评价丘序明"，云端日志应显示"黑机执行 person_messages 成功"
 
-### 共同待解决问题
-1. **数据同步机制**：如何把线上 `prod.db` 同步到黑机（首次 scp + 后续增量？定时拉取？）
-2. **黑机常开假设**：两方案都要求黑机在线，需确认黑机是否 7×24 常开，或只在晚上开发时可用
-3. **降级兜底**：黑机不在线时，云端 fallback 到当前 LIMIT 50 本地检索（BUG-36 修复版）
-4. **鉴权**：token 校验防止外部滥用检索接口
-
-### 黑机续接建议
-- 先验证黑机把 700MB prod.db 加载到内存后，全量 `nickname LIKE '%xxx%'` 查询实际耗时
-- 若耗时可接受（<2 秒），再决定 A 还是 B
-- 用户倾向：黑机常开选 A（简单），需自动降级选 B（健壮）
+### 降级验证
+- 关掉黑机 Worker -> 提问 -> 云端日志"黑机失败，降级本地" -> 前端正常返回（LIMIT 50）
+- 杀掉黑机 Worker -> 5 秒后自动重连 -> 恢复全量检索
 
 ---
 > - **架构级 - 首次启用 Phaser 动画系统**：项目历史 0 处 `anims.create`/`anims.play`，本次从零搭建。PreloadScene 注册 40 个 anims（5 套 × 4 方向 × 2 状态），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画

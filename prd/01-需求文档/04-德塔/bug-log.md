@@ -26,8 +26,19 @@
   5. orchestrator 分析阶段最多传 30 条给大 Agent
 - **副作用**：精度下降（只取最近 50 条而非全量），待后续架构优化解决
 - **待办**：全量检索配置调研（详见下方调研报告），需要做映射表 + PRAGMA 调优 或 升级 4核8GB ESSD
-- **文件**：`server/src/agents/personMessagesAgent.js`、`mentionedAgent.js`、`contextSearch.js`、`orchestrator.js`
-- **状态**：已临时修复，待架构优化
+- **架构优化**（2026-07-21 黑机实施）：
+  1. 新增 `server/src/searchHub.js`（WS Hub）+ `server/src/searchWorker.js`（黑机 Worker）
+  2. 重度任务（person_messages/mentioned）外包给黑机全量检索，轻量任务本地执行
+  3. 子 Agent 加 `options.limit` 参数：云端默认 LIMIT 50/30，黑机传 `limit: null` 全量
+  4. orchestrator `dispatchAgent`：黑机在线时自动外包，离线/超时自动降级本地 LIMIT 50
+  5. WebSocket 心跳（30s）+ 自动重连（5s）+ 任务超时（15s）+ 降级策略
+  6. 依赖：`ws@^8.18.0`，配置：`BLACK_WORKER_TOKEN` + `CLOUD_WS_URL`
+  7. 数据同步：`scripts/sync-prod-db.sh` 首次 scp 全量（黑机 7×24 常开，后续可增量推送）
+- **性能提升**：
+  - 云端（2核2G）：全量 nickname LIKE 查询 OOM 崩溃 → 降级 LIMIT 50，不崩溃
+  - 黑机（R7 9700X+32G）：全量 nickname LIKE 查询 0.07-0.13 秒（51 万行），数据膨胀 10 倍后仍 <2 秒
+- **文件**：`server/src/searchHub.js`、`searchWorker.js`、`agents/personMessagesAgent.js`、`mentionedAgent.js`、`contextSearch.js`、`orchestrator.js`、`package.json`、`.env`、`deploy.sh`、`scripts/sync-prod-db.sh`
+- **状态**：架构优化完成（WebSocket 长连接方案）
 
 ### BUG-35：askChat 重构后 intent 变量未定义 + 线上未 build 导致前端不更新
 

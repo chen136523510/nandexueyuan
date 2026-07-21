@@ -15,6 +15,7 @@ import { runPersonStatAgent } from './personStatAgent.js'
 import { runPersonMessagesAgent } from './personMessagesAgent.js'
 import { runMentionedAgent } from './mentionedAgent.js'
 import { runTopicSearchAgent } from './topicSearchAgent.js'
+import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
 // ========== 大 Agent 系统人设 ==========
 const MAIN_PERSONA = `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
@@ -150,8 +151,25 @@ function buildAnalysisPrompt(question, history, agentResults) {
 }
 
 // ========== 子 Agent 派发 ==========
+// 重度任务：数据量大，值得外包给黑机全量检索
+const HEAVY_TASKS = ['person_messages', 'mentioned']
+
 async function dispatchAgent(task, emit) {
   const { type } = task
+
+  // 黑机在线 + 重度任务 -> 外包给黑机全量检索
+  if (isBlackOnline() && HEAVY_TASKS.includes(type)) {
+    try {
+      const result = await sendSearchTask(task, emit)
+      console.log(`[Orchestrator] 黑机执行 ${type} 成功`)
+      return result
+    } catch (err) {
+      console.log(`[Orchestrator] 黑机失败，降级本地: ${err.message}`)
+      emit(type, 'warning', `黑机离线/超时，使用本地检索（数据量受限）`)
+    }
+  }
+
+  // 降级 / 轻量任务 -> 本地执行
   try {
     switch (type) {
       case 'person_stat':

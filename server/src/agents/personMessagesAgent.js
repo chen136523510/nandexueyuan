@@ -29,9 +29,14 @@ function buildPersonConditions(target) {
  * 执行人物发言检索
  * @param {{ target: string }} task 任务
  * @param {function} emit SSE 回调
+ * @param {{ limit?: number|null }} options 可选参数（limit=null 表示全量，黑机用）
  */
-export async function runPersonMessagesAgent(task, emit) {
+export async function runPersonMessagesAgent(task, emit, options = {}) {
   const { target } = task
+  const limit = options.limit !== undefined ? options.limit : 50 // 默认 50 条，黑机传 null 表示全量
+  const limitSql = limit ? `LIMIT ${limit}` : ''
+  const msgSlice = limit ?? 30 // 传给大 Agent 的消息条数
+  const ctxSlice = limit ?? 200 // 上下文总条数上限
   emit('person_messages', 'analyzing', `正在查找 ${target} 的发言...`)
 
   const { names, likeConditions } = buildPersonConditions(target)
@@ -41,7 +46,7 @@ export async function runPersonMessagesAgent(task, emit) {
   emit('person_messages', 'searching', `正在检索 ${target} 的发言（匹配：${names.join('、')}）...`)
 
   const userMessages = await prisma.$queryRawUnsafe(
-    `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${conditionSql} ORDER BY msgTime DESC LIMIT 50`,
+    `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${conditionSql} ORDER BY msgTime DESC ${limitSql}`,
   ).catch((err) => {
     console.error('[PersonMessages] 查询失败:', err.message)
     return []
@@ -92,10 +97,10 @@ export async function runPersonMessagesAgent(task, emit) {
     sample: messagesWithContext.slice(0, 3).map((m) => ({ nickname: m.nickname, content: (m.content || '').slice(0, 60) })),
   })
 
-  // 只传前 30 条发言 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
-  const limitedMessages = messagesWithContext.slice(0, 30)
+  // 只传前 N 条发言 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
+  const limitedMessages = messagesWithContext.slice(0, msgSlice)
   const limitedText = formatMessagesAsText(
-    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, 200),
+    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, ctxSlice),
   )
 
   return {

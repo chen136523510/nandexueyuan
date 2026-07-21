@@ -4,6 +4,28 @@
 
 ---
 
+### [feat] WebSocket 长连接方案 - 黑机外包检索（BUG-36 架构优化）
+
+- **时间**：2026-07-21
+- **变更人**：陈梓键（黑机）
+- **背景**：白机临时修复 BUG-36（LIMIT 50/30）后精度下降。黑机性能基准测试显示全量 nickname LIKE 查询仅 0.07-0.13 秒（51 万行），选择 WebSocket 长连接方案外包重度检索（person_messages/mentioned），轻量任务本地执行
+- **变更内容**：
+  1. 新增 `server/src/searchHub.js`（WS Hub）：WebSocketServer 挂载 `/search-hub`，鉴权 + 心跳（30s ping/pong）+ 任务分发 + 结果收集 + pendingTasks Map + 15s 任务超时 + 60s 心跳超时
+  2. 新增 `server/src/searchWorker.js`（黑机 Worker）：主动连接云端 WS Hub，30s 心跳，断线 5s 自动重连，收到 search_task 后调用子 Agent（全量 `limit: null`），回传 agent_thinking 进度 + search_result 结果
+  3. 子 Agent 加 `options.limit` 参数：
+     - personMessagesAgent：`LIMIT ${limit ?? 50}`，`slice(0, limit ?? 30)`
+     - mentionedAgent：`LIMIT ${limit ?? 30}`，`slice(0, limit ?? 20)`
+     - contextSearch：`options.maxIds` 控制查询上限（默认 300，黑机传大值）
+  4. orchestrator `dispatchAgent`：黑机在线 + 重度任务（person_messages/mentioned）-> `sendSearchTask(task, emit)`，离线/超时 -> 降级本地 LIMIT 50
+  5. `server/src/index.js`：`app.listen` 改为 `http.createServer(app)` + `attachSearchHub(server)` 挂载 WS Hub
+  6. 依赖：`ws@^8.18.0`，配置：`BLACK_WORKER_TOKEN`（鉴权）、`CLOUD_WS_URL`（黑机连接地址）
+  7. 数据同步：新增 `scripts/sync-prod-db.sh`，首次 scp 云端 prod.db 到本地 dev.db（黑机 7×24 常开）
+- **降级策略**：黑机在线+重度任务->黑机全量；超时/断线->降级本地 LIMIT 50；轻量任务始终本地
+- **性能提升**：云端全量 LIKE 查询 OOM 崩溃 -> 黑机 0.07-0.13 秒完成（51 万行）
+- **文件**：`searchHub.js`（新增）、`searchWorker.js`（新增）、`personMessagesAgent.js`/`mentionedAgent.js`/`contextSearch.js`（改）、`orchestrator.js`/`index.js`（改）、`package.json`/`.env`/`deploy.sh`（改）、`scripts/sync-prod-db.sh`（新增）
+
+---
+
 ### [fix] 多Agent全量检索导致服务器OOM崩溃 + 性能修复
 
 - **时间**：2026-07-21

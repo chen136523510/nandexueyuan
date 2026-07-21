@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "search-worker": "node src/searchWorker.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -14,7 +15,8 @@
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "prisma": "^6.19.3"

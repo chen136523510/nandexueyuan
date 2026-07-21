@@ -10,16 +10,18 @@ import { resolveName } from '../utils/knowledge.js'
 
 /**
  * 为一批消息 ID 取上下文，合并去重
- * 安全限制：最多查 300 条消息，超出截断
+ * 安全限制：默认最多查 300 条消息，超出截断（黑机全量模式可放宽）
  * @param {number[]} targetIds 目标消息 ID 数组
  * @param {number} contextSize 前后各取多少条（默认 5）
+ * @param {{ maxIds?: number }} options 可选参数（maxIds 控制查询上限，黑机传大值）
  * @returns {Promise<array>} 去重后的上下文消息列表 [{id, nickname, msgTime, content}]
  */
-export async function fetchWithContext(targetIds, contextSize = 5) {
+export async function fetchWithContext(targetIds, contextSize = 5, options = {}) {
   if (!targetIds || targetIds.length === 0) return []
 
   // 限制目标数量，避免查询范围过大
-  const limitedIds = targetIds.slice(0, 50)
+  const maxTargets = options.maxTargets ?? 50
+  const limitedIds = targetIds.slice(0, maxTargets)
 
   // 收集所有需要查询的 ID 范围
   const idSet = new Set()
@@ -32,8 +34,9 @@ export async function fetchWithContext(targetIds, contextSize = 5) {
   // 用 IN 查询而非 BETWEEN（避免大范围扫描）
   const allIds = Array.from(idSet).sort((a, b) => a - b)
 
-  // 最多查 300 条（50 目标 × 11 上下文）
-  const queryIds = allIds.slice(0, 300)
+  // 最多查 N 条（黑机全量模式传大 maxIds）
+  const maxIds = options.maxIds ?? 300
+  const queryIds = allIds.slice(0, maxIds)
   const placeholders = queryIds.map(() => '?').join(',')
   const rows = await prisma.$queryRawUnsafe(
     `SELECT id, nickname, msgTime, content FROM group_messages WHERE id IN (${placeholders}) ORDER BY id ASC`,

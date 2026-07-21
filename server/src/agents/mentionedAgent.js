@@ -30,9 +30,14 @@ function buildSearchKeywords(target) {
  * 执行被提及检索
  * @param {{ target: string }} task 任务
  * @param {function} emit SSE 回调
+ * @param {{ limit?: number|null }} options 可选参数（limit=null 表示全量，黑机用）
  */
-export async function runMentionedAgent(task, emit) {
+export async function runMentionedAgent(task, emit, options = {}) {
   const { target } = task
+  const limit = options.limit !== undefined ? options.limit : 30 // 默认 30 条，黑机传 null 表示全量
+  const limitSql = limit ? `LIMIT ${limit}` : ''
+  const msgSlice = limit ?? 20 // 传给大 Agent 的消息条数
+  const ctxSlice = limit ?? 150 // 上下文总条数上限
   emit('mentioned', 'analyzing', `正在分析 ${target} 被提及的搜索词...`)
 
   const keywords = buildSearchKeywords(target)
@@ -60,7 +65,7 @@ export async function runMentionedAgent(task, emit) {
          JOIN group_messages m ON f.rowid = m.id
          WHERE f.content MATCH ?
          ORDER BY rank
-         LIMIT 30`,
+         ${limitSql}`,
         ftsQuery,
       )
     } catch (err) {
@@ -72,7 +77,7 @@ export async function runMentionedAgent(task, emit) {
   if (!results || results.length === 0) {
     try {
       results = await prisma.$queryRawUnsafe(
-        `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${likeConditions} ORDER BY msgTime DESC LIMIT 30`,
+        `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${likeConditions} ORDER BY msgTime DESC ${limitSql}`,
       )
     } catch (err) {
       console.error('[Mentioned LIKE Error]', err.message)
@@ -118,10 +123,10 @@ export async function runMentionedAgent(task, emit) {
     sample: messagesWithContext.slice(0, 3).map((m) => ({ nickname: m.nickname, content: (m.content || '').slice(0, 60) })),
   })
 
-  // 只传前 20 条 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
-  const limitedMessages = messagesWithContext.slice(0, 20)
+  // 只传前 N 条 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
+  const limitedMessages = messagesWithContext.slice(0, msgSlice)
   const limitedText = formatMessagesAsText(
-    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, 150),
+    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, ctxSlice),
   )
 
   return {

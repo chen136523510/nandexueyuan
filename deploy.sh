@@ -14,6 +14,8 @@ git pull origin master
 echo "=== 2/9 安装后端依赖 ==="
 cd server
 npm install
+# 确保 ws 依赖已安装（黑机外包检索 WebSocket）
+npm install ws 2>/dev/null || true
 
 echo "=== 2.5/9 生成 Prisma Client ==="
 npx prisma generate
