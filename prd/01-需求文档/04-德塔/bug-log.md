@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-07-21（白机 多 Agent 协作检索）
+
+---
+
+### BUG-35：askChat 重构后 intent 变量未定义 + 线上未 build 导致前端不更新
+
+- **现象**：三个线上问题：① spinner "正在思考"不显示 ② 思考过程面板不展示 ③ "2026年6月聊什么"被判为闲聊不检索
+- **根因**：
+  1. 重构 askChat 删除意图分类后，`send('done', { intent })` 和 `prisma.chatTurn.create({ intent })` 仍引用已删除的 `intent` 变量
+  2. 线上 `git pull` 只拉源码但没执行 `npm run build`，前端 dist 还是旧编译版本
+  3. 路由规划 prompt 不够明确，时间范围类问题被判为 none
+- **修复**：
+  1. `chatController.js` - `intent` 改为 `result.intent`（两处：done 事件 + chatTurn 保存）
+  2. 生产服务器执行 `npm run build`（建立标准部署流程：pull + build + restart）
+  3. `orchestrator.js` - 路由 prompt 增强 + shouldForceSemantic 补丁 + extractTimeRange 时间范围检索
+- **文件**：`server/src/controllers/chatController.js`、`server/src/agents/orchestrator.js`、`server/src/agents/semanticAgent.js`
+- **教训**：重构删除变量后需全局搜索所有引用；线上 Vite 项目每次代码更新后必须 build 才生效
+- **状态**：已修复
+
+---
+
 ## 2026-07-20 晚（黑机 玩家精灵系统接入）
 
 ---

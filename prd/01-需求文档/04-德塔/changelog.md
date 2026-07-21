@@ -4,6 +4,41 @@
 
 ---
 
+### [feat] 动态多 Agent 协作检索 v2 - 大 Agent 规划 + 全量检索 + 分析推理
+
+- **时间**：2026-07-21
+- **变更人**：陈梓键（白机）
+- **背景**：v1 的固定双 Agent（统计+语义）检索精度不足，无法针对"评价某人"这类问题同时查该人统计、发言、被提及等多维度信息。改为大 Agent 动态规划子 Agent 任务
+- **变更内容**：
+  1. `server/src/agents/orchestrator.js` - 重写：大 Agent 三阶段（规划->检索->分析回答），持有完整上下文
+  2. `server/src/agents/contextSearch.js` - 新增：上下文检索工具（批量取前后各5条+去重）
+  3. `server/src/agents/personStatAgent.js` - 新增：人物统计子 Agent（发言数/活跃时段/发言长度）
+  4. `server/src/agents/personMessagesAgent.js` - 新增：人物发言子 Agent（全量+上下文）
+  5. `server/src/agents/mentionedAgent.js` - 新增：被提及子 Agent（全量+上下文）
+  6. `server/src/agents/topicSearchAgent.js` - 新增：话题检索子 Agent（FTS5 四级降级）
+  7. `src/views/ChatView.vue` - 思考过程 UI 改为动态渲染（支持任意 agent 类型分组）
+- **验证**：本地 API 验证通过，"如何评价丘序明"正确规划 3 个子 Agent 任务（person_stat/person_messages/mentioned）并行执行
+- **状态**：代码完成，已验证，已部署（`ed4fa8d`）
+- **关联文档**：`bug-log.md` BUG-35
+
+---
+
+### [feat] 多 Agent 协作检索 v1 - 统计+语义并行检索
+
+- **时间**：2026-07-21
+- **变更人**：陈梓键（白机）
+- **背景**：原三分类（statistic/semantic/chat 三选一）排他式路由导致混合型问题信息缺失
+- **变更内容**：
+  1. `server/src/agents/orchestrator.js` - 新增：协调器，前置路由 + 并行调度 + 主 Agent 综合
+  2. `server/src/agents/statisticAgent.js` - 新增：数据统计子 Agent
+  3. `server/src/agents/semanticAgent.js` - 新增：语义检索子 Agent
+  4. `server/src/controllers/chatController.js` - askChat 从三分类改为调用 orchestrate()
+  5. `src/views/ChatView.vue` - 新增 agent_thinking 事件消费 + 多 Agent 思考过程分组 UI
+- **状态**：已被 v2 替代（v1 文件保留但不再使用）
+- **关联文档**：`bug-log.md` BUG-35
+
+---
+
 ### [feat] 玩家精灵四方向行走系统 + 5 套少女形象（R-003 阶段 1）
 
 - **时间**：2026-07-20 晚
