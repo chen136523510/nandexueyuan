@@ -1,22 +1,22 @@
 /**
- * 多 Agent 协调器（Orchestrator）
+ * 多 Agent 协调器（Orchestrator）v2
  *
- * 职责：
- * 1. 前置路由判断（决定需要哪些子 Agent）
- * 2. 并行调度子 Agent（statistic + semantic）
- * 3. 主 Agent 综合分析 + 流式输出最终回答
+ * 大 Agent = 男德通本人，全程持有上下文。
  *
- * 调用方式：
- *   const result = await orchestrate(question, history, send)
- *   // result = { answer, sources, intent }
+ * 三阶段流程：
+ * 1. 规划阶段：大 Agent 分析问题 -> 输出 JSON 子 Agent 任务列表
+ * 2. 检索阶段：子 Agent 并行执行 -> 全量返回结构化数据
+ * 3. 分析+回答阶段：大 Agent 拿到全量数据 -> 先分析推理（SSE展示）-> 再流式输出回答
  */
 
 import { chatCompletion, chatCompletionStream } from '../utils/llm.js'
-import { buildMemberKnowledge, resolveName } from '../utils/knowledge.js'
-import { runStatisticAgent } from './statisticAgent.js'
-import { runSemanticAgent } from './semanticAgent.js'
+import { buildMemberKnowledge } from '../utils/knowledge.js'
+import { runPersonStatAgent } from './personStatAgent.js'
+import { runPersonMessagesAgent } from './personMessagesAgent.js'
+import { runMentionedAgent } from './mentionedAgent.js'
+import { runTopicSearchAgent } from './topicSearchAgent.js'
 
-// ========== 主 Agent 系统人设 ==========
+// ========== 大 Agent 系统人设 ==========
 const MAIN_PERSONA = `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
 
 说话风格：
@@ -38,230 +38,261 @@ ${buildMemberKnowledge()}
 - 关于群聊数据（发言数、活跃度、话题讨论等），你必须基于子检索结果回答
 - 如果子检索结果为空或没有提供，就说"这个我得查查"或"我不太确定"，绝对不能自己编数字
 - 绝对不能编造任何数字、人名、发言内容
-- 你可以认识成员（名字、外号、现状），但不能编造他们的发言数据
-- 被问到"谁发言最多""XX发了多少条""大家聊过什么"这类数据问题时，如果手里没有检索结果，就说需要查数据库`
+- 你可以认识成员（名字、外号、现状），但不能编造他们的发言数据`
 
-// ========== 前置路由判断 ==========
-async function planRoutes(question) {
-  const messages = [
-    {
-      role: 'system',
-      content: `你是一个路由规划器。判断用户问题需要哪些检索渠道，可以多选。
+// ========== 规划阶段 prompt ==========
+function buildPlannerPrompt(question, history) {
+  const messages = [{ role: 'system', content: MAIN_PERSONA }]
 
-statistic: 统计类（计数、排行、最值、时间分布、谁发言最多、谁喷人最多、多少条消息、谁最活跃等）
-semantic: 语义类（话题归纳、观点总结、大家都在聊什么、有没有人讨论过XX、如何评价某某某、谁说了什么、某段时间在聊什么、最近聊了什么等）
-none: 纯闲聊（与群聊数据完全无关，如"你好""你是谁""今天天气怎样"）
-
-重要：只要问题涉及群聊内容、聊天记录、话题、某人说的话、某段时间的讨论，就必须选 semantic 或 statistic，不要选 none。
-
-输出格式（只输出关键词，用空格分隔）：
-- 如果需要统计检索，输出 statistic
-- 如果需要语义检索，输出 semantic
-- 如果两个都需要，输出 statistic semantic
-- 如果是纯闲聊（不需要检索），输出 none
-只输出上述关键词，不要其他内容。`,
-    },
-    { role: 'user', content: question },
-  ]
-
-  try {
-    const result = await chatCompletion(messages, { temperature: 0, maxTokens: 20 })
-    const trimmed = result.trim().toLowerCase()
-
-    const needStatistic = trimmed.includes('statistic')
-    const needSemantic = trimmed.includes('semantic')
-    const isNone = trimmed.includes('none') || (!needStatistic && !needSemantic)
-
-    return {
-      statistic: needStatistic && !isNone,
-      semantic: needSemantic && !isNone,
-      none: isNone,
-    }
-  } catch {
-    // 降级：不确定就走两个
-    return { statistic: true, semantic: true, none: false }
-  }
-}
-
-// 防止路由误判（类似原 looksLikeDataQuestion）
-function shouldForceStatistic(question) {
-  const patterns = [
-    '谁最', '谁喷', '谁骂', '多少条', '几次', '排行', '发言最多', '发言最少',
-    '最活跃', '多少消息', '排第几', '第几名', '多少人', '占比', '频率',
-    '哪个月', '哪天', '时间分布', '统计', '谁第一', '谁最多', '谁最少',
-  ]
-  return patterns.some((p) => question.includes(p))
-}
-
-// 语义检索补丁：看起来像在问聊天内容/话题，强制走 semantic
-function shouldForceSemantic(question) {
-  const patterns = [
-    '聊什么', '聊了什么', '在聊', '聊过', '说过什么', '说了什么',
-    '讨论', '话题', '评价', '怎么看', '怎么说的', '谁说',
-    '最近聊', '都在聊', '有没有人', '聊到了', '提到',
-    '某年', '某月', '几月',
-  ]
-  return patterns.some((p) => question.includes(p))
-}
-
-// ========== 构建上下文消息 ==========
-function buildContextMessages(history, systemContent) {
-  const messages = [{ role: 'system', content: systemContent }]
+  // 注入对话历史（大 Agent 持有上下文）
   for (const turn of history) {
     messages.push({ role: turn.role, content: turn.content })
   }
+
+  messages.push({
+    role: 'user',
+    content: `用户问题：${question}
+
+你现在需要决定派哪些子 Agent 去检索数据来回答这个问题。
+
+可用的子 Agent 类型：
+1. person_stat - 查某人的统计数据（发言总数、活跃时段、发言长度等）。target 填人名。
+2. person_messages - 查某人自己说过的话（每条带前后各5条上下文）。target 填人名。
+3. mentioned - 查别人提到某人的消息（每条带前后各5条上下文）。target 填人名。
+4. topic_search - 按关键词搜话题（FTS5全文检索）。keywords 填搜索词。
+
+【判断规则（非常重要）】
+- 只要问题涉及某个具体的人（评价/怎么样/谁/说了什么/发了多少），就必须派子 Agent 去检索
+- "如何评价XX" -> 同时派 person_stat + person_messages + mentioned
+- "XX发了多少条" -> 派 person_stat
+- "XX说了什么/聊了什么" -> 派 person_messages
+- "XX最近活跃吗" -> 派 person_stat
+- "群里谁喷人最多" -> 派 topic_search
+- "大家讨论过打球吗" -> 派 topic_search
+- 只有纯闲聊（"你好""今天天气怎样""你是谁"）才输出 []
+
+人名要用真名（如"丘序明"而非"丘哥"）。
+输出必须是合法的 JSON 数组，不要 markdown 标记。
+
+示例：
+"如何评价丘序明" -> [{"type":"person_stat","target":"丘序明"},{"type":"person_messages","target":"丘序明"},{"type":"mentioned","target":"丘序明"}]
+"陈梓键发了多少条消息" -> [{"type":"person_stat","target":"陈梓键"}]
+"群里谁喷人最多" -> [{"type":"topic_search","keywords":"喷 骂 垃圾 废物"}]
+"马逸杰最近聊了什么" -> [{"type":"person_messages","target":"马逸杰"}]
+"你好" -> []
+
+只输出 JSON 数组，不要其他内容。`,
+  })
+
   return messages
 }
 
-// ========== 格式化检索结果给主 Agent ==========
-function formatAgentContext(question, statResult, semaResult) {
-  let context = `用户问题: ${question}\n`
+// ========== 分析阶段 prompt ==========
+function buildAnalysisPrompt(question, history, agentResults) {
+  const messages = [{ role: 'system', content: MAIN_PERSONA }]
 
-  // 统计结果
-  if (statResult?.ok) {
-    context += `\n【数据统计结果】\n`
-    context += `分析: ${statResult.analysis}\n`
-    context += `SQL: ${statResult.sql}\n`
-    context += `结果(JSON): ${JSON.stringify(statResult.result)}\n`
-    context += `摘要: ${statResult.summary}\n`
-    context += `\n注意：结果中的 nickname 是群昵称，回答时请用成员真名。严格只使用查询结果中的数据，不要添加、修改、编造任何数字或人名。\n`
-  } else if (statResult && !statResult.ok) {
-    context += `\n【数据统计结果】检索失败：${statResult.error}\n`
+  // 注入对话历史
+  for (const turn of history) {
+    messages.push({ role: turn.role, content: turn.content })
   }
 
-  // 语义检索结果
-  if (semaResult?.ok && semaResult.messages?.length > 0) {
-    const msgContext = semaResult.messages
-      .map((r) => `[${resolveName(r.nickname)} ${new Date(r.msgTime).toLocaleString('zh-CN')}] ${r.content}`)
-      .join('\n')
+  // 构建检索结果上下文
+  let dataContext = `用户问题：${question}\n\n以下是子 Agent 检索到的数据：\n`
 
-    context += `\n【相关聊天记录】\n`
-    context += `关键词: ${semaResult.keywords}\n`
-    context += `消息内容:\n${msgContext}\n`
-    context += `\n注意：只根据上面提供的消息回答，不要编造没有提供的消息内容。如果消息不足以回答，就说"没找到相关的聊天记录"。用你正常的群友语气。可以引用"谁在什么时候说的"。\n`
-  } else if (semaResult && !semaResult.ok) {
-    context += `\n【相关聊天记录】${semaResult.error}\n`
+  for (const result of agentResults) {
+    if (!result.ok) {
+      dataContext += `\n【${result.agentType}】检索失败：${result.error}\n`
+      continue
+    }
+
+    dataContext += `\n【${result.agentType}】${result.summary || ''}\n`
+
+    if (result.agentType === 'person_stat' && result.result) {
+      dataContext += `统计数据(JSON)：${JSON.stringify(result.result)}\n`
+    }
+
+    if (result.formattedText) {
+      dataContext += `\n消息记录：\n${result.formattedText}\n`
+    } else if (result.messages) {
+      dataContext += `\n消息记录（共${result.messages.length}条）：\n`
+      for (const msg of result.messages) {
+        const time = new Date(msg.msgTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+        dataContext += `[${msg.nickname} ${time}] ${msg.content}\n`
+      }
+    }
   }
 
-  return context
+  dataContext += `\n请先分析以上数据，找出关键信息和模式，然后再回答用户的问题。
+分析时注意：
+- 严格只使用提供的检索数据，不要编造
+- 结果中的 nickname 是群昵称，回答时请用成员真名
+- 如果数据不足以完整回答，诚实说明
+- 先做分析，然后直接用你正常的群友语气回答`
+
+  messages.push({ role: 'user', content: dataContext })
+
+  return messages
 }
 
-// ========== 主入口：多 Agent 协调 ==========
+// ========== 子 Agent 派发 ==========
+async function dispatchAgent(task, emit) {
+  const { type } = task
+  try {
+    switch (type) {
+      case 'person_stat':
+        return { agentType: '人物统计', ...await runPersonStatAgent(task, emit) }
+      case 'person_messages':
+        return { agentType: '人物发言', ...await runPersonMessagesAgent(task, emit) }
+      case 'mentioned':
+        return { agentType: '被提及', ...await runMentionedAgent(task, emit) }
+      case 'topic_search':
+        return { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
+      default:
+        return { ok: false, error: `未知 Agent 类型: ${type}`, agentType: type }
+    }
+  } catch (err) {
+    return { ok: false, error: err.message, agentType: type }
+  }
+}
+
+// ========== 解析 JSON 任务列表 ==========
+function parseTasks(raw) {
+  // 清理 markdown 标记
+  let cleaned = raw.replace(/```json|```/g, '').trim()
+
+  // 尝试提取 JSON 数组
+  const match = cleaned.match(/\[[\s\S]*\]/)
+  if (match) {
+    cleaned = match[0]
+  }
+
+  try {
+    const tasks = JSON.parse(cleaned)
+    if (!Array.isArray(tasks)) return []
+    // 过滤无效任务
+    return tasks.filter(
+      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search'].includes(t.type),
+    )
+  } catch {
+    return []
+  }
+}
+
+// ========== 主入口 ==========
 /**
  * @param {string} question 用户问题
  * @param {array} history 对话历史 [{role, content}]
- * @param {function} send SSE 发送函数：(event, data) => void
+ * @param {function} send SSE 发送函数
  * @returns {{ answer: string, sources: array, intent: string }}
  */
 export async function orchestrate(question, history, send) {
-  // 1. 前置路由判断
-  send('agent_thinking', {
-    agent: 'router',
-    phase: 'analyzing',
-    content: '正在分析需要哪些检索渠道...',
-  })
-
-  const routes = await planRoutes(question)
-
-  // 路由补丁：看起来像数据问题但没选 statistic，强制加上
-  if (!routes.statistic && shouldForceStatistic(question)) {
-    routes.statistic = true
-    routes.none = false
-  }
-
-  // 路由补丁：看起来像在问聊天内容/话题但没选 semantic，强制加上
-  if (!routes.semantic && shouldForceSemantic(question)) {
-    routes.semantic = true
-    routes.none = false
-  }
-
-  const channels = []
-  if (routes.statistic) channels.push('📊统计')
-  if (routes.semantic) channels.push('🔍语义')
-  if (routes.none) channels.push('💬闲聊')
-
-  send('agent_thinking', {
-    agent: 'router',
-    phase: 'done',
-    content: `检索路由：${channels.join(' + ')}`,
-  })
-
-  // 2. 纯闲聊 -> 直接主 Agent 回答
-  if (routes.none) {
-    return await runMainAgent(question, history, null, null, send)
-  }
-
-  // 3. 并行调度子 Agent（allSettled，单个失败不影响另一个）
   const emit = (agent, phase, content, data) => {
     send('agent_thinking', { agent, phase, content, data: data || null })
   }
 
-  const tasks = []
-  if (routes.statistic) {
-    tasks.push(
-      runStatisticAgent(question, emit)
-        .then((result) => ({ type: 'statistic', result }))
-        .catch((err) => ({ type: 'statistic', result: { ok: false, error: err.message } })),
-    )
+  // ========== 阶段 1：规划 ==========
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'planning',
+    content: '正在分析问题，规划检索任务...',
+  })
+
+  const plannerMessages = buildPlannerPrompt(question, history)
+  let rawTasks = ''
+  try {
+    rawTasks = await chatCompletion(plannerMessages, { temperature: 0, maxTokens: 500 })
+  } catch {
+    rawTasks = '[]'
   }
-  if (routes.semantic) {
-    tasks.push(
-      runSemanticAgent(question, emit)
-        .then((result) => ({ type: 'semantic', result }))
-        .catch((err) => ({ type: 'semantic', result: { ok: false, error: err.message } })),
-    )
+
+  const tasks = parseTasks(rawTasks)
+
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'planning',
+    content: tasks.length > 0
+      ? `规划了 ${tasks.length} 个检索任务：${tasks.map((t) => `${t.type}(${t.target || t.keywords || ''})`).join('、')}`
+      : '这个问题不需要检索数据，直接回答',
+    data: tasks,
+  })
+
+  // 无任务 -> 纯闲聊
+  if (tasks.length === 0) {
+    return await runDirectChat(question, history, send)
   }
 
-  const settled = await Promise.all(tasks)
+  // ========== 阶段 2：并行检索 ==========
+  const taskPromises = tasks.map((task) => dispatchAgent(task, emit))
+  const results = await Promise.all(taskPromises)
 
-  const statResult = settled.find((s) => s.type === 'statistic')?.result || null
-  const semaResult = settled.find((s) => s.type === 'semantic')?.result || null
-
-  // 4. 主 Agent 综合回答
-  return await runMainAgent(question, history, statResult, semaResult, send)
+  // ========== 阶段 3：分析 + 回答 ==========
+  return await runAnalysisAndAnswer(question, history, results, send)
 }
 
-// ========== 主 Agent 综合分析 + 流式输出 ==========
-async function runMainAgent(question, history, statResult, semaResult, send) {
-  // 构建主 Agent 的消息
-  const messages = buildContextMessages(history, MAIN_PERSONA)
-
-  // 如果有检索结果，注入到 user message
-  if (statResult || semaResult) {
-    const context = formatAgentContext(question, statResult, semaResult)
-    messages.push({ role: 'user', content: context })
-  } else {
-    // 纯闲聊
-    messages.push({ role: 'user', content: question })
-  }
-
-  // 主 Agent 推理提示
+// ========== 纯闲聊 ==========
+async function runDirectChat(question, history, send) {
   send('agent_thinking', {
     agent: 'main',
     phase: 'reasoning',
-    content: '综合检索结果，生成回答中...',
-    data: {
-      statistic: statResult?.ok ? { summary: statResult.summary, count: statResult.result?.length } : null,
-      semantic: semaResult?.ok ? { keywords: semaResult.keywords, count: semaResult.messages?.length } : null,
-    },
+    content: '直接回答中...',
   })
 
-  // 流式输出
+  const messages = [{ role: 'system', content: MAIN_PERSONA }]
+  for (const turn of history) {
+    messages.push({ role: turn.role, content: turn.content })
+  }
+  messages.push({ role: 'user', content: question })
+
   let answer = ''
-  const temperature = statResult || semaResult ? 0.5 : 0.7
-  for await (const chunk of chatCompletionStream(messages, { temperature, maxTokens: 1000 })) {
+  for await (const chunk of chatCompletionStream(messages, { temperature: 0.7, maxTokens: 1000 })) {
     send('token', { content: chunk })
     answer += chunk
   }
 
-  // 汇总引用来源（取语义检索的 sources）
-  const sources = semaResult?.sources || []
+  return { answer, sources: [], intent: 'chat' }
+}
 
-  // 确定 intent 标签
-  let intent = 'chat'
-  if (statResult?.ok && semaResult?.ok) intent = 'multi' // 多 agent 综合
-  else if (statResult?.ok) intent = 'statistic'
-  else if (semaResult?.ok) intent = 'semantic'
+// ========== 分析 + 回答 ==========
+async function runAnalysisAndAnswer(question, history, agentResults, send) {
+  // 分析阶段：大 Agent 先做分析推理
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'analysis',
+    content: `收到 ${agentResults.filter((r) => r.ok).length}/${agentResults.length} 个子 Agent 的数据，正在分析...`,
+    data: agentResults.map((r) => ({
+      type: r.agentType,
+      ok: r.ok,
+      summary: r.summary || r.error,
+      count: r.count || r.messages?.length || 0,
+    })),
+  })
 
-  return { answer, sources, intent }
+  const analysisMessages = buildAnalysisPrompt(question, history, agentResults)
+
+  // 流式输出最终回答
+  let answer = ''
+  for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5, maxTokens: 2000 })) {
+    send('token', { content: chunk })
+    answer += chunk
+  }
+
+  // 汇总引用来源
+  const sources = []
+  for (const result of agentResults) {
+    if (result.ok && result.messages) {
+      for (const msg of result.messages.slice(0, 3)) {
+        sources.push({
+          nickname: msg.nickname,
+          msgTime: msg.msgTime,
+          content: msg.content,
+        })
+      }
+    }
+  }
+
+  // 确定 intent
+  const types = [...new Set(agentResults.map((r) => r.agentType))]
+  const intent = types.length > 1 ? 'multi' : (types[0] || 'chat')
+
+  return { answer, sources: sources.slice(0, 5), intent }
 }

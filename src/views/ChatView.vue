@@ -8,6 +8,32 @@ const loading = ref(false)
 const chatArea = ref(null)
 const currentSessionId = ref(null)
 const sessions = ref([])
+
+// Agent 图标和标签映射
+const agentIcons = {
+  main: '🧠',
+  person_stat: '📊',
+  person_messages: '💬',
+  mentioned: '🔍',
+  topic_search: '🔎',
+  router: '🧭',
+}
+const agentLabels = {
+  main: '男德通（主 Agent）',
+  person_stat: '人物统计 Agent',
+  person_messages: '人物发言 Agent',
+  mentioned: '被提及 Agent',
+  topic_search: '话题检索 Agent',
+  router: '路由分析',
+}
+const phaseLabels = {
+  planning: '规划',
+  analyzing: '分析',
+  searching: '检索',
+  reasoning: '推理',
+  analysis: '综合分析',
+  done: '完成',
+}
 const sidebarOpen = ref(true)
 
 const suggestions = [
@@ -248,45 +274,31 @@ function formatDate(date) {
               <details :open="msg.showThinking">
                 <summary>💭 思考过程</summary>
                 <div class="agent-steps">
-                  <!-- 路由 -->
-                  <div v-if="msg.agentSteps.router" class="agent-group agent-router">
-                    <div class="agent-label">🧭 路由分析</div>
-                    <div v-for="(step, si) in msg.agentSteps.router" :key="'r'+si" class="agent-step">
-                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
+                  <div
+                    v-for="(steps, agentKey) in msg.agentSteps"
+                    :key="agentKey"
+                    :class="['agent-group', 'agent-' + agentKey]"
+                  >
+                    <div class="agent-label">
+                      {{ agentIcons[agentKey] || '🔧' }} {{ agentLabels[agentKey] || agentKey }}
+                      <span v-if="steps[steps.length-1]?.data?.count !== undefined" class="agent-count">
+                        {{ steps[steps.length-1].data.count }} 条
+                      </span>
                     </div>
-                  </div>
-                  <!-- 统计 Agent -->
-                  <div v-if="msg.agentSteps.statistic" class="agent-group agent-statistic">
-                    <div class="agent-label">📊 数据统计 Agent</div>
-                    <div v-for="(step, si) in msg.agentSteps.statistic" :key="'s'+si" class="agent-step">
-                      <span v-if="step.content" class="step-content" :class="{ 'step-sql': step.content.startsWith('SQL:') }">{{ step.content }}</span>
+                    <div v-for="(step, si) in steps" :key="si" class="agent-step">
+                      <span v-if="step.phase" class="step-phase">{{ phaseLabels[step.phase] || step.phase }}</span>
+                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
                       <div v-if="step.data && Array.isArray(step.data)" class="step-data">
                         <div v-for="(row, ri) in step.data.slice(0, 5)" :key="ri" class="data-row">
-                          {{ JSON.stringify(row) }}
+                          {{ typeof row === 'string' ? row : JSON.stringify(row) }}
                         </div>
                         <span v-if="step.data.length > 5" class="data-more">...共 {{ step.data.length }} 条</span>
                       </div>
-                    </div>
-                  </div>
-                  <!-- 语义 Agent -->
-                  <div v-if="msg.agentSteps.semantic" class="agent-group agent-semantic">
-                    <div class="agent-label">🔍 语义检索 Agent</div>
-                    <div v-for="(step, si) in msg.agentSteps.semantic" :key="'m'+si" class="agent-step">
-                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
-                      <div v-if="step.data && Array.isArray(step.data)" class="step-data">
-                        <div v-for="(msg2, mi) in step.data.slice(0, 3)" :key="mi" class="msg-row">
-                          <span class="msg-row-name">{{ msg2.nickname }}</span>
-                          <span class="msg-row-text">{{ (msg2.content || '').slice(0, 60) }}</span>
+                      <div v-else-if="step.data && typeof step.data === 'object'" class="step-data">
+                        <div v-for="(val, key) in step.data" :key="key" class="data-row">
+                          <span class="data-key">{{ key }}:</span> {{ JSON.stringify(val) }}
                         </div>
-                        <span v-if="step.data.length > 3" class="data-more">...共 {{ step.data.length }} 条</span>
                       </div>
-                    </div>
-                  </div>
-                  <!-- 主 Agent -->
-                  <div v-if="msg.agentSteps.main" class="agent-group agent-main">
-                    <div class="agent-label">🧠 主 Agent</div>
-                    <div v-for="(step, si) in msg.agentSteps.main" :key="'a'+si" class="agent-step">
-                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
                     </div>
                   </div>
                 </div>
@@ -551,8 +563,10 @@ function formatDate(date) {
   line-height: 1.6;
 }
 .agent-router { background: #f0f5ff; border-left: 3px solid #1677ff; }
-.agent-statistic { background: #fff7e6; border-left: 3px solid #fa8c16; }
-.agent-semantic { background: #f6ffed; border-left: 3px solid #52c41a; }
+.agent-statistic, .agent-person_stat { background: #fff7e6; border-left: 3px solid #fa8c16; }
+.agent-semantic, .agent-mentioned { background: #f6ffed; border-left: 3px solid #52c41a; }
+.agent-topic_search { background: #e6fffb; border-left: 3px solid #13c2c2; }
+.agent-person_messages { background: #fff0f6; border-left: 3px solid #eb2f96; }
 .agent-main { background: #f9f0ff; border-left: 3px solid #722ed1; }
 .agent-label {
   font-weight: 600;
@@ -567,6 +581,25 @@ function formatDate(date) {
 .step-content {
   display: block;
   word-break: break-word;
+}
+.step-phase {
+  display: inline-block;
+  font-size: 10px;
+  color: #999;
+  background: rgba(0,0,0,0.05);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+.agent-count {
+  font-size: 11px;
+  color: #999;
+  font-weight: normal;
+  margin-left: 4px;
+}
+.data-key {
+  font-weight: 600;
+  color: #555;
 }
 .step-sql {
   font-family: 'Courier New', monospace;
