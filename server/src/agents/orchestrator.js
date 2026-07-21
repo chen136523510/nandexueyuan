@@ -49,7 +49,10 @@ async function planRoutes(question) {
       content: `你是一个路由规划器。判断用户问题需要哪些检索渠道，可以多选。
 
 statistic: 统计类（计数、排行、最值、时间分布、谁发言最多、谁喷人最多、多少条消息、谁最活跃等）
-semantic: 语义类（话题归纳、观点总结、大家都在聊什么、有没有人讨论过XX、如何评价某某某、谁说了什么等）
+semantic: 语义类（话题归纳、观点总结、大家都在聊什么、有没有人讨论过XX、如何评价某某某、谁说了什么、某段时间在聊什么、最近聊了什么等）
+none: 纯闲聊（与群聊数据完全无关，如"你好""你是谁""今天天气怎样"）
+
+重要：只要问题涉及群聊内容、聊天记录、话题、某人说的话、某段时间的讨论，就必须选 semantic 或 statistic，不要选 none。
 
 输出格式（只输出关键词，用空格分隔）：
 - 如果需要统计检索，输出 statistic
@@ -86,6 +89,17 @@ function shouldForceStatistic(question) {
     '谁最', '谁喷', '谁骂', '多少条', '几次', '排行', '发言最多', '发言最少',
     '最活跃', '多少消息', '排第几', '第几名', '多少人', '占比', '频率',
     '哪个月', '哪天', '时间分布', '统计', '谁第一', '谁最多', '谁最少',
+  ]
+  return patterns.some((p) => question.includes(p))
+}
+
+// 语义检索补丁：看起来像在问聊天内容/话题，强制走 semantic
+function shouldForceSemantic(question) {
+  const patterns = [
+    '聊什么', '聊了什么', '在聊', '聊过', '说过什么', '说了什么',
+    '讨论', '话题', '评价', '怎么看', '怎么说的', '谁说',
+    '最近聊', '都在聊', '有没有人', '聊到了', '提到',
+    '某年', '某月', '几月',
   ]
   return patterns.some((p) => question.includes(p))
 }
@@ -152,6 +166,12 @@ export async function orchestrate(question, history, send) {
   // 路由补丁：看起来像数据问题但没选 statistic，强制加上
   if (!routes.statistic && shouldForceStatistic(question)) {
     routes.statistic = true
+    routes.none = false
+  }
+
+  // 路由补丁：看起来像在问聊天内容/话题但没选 semantic，强制加上
+  if (!routes.semantic && shouldForceSemantic(question)) {
+    routes.semantic = true
     routes.none = false
   }
 
