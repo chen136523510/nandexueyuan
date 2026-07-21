@@ -107,29 +107,44 @@ function buildAnalysisPrompt(question, history, agentResults) {
 
     dataContext += `\n【${result.agentType}】${result.summary || ''}\n`
 
-    if (result.agentType === 'person_stat' && result.result) {
-      dataContext += `统计数据(JSON)：${JSON.stringify(result.result)}\n`
+    // 人物统计：只传摘要，不传原始 JSON（避免噪音）
+    if (result.agentType === '人物统计' && result.result) {
+      const r = result.result
+      const total = r.total?.[0]?.total || 0
+      const topMonths = (r.monthly || []).map((m) => `${m.ym}: ${m.cnt}条`).join('、')
+      const avgLen = Math.round(r.length?.[0]?.avgLen || 0)
+      dataContext += `统计：共${total}条，最活跃月份：${topMonths}，平均长度${avgLen}字符\n`
     }
 
+    // 消息记录：传格式化文本，但限制条数避免单次请求超时
     if (result.formattedText) {
-      dataContext += `\n消息记录：\n${result.formattedText}\n`
+      // 限制格式化文本长度（约 2 万字符 ≈ 3 万 token）
+      const maxChars = 20000
+      let text = result.formattedText
+      if (text.length > maxChars) {
+        text = text.substring(0, maxChars) + `\n...（共 ${result.count || result.messages?.length || 0} 条，已截取前 ${maxChars} 字符）`
+      }
+      dataContext += `\n消息记录（${result.count || ''}条）：\n${text}\n`
     } else if (result.messages) {
-      dataContext += `\n消息记录（共${result.messages.length}条）：\n`
-      for (const msg of result.messages) {
+      const msgs = result.messages.slice(0, 100) // 最多传 100 条
+      dataContext += `\n消息记录（共${result.messages.length}条，传${msgs.length}条）：\n`
+      for (const msg of msgs) {
         const time = new Date(msg.msgTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
         dataContext += `[${msg.nickname} ${time}] ${msg.content}\n`
       }
     }
   }
 
-  dataContext += `\n请先分析以上数据，找出关键信息和模式，然后再回答用户的问题。
-分析时注意：
+  dataContext += `\n请基于以上数据回答用户的问题。
+注意：
 - 严格只使用提供的检索数据，不要编造
 - 结果中的 nickname 是群昵称，回答时请用成员真名
 - 如果数据不足以完整回答，诚实说明
-- 先做分析，然后直接用你正常的群友语气回答`
+- 用你正常的群友语气回答，别啰嗦`
 
   messages.push({ role: 'user', content: dataContext })
+
+  console.log('[Orchestrator] 分析阶段 prompt 总长度:', dataContext.length, '字符')
 
   return messages
 }
@@ -153,6 +168,21 @@ async function dispatchAgent(task, emit) {
   } catch (err) {
     return { ok: false, error: err.message, agentType: type }
   }
+}
+
+// ========== 快速闲聊判断（避免简单问候也要调 LLM 规划） ==========
+function isCasualChat(question) {
+  const q = question.trim()
+  if (q.length > 20) return false // 长问题不可能是纯闲聊
+  const casualPatterns = [
+    '你好', '哈喽', '嗨', 'hi', 'hello', '在吗', '在不在',
+    '早上好', '中午好', '下午好', '晚上好', '晚安',
+    '谢谢', '感谢', '谢了', '多谢', '辛苦了',
+    '拜拜', '再见', '88', 'bye',
+    '你是谁', '你叫什么', '你是什么',
+    '好的', '收到', '了解', '明白', '知道', '嗯', '哦', 'ok',
+  ]
+  return casualPatterns.some((p) => q.toLowerCase().includes(p))
 }
 
 // ========== 解析 JSON 任务列表 ==========
@@ -188,6 +218,16 @@ function parseTasks(raw) {
 export async function orchestrate(question, history, send) {
   const emit = (agent, phase, content, data) => {
     send('agent_thinking', { agent, phase, content, data: data || null })
+  }
+
+  // ========== 快速闲聊判断（跳过规划阶段，省一次 LLM 调用） ==========
+  if (isCasualChat(question)) {
+    send('agent_thinking', {
+      agent: 'main',
+      phase: 'planning',
+      content: '这个问题不需要检索数据，直接回答',
+    })
+    return await runDirectChat(question, history, send)
   }
 
   // ========== 阶段 1：规划 ==========

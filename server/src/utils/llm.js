@@ -6,7 +6,7 @@
 const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
 const API_KEY = process.env.VOLC_API_KEY
 const MODEL = process.env.VOLC_MODEL || 'glm-latest'
-const TIMEOUT_MS = 60000 // 60 秒超时
+const TIMEOUT_MS = 120000 // 120 秒超时（分析阶段数据量大需要更多时间）
 
 /**
  * 调用 LLM 对话补全
