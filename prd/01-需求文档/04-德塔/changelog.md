@@ -4,6 +4,44 @@
 
 ---
 
+### [fix] 多Agent全量检索导致服务器OOM崩溃 + 性能修复
+
+- **时间**：2026-07-21
+- **变更人**：陈梓键（白机）
+- **背景**：多 Agent v2 上线后，用户测试"如何评价丘序明"触发 3 个子 Agent 并行全量检索，丘序明有数千条发言，每条取前后各 5 条上下文，拼成超大文本传给 LLM。2 核服务器内存和 IO 瞬间爆满，SSH 失联、阿里云无法远程、官网 500。服务器重启后才恢复
+- **根因分析**（详见 `bug-log.md` BUG-36）：
+  1. `personMessagesAgent` 全量查询数千条发言（无 LIMIT）
+  2. `mentionedAgent` LIMIT 500 条 + 每条取上下文
+  3. `fetchWithContext` 用 `BETWEEN minId AND maxId` 范围查询，目标消息分散时跨越数十万行 = 全表扫描
+  4. `nickname LIKE '%xxx%'` 双侧通配，B-tree 索引无效，51 万行全表扫描
+  5. 4 个子 Agent 并行触发上述全表扫描，IO+CPU+内存三重爆
+- **变更内容**：
+  1. `server/src/agents/personMessagesAgent.js` - 全量查询改为 LIMIT 50 取最近 + COUNT 查总数，返回数据限制 30 条
+  2. `server/src/agents/mentionedAgent.js` - LIMIT 500 改为 LIMIT 30，返回数据限制 20 条
+  3. `server/src/agents/contextSearch.js` - `BETWEEN` 大范围扫描改为 `IN (id1,id2,...)` 精确查询，最多 300 条
+  4. `server/src/agents/orchestrator.js` - 分析阶段最多传 30 条消息给大 Agent
+  5. `server/src/utils/llm.js` - LLM 超时从 60s 提到 120s
+  6. `server/src/agents/orchestrator.js` - 新增 `isCasualChat` 快速判断，"你好"等短句跳过规划阶段
+- **教训**：2 核小机器不能暴力全量检索，需要架构优化（映射表+PRAGMA调优）或升级配置（4核8GB ESSD）
+- **状态**：已修复部署，但精度受限于条数限制（临时方案）
+- **关联文档**：`bug-log.md` BUG-36，全量检索配置调研报告
+
+---
+
+### [fix] 思考太久 + network error + 线上首页500
+
+- **时间**：2026-07-21
+- **变更人**：陈梓键（白机）
+- **背景**：线上测试发现三个问题：① "你好"也思考很久 ② 子 Agent 完成后主 Agent 报 network error ③ 首页 500
+- **根因**：
+  1. network error = 火山引擎 API 429 配额超限（月度配额用完）
+  2. 思考太久 = "你好"也要走规划阶段（一次 LLM 调用），且超时 60s 太短
+  3. 首页 500 = nginx worker 无权访问 /root/ 目录（`chmod o+x /root` 修复）
+- **修复**：`isCasualChat` 跳过规划、LLM 超时提到 120s、`chmod o+x /root`
+- **状态**：已修复
+
+---
+
 ### [feat] 动态多 Agent 协作检索 v2 - 大 Agent 规划 + 全量检索 + 分析推理
 
 - **时间**：2026-07-21

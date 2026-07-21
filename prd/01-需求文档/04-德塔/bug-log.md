@@ -8,6 +8,27 @@
 
 ---
 
+### BUG-36：多Agent全量检索导致服务器OOM崩溃 + SSH失联 + 首页500
+
+- **现象**：用户测试"如何评价丘序明"后，服务器 SSH 失联、阿里云无法远程连接、官网返回 500。重启服务器后恢复
+- **根因**（5 层连锁）：
+  1. `personMessagesAgent` 全量查询丘序明数千条发言（无 LIMIT），每条取前后各 5 条上下文
+  2. `fetchWithContext` 用 `WHERE id BETWEEN minId AND maxId`，目标消息分散在 51 万行中，minId 到 maxId 跨越数十万行 = 等效全表扫描
+  3. `nickname LIKE '%丘序明%'` 双侧通配，B-tree 索引无效，51 万行逐行比较
+  4. 3 个子 Agent（person_stat + person_messages + mentioned）并行触发上述全表扫描，IO + CPU + 内存三重爆
+  5. SQLite cache 默认仅 2MB，热数据不常驻内存，每次查询都走磁盘
+- **阿里云诊断**：磁盘 I/O 性能受限（Instance.Disk.IOLimit），云安全中心客户端离线
+- **修复**（临时方案 - 限制数据量）：
+  1. personMessagesAgent: 全量查询改为 `LIMIT 50` + `COUNT` 查总数
+  2. mentionedAgent: `LIMIT 500` 改为 `LIMIT 30`
+  3. fetchWithContext: `BETWEEN` 改为 `IN (id1,id2,...)` 精确查询，最多 300 条
+  4. 子 Agent 返回数据限制 20-30 条
+  5. orchestrator 分析阶段最多传 30 条给大 Agent
+- **副作用**：精度下降（只取最近 50 条而非全量），待后续架构优化解决
+- **待办**：全量检索配置调研（详见下方调研报告），需要做映射表 + PRAGMA 调优 或 升级 4核8GB ESSD
+- **文件**：`server/src/agents/personMessagesAgent.js`、`mentionedAgent.js`、`contextSearch.js`、`orchestrator.js`
+- **状态**：已临时修复，待架构优化
+
 ### BUG-35：askChat 重构后 intent 变量未定义 + 线上未 build 导致前端不更新
 
 - **现象**：三个线上问题：① spinner "正在思考"不显示 ② 思考过程面板不展示 ③ "2026年6月聊什么"被判为闲聊不检索

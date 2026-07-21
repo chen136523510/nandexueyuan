@@ -3,20 +3,23 @@
 > 最后更新：2026-07-21（白机）
 > 提交人：陈梓键（白机）
 > 所在设备：白机（白天，荣耀便携本）
-> 稳定版本：`ed4fa8d`（生产环境，已部署）
-> 最新提交：`ed4fa8d`（已部署）
+> 稳定版本：`d62a166`（生产环境，已部署）
+> 最新提交：`d62a166`（已部署）
 > **当前阶段**：
 > - P5 美术：立绘 + 像素精灵 + 场景瓦片 + 三层塔楼改造 **全部完成**
-> - P2 NPC AI 对话：**白机 07-21 动态多 Agent 协作检索 v2 上线**
-> - 版本公告系统（R-004）：白机 07-20 下午开发完成
+> - P2 NPC AI 对话：多 Agent v2 + OOM 修复已上线，**精度受限于条数限制，待架构优化**
+> - 版本公告系统（R-004）：v1.2.0 已录入
 > - 三层塔楼改造：7 阶段完成 + 6 个 bug 修复完成，**待用户最终验证**
 > - R-003 玩家精灵系统（黑机 07-20 晚开发中）：代码接入完成，**待 ComfyUI 跑美术资源**
 
 > **本轮（白机 07-21）要点**：
-> - **多 Agent 协作检索 v1**（`956aad2`）：从串行三分类改为统计+语义并行检索，新增 orchestrator/statisticAgent/semanticAgent
-> - **多 Agent 协作检索 v2**（`ed4fa8d`）：大 Agent 动态规划子 Agent 任务（JSON），4 种子 Agent 类型（person_stat/person_messages/mentioned/topic_search），全量检索不截断，大 Agent 三阶段（规划->检索->分析回答）
+> - **多 Agent 协作检索 v1**（`956aad2`）：从串行三分类改为统计+语义并行检索
+> - **多 Agent 协作检索 v2**（`ed4fa8d`）：大 Agent 动态规划子 Agent 任务，4 种子 Agent 类型，大 Agent 三阶段
 > - **BUG-35 修复**：intent 变量未定义 + 线上未 build + 路由判断不精确
-> - **标准部署流程确认**：线上 Vite 项目每次更新必须 pull + build + restart + nginx reload
+> - **BUG-36 修复**（`d62a166`）：多 Agent 全量检索导致服务器 OOM 崩溃，临时方案限制条数（person_messages LIMIT 50, mentioned LIMIT 30, fetchWithContext 改 IN 查询）
+> - **服务器故障处理**：首页 500（`chmod o+x /root`）、SSH 超时（磁盘 IO 瓶颈）、LLM 429 配额超限（已恢复）
+> - **全量检索配置调研**：当前 2 核机器扛不住全量检索，瓶颈是 `nickname LIKE '%xxx%'` 全表扫描 + SQLite cache 仅 2MB。优化方向：映射表 + PRAGMA 调优（零成本）或升级 4核8GB ESSD
+> - **待用户决策**：全量检索架构方案（用户给了调研方向，待确认）
 > - **架构级 - 首次启用 Phaser 动画系统**：项目历史 0 处 `anims.create`/`anims.play`，本次从零搭建。PreloadScene 注册 40 个 anims（5 套 × 4 方向 × 2 状态），Player.js 通过 `anims.play` 切换，NetworkSystem.js 同步远程玩家动画
 > - **schema 变更**：`PlayerState` 加 `skinId: 'string'`（默认 '1'），WorldRoom.onJoin 接收 `options.skinId`，向后兼容
 > - **HUD 头像接入**：`GameView.vue` 原 `<canvas 40×40>` 空白从未绘制改为 `<img>` 显示真实头像；点击头像弹出立绘弹窗 + 5 套形象切换（重进德塔生效）
