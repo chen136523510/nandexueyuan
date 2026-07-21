@@ -126,7 +126,7 @@ function buildAnalysisPrompt(question, history, agentResults) {
       }
       dataContext += `\n消息记录（${result.count || ''}条）：\n${text}\n`
     } else if (result.messages) {
-      const msgs = result.messages.slice(0, 100) // 最多传 100 条
+      const msgs = result.messages.slice(0, 30) // 最多传 30 条
       dataContext += `\n消息记录（共${result.messages.length}条，传${msgs.length}条）：\n`
       for (const msg of msgs) {
         const time = new Date(msg.msgTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })

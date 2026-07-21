@@ -60,7 +60,7 @@ export async function runMentionedAgent(task, emit) {
          JOIN group_messages m ON f.rowid = m.id
          WHERE f.content MATCH ?
          ORDER BY rank
-         LIMIT 500`,
+         LIMIT 30`,
         ftsQuery,
       )
     } catch (err) {
@@ -72,7 +72,7 @@ export async function runMentionedAgent(task, emit) {
   if (!results || results.length === 0) {
     try {
       results = await prisma.$queryRawUnsafe(
-        `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${likeConditions} ORDER BY msgTime ASC LIMIT 500`,
+        `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${likeConditions} ORDER BY msgTime DESC LIMIT 30`,
       )
     } catch (err) {
       console.error('[Mentioned LIKE Error]', err.message)
@@ -118,12 +118,18 @@ export async function runMentionedAgent(task, emit) {
     sample: messagesWithContext.slice(0, 3).map((m) => ({ nickname: m.nickname, content: (m.content || '').slice(0, 60) })),
   })
 
+  // 只传前 20 条 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
+  const limitedMessages = messagesWithContext.slice(0, 20)
+  const limitedText = formatMessagesAsText(
+    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, 150),
+  )
+
   return {
     ok: true,
-    messages: messagesWithContext,
+    messages: limitedMessages,
     count: safeResults.length,
     target,
     keywords,
-    formattedText: formatMessagesAsText(contextMessages),
+    formattedText: limitedText,
   }
 }

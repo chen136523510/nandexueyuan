@@ -10,6 +10,7 @@ import { resolveName } from '../utils/knowledge.js'
 
 /**
  * 为一批消息 ID 取上下文，合并去重
+ * 安全限制：最多查 300 条消息，超出截断
  * @param {number[]} targetIds 目标消息 ID 数组
  * @param {number} contextSize 前后各取多少条（默认 5）
  * @returns {Promise<array>} 去重后的上下文消息列表 [{id, nickname, msgTime, content}]
@@ -17,23 +18,26 @@ import { resolveName } from '../utils/knowledge.js'
 export async function fetchWithContext(targetIds, contextSize = 5) {
   if (!targetIds || targetIds.length === 0) return []
 
+  // 限制目标数量，避免查询范围过大
+  const limitedIds = targetIds.slice(0, 50)
+
   // 收集所有需要查询的 ID 范围
   const idSet = new Set()
-  for (const id of targetIds) {
+  for (const id of limitedIds) {
     for (let i = id - contextSize; i <= id + contextSize; i++) {
       idSet.add(i)
     }
   }
 
-  // 一次性查询所有需要的消息（按 ID 排序）
+  // 用 IN 查询而非 BETWEEN（避免大范围扫描）
   const allIds = Array.from(idSet).sort((a, b) => a - b)
-  const minId = allIds[0]
-  const maxId = allIds[allIds.length - 1]
 
+  // 最多查 300 条（50 目标 × 11 上下文）
+  const queryIds = allIds.slice(0, 300)
+  const placeholders = queryIds.map(() => '?').join(',')
   const rows = await prisma.$queryRawUnsafe(
-    `SELECT id, nickname, msgTime, content FROM group_messages WHERE id >= ? AND id <= ? ORDER BY id ASC`,
-    minId,
-    maxId,
+    `SELECT id, nickname, msgTime, content FROM group_messages WHERE id IN (${placeholders}) ORDER BY id ASC`,
+    ...queryIds,
   )
 
   // 安全序列化（bigint -> number）
