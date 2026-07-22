@@ -302,9 +302,16 @@ async function runDirectChat(question, history, send) {
   messages.push({ role: 'user', content: question })
 
   let answer = ''
-  for await (const chunk of chatCompletionStream(messages, { temperature: 0.7, maxTokens: 1000 })) {
-    send('token', { content: chunk })
-    answer += chunk
+  try {
+    for await (const chunk of chatCompletionStream(messages, { temperature: 0.7, maxTokens: 1000 })) {
+      send('token', { content: chunk })
+      answer += chunk
+    }
+  } catch (err) {
+    console.error('[Orchestrator] 闲聊流式输出异常:', err.message)
+    if (!answer) {
+      answer = '回答时出错了，请稍后再试~'
+    }
   }
 
   return { answer, sources: [], intent: 'chat' }
@@ -327,11 +334,19 @@ async function runAnalysisAndAnswer(question, history, agentResults, send) {
 
   const analysisMessages = buildAnalysisPrompt(question, history, agentResults)
 
-  // 流式输出最终回答
+  // 流式输出最终回答（加 try-catch 捕获网络中断/超时/LLM 异常）
   let answer = ''
-  for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5, maxTokens: 2000 })) {
-    send('token', { content: chunk })
-    answer += chunk
+  try {
+    for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5, maxTokens: 2000 })) {
+      send('token', { content: chunk })
+      answer += chunk
+    }
+  } catch (err) {
+    console.error('[Orchestrator] 流式输出异常:', err.message)
+    // 降级：发一条错误提示给前端，但返回部分答案（如果已有）
+    if (!answer) {
+      answer = '回答时出错了，请稍后再试~'
+    }
   }
 
   // 汇总引用来源
