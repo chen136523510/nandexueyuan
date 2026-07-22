@@ -4,6 +4,22 @@
 
 ---
 
+### [fix] 男德通偶发性 Failed to fetch - Nginx SSE 配置 + orchestrator 降级
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（白机）
+- **现象**：男德通回答偶发性 `Failed to fetch`（浏览器原生 fetch 错误），黑机检索日志全成功
+- **根因**：
+  1. **Nginx `/api/` 缺少 SSE 必需配置**：`proxy_read_timeout` 默认 60s，`proxy_buffering` 默认 on。当 LLM 响应慢或两次 SSE 事件间隔 >60s 时，Nginx 主动断开连接 -> 前端 `reader.read()` 抛 `Failed to fetch`
+  2. **orchestrator 流式输出无 try-catch**：`chatCompletionStream` 被中断后异常冒泡，SSE 流中途断开，前端只收到部分内容或直接报错
+- **修复**：
+  1. Nginx `/api/` 增加 `proxy_buffering off`（关闭缓冲，SSE 事件实时推送）+ `proxy_read_timeout 600s`（10 分钟超时）
+  2. `orchestrator.js` `runAnalysisAndAnswer` + `runDirectChat` 流式输出加 try-catch，异常时发友好提示并返回部分答案
+- **验证**：Nginx `nginx -t` + reload 成功，配置已生效；orchestrator 代码已 push，待部署
+- **文件**：`/etc/nginx/sites-enabled/default`（改）、`server/src/agents/orchestrator.js`（改）
+
+---
+
 ### [deploy] WebSocket 黑机外包检索 - 生产部署完成
 
 - **时间**：2026-07-22
