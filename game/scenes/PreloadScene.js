@@ -240,7 +240,7 @@ export class PreloadScene extends Phaser.Scene {
         for (const state of states) {
           const animKey = `${skinKey}_${state}_${dir}`
           // 防止重复注册（热重载场景）
-          if (this.anims.exists(animKey)) {
+          if (this.anims.get(animKey) !== undefined) {
             this.anims.remove(animKey)
           }
 
@@ -267,6 +267,6 @@ export class PreloadScene extends Phaser.Scene {
         }
       }
     }
-    console.log('[PreloadScene] 玩家动画注册完成，共', this.anims.getAllAnims().length, '个')
+    console.log('[PreloadScene] 玩家动画注册完成，共', this.anims.anims.size, '个')
   }
 }

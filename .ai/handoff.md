@@ -519,6 +519,7 @@ bash deploy.sh
 | JWT 密钥永远回退 | ESM import 提升，`const SECRET` 在 `dotenv.config()` 前求值 | 改为 `function getSecret()` 运行时读取 |
 | 切换页签留残影 | `visibilitychange` 不适用 Vue 路由切换 | `onUnmounted` → `destroyGame()` → scene `shutdown`+`destroy` |
 | Enter 聊天无反应 | `keydown-Enter` 在 Phaser 4 不生效 | 改用 `InputSystem.keyEnter.justDown` |
+| **德塔进入无画面** | `this.anims.getAllAnims()` 在 Phaser 4 不存在 | 改用 `this.anims.anims.size` + `this.anims.get() !== undefined` |
 
 > 完整记录见：`prd/01-需求文档/04-德塔/changelog.md` 和 `bug-log.md`
 

@@ -4,6 +4,18 @@
 
 ---
 
+### [fix] 德塔进入无画面 - Phaser 4 API 不兼容
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（白机）
+- **现象**：用户进入 `/nde` 德塔页面后没有任何游戏画面，卡在空白/加载态
+- **根因**：`game/scenes/PreloadScene.js` L270 调用 `this.anims.getAllAnims()`，但**该方法在 Phaser 4.2.1 的 `AnimationManager` 中不存在**。导致 `PreloadScene.create()` 抛 `TypeError` 中断，`WorldScene` 永远不会启动，画面卡死
+- **修复**：
+  1. L270：`this.anims.getAllAnims().length` → `this.anims.anims.size`（Phaser 4 动画存储在 `AnimationManager.anims`（`Structs.Map`）中，用 `.size` 取数量）
+  2. L265-267：`this.anims.exists(animKey)` → `this.anims.get(animKey) !== undefined`（统一 API，更保险）
+- **验证**：Playwright 浏览器验证：`getAllAnims` TypeError 消失，德塔画面完全恢复——三层塔楼、玩家、NPC（男德通）、传送门、群公告、HP/MP 状态栏、聊天框全部正常渲染
+- **文件**：`game/scenes/PreloadScene.js`（改）
+
 ### [fix] 男德通偶发性 Failed to fetch - Nginx SSE 配置 + orchestrator 降级
 
 - **时间**：2026-07-22

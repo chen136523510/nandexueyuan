@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-07-22（白机 德塔进入无画面修复）
+
+---
+
+### BUG-37：进入德塔无任何画面（Phaser 4 缺失 API `this.anims.getAllAnims()`）
+
+- **现象**：线上访问 `/nde` 德塔页面后没有任何游戏画面，卡在空白/加载态，玩家无法进入
+- **排查过程**（严格调试思维，非纯推理）：
+  1. SSH 22 端口一度不通 → 改用 `curl` 验证后端：`/api/auth/me` 返回未登录（正常）、`/ws` WebSocket 握手返回 `101 Switching Protocols`（Colyseus 正常）、Nginx 静态资源 200 → **后端与网络全部正常，排除服务端**
+  2. 下载线上 GameView chunk（1.8MB）确认 Phaser 代码完整打包 → **排除 bundle 缺失**
+  3. Playwright MCP 打开 `/nde` 抓取控制台 → 捕获关键运行时异常：
+     ```
+     TypeError: this.anims.getAllAnims is not a function
+         at createPlayerAnimations (PreloadScene)
+         at PreloadScene.create
+     ```
+- **根因**：`game/scenes/PreloadScene.js` L270 调用了 `this.anims.getAllAnims()`，但**该方法在 Phaser 4（及 Phaser 3）的 `AnimationManager` 中根本不存在**。它导致 `PreloadScene.create()` 抛异常中断，`WorldScene` 永远不会启动，画面卡死。
+- **影响链**：`getAllAnims()` 抛错 → `PreloadScene.create()` 中断 → `WorldScene` 无法启动 → 用户看到"无画面"
+- **修复**（`game/scenes/PreloadScene.js`）：
+  1. L270：`this.anims.getAllAnims().length` → `this.anims.anims.size`（Phaser 4 中动画存储在 `AnimationManager.anims` 这个 `Phaser.Structs.Map` 里，用 `.size` 取数量）
+  2. L265-267：`this.anims.exists(animKey)` 保留但改为 `this.anims.get(animKey) !== undefined` 更保险（`exists()` 在 Phaser 4 源码中确实存在，但统一用 `get()` 判空）
+- **验证**：
+  1. 本地 `npm run build` 成功，新 chunk `GameView-CdusO1bT.js`
+  2. `scp` dist 到生产 + 服务器解压，Nginx 返回新文件（Last-Modified 更新）
+  3. Playwright 强制刷新（清 caches + `location.reload(true)`）后：`getAllAnims` TypeError 消失，**德塔画面完全恢复**——三层塔楼、玩家、NPC（男德通）、传送门、群公告、HP/MP 状态栏、聊天框全部正常渲染
+- **遗留**：`player_set*.png` 等图片资源 404（未入 git），但有 fallback 色块机制，不影响游戏逻辑运行
+- **教训**：
+  1. Phaser 4 升级后 API 差异需逐一验证，`AnimationManager` 无 `getAllAnims()`，要取全部动画应访问内部 `anims`（`Structs.Map`）
+  2. "无画面"类问题第一时间用 Playwright 抓浏览器控制台异常，比纯推理快得多——本次异常堆栈直接定位到崩溃函数与行号
+  3. 修复前端后必须清浏览器缓存（caches + hard reload），否则加载的仍是缓存的旧 HTML 指向旧 chunk
+- **文件**：`game/scenes/PreloadScene.js`
+- **状态**：已修复并部署生产
+
+---
+
 ## 2026-07-21（白机 多 Agent 协作检索）
 
 ---
