@@ -9,6 +9,7 @@ function publicUser(user) {
     username: user.username,
     nickname: user.nickname,
     avatar: user.avatar,
+    skinId: user.skinId,  // 玩家形象 ID（'1'-'5' 或 null）
     role: user.role,
   }
 }

@@ -28,8 +28,42 @@ export async function updateProfile(req, res, next) {
       username: user.username,
       nickname: user.nickname,
       avatar: user.avatar,
+      skinId: user.skinId,
       role: user.role,
     }, '个人信息已更新')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// PUT /api/user/skin — 修改玩家形象（1-5）
+export async function updateSkin(req, res, next) {
+  try {
+    const { skinId } = req.body
+
+    // 参数校验
+    if (skinId === undefined || skinId === null) {
+      return fail(res, ErrorCode.PARAM_ERROR.code, '参数不完整', ErrorCode.PARAM_ERROR.httpStatus)
+    }
+
+    const skinStr = String(skinId)
+    if (!/^[1-5]$/.test(skinStr)) {
+      return fail(res, ErrorCode.PARAM_ERROR.code, '形象 ID 必须是 1-5', ErrorCode.PARAM_ERROR.httpStatus)
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { skinId: skinStr },
+    })
+
+    success(res, {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      skinId: user.skinId,
+      role: user.role,
+    }, '形象已更新')
   } catch (err) {
     next(err)
   }

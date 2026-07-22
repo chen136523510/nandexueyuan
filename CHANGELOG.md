@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-07-22 P4 角色创建系统 - skinId 后端持久化 + 角色选择页
+
+### 决策依据
+- **背景**：R-003 阶段 1 完成了 5 套形象的精灵/立绘/HUD 接入，但 `skinId` 仅存于前端 localStorage
+- **问题**：换设备/清缓存即丢失形象选择，且未与账号绑定，无法追溯
+- **方案**：将 skinId 提升为 User 模型字段，通过 API 持久化；新增角色选择页（仅进德塔时拦截）
+
+### 影响评估
+- **数据库变更**：`users` 表新增 `skinId TEXT` 列（nullable，null=未选择），Prisma 迁移 `20260722075830_add_skin_id_to_user`
+- **API 变更**：新增 `PUT /api/user/skin`（auth 路由），`publicUser()` 投影新增 skinId 字段
+- **前端路由变更**：新增 `/character` 路由 + 路由守卫（仅进 `/nde` 时检查 skinId===null -> 跳角色选择）
+- **前端状态变更**：auth store 新增 `loaded` 状态标记，login/register/fetchMe 同步 skinId 从后端
+- **新增文件**：`src/views/CharacterView.vue`（横向角色选择页）
+- **关联文档**：`prd/01-需求文档/04-德塔/changelog.md`、`需求池.md`
+
+### 关键决策
+1. **路由守卫按需拦截**：初版"任何页面 + skinId=null 强制跳角色选择"改为"仅进德塔 `/nde` 时拦截"，首页/男德通/个人中心等页面不受影响，用户体验更自然
+2. **角色选择页横向卡片**：5 个形象横向均分排列（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述文字，暗色原神风格 UI
+3. **localStorage 兜底**：初始化时读 localStorage 避免刷新误判，后端 user.skinId 覆盖后同步写回 localStorage
+
+---
+
 ## 2026-07-22 黑机外包检索算力 - WebSocket 长连接方案（R-005 / BUG-36 架构优化）
 
 ### 决策依据

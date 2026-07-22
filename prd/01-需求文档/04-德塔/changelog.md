@@ -4,6 +4,32 @@
 
 ---
 
+### [feat] P4 角色创建系统 - skinId 后端持久化 + 首次登录强制选择
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（白机）
+- **背景**：R-003 阶段 1 完成了 5 套形象的精灵/立绘/HUD 接入，但 `skinId` 仅存于前端 localStorage（换设备/清缓存即丢失，且未与账号绑定）。本次将 skinId 升级为**后端数据库持久化**，并补齐角色创建流程：新用户首次登录强制选择形象，老用户下次登录补选一次
+- **变更内容**：
+  1. **数据库**（`server/prisma/schema.prisma` + 迁移 `20260722075830_add_skin_id_to_user`）：User 模型新增 `skinId String?` 字段（nullable，`null` = 未选择，触发强制选择流程）
+  2. **后端 API**（`server/src/controllers/userController.js` + `api.js`）：新增 `PUT /api/user/skin` 接口（`updateSkin`），入参 `{ skinId }` 用正则 `^[1-5]$` 校验，写入数据库返回 publicUser
+  3. **后端认证**（`server/src/controllers/authController.js`）：`publicUser()` 投影新增 `skinId` 字段，login/register/me 三接口均返回；`updateProfile` 响应也补 skinId
+  4. **前端状态**（`src/stores/auth.js`）：`skinId` 初始化改为读 localStorage 兜底；login/register/fetchMe 从后端 `user.skinId` 覆盖同步；新增 `loaded` ref 标记用户数据是否已从后端加载（供路由守卫判空，避免刷新时误判）；logout 清理 skinId
+  5. **前端 API**（`src/api/user.js`）：新增 `updateSkin(data)` 封装
+  6. **角色选择页**（`src/views/CharacterView.vue` 新增）：横向 5 卡片均分布局（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述；暗色原神风格（金色选中边框+光晕+勾选标记）；确认后调 API 保存并跳 `/nde`
+  7. **路由守卫**（`src/router/index.js`）：新增 `/character` 路由（requiresAuth）；守卫改为"仅进 `/nde` 且 loaded + skinId===null → 跳 /character"，首页/男德通等页面不受影响
+  8. **个人中心**（`src/components/ProfileDialog.vue`）：个人信息 Tab 新增"玩家形象"5 宫格选择器，点选即调 API 保存 + 更新 auth store（提示重进德塔生效）
+- **数据流**：注册/登录 → 后端返回 skinId（新用户为 null）→ 进入首页正常浏览 → 点"德塔"时路由守卫拦截 null → /character 选择 → PUT /api/user/skin → auth 同步 + localStorage → 进入德塔 GameView 读 `auth.skinId || '1'` 传 Phaser 渲染
+- **兼容性**：GameView 侧 `auth.skinId || '1'` 兜底，即使后端 null 也能正常渲染；老用户迁移后 skinId 全为 null，下次点进德塔时进入补选流程
+- **验证**：
+  - `npm run build` 前端构建通过
+  - Prisma 迁移成功应用
+  - 浏览器全链路实测通过：登录（skinId=null）→ 首页正常 → 点德塔拦截到 /character → 选形象 C 确认 → 跳 /nde → store/localStorage/数据库三处 skinId='3' 一致
+- **文件**：`schema.prisma`（改）、迁移（新增）、`authController.js`/`userController.js`/`api.js`（改）、`auth.js`/`user.js`/`router/index.js`（改）、`CharacterView.vue`（新增）、`ProfileDialog.vue`（改）
+- **状态**：✅ 验收通过（前端构建 + 浏览器全链路实测）
+- **关联文档**：`需求池.md`（角色创建系统），R-003 阶段 1 changelog
+
+---
+
 ### [fix] 德塔进入无画面 - Phaser 4 API 不兼容
 
 - **时间**：2026-07-22

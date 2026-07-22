@@ -122,3 +122,4 @@ e2e-test.png
 # SQLite WAL 临时文件
 *.db-shm
 *.db-wal
+dist.tar.gz

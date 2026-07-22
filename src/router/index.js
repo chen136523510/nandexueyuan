@@ -32,6 +32,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/character',
+    name: 'character',
+    component: () => import('../views/CharacterView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),
@@ -57,6 +63,11 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+
+  // 进德塔前检查形象：已登录 + skinId 为 null -> 先去选形象
+  if (to.name === 'nde' && auth.isLoggedIn && auth.loaded && auth.skinId === null) {
+    return { name: 'character' }
+  }
 
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }

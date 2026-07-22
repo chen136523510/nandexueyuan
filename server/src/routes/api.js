@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { getHello } from '../controllers/helloController.js'
 import { register, login, logout, me } from '../controllers/authController.js'
-import { updateProfile, updatePassword } from '../controllers/userController.js'
+import { updateProfile, updateSkin, updatePassword } from '../controllers/userController.js'
 import { createInviteCode, listInviteCodes } from '../controllers/inviteCodeController.js'
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../controllers/adminController.js'
 import { getAnnouncement, getVersions, createVersion, updateVersion, deleteVersion } from '../controllers/announcementController.js'
@@ -30,6 +30,7 @@ router.get('/auth/me', auth, me)
 
 // 用户相关（需登录）
 router.put('/user/profile', auth, updateProfile)
+router.put('/user/skin', auth, updateSkin)
 router.put('/user/password', auth, updatePassword)
 
 // 邀请码管理（admin+）

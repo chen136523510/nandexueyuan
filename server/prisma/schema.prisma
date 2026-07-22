@@ -13,6 +13,7 @@ model User {
   passwordHash String
   nickname     String?
   avatar       String?
+  skinId       String?   // 玩家形象 ID（'1'-'5'），null = 未选择
   role         String    @default("member") // super_admin | admin | member
   status       String    @default("active") // active | disabled
   createdAt    DateTime  @default(now())

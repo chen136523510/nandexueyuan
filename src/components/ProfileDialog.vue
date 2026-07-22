@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { updateProfile, updatePassword } from '../api/user'
+import { updateProfile, updateSkin, updatePassword } from '../api/user'
 
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['close'])
@@ -16,6 +16,11 @@ const avatar = ref('')
 const profileMsg = ref('')
 const profileLoading = ref(false)
 
+// 玩家形象
+const selectedSkin = ref('1')
+const skinMsg = ref('')
+const skinLoading = ref(false)
+
 // 修改密码
 const oldPassword = ref('')
 const newPassword = ref('')
@@ -28,7 +33,9 @@ watch(() => props.show, (val) => {
     activeTab.value = 'profile'
     nickname.value = auth.user?.nickname || ''
     avatar.value = auth.user?.avatar || ''
+    selectedSkin.value = auth.skinId || '1'
     profileMsg.value = ''
+    skinMsg.value = ''
     passwordMsg.value = ''
     oldPassword.value = ''
     newPassword.value = ''
@@ -48,6 +55,30 @@ async function handleProfile() {
   } finally {
     profileLoading.value = false
   }
+}
+
+/** 选择并保存玩家形象 */
+async function handleSkin(id) {
+  const newId = String(id)
+  if (newId === selectedSkin.value && auth.skinId === newId) return
+  selectedSkin.value = newId
+  skinLoading.value = true
+  skinMsg.value = ''
+  try {
+    const res = await updateSkin({ skinId: newId })
+    auth.user.skinId = res.data.skinId
+    auth.setSkinId(res.data.skinId)
+    skinMsg.value = '形象已更新（重进德塔生效）'
+  } catch (err) {
+    skinMsg.value = err.message || '更新失败'
+  } finally {
+    skinLoading.value = false
+  }
+}
+
+/** 头像加载失败 → 隐藏图片露出色块 */
+function onSkinAvatarError(e) {
+  e.target.style.display = 'none'
 }
 
 async function handlePassword() {
@@ -113,6 +144,26 @@ async function handlePassword() {
           <div class="form-group">
             <label>头像 URL</label>
             <input v-model="avatar" type="text" class="form-input" placeholder="可选" />
+          </div>
+
+          <!-- 玩家形象 -->
+          <div class="form-group">
+            <label>玩家形象（重进德塔生效）</label>
+            <div class="skin-grid">
+              <div
+                v-for="i in 5"
+                :key="i"
+                class="skin-item"
+                :class="{ active: String(i) === selectedSkin }"
+                @click="handleSkin(i)"
+              >
+                <div class="skin-avatar">
+                  <img :src="`/game/sprites/avatars/player_set${i}.png`" :alt="`形象 ${i}`" @error="onSkinAvatarError" />
+                </div>
+                <span class="skin-label">{{ i }}</span>
+              </div>
+            </div>
+            <p v-if="skinMsg" class="form-msg">{{ skinMsg }}</p>
           </div>
 
           <p v-if="profileMsg" class="form-msg">{{ profileMsg }}</p>
@@ -315,6 +366,61 @@ async function handlePassword() {
 .btn-primary:disabled {
   background: #a0c7ff;
   cursor: not-allowed;
+}
+
+/* 形象选择网格 */
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.skin-item {
+  text-align: center;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.skin-item:hover {
+  border-color: #c9a96e;
+  background: #f5f5f0;
+}
+
+.skin-item.active {
+  border-color: #3c8cff;
+  background: #e8f2ff;
+}
+
+.skin-avatar {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #e8e8e8;
+  position: relative;
+}
+
+.skin-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.skin-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.skin-item.active .skin-label {
+  color: #3c8cff;
 }
 
 /* 动画 */
