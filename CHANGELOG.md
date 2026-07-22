@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-07-22 黑机外包检索算力 - WebSocket 长连接方案（R-005 / BUG-36 架构优化）
+
+### 决策依据
+- **背景**：R-002 多 Agent 协作检索 v2 上线后，全量检索导致 2 核 2G 服务器 OOM 崩溃（BUG-36），临时降级为 LIMIT 50/30 导致精度严重下降
+- **触发**：用户提出"黑机配置比较高，能不能把这部分性能瓶颈外包给黑机"
+- **基准测试**：黑机（R7 9700X / 32GB DDR5）全量 `nickname LIKE '%xxx%'` 查询 51 万行仅需 0.07-0.13 秒，PRAGMA 2GB cache 后更快
+
+### 替代方案对比
+| 方案 | 描述 | 优点 | 缺点 | 选择 |
+|---|---|---|---|---|
+| A. frp 内网穿透 | 云端跑 frps，黑机跑 frpc，HTTP 调黑机检索服务 | 改动小，标准 HTTP 可 curl 调试 | 需自写降级逻辑，依赖 frp 进程 | ❌ 否决 |
+| **B. WebSocket 长连接** | 黑机 WS Worker 主动出站连接云端 WS Hub，云端通过 WS 下发任务 | 不需要公网 IP，天然降级，断线自动重连 | 改动偏大，WS 调试难度高 | ✅ 采用 |
+
+### 影响评估
+- **架构级**：首次引入跨机协作检索，云端 Express 从 `app.listen` 改为 `http.createServer` + WS Hub 挂载
+- **服务拓扑变更**：新增黑机 PM2 进程 `search-worker`，7×24 常驻，通过 WS 连接云端
+- **降级策略**：黑机在线+重度任务→黑机全量检索；离线/超时→降级本地 LIMIT 50；轻量任务始终本地
+- **新增依赖**：`ws@^8.18.0`
+- **新增配置**：`BLACK_WORKER_TOKEN`（鉴权）、`CLOUD_WS_URL`（黑机连接地址）
+- **Nginx 变更**：新增 `/search-hub` WebSocket 反代
+- **关联文档**：`prd/01-需求文档/04-德塔/changelog.md`、`bug-log.md` BUG-36、`需求池.md` R-005、`deploy-production.md` v1.1
+
+### 关键决策
+1. **选 B 不选 A**：黑机出口网络有间歇性中断，WS 自动重连 + 天然降级比 frp 更健壮
+2. **只外包重度任务**：person_messages 和 mentioned 外包黑机全量检索，person_stat 和 topic_search 始终本地（轻量任务不值得增加网络延迟）
+3. **数据同步用 scp**：黑机 7×24 常开，首次全量 scp prod.db，后续可增量推送
+
+### 文件变更
+| 文件 | 动作 |
+|------|------|
+| `server/src/searchHub.js` | 新增 - 云端 WS Hub |
+| `server/src/searchWorker.js` | 新增 - 黑机 WS Worker |
+| `server/scripts/benchmark-query.js` | 新增 - 性能基准测试 |
+| `scripts/sync-prod-db.sh` | 新增 - 数据同步脚本 |
+| `server/src/agents/orchestrator.js` | 改 - dispatchAgent 双路调度 |
+| `server/src/agents/personMessagesAgent.js` | 改 - 加 options.limit |
+| `server/src/agents/mentionedAgent.js` | 改 - 加 options.limit |
+| `server/src/agents/contextSearch.js` | 改 - 加 options.maxIds |
+| `server/src/index.js` | 改 - http.createServer + attachSearchHub |
+| `server/package.json` | 改 - 新增 ws 依赖 |
+
+---
+
 ## 2026-07-20 晚 玩家精灵四方向行走系统 + 5 套形象（R-003 阶段 1）
 
 ### 决策依据
