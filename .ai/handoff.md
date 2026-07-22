@@ -1,15 +1,15 @@
 # AI 交接单
 
-> 最后更新：2026-07-22（白机，P4 角色创建系统完成，本地提交未部署）
+> 最后更新：2026-07-22（白机，P4 角色创建系统已部署生产）
 > 所在设备：白机
-> 稳定版本：`bf5fcf5`（生产环境，已部署）/ `c6306d3`（本地最新，**未部署**）
-> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 角色创建系统代码完成（待部署）
+> 稳定版本：`44e4975`（生产环境，已部署）
+> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 角色创建系统已部署生产
 
 ---
 
 ## 当前状态：稳定版已上线
 
-**生产环境已部署并验证通过：`bf5fcf5`**
+**生产环境已部署并验证通过：`44e4975`**
 
 | 服务 | 状态 | 端口 |
 |------|------|------|
@@ -23,14 +23,14 @@
 - 修复：改用 `this.anims.anims.size` + `this.anims.get() !== undefined`
 - 验证：Playwright 确认画面完全恢复
 
-**本轮会话（07-22 白机，commit `c6306d3`，未部署）**：P4 角色创建系统 - skinId 后端持久化
-- 数据库：User 新增 `skinId String?`（nullable，null=未选择），Prisma 迁移已应用
+**本轮会话（07-22 白机，commit `c6306d3`，已部署 `44e4975`）**：P4 角色创建系统 - skinId 后端持久化
+- 数据库：User 新增 `skinId String?`（nullable，null=未选择），Prisma 迁移已应用（本地+生产）
 - API：新增 `PUT /api/user/skin`，`publicUser()` 投影含 skinId
 - 前端路由：**仅进 `/nde` 时检查 skinId===null 拦截到 `/character`**（首页等不受影响）
 - 角色选择页：`CharacterView.vue` 横向 5 卡片（上立绘下精灵，形象 A~E 命名，暗色原神风格）
 - 个人中心：`ProfileDialog.vue` 新增形象 5 宫格切换器（提示重进德塔生效）
 - 验证：浏览器全链路实测通过（选形象 C -> store/localStorage/DB 三处 skinId='3' 一致）
-- **注意**：本地数据库已有迁移，云端尚未执行 `prisma migrate`，部署前需在服务器跑迁移
+- **已部署生产**：`deploy.sh` 执行成功，迁移已应用，前后端 + 游戏服务器均正常
 
 ---
 
@@ -60,7 +60,6 @@
   - 脚本：`scripts/gen_player_portrait_workflows.py`、`scripts/portrait_to_avatar.py`
   - 模型下载：`scripts/download_models.sh`（SDXL + Pixel-Art LoRA + ControlNet，约 8GB）
   - **生成后放入 `CharacterView.vue` 立绘区 + 精灵区，替换当前字母色块占位**
-- [ ] **部署 P4 角色创建系统到生产**：服务器需先 `npx prisma migrate deploy`，再 `bash deploy.sh`
 
 ### 中优先级
 
@@ -100,8 +99,8 @@
 | 项目 | 值 |
 |------|-----|
 | Git 分支 | `master` |
-| 最新 commit | `c6306d3`（本地，未部署）/ `bf5fcf5`（生产已部署） |
-| 数据库迁移 | 本地 5 个迁移（含 `add_skin_id_to_user`），云端仅 4 个，**部署前需补迁移** |
+| 最新 commit | `44e4975`（已推送 + 已部署） |
+| 数据库迁移 | 本地 5 个 + 生产 5 个（已同步） |
 | 前端端口 | 4396（本地）/ 80（服务器 Nginx） |
 | 后端端口 | 3000 |
 | 游戏服务器端口 | 2567 |
