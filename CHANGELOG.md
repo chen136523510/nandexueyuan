@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-07-22 P4 立绘原神卡风格重做 + 角色选择页 4 项体验修复
+
+### 决策依据
+- **背景**：首轮 P4 立绘为全身 + 复杂场景背景（街道/城堡/魔法阵），多角色和文字污染问题反复，用户反馈风格与参考图（原神角色卡）差距大
+- **触发**：用户提供原神卡牌参考图，要求半身胸像 + 干净渐变单色背景；同时反馈 4 个体验问题
+
+### 问题修复（BUG-32~35）
+| # | 问题 | 根因 | 解决方案 |
+|---|------|------|---------|
+| 1+2 | 个人中心/角色选择 换形象"保存失败" | 旧后端进程（PID 80160）未加载 `/api/user/skin` 路由，返回 404 | 终止旧进程 → 重启后端，加载已有路由 |
+| 3 | 精灵图区域显示整张四方图 | `<img>` 标签直接拉伸 128×128 整图 | 改用 CSS `background-image` + `background-size:96px` 只显示左上角第一帧 |
+| 4 | 立绘风格不符（全身+复杂背景） | 提示词残留 `city street at sunset` + 缺少半身胸像关键词 | 重写提示词：`bust shot, upper body, portrait composition` + 渐变单色背景 |
+| 5 | 角色选择页无返回按钮 | 缺失 | 左上角新增「← 返回」按钮，跳转 `/` |
+
+### 立绘提示词重构
+- **正面**：`masterpiece, 1girl, solo, {角色描述}, bust shot, upper body, chest up, portrait composition, centered, {情绪}, looking at viewer, soft gradient background, {主题色}, clean simple background, game character card`
+- **负面**：追加 `background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor`
+- **主题色**：set1粉 / set2紫 / set3蓝 / set4深蓝 / set5青
+
+### 文件变更
+| 文件 | 动作 |
+|------|------|
+| `src/views/CharacterView.vue` | 改 - 精灵帧裁切（CSS background）+ 返回按钮 |
+| `.ai/comfyui-workflows/players/portrait_player_set{1..5}.json` | 改 - 提示词全部重写 |
+| `public/game/portraits/player_set{1..5}.png` | 重新生成 - 原神卡风格立绘 |
+| `public/game/portraits/raw/player_set{1..5}_raw.png` | 重新生成 - 原始图 |
+| `public/game/sprites/avatars/player_set{1..5}.png` | 重新生成 - 头像 |
+| `public/game/sprites/players/player_set{1..5}_walk.png` | 重新生成 - 精灵图 |
+
+---
+
 ## 2026-07-22 P4 角色创建系统 - skinId 后端持久化 + 角色选择页
 
 ### 决策依据

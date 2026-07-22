@@ -4,6 +4,44 @@
 
 ---
 
+### [fix] P4 立绘原神卡风格重做 + 角色选择页 4 项体验修复
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（黑机）
+- **背景**：首轮 P4 立绘为全身 + 复杂场景背景，多角色和文字污染反复，用户提供原神卡牌参考图要求改为半身胸像 + 渐变单色背景。同时反馈 4 个体验问题
+- **变更内容**：
+  1. **立绘提示词重构**（`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`）：正面提示词改为 `bust shot, upper body, chest up, portrait composition, centered` + 角色主题色渐变背景；负面提示词追加 `background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor`
+  2. **5 套立绘+头像+精灵图全部重新生成**：set1粉(校园)/set2紫(巫女)/set3蓝(骑士)/set4深蓝(法师)/set5青(赛博朋克)，15 个文件总计 7.1MB
+  3. **精灵图裁帧显示**（`src/views/CharacterView.vue`）：精灵区域从 `<img>` 拉伸整图改为 CSS `background-image` + `background-size:96px` 只显示第一帧
+  4. **返回按钮**（`src/views/CharacterView.vue`）：左上角新增「← 返回」按钮，跳转 `/` 首页
+- **BUG 修复**：BUG-31（立绘风格）/ BUG-32~33（skin API 404→重启后端）/ BUG-34（四方图）/ BUG-35（无返回按钮），详见 `bug-log.md`
+- commit: 未提交
+
+---
+
+### [feat] P4 玩家美术资源 - ComfyUI 生成 5 套立绘 + 头像 + 精灵图
+
+- **时间**：2026-07-22
+- **变更人**：陈梓键（黑机）
+- **背景**：R-003 角色创建系统已完成 5 套形象的色块占位 + 代码接入（PreloadScene/CharacterView/GameView），但缺少真实美术资源。本次使用黑机 ComfyUI（秋叶整合包 v3）+ SDXL 动漫模型生成正式美术资源，替换全部色块占位
+- **生成流程**：
+  1. **ComfyUI 环境确认**：黑机 `E:/ai/ComfyUI-aki(1)/ComfyUI-aki-v3/ComfyUI`（秋叶整合包），共享 SD WebUI 模型目录（`extra_model_paths.yaml`），SDXL 模型 `Qpipi.com_waiIllustriousSDXL_v160.safetensors` (6.5GB) 可用，BiRefNet 背景移除节点已安装
+  2. **API 调用脚本**（`scripts/gen_player_portraits_api.py`）：将 UI 工作流 JSON 转换为 ComfyUI API `/prompt` 格式，通过 HTTP 提交 + 轮询 `/history` + `/view` 下载结果。解决了 BiRefNetRMBG v3.0.0 参数变更（`model_name`→`model` + optional 参数必须显式传入）和 KSampler `control_after_generate` 控件跳过问题
+  3. **立绘生成**：5 套 1024×1024 透明背景 PNG（BiRefNet 抠图），每套约 13 秒（SDXL 30 步 + BiRefNet 背景移除）
+  4. **头像生成**（`scripts/portrait_to_avatar.py`）：从立绘裁取头部区域，居中正方形裁切，NEAREST 降采样到 40×40
+  5. **精灵图生成**（`scripts/portrait_to_spritesheet.py`）：从立绘裁取全身角色缩放到 32×32，组装 128×128 4×4 网格（4 方向 × 4 帧行走动画），down=正面/up=翻转/left=正面/right=翻转
+- **产出资源**：
+  | 资源类型 | 文件 | 尺寸 | 用途 |
+  |----------|------|------|------|
+  | 立绘 | `public/game/portraits/player_set{1-5}.png` | 1024×1024 RGBA | CharacterView 角色选择卡片 + GameView 立绘面板 |
+  | 头像 | `public/game/sprites/avatars/player_set{1-5}.png` | 40×40 RGBA | GameView HUD 头像 + ProfileDialog 形象选择器 |
+  | 精灵图 | `public/game/sprites/players/player_set{1-5}_walk.png` | 128×128 RGBA (4×4) | PreloadScene spritesheet 4 方向行走动画 |
+- **工作流文件**：`.ai/comfyui-workflows/players/portrait_player_set{1-5}.json`（5 套不同角色设定：校园风/巫女/骑士/法师/赛博朋克）
+- **注意**：精灵图为程序化生成（立绘全身缩放 + 像素偏移模拟行走），非真正的多视角像素动画。后续可考虑用 ControlNet OpenPose 生成精确的 32×32 像素行走动画替换
+- commit: 未提交
+
+---
+
 ### [feat] P4 角色创建系统 - skinId 后端持久化 + 首次登录强制选择
 
 - **时间**：2026-07-22

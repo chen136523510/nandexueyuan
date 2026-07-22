@@ -52,6 +52,11 @@ async function confirm() {
 <template>
   <div class="select-page">
     <div class="select-inner">
+      <!-- 返回按钮 -->
+      <button class="back-btn" @click="router.push('/')">
+        ← 返回
+      </button>
+
       <h1 class="title">选择形象</h1>
       <p class="subtitle">进入德塔前，请选择一位形象</p>
 
@@ -69,10 +74,12 @@ async function confirm() {
             <img :src="set.portrait" :alt="`形象${set.letter}`" @error="onImgError($event, set.color)" />
             <div class="img-fallback">{{ set.letter }}</div>
           </div>
-          <!-- 下方：精灵 -->
+          <!-- 下方：精灵（只显示第一帧，放大居中） -->
           <div class="sprite-box">
-            <img :src="set.sprite" :alt="`形象${set.letter} 精灵`" @error="onImgError($event, set.color)" />
-            <div class="img-fallback">{{ set.letter }}</div>
+            <div
+              class="sprite-frame"
+              :style="{ backgroundImage: `url(${set.sprite})` }"
+            ></div>
           </div>
           <!-- 名称 -->
           <div class="char-name">形象 {{ set.letter }}</div>
@@ -106,6 +113,27 @@ async function confirm() {
   max-width: 1400px;
   padding: 32px 24px;
   text-align: center;
+  position: relative;
+}
+
+/* 返回按钮 */
+.back-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #8b95a8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f0e6d2;
 }
 
 .title {
@@ -172,19 +200,22 @@ async function confirm() {
   object-position: center bottom;
 }
 
-/* 精灵区域 */
+/* 精灵区域：只显示第一帧 */
 .sprite-box {
-  height: 80px;
-  position: relative;
-  overflow: hidden;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(0, 0, 0, 0.4);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.sprite-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.sprite-frame {
+  width: 48px;
+  height: 48px;
+  background-size: 96px 96px;  /* 2x2 网格缩小到 96px，每帧 48px */
+  background-position: 0 0;    /* 左上角帧 */
+  background-repeat: no-repeat;
   image-rendering: pixelated;
 }
 

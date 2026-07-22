@@ -1,36 +1,53 @@
 # AI 交接单
 
-> 最后更新：2026-07-22（白机，P4 角色创建系统已部署生产）
-> 所在设备：白机
-> 稳定版本：`44e4975`（生产环境，已部署）
-> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 角色创建系统已部署生产
+> 最后更新：2026-07-23（黑机，P4 立绘原神卡风格重做 + 4 项体验修复 + 迁移修复）
+> 所在设备：黑机
+> 稳定版本：`eb4e00a`（最新提交，含本次代码+文档+脚本，未含美术资源）
+> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 美术资源待黑机下次继续优化
 
 ---
 
-## 当前状态：稳定版已上线
+## 当前状态：代码+文档+脚本已提交，美术资源待黑机下次继续优化
 
-**生产环境已部署并验证通过：`44e4975`**
+**生产环境稳定版：`44e4975`（已部署）**
 
 | 服务 | 状态 | 端口 |
 |------|------|------|
 | 前端（Nginx） | ✅ HTTP 200 | 80/443 |
 | 后端 API（PM2: nandexueyuan-api） | ✅ online | 3000 |
 | Colyseus 游戏服务器（PM2: nandexueyuan-game） | ✅ online | 2567 |
-| 黑机检索 Worker（PM2: search-worker） | ✅ online（黑机 7×24） | — |
+| 黑机检索 Worker（PM2: search-worker） | ✅ online（黑机 7×24） | - |
+| ComfyUI（黑机本地） | ✅ 运行中 | 8188 |
 
-**最近一次修复（07-22 白机）**：德塔进入无画面 BUG（BUG-37）
-- 根因：`PreloadScene.js` 调用 `this.anims.getAllAnims()`，Phaser 4 无此 API
-- 修复：改用 `this.anims.anims.size` + `this.anims.get() !== undefined`
-- 验证：Playwright 确认画面完全恢复
+### ⚠️ 美术资源状态（重要）
 
-**本轮会话（07-22 白机，commit `c6306d3`，已部署 `44e4975`）**：P4 角色创建系统 - skinId 后端持久化
-- 数据库：User 新增 `skinId String?`（nullable，null=未选择），Prisma 迁移已应用（本地+生产）
-- API：新增 `PUT /api/user/skin`，`publicUser()` 投影含 skinId
-- 前端路由：**仅进 `/nde` 时检查 skinId===null 拦截到 `/character`**（首页等不受影响）
-- 角色选择页：`CharacterView.vue` 横向 5 卡片（上立绘下精灵，形象 A~E 命名，暗色原神风格）
-- 个人中心：`ProfileDialog.vue` 新增形象 5 宫格切换器（提示重进德塔生效）
-- 验证：浏览器全链路实测通过（选形象 C -> store/localStorage/DB 三处 skinId='3' 一致）
-- **已部署生产**：`deploy.sh` 执行成功，迁移已应用，前后端 + 游戏服务器均正常
+**美术资源（立绘/头像/精灵图）本次未提交 git，留在黑机本地待继续优化。**
+
+原因：首轮原神卡风格立绘仍有多处需要优化的地方（构图/一致性/背景细节等），用户要求黑机下次继续打磨，达标后再入库提交。
+
+- 立绘/头像/精灵图文件位于黑机 `public/game/` 下，**未入 git**
+- 工作流 JSON 已提交（`.ai/comfyui-workflows/players/`），黑机下次直接在此基础上迭代
+- 生成脚本已提交（`scripts/gen_player_portraits_api.py`、`scripts/portrait_to_spritesheet.py`）
+- **前端代码不依赖美术资源**：`CharacterView.vue` 有 fallback 色块，缺图时显示字母色块不影响功能
+
+### 本轮会话（07-22~23 黑机）已完成并提交的内容
+
+**代码修复**：
+- BUG-32~33：个人中心/角色选择 换形象"保存失败" → 根因有两个：
+  1. 旧后端进程未加载 skin 路由（返回 404）→ 重启修复
+  2. Prisma Client 未同步 + 数据库 3 个迁移未应用 → `prisma generate` + `migrate deploy` 修复
+- BUG-34：精灵图显示整张四方图 → CSS background 只显示第一帧
+- BUG-35：角色选择页无返回 → 左上角新增返回按钮
+- BUG-36：公告"加载失败" → 同 Prisma Client 未同步根因，一并修复
+
+**脚本提交**：
+- `scripts/gen_player_portraits_api.py`：ComfyUI API 调用脚本
+- `scripts/portrait_to_spritesheet.py`：立绘转精灵图脚本
+
+**立绘重做（美术资源未提交）**：
+- 提示词改为原神卡风格（半身胸像 + 渐变单色背景）
+- 已在黑机生成 5 套新立绘+头像+精灵图，但**用户认为仍需优化**
+- 工作流 JSON 已提交，黑机下次在此基础上继续迭代
 
 ---
 
@@ -52,14 +69,21 @@
 
 ## 待办（按优先级）
 
-### 高优先级
+### 黑机下次继续（美术资源优化）
 
-- [ ] **R-003 玩家精灵美术资源**：ComfyUI 生成 5 套立绘 + 精灵表，替换色块占位
+- [ ] **R-003 立绘继续优化**：当前原神卡风格立绘仍需打磨（构图/一致性/背景细节），用户要求达标后再入库提交
+  - 工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`（已提交，在此基础上迭代）
+  - 脚本：`scripts/gen_player_portraits_api.py`（已提交）
+  - 优化方向：参考 `tmp/立绘参考.png`（原神角色卡牌风格），确保半身胸像 + 干净渐变背景 + 角色居中
+  - **达标后入库 `public/game/portraits/` + `public/game/sprites/` 并提交 git**
+
+### 已完成（本轮）
+- [x] **R-003 立绘+头像+精灵图生成**：ComfyUI 生成 5 套（原神卡风格，待继续优化）
   - 立绘工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`
-  - 精灵表需 ControlNet OpenPose（4 方向 × 4 帧 = 16 帧/套）
-  - 脚本：`scripts/gen_player_portrait_workflows.py`、`scripts/portrait_to_avatar.py`
-  - 模型下载：`scripts/download_models.sh`（SDXL + Pixel-Art LoRA + ControlNet，约 8GB）
-  - **生成后放入 `CharacterView.vue` 立绘区 + 精灵区，替换当前字母色块占位**
+  - 提示词已重写为半身胸像风格（bust shot + 渐变单色背景）
+  - 精灵图采用程序化生成 4×4 网格（暂未用 ControlNet）
+  - 脚本：`scripts/gen_player_portraits_api.py`、`scripts/portrait_to_avatar.py`、`scripts/portrait_to_spritesheet.py`
+  - **美术资源未提交 git（留黑机待优化），工作流 JSON + 脚本已提交**
 
 ### 中优先级
 
@@ -73,7 +97,7 @@
 1. **角色坐标系**：色块时代坐标是凑合的，换 PNG 后暴露。`origin(0.5,1)` + body offset 方案导致玩家掉虚空，已回退。下次需重新设计，建议参考 ADR-002
 2. **ComfyUI 输出目录**：绘世启动器会覆盖 `preference.json` 的 `output_directory`。当前方案是 AI 直接读 ComfyUI 默认 output 目录，验证后手动复制
 3. **男德通人设锁定**：参考 MyGo 千早爱音（粉发、眼镜、虎牙），mygo LoRA 触发词 `chihaya anon`，**人物形象只留触发词，其余靠 LoRA**
-4. **图片资源 404**：`player_set*.png` 等精灵图未入 git，有 fallback 色块不影响逻辑，待 ComfyUI 生成后入库
+4. **立绘风格稳定性**：提示词已改为原神卡风格（半身胸像 + 渐变背景），但首轮结果用户认为仍需优化，**美术资源未提交 git**，黑机下次继续打磨
 
 ---
 

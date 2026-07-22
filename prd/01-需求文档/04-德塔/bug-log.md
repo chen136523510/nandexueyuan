@@ -4,6 +4,81 @@
 
 ---
 
+## 2026-07-22（黑机 立绘原神卡风格重做 + 4 项体验修复）
+
+---
+
+### BUG-35：角色选择页无返回按钮
+- **现象**：用户进入 `/character` 角色选择页后，无返回入口，必须刷新或直接输入 URL 才能退出
+- **根因**：`CharacterView.vue` 首版设计未考虑返回入口
+- **修复**：左上角新增「← 返回」按钮，点击跳转 `/` 首页
+- **文件**：`src/views/CharacterView.vue`
+- **状态**：已修复
+
+---
+
+### BUG-34：精灵图区域显示整张四方图
+- **现象**：角色选择卡片下方精灵区域显示的是完整的 128×128 四方图（4×4 网格），而非单帧
+- **根因**：`<img>` 标签直接设置 `width: 100%; height: 100%` 导致整张图被拉伸到 80×80 盒子内
+- **修复**：改用 CSS `background-image` + `background-size: 96px 96px` + `background-position: 0 0` 只显示左上角第一帧（64×64），不显示完整四方图
+- **文件**：`src/views/CharacterView.vue`（`sprite-box` + 新增 `sprite-frame` div）
+- **状态**：已修复
+
+---
+
+### BUG-32~33：个人中心/角色选择 换形象"保存失败"/"保存失败请重试"
+- **现象**：
+  - BUG-32：个人中心 `ProfileDialog.vue` 点击形象 5 宫格切换器时，报"更新失败"
+  - BUG-33：角色选择页 `CharacterView.vue` 点击「确认选择」后，报"保存失败，请重试"
+- **根因**：运行中的后端进程（PID 80160）是旧版本，未加载 `/api/user/skin` 路由（P4 阶段新增），HTTP 返回 404 `Cannot PUT /api/user/skin`
+- **修复**：
+  1. `netstat -ano | grep ":3000"` 找到占用端口的旧进程 PID
+  2. `taskkill /F /PID 80160` 终止旧进程
+  3. `cd server && node src/index.js` 重启后端，加载最新路由
+  4. 验证：`curl -X PUT http://localhost:3000/api/user/skin` 返回 1002 错误码（需登录）而非 404
+- **文件**：后端代码无改动，仅重启进程加载已有路由
+- **状态**：已修复
+
+---
+
+### BUG-31：立绘风格不符（全身+复杂背景）+ 文字污染
+- **现象**：首轮 P4 立绘为全身 + 复杂场景背景（街道/城堡/魔法阵），且反复出现多角色和日文乱入，与参考图（原神角色卡）差距大
+- **根因**：提示词残留 `city street at sunset` 等场景描述，且 `design sheet` 等毒瘤词未彻底清除
+- **修复**：
+  1. 重写提示词模板：`bust shot, upper body, chest up, portrait composition` 确保半身胸像
+  2. 负面提示词追加：`background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor`
+  3. 设置 5 套主题色：set1粉 / set2紫 / set3蓝 / set4深蓝 / set5青
+  4. 删除旧立绘 → 重新生成 5 套立绘+头像+精灵图
+- **文件**：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json` + 所有美术资源
+- **状态**：已修复
+
+---
+
+## 2026-07-22（黑机 ComfyUI 美术资源生成）
+
+---
+
+### BUG-38：ComfyUI API 提交 BiRefNetRMBG 节点报 400 + KeyError
+
+- **现象**：通过 ComfyUI `/prompt` API 提交立绘生成工作流，返回 HTTP 400 `prompt_outputs_failed_validation`，后续修复后又报 `KeyError: 'mask_blur'`
+- **排查过程**（严格调试思维，非纯推理）：
+  1. 首次提交 400 → 修改 `submit_prompt` 捕获 error body，发现 `tuple indices must be integers or slices, not str` → API 格式的输出引用需要 `[node_id_str, slot_index_int]` 而非 `[node_id_str, output_name_str]`
+  2. 修正后再次提交成功，但 BiRefNet 节点被忽略 → 日志 `Required input is missing: model` → UI 工作流的旧参数名 `model_name` 在 v3.0.0 已改为 `model`
+  3. 修正参数名后提交成功，但生成报错 `KeyError: 'mask_blur'` → 查看节点源码发现 `params["mask_blur"]` 直接取值，optional 参数在 API 提交时不传则字典缺失
+- **根因**：ComfyUI-RMBG v3.0.0 的 `BiRefNetRMBG` 节点 API 接口与 UI 工作流（v2.x 时代创建）参数名/结构不兼容：
+  - `model_name` → `model`
+  - `save_format` → `background`
+  - `bg_color` → `background_color`
+  - optional 参数（`mask_blur`, `mask_offset`, `invert_output`, `refine_foreground`）在 API 提交时**必须显式传入**，否则节点代码 `params["mask_blur"]` 直接 KeyError
+- **修复**（`scripts/gen_player_portraits_api.py`）：
+  1. 输出引用改为 `[str(from_node), from_slot_int]`
+  2. KSampler widget_values 跳过 `control_after_generate` 控件值
+  3. BiRefNetRMBG 参数映射 + 显式传入所有 optional 默认值
+- **文件**：`scripts/gen_player_portraits_api.py`
+- **状态**：已修复
+
+---
+
 ## 2026-07-22（白机 德塔进入无画面修复）
 
 ---
