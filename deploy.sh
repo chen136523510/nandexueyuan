@@ -58,6 +58,7 @@ pm2 save
 
 echo "=== 9/11 写入版本公告 ==="
 # 插入 v2.0.0 版本公告（幂等，已存在则跳过）
+cd "$DEPLOY_DIR/server"
 node prisma/seedVersion.js
 
 echo "=== 10/11 验证 ==="
@@ -66,6 +67,16 @@ if curl -s http://localhost:3000/api/hello | grep -q "message"; then
   echo "✓ 后端 API 正常"
 else
   echo "✗ 后端 API 异常"
+fi
+if curl -s http://localhost:3000/api/wall/posts | grep -q "posts"; then
+  echo "✓ 师德墙 API 正常"
+else
+  echo "✗ 师德墙 API 异常"
+fi
+if curl -s http://localhost:3000/api/announcement | grep -q "v2.0.0"; then
+  echo "✓ 版本公告 v2.0.0 正常"
+else
+  echo "✗ 版本公告异常"
 fi
 if curl -sI http://localhost/ | grep -q "200\|301\|302"; then
   echo "✓ 前端正常"
