@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-07-23（导航栏统一重构）
+
+### BUG-W04：进入男通讯录后导航页签左对齐、师德墙和德塔入口消失
+
+- **现象**：管理员用户进入男通讯录（/admin）后，顶部导航栏页签突然全部挤到左侧，且师德墙、德塔两个入口消失，只剩首页、男德通、男通讯录三项
+- **排查过程**：
+  1. 对比 `/home` 和 `/admin` 两页的导航 snapshot，确认 /admin 少了两项且布局不同
+  2. 检查 `src/router/index.js`，/admin 是独立路由（非 MainView 子路由），各自渲染自己的导航
+  3. 读 `AdminView.vue` template，发现其导航只有3项硬编码，缺师德墙和德塔；且 `.topbar` CSS 缺 `justify-content: space-between`（MainView 有），导致页签全挤左边
+  4. grep 确认导航在 MainView、AdminView、WallView 三处各自硬编码，新增师德墙模块时漏改 AdminView
+- **根因**：导航栏代码在3个视图各自复制粘贴，新增模块时只改了2处，漏了 AdminView。这是重复代码技术债导致的典型漏改
+- **修复方式**：抽取公共组件 `src/components/TopBar.vue`，三页统一引用 `<TopBar />`，导航菜单只维护一处
+- **修复文件**：`src/components/TopBar.vue`（新增）、`src/views/MainView.vue`、`src/views/AdminView.vue`、`src/views/WallView.vue`（改）
+- **验证**：浏览器实测 /home、/admin、/wall 三页导航栏均显示完整5项（首页/男德通/师德墙/男通讯录/德塔）+ 右侧头像，布局一致不再左对齐
+- **教训**：多处复制的 UI 片段必须抽公共组件，否则每次新增模块都要手动同步多处，极易漏改
+
+---
+
 ## 2026-07-23（师德墙线上问题修复）
 
 ### BUG-W03：发帖后新动态只露出半张卡片，无法滚动到完整位置

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { listPosts, createPost, deletePost, createComment, deleteComment, likePost, unlikePost } from '../api/wall'
+import TopBar from '../components/TopBar.vue'
 
 const auth = useAuthStore()
 
@@ -175,17 +176,7 @@ onMounted(() => {
 <template>
   <div class="wall-page">
     <!-- 顶部导航 -->
-    <nav class="topbar">
-      <router-link to="/home" class="topbar-brand">男德学院</router-link>
-      <div class="topbar-menu">
-        <router-link to="/home" class="menu-item">首页</router-link>
-        <router-link to="/chat" class="menu-item">男德通</router-link>
-        <router-link to="/wall" class="menu-item active">师德墙</router-link>
-        <router-link v-if="auth.role === 'super_admin' || auth.role === 'admin'" to="/admin" class="menu-item">男通讯录</router-link>
-        <router-link to="/nde" class="menu-item">德塔</router-link>
-      </div>
-      <router-link to="/home" class="topbar-back">← 返回首页</router-link>
-    </nav>
+    <TopBar />
 
     <!-- 侧边标题栏 -->
     <div class="wall-sidebar">
@@ -328,50 +319,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ===== 顶部导航 ===== */
-.topbar {
-  height: 52px;
-  background: var(--md-bg-card);
-  border-bottom: 1px solid var(--md-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  flex-shrink: 0;
-  z-index: 100;
-}
-.topbar-brand {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--md-primary);
-  text-decoration: none;
-}
-.topbar-menu {
-  display: flex;
-  gap: 4px;
-}
-.menu-item {
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 14px;
-  color: var(--md-text-secondary);
-  text-decoration: none;
-  transition: all 0.2s;
-}
-.menu-item:hover {
-  background: var(--md-primary-bg);
-  color: var(--md-primary);
-}
-.menu-item.active {
-  background: var(--md-primary-bg);
-  color: var(--md-primary);
-  font-weight: 600;
-}
-.topbar-back {
-  font-size: 13px;
-  color: var(--md-text-secondary);
-  text-decoration: none;
-}
+/* ===== 顶部导航（已抽公共组件 TopBar.vue） ===== */
 
 /* ===== 侧边标题栏 ===== */
 .wall-sidebar {

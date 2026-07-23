@@ -4,6 +4,23 @@
 
 ---
 
+### [refactor] 抽取公共 TopBar 组件，统一三页导航（BUG-W04）
+
+- **时间**：2026-07-23
+- **变更人**：陈梓键
+- **背景**：用户反馈进入男通讯录（/admin）后导航页签左对齐、师德墙和德塔入口消失。排查发现导航栏在 MainView、AdminView、WallView 三处各自硬编码，新增师德墙模块时只改了 MainView 和 WallView，漏改 AdminView——典型的重复代码技术债
+- **变更内容**：
+  1. **新增** `src/components/TopBar.vue`：公共导航组件，含5项菜单（首页/男德通/师德墙/男通讯录[管理员可见]/德塔）+ 品牌标题 + UserAvatar + ProfileDialog，样式沿用 MainView 原版（`justify-content: space-between` 三栏布局）
+  2. **MainView.vue**（改）：删除内联导航 template + 旧 topbar CSS，改为 `<TopBar />`；移除不再需要的 `useRouter`/`UserAvatar`/`ProfileDialog` import 和 `handleLogout`/`showProfile` 逻辑（已收敛到 TopBar）
+  3. **AdminView.vue**（改）：删除只有3项的内联导航（缺师德墙+德塔）+ 缺 `justify-content: space-between` 的旧 topbar CSS，改为 `<TopBar />`；移除不再需要的 `useRouter` import
+  4. **WallView.vue**（改）：删除内联导航（含"← 返回首页"链接）+ 旧 topbar CSS，改为 `<TopBar />`
+- **文件**：`src/components/TopBar.vue`（新增）、`src/views/MainView.vue`（改）、`src/views/AdminView.vue`（改）、`src/views/WallView.vue`（改）
+- **验证**：`npm run build` 构建通过 + 浏览器实测三页（/home、/admin、/wall）导航栏均显示完整5项且右对齐头像，不再左对齐
+- **关联文档**：`bug-log.md` BUG-W04
+- **教训**：多处复制的 UI 片段应抽公共组件，避免"改一处漏其他"
+
+---
+
 ### [fix] 发帖后自动滚动到最左侧展示新动态（BUG-W03）
 
 - **时间**：2026-07-23

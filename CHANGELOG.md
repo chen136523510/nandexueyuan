@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-07-23 抽取公共 TopBar 组件，统一三页导航（BUG-W04）
+
+### 决策依据
+- **背景**：用户反馈进入男通讯录（/admin）后导航页签左对齐、师德墙和德塔入口消失。排查发现导航栏在 MainView、AdminView、WallView 三处各自硬编码，新增师德墙模块时漏改 AdminView
+- **方案对比**：
+  - 方案A（最小改动）：仅补全 AdminView 缺失的2项 + 加 `justify-content: space-between`。止血快但3处重复代码债仍在
+  - 方案B（抽公共组件）：新建 `TopBar.vue`，三页统一引用。根治问题，以后新增模块只改一处
+- **决策**：采用方案B，一次根治杜绝再次漏改
+
+### 影响评估
+- **新增文件**：`src/components/TopBar.vue`（公共导航组件，含5项菜单 + UserAvatar + ProfileDialog）
+- **重构文件**：`MainView.vue`、`AdminView.vue`、`WallView.vue` 三页内联导航替换为 `<TopBar />`，各自删除旧 topbar CSS 和不再需要的 import/逻辑
+- **行为变化**：AdminView 导航从3项补全为5项且右对齐；WallView 导航右侧从"← 返回首页"链接改为统一头像（与其他页一致）
+- **关联文档**：`prd/01-需求文档/06-师德墙/bug-log.md` BUG-W04、`changelog.md`
+
+---
+
 ## 2026-07-23 师德墙模块 + 系统管理员账号（R-008 / v2.0.0）
 
 ### 决策依据
