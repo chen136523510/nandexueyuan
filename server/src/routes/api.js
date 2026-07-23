@@ -61,7 +61,7 @@ router.get('/chat/sessions', auth, listSessions)
 router.get('/chat/sessions/:id', auth, getSession)
 router.delete('/chat/sessions/:id', auth, deleteSession)
 
-// 男德墙（校园墙）
+// 师德墙（校园墙）
 router.get('/wall/posts', auth, listPosts)
 router.post('/wall/posts', auth, wallUpload.single('image'), createPost)
 router.delete('/wall/posts/:id', auth, deletePost)

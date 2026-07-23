@@ -29,6 +29,20 @@ const members = [
 async function main() {
   const passwordHash = bcrypt.hashSync('nande666', 10)
 
+  // ===== 系统管理员（不可登录，用于系统默认数据：种子动态、公告等） =====
+  await prisma.user.upsert({
+    where: { username: '_system' },
+    update: {},
+    create: {
+      username: '_system',
+      passwordHash: bcrypt.hashSync(Math.random().toString(36), 10), // 随机密码，不可登录
+      nickname: '系统管理员',
+      role: 'super_admin',
+      status: 'disabled', // 标记为禁用，防止登录
+    },
+  })
+  console.log('系统管理员账号: _system (不可登录)')
+
   for (const m of members) {
     await prisma.user.upsert({
       where: { username: m.username },

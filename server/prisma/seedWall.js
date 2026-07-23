@@ -2,21 +2,22 @@ import prisma from '../src/lib/prisma.js'
 import fs from 'fs'
 import path from 'path'
 
-// 男德墙默认动态：名人名言 + 丘序明
+// 师德墙默认动态：名人名言 + 丘序明
 // 图片从 uploads/wall-seed/ 复制到 uploads/wall/
+// 作者统一使用系统管理员（_system），避免误认为某个具体用户
 const seedPosts = [
   {
-    username: 'chenzijian', // 以院长身份发布
+    author: '_system',
     content: '想象力比知识更重要。知识是有限的，而想象力概括着世界上的一切，推动着进步，并且是知识进化的源泉。',
     imageSrc: 'wall-seed/einstein.jpg',
   },
   {
-    username: 'chenzijian',
+    author: '_system',
     content: '如果我看得更远，那是因为我站在巨人的肩膀上。',
     imageSrc: 'wall-seed/newton.jpg',
   },
   {
-    username: 'qiuxuming', // 丘序明本人
+    author: 'qiuxuming', // 丘序明本人
     content: '低迷。',
     imageSrc: 'wall-seed/qiuming.jpg',
   },
@@ -31,14 +32,14 @@ async function main() {
   // 检查是否已有种子数据（防止重复插入）
   const existing = await prisma.post.count()
   if (existing > 0) {
-    console.log(`男德墙已有 ${existing} 条动态，跳过种子数据`)
+    console.log(`师德墙已有 ${existing} 条动态，跳过种子数据`)
     return
   }
 
   for (const item of seedPosts) {
-    const user = await prisma.user.findUnique({ where: { username: item.username } })
+    const user = await prisma.user.findUnique({ where: { username: item.author } })
     if (!user) {
-      console.log(`用户 ${item.username} 不存在，跳过`)
+      console.log(`用户 ${item.author} 不存在，跳过`)
       continue
     }
 
@@ -60,10 +61,10 @@ async function main() {
         image: imagePath,
       },
     })
-    console.log(`  ✓ ${item.username}: "${item.content.slice(0, 20)}..." -> post #${post.id}`)
+    console.log(`  ✓ ${item.author}: "${item.content.slice(0, 20)}..." -> post #${post.id}`)
   }
 
-  console.log('男德墙种子数据完成')
+  console.log('师德墙种子数据完成')
 }
 
 main()

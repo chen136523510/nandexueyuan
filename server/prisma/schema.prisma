@@ -30,7 +30,7 @@ model User {
   @@map("users")
 }
 
-// ===== 男德墙 =====
+// ===== 师德墙 =====
 
 model Post {
   id        Int      @id @default(autoincrement())

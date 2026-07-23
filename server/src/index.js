@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
-// 静态文件：男德墙图片
+// 静态文件：师德墙图片
 app.use('/uploads', express.static('uploads'))
 
 // 路由

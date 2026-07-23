@@ -176,69 +176,79 @@ onMounted(() => {
       <div class="topbar-menu">
         <router-link to="/home" class="menu-item">首页</router-link>
         <router-link to="/chat" class="menu-item">男德通</router-link>
-        <router-link to="/wall" class="menu-item active">男德墙</router-link>
+        <router-link to="/wall" class="menu-item active">师德墙</router-link>
         <router-link v-if="auth.role === 'super_admin' || auth.role === 'admin'" to="/admin" class="menu-item">男通讯录</router-link>
         <router-link to="/nde" class="menu-item">德塔</router-link>
       </div>
       <router-link to="/home" class="topbar-back">← 返回首页</router-link>
     </nav>
 
-    <!-- 内容区 -->
-    <div class="wall-container">
-      <!-- 标题 + 发帖按钮 -->
-      <div class="wall-header">
-        <h1 class="wall-title">🧱 男德墙</h1>
+    <!-- 侧边标题栏 -->
+    <div class="wall-sidebar">
+      <div class="sidebar-inner">
+        <h1 class="wall-title">🧱<br>师<br>德<br>墙</h1>
+        <p class="wall-subtitle">漫步画廊，留下印记</p>
         <button class="btn-publish" @click="showPostForm = !showPostForm">
           {{ showPostForm ? '收起' : '+ 发动态' }}
         </button>
       </div>
+    </div>
 
-      <!-- 发帖表单 -->
-      <div v-if="showPostForm" class="post-form">
-        <textarea
-          v-model="postContent"
-          class="post-textarea"
-          placeholder="写点什么..."
-          maxlength="500"
-          rows="3"
-        />
-        <div class="post-form-footer">
-          <label class="image-btn">
-            📷 图片
-            <input id="wall-image-input" type="file" accept="image/*" @change="onImageSelect" hidden />
-          </label>
-          <div class="post-form-right">
-            <span class="char-count">{{ postContent.length }}/500</span>
-            <button class="btn-submit" :disabled="publishing || (!postContent.trim() && !postImage)" @click="handlePublish">
-              {{ publishing ? '发布中...' : '发布' }}
-            </button>
+    <!-- 发帖表单（浮层） -->
+    <transition name="slide-down">
+      <div v-if="showPostForm" class="post-form-overlay">
+        <div class="post-form-card">
+          <textarea
+            v-model="postContent"
+            class="post-textarea"
+            placeholder="写点什么..."
+            maxlength="500"
+            rows="3"
+          />
+          <div class="post-form-footer">
+            <label class="image-btn">
+              📷 图片
+              <input id="wall-image-input" type="file" accept="image/*" @change="onImageSelect" hidden />
+            </label>
+            <div class="post-form-right">
+              <span class="char-count">{{ postContent.length }}/500</span>
+              <button class="btn-submit" :disabled="publishing || (!postContent.trim() && !postImage)" @click="handlePublish">
+                {{ publishing ? '发布中...' : '发布' }}
+              </button>
+            </div>
+          </div>
+          <div v-if="postImagePreview" class="image-preview">
+            <img :src="postImagePreview" alt="预览" />
+            <button class="remove-image" @click="clearImage">✕</button>
           </div>
         </div>
-        <div v-if="postImagePreview" class="image-preview">
-          <img :src="postImagePreview" alt="预览" />
-          <button class="remove-image" @click="clearImage">✕</button>
-        </div>
       </div>
+    </transition>
 
+    <!-- 横向画展主区域 -->
+    <div class="gallery-area">
       <!-- 加载中 -->
-      <div v-if="loading" class="empty-state">
-        <p>加载中...</p>
+      <div v-if="loading" class="gallery-empty">
+        <p>布展中...</p>
       </div>
 
       <!-- 错误 -->
-      <div v-else-if="error" class="empty-state">
+      <div v-else-if="error" class="gallery-empty">
         <p>{{ error }}</p>
         <button @click="fetchPosts" class="btn-retry">重试</button>
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="posts.length === 0" class="empty-state">
-        <p>墙上还空空如也，来发第一条吧</p>
+      <div v-else-if="posts.length === 0" class="gallery-empty">
+        <p>墙上还空空如也<br>来挂第一幅画吧</p>
       </div>
 
-      <!-- 动态列表 -->
-      <div v-else class="post-list">
+      <!-- 画展：横向滚动 -->
+      <div v-else class="gallery-track">
         <div v-for="post in posts" :key="post.id" class="post-card">
+          <!-- 展品编号 -->
+          <div class="post-number">#{{ post.id }}</div>
+
           <!-- 作者信息 -->
           <div class="post-author">
             <div class="post-avatar">{{ displayName(post.author).charAt(0) }}</div>
@@ -249,12 +259,14 @@ onMounted(() => {
             <button v-if="canDeletePost(post)" class="btn-delete-post" @click="handleDeletePost(post)">删除</button>
           </div>
 
-          <!-- 文字内容 -->
-          <p v-if="post.content" class="post-content">{{ post.content }}</p>
-
-          <!-- 图片 -->
+          <!-- 图片（画展核心：大图为主） -->
           <div v-if="post.image" class="post-image-wrapper">
             <img :src="imageUrl(post.image)" alt="动态图片" class="post-image" />
+          </div>
+
+          <!-- 文字内容（画作说明牌） -->
+          <div v-if="post.content" class="post-content-wrapper">
+            <p class="post-content">{{ post.content }}</p>
           </div>
 
           <!-- 互动栏 -->
@@ -268,29 +280,35 @@ onMounted(() => {
           </div>
 
           <!-- 评论区 -->
-          <div v-if="expandedComments[post.id]" class="comment-section">
-            <div v-for="comment in post.comments" :key="comment.id" class="comment-item">
-              <div class="comment-avatar">{{ displayName(comment.author).charAt(0) }}</div>
-              <div class="comment-body">
-                <span class="comment-author">{{ displayName(comment.author) }}</span>
-                <span class="comment-text">{{ comment.content }}</span>
-                <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
-                <button v-if="canDeleteComment(comment)" class="btn-delete-comment" @click="handleDeleteComment(post, comment)">删除</button>
+          <transition name="expand">
+            <div v-if="expandedComments[post.id]" class="comment-section">
+              <div v-for="comment in post.comments" :key="comment.id" class="comment-item">
+                <div class="comment-avatar">{{ displayName(comment.author).charAt(0) }}</div>
+                <div class="comment-body">
+                  <span class="comment-author">{{ displayName(comment.author) }}</span>
+                  <span class="comment-text">{{ comment.content }}</span>
+                  <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
+                  <button v-if="canDeleteComment(comment)" class="btn-delete-comment" @click="handleDeleteComment(post, comment)">删除</button>
+                </div>
+              </div>
+
+              <div class="comment-input-row">
+                <input
+                  v-model="commentText[post.id]"
+                  class="comment-input"
+                  placeholder="写评论..."
+                  maxlength="500"
+                  @keyup.enter="handleComment(post)"
+                />
+                <button class="btn-comment" @click="handleComment(post)">发送</button>
               </div>
             </div>
+          </transition>
+        </div>
 
-            <!-- 评论输入框 -->
-            <div class="comment-input-row">
-              <input
-                v-model="commentText[post.id]"
-                class="comment-input"
-                placeholder="写评论..."
-                maxlength="500"
-                @keyup.enter="handleComment(post)"
-              />
-              <button class="btn-comment" @click="handleComment(post)">发送</button>
-            </div>
-          </div>
+        <!-- 画展结尾提示 -->
+        <div class="gallery-end">
+          <span>🎨 展览到此结束</span>
         </div>
       </div>
     </div>
@@ -299,13 +317,14 @@ onMounted(() => {
 
 <style scoped>
 .wall-page {
-  min-height: 100vh;
+  height: 100vh;
   background: var(--md-bg);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* 顶部导航（复用 MainView 风格） */
+/* ===== 顶部导航 ===== */
 .topbar {
   height: 52px;
   background: var(--md-bg-card);
@@ -314,8 +333,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
 }
 .topbar-brand {
@@ -351,30 +369,45 @@ onMounted(() => {
   text-decoration: none;
 }
 
-/* 内容区 */
-.wall-container {
-  max-width: 680px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px 16px 60px;
-  flex: 1;
-}
-
-/* 标题 */
-.wall-header {
+/* ===== 侧边标题栏 ===== */
+.wall-sidebar {
+  width: 160px;
+  flex-shrink: 0;
+  background: var(--md-bg-card);
+  border-right: 1px solid var(--md-border);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  justify-content: center;
+  position: absolute;
+  left: 0;
+  top: 52px;
+  bottom: 0;
+  z-index: 10;
+}
+.sidebar-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 .wall-title {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--md-text);
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: 2px;
+}
+.wall-subtitle {
+  font-size: 12px;
+  color: var(--md-text-secondary);
+  writing-mode: vertical-rl;
+  letter-spacing: 4px;
   margin: 0;
 }
 .btn-publish {
-  padding: 8px 18px;
+  padding: 8px 20px;
   border-radius: 8px;
   border: none;
   background: var(--md-primary);
@@ -383,18 +416,30 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 .btn-publish:hover {
   background: var(--md-primary-hover);
 }
 
-/* 发帖表单 */
-.post-form {
+/* ===== 发帖浮层 ===== */
+.post-form-overlay {
+  position: fixed;
+  top: 52px;
+  left: 160px;
+  right: 0;
+  z-index: 50;
+  background: rgba(245, 242, 236, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--md-border);
+}
+.post-form-card {
+  max-width: 420px;
   background: var(--md-bg-card);
   border: 1px solid var(--md-border);
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 20px;
 }
 .post-textarea {
   width: 100%;
@@ -460,7 +505,7 @@ onMounted(() => {
 }
 .image-preview img {
   width: 100%;
-  max-height: 300px;
+  max-height: 200px;
   object-fit: cover;
   display: block;
 }
@@ -481,12 +526,52 @@ onMounted(() => {
   justify-content: center;
 }
 
+/* ===== 画展主区域 ===== */
+.gallery-area {
+  flex: 1;
+  margin-left: 160px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 横向滚动轨道 */
+.gallery-track {
+  display: flex;
+  gap: 24px;
+  padding: 32px 32px 32px 32px;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  align-items: stretch;
+}
+
+/* 自定义滚动条 */
+.gallery-track::-webkit-scrollbar {
+  height: 8px;
+}
+.gallery-track::-webkit-scrollbar-track {
+  background: transparent;
+}
+.gallery-track::-webkit-scrollbar-thumb {
+  background: var(--md-border);
+  border-radius: 4px;
+}
+.gallery-track::-webkit-scrollbar-thumb:hover {
+  background: var(--md-text-disabled);
+}
+
 /* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 60px 0;
+.gallery-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   color: var(--md-text-secondary);
   font-size: 15px;
+  text-align: center;
+  line-height: 2;
 }
 .btn-retry {
   margin-top: 12px;
@@ -499,17 +584,34 @@ onMounted(() => {
   font-size: 14px;
 }
 
-/* 动态卡片 */
-.post-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* ===== 动态卡片（画展展品） ===== */
 .post-card {
   background: var(--md-bg-card);
   border: 1px solid var(--md-border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.3s, transform 0.3s;
+  overflow-y: auto;
+}
+.post-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* 展品编号 */
+.post-number {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--md-text-disabled);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
 }
 
 /* 作者信息 */
@@ -517,7 +619,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .post-avatar {
   width: 40px;
@@ -561,36 +663,40 @@ onMounted(() => {
   background: rgba(201, 160, 160, 0.1);
 }
 
-/* 文字内容 */
-.post-content {
-  font-size: 15px;
-  line-height: 1.7;
-  color: var(--md-text);
-  margin: 0 0 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 /* 图片 */
 .post-image-wrapper {
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 .post-image {
   width: 100%;
-  max-height: 500px;
+  max-height: 400px;
   object-fit: cover;
   display: block;
   cursor: pointer;
+}
+
+/* 文字内容（画作说明牌） */
+.post-content-wrapper {
+  margin-bottom: 16px;
+}
+.post-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--md-text);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* 互动栏 */
 .post-actions {
   display: flex;
   gap: 20px;
-  padding-top: 8px;
+  padding-top: 12px;
   border-top: 1px solid var(--md-divider);
+  margin-top: auto;
 }
 .action-btn {
   display: flex;
@@ -701,23 +807,79 @@ onMounted(() => {
   background: var(--md-primary-hover);
 }
 
-/* 响应式 */
-@media (max-width: 640px) {
-  .wall-container {
-    padding: 16px 12px 40px;
+/* 画展结尾 */
+.gallery-end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  color: var(--md-text-disabled);
+  font-size: 14px;
+}
+
+/* 过渡动画 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.25s ease;
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* ===== 响应式：窄屏 ===== */
+@media (max-width: 768px) {
+  .wall-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--md-border);
+    padding: 12px 0;
   }
-  .topbar {
-    padding: 0 12px;
+  .sidebar-inner {
+    flex-direction: row;
+    gap: 12px;
   }
-  .topbar-menu {
-    gap: 2px;
+  .wall-title {
+    font-size: 18px;
+    letter-spacing: 0;
   }
-  .menu-item {
-    padding: 6px 8px;
-    font-size: 13px;
-  }
-  .topbar-back {
+  .wall-title br {
     display: none;
+  }
+  .wall-title::after {
+    content: ' 师德墙';
+  }
+  .wall-subtitle {
+    display: none;
+  }
+  .gallery-area {
+    margin-left: 0;
+  }
+  .gallery-track {
+    padding: 16px;
+  }
+  .post-card {
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+  }
+  .post-form-overlay {
+    left: 0;
+    padding: 12px;
   }
 }
 </style>
