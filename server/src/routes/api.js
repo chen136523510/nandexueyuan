@@ -7,6 +7,11 @@ import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '
 import { getAnnouncement, getVersions, createVersion, updateVersion, deleteVersion } from '../controllers/announcementController.js'
 import { importChatCsv, listBatches, upload } from '../controllers/chatImportController.js'
 import { askChat, talkNpc, listSessions, getSession, deleteSession } from '../controllers/chatController.js'
+import {
+  listPosts, createPost, deletePost,
+  createComment, deleteComment,
+  likePost, unlikePost, wallUpload,
+} from '../controllers/wallController.js'
 import { auth, requireRole } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
 
@@ -55,5 +60,14 @@ router.post('/chat/npc/talk', auth, rateLimit(10), talkNpc)
 router.get('/chat/sessions', auth, listSessions)
 router.get('/chat/sessions/:id', auth, getSession)
 router.delete('/chat/sessions/:id', auth, deleteSession)
+
+// 男德墙（校园墙）
+router.get('/wall/posts', auth, listPosts)
+router.post('/wall/posts', auth, wallUpload.single('image'), createPost)
+router.delete('/wall/posts/:id', auth, deletePost)
+router.post('/wall/posts/:id/comments', auth, createComment)
+router.delete('/wall/comments/:id', auth, deleteComment)
+router.post('/wall/posts/:id/like', auth, likePost)
+router.delete('/wall/posts/:id/like', auth, unlikePost)
 
 export default router

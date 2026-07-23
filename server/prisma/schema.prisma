@@ -23,8 +23,56 @@ model User {
   usedCodes      InviteCode[]  @relation("CodeUser")
   importBatches  ImportBatch[] @relation("BatchImporter")
   chatSessions   ChatSession[] @relation("ChatOwner")
+  posts          Post[]        @relation("PostAuthor")
+  comments       Comment[]     @relation("CommentAuthor")
+  likes          Like[]        @relation("PostLiker")
 
   @@map("users")
+}
+
+// ===== 男德墙 =====
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  authorId  Int
+  content   String   // 文字内容（最长 500 字）
+  image     String?  // 图片路径（/uploads/wall/xxx.jpg）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User      @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+
+  @@index([createdAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  authorId  Int
+  content   String   // 评论内容
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("comments")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation("PostLiker", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId]) // 一人一帖一赞
+  @@map("likes")
 }
 
 model InviteCode {
