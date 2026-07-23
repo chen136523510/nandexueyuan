@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-07-23（师德墙线上问题修复）
+
+### BUG-W03：发帖后新动态只露出半张卡片，无法滚动到完整位置
+
+- **现象**：用户发帖后，新卡片插入到最左侧（`unshift` 到数组开头），但横向滚动条停在原位，导致新卡片只露出半张，需手动滚动或刷新才能看到完整内容
+- **根因**：`handlePublish()` 中 `posts.value.unshift(res.data)` 后只做了 `showPostForm.value = false`，没有同步滚动 `gallery-track` 容器到最左侧
+- **修复方式**：`unshift` 后用 `await nextTick()` 等 DOM 更新完成，再 `track.scrollTo({ left: 0, behavior: 'smooth' })` 平滑滚动到最左侧
+- **修复文件**：`src/views/WallView.vue`（`handlePublish` 函数）
+- **验证**：线上发帖后新卡片 #5 完整展示在最左侧（`scrollLeft: 32`，卡片 left=160 right=520 均在容器 876px 内），无需刷新
+
+---
+
 ## 2026-07-23（师德墙部署）
 
 ### BUG-W01：线上种子动态图片 404（Nginx 正则 location 优先级问题）

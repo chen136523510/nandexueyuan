@@ -4,6 +4,18 @@
 
 ---
 
+### [fix] 发帖后自动滚动到最左侧展示新动态（BUG-W03）
+
+- **时间**：2026-07-23
+- **变更人**：陈梓键
+- **背景**：用户反馈发帖后新卡片只露出半张，需手动滚动或刷新才能看到完整内容
+- **变更内容**：`handlePublish()` 中 `posts.value.unshift()` 后，新增 `await nextTick()` + `gallery-track.scrollTo({ left: 0, behavior: 'smooth' })`，平滑滚动到最左侧展示新动态
+- **文件**：`src/views/WallView.vue`（改）
+- **验证**：线上发帖测试通过，新卡片完整展示在最左侧
+- **关联文档**：`bug-log.md` BUG-W03
+
+---
+
 ### [deploy] v2.0.0 线上部署 + Nginx /uploads/ 代理
 
 - **时间**：2026-07-23
