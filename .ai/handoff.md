@@ -1,15 +1,15 @@
 # AI 交接单
 
-> 最后更新：2026-07-22（白机，P4 角色创建系统已部署生产）
+> 最后更新：2026-07-23（白机，师德墙 v2.0.0 + TopBar 已部署生产）
 > 所在设备：白机
-> 稳定版本：`44e4975`（生产环境，已部署）
-> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 角色创建系统已部署生产
+> 稳定版本：`71da456`（生产环境，已部署）
+> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 角色创建系统已上线，师德墙 v2.0.0 已上线；下一步做 R-007 版本号规则规范化
 
 ---
 
 ## 当前状态：稳定版已上线
 
-**生产环境已部署并验证通过：`44e4975`**
+**生产环境已部署并验证通过：`71da456`（线上版本 v2.0.0）**
 
 | 服务 | 状态 | 端口 |
 |------|------|------|
@@ -18,19 +18,29 @@
 | Colyseus 游戏服务器（PM2: nandexueyuan-game） | ✅ online | 2567 |
 | 黑机检索 Worker（PM2: search-worker） | ✅ online（黑机 7×24） | — |
 
-**最近一次修复（07-22 白机）**：德塔进入无画面 BUG（BUG-37）
-- 根因：`PreloadScene.js` 调用 `this.anims.getAllAnims()`，Phaser 4 无此 API
-- 修复：改用 `this.anims.anims.size` + `this.anims.get() !== undefined`
-- 验证：Playwright 确认画面完全恢复
-
-**本轮会话（07-22 白机，commit `c6306d3`，已部署 `44e4975`）**：P4 角色创建系统 - skinId 后端持久化
+**上一轮会话（07-22 白机，已部署 `44e4975`）**：P4 角色创建系统 - skinId 后端持久化
 - 数据库：User 新增 `skinId String?`（nullable，null=未选择），Prisma 迁移已应用（本地+生产）
 - API：新增 `PUT /api/user/skin`，`publicUser()` 投影含 skinId
 - 前端路由：**仅进 `/nde` 时检查 skinId===null 拦截到 `/character`**（首页等不受影响）
 - 角色选择页：`CharacterView.vue` 横向 5 卡片（上立绘下精灵，形象 A~E 命名，暗色原神风格）
 - 个人中心：`ProfileDialog.vue` 新增形象 5 宫格切换器（提示重进德塔生效）
-- 验证：浏览器全链路实测通过（选形象 C -> store/localStorage/DB 三处 skinId='3' 一致）
-- **已部署生产**：`deploy.sh` 执行成功，迁移已应用，前后端 + 游戏服务器均正常
+
+**上一轮会话（07-22 白机，commit `c6306d3`，已部署 `44e4975`）**：德塔进入无画面 BUG（BUG-37）修复
+- 根因：`PreloadScene.js` 调用 `this.anims.getAllAnims()`，Phaser 4 无此 API
+- 修复：改用 `this.anims.anims.size` + `this.anims.get() !== undefined`
+- 验证：Playwright 确认画面完全恢复
+
+**最近一次会话（07-23 白机，已部署 `71da456`）**：师德墙模块 v2.0.0 + TopBar 公共组件
+- **R-008 师德墙模块**（校园墙/朋友圈）：图文动态、评论、点赞、横向画展式布局
+  - 数据库：新增 `Post`/`Comment`/`Like` 三表，迁移 `20260723020354_add_wall_tables`
+  - API：7 个 RESTful 接口（`/api/wall/*`），含 multer 图片上传（5MB 限制）
+  - 前端：`WallView.vue`（横向画展）+ `src/api/wall.js` + 导航入口（男德通与男通讯录之间）
+  - 种子数据：爱因斯坦/牛顿名言 + 丘序明"低迷"，作者统一为系统管理员
+- **系统管理员账号**：`_system`（status=disabled 不可登录），系统默认数据统一归属
+- **TopBar 公共组件**（BUG-W04）：抽取 `src/components/TopBar.vue`，统一 MainView/AdminView/WallView 三页导航（根治"改一处漏其他"）
+- **Nginx**：新增 `location ^~ /uploads/` 代理到后端 3000，服务师德墙图片（注意 `^~` 前缀优先级）
+- **deploy.sh**：步骤 9 → 11，新增 seed.js / seedWall.js / seedVersion.js 执行
+- 验证：浏览器全链路实测（发帖/评论/点赞/删除）+ 线上 v2.0.0 部署完成
 
 ---
 
@@ -47,6 +57,8 @@
 - [x] 传送门（返回首页）
 - [x] 玩家精灵系统代码接入（色块 fallback，待真实美术资源）
 - [x] P4 角色创建系统（skinId 后端持久化 + 角色选择页 + 个人中心切换）
+- [x] 师德墙模块 v2.0.0（图文动态 + 评论 + 点赞 + 横向画展布局，R-008）
+- [x] 公共 TopBar 导航组件（统一三页导航，BUG-W04）
 
 ---
 
@@ -54,14 +66,23 @@
 
 ### 高优先级
 
+- [ ] **R-007 版本号规则规范化**（x.y.z 三段式语义化版本）：规则已在需求池定稿，需落地到实际发版流程
+  - 需求池：`prd/01-需求文档/00-基础数据/需求池.md` §R-007
+  - 背景：R-005/R-006/BUG-37 等多次发版未更新版本号，下次发版需统一校准
+  - 当前线上版本：v2.0.0（师德墙）
+  - **下一步白机开始做这个**
+
+### 中优先级
+
 - [ ] **R-003 玩家精灵美术资源**：ComfyUI 生成 5 套立绘 + 精灵表，替换色块占位
   - 立绘工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`
   - 精灵表需 ControlNet OpenPose（4 方向 × 4 帧 = 16 帧/套）
   - 脚本：`scripts/gen_player_portrait_workflows.py`、`scripts/portrait_to_avatar.py`
   - 模型下载：`scripts/download_models.sh`（SDXL + Pixel-Art LoRA + ControlNet，约 8GB）
   - **生成后放入 `CharacterView.vue` 立绘区 + 精灵区，替换当前字母色块占位**
+  - **角色坐标系问题（见下方「关键未解决问题」#1）留待本需求一起处理**
 
-### 中优先级
+### 低优先级
 
 - [ ] 三层塔楼功能扩展：房间内床/宝箱可交互、顶层宝箱奖励
 - [ ] NPC AI 对话增强：私聊模式 + 每用户独立上下文（未来调研项）
@@ -70,7 +91,7 @@
 
 ## 关键未解决问题（下次接手必看）
 
-1. **角色坐标系**：色块时代坐标是凑合的，换 PNG 后暴露。`origin(0.5,1)` + body offset 方案导致玩家掉虚空，已回退。下次需重新设计，建议参考 ADR-002
+1. **角色坐标系**（留待 R-003 角色精灵需求处理）：色块时代坐标是凑合的，换 PNG 后暴露。`origin(0.5,1)` + body offset 方案导致玩家掉虚空，已回退。下次需重新设计，建议参考 ADR-002。**用户已明确：坐标系问题与 R-003 美术资源一起处理，不单独做**
 2. **ComfyUI 输出目录**：绘世启动器会覆盖 `preference.json` 的 `output_directory`。当前方案是 AI 直接读 ComfyUI 默认 output 目录，验证后手动复制
 3. **男德通人设锁定**：参考 MyGo 千早爱音（粉发、眼镜、虎牙），mygo LoRA 触发词 `chihaya anon`，**人物形象只留触发词，其余靠 LoRA**
 4. **图片资源 404**：`player_set*.png` 等精灵图未入 git，有 fallback 色块不影响逻辑，待 ComfyUI 生成后入库
@@ -99,12 +120,12 @@
 | 项目 | 值 |
 |------|-----|
 | Git 分支 | `master` |
-| 最新 commit | `44e4975`（已推送 + 已部署） |
-| 数据库迁移 | 本地 5 个 + 生产 5 个（已同步） |
+| 最新 commit | `71da456`（已推送 + 已部署，线上版本 v2.0.0） |
+| 数据库迁移 | 本地 8 个 + 生产 8 个（已同步，最新 `add_wall_tables`） |
 | 前端端口 | 4396（本地）/ 80（服务器 Nginx） |
 | 后端端口 | 3000 |
 | 游戏服务器端口 | 2567 |
-| 数据库 | 已初始化（4 迁移 + 21 种子账号） |
+| 数据库 | 已初始化（8 迁移 + 21 种子账号 + 系统管理员 `_system`） |
 | 服务器 SSH | `ssh root@47.96.158.104` |
 
 **服务器 PM2 进程**：
@@ -134,6 +155,10 @@ location /search-hub {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+}
+# 师德墙图片静态资源（注意 ^~ 前缀修饰符提升优先级，否则被 .jpg 正则 location 截获 404）
+location ^~ /uploads/ {
+    proxy_pass http://127.0.0.1:3000;
 }
 ```
 
@@ -203,7 +228,10 @@ ssh root@47.96.158.104 "cd /root/projects/www.nandexueyuan.top && tar -xzf dist.
 | 架构设计 | `prd/01-需求文档/04-德塔/04-技术方案/架构设计.md` |
 | 开发路线 | `prd/01-需求文档/04-德塔/04-技术方案/开发路线与占位策略.md` |
 | Colyseus 部署方案 | `prd/01-需求文档/04-德塔/04-技术方案/Colyseus多人同步部署方案.md` |
+| 师德墙 PRD | `prd/01-需求文档/06-师德墙/师德墙.md` |
+| 师德墙 Changelog | `prd/01-需求文档/06-师德墙/changelog.md` |
+| 师德墙 Bug Log | `prd/01-需求文档/06-师德墙/bug-log.md` |
 | 需求池 | `prd/01-需求文档/00-基础数据/需求池.md` |
-| Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
-| Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
+| 德塔 Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
+| 德塔 Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
 | ZCode 项目指令 | `AGENTS.md` |
