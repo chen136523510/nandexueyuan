@@ -17,7 +17,7 @@ const seedPosts = [
     imageSrc: 'wall-seed/newton.jpg',
   },
   {
-    author: 'qiuxuming', // 丘序明本人
+    author: '_system',
     content: '低迷。',
     imageSrc: 'wall-seed/qiuming.jpg',
   },
