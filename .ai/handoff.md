@@ -1,9 +1,9 @@
 # AI 交接单
 
-> 最后更新：2026-07-23（白机，R-007 版本号规则规范化已完成，待部署）
+> 最后更新：2026-07-23（白机，R-007 版本号规则规范化 + release-helper 发版 skill 已完成，待部署）
 > 所在设备：白机
 > 稳定版本：`71da456`（生产环境，已部署）+ R-007 本地完成待提交
-> **当前阶段**：德塔 P0~P5 + 师德墙 v2.0.0 均已上线；R-007 版本号规则规范化已完成（本地验证通过，待部署）；下一步做 R-003 角色精灵表
+> **当前阶段**：德塔 P0~P5 + 师德墙 v2.0.0 均已上线；R-007 版本号规则规范化 + 发版自动化 skill 已完成（本地验证通过，待部署）；下一步做 R-003 角色精灵表
 
 ---
 
@@ -52,6 +52,13 @@
 - 验证：正则 10 用例全过 + seedVersion 3 条幂等写入 + npm run build 通过
 - **状态**：本地完成，待提交，**未部署**（下次部署时 seedVersion 会自动补录 v1.1.0/v1.2.0 到生产库）
 
+**本轮会话（07-23 白机，release-helper 发版 skill）**：发版流程自动化
+- **背景**：用户希望"以后发版自动更新公告并基于版本号规则迭代"。R-007 完成了规则和校验，但"这次发什么版本号、公告写什么"仍需手动，故做发版 skill 自动化这层
+- **新增 skill**：`.zcode/skills/release-helper/SKILL.md`，触发词"发版"/"发布"/"release"/"版本号"
+- **两种模式**：① 查看当前版本号（核对 package.json + 数据库三者一致）② 执行发版（自动算版本号 + 提炼公告 + 改 5 文件 + 确认提交）
+- **发版自动化程度**：版本号递增计算 ✅、公告提炼 ✅、package.json/seedVersion/CHANGELOG/handoff 修改 ✅、格式校验 ✅、公告写入数据库 ✅（deploy.sh）、git 提交 ✅（确认后）；**部署仍需手动**（遵循部署纪律）
+- **发版流程**：用户说"发版" -> skill 回溯改动 -> 展示版本号计算（ADR-004 规则）-> 确认 -> 改文件 -> 展示 diff -> 确认 -> commit+push
+
 ---
 
 ## 已验证功能
@@ -70,6 +77,7 @@
 - [x] 师德墙模块 v2.0.0（图文动态 + 评论 + 点赞 + 横向画展布局，R-008）
 - [x] 公共 TopBar 导航组件（统一三页导航，BUG-W04）
 - [x] 版本号规则规范化（ADR-004 + package.json 校准 + API semver 校验，R-007，待部署）
+- [x] release-helper 发版 skill（自动化版本号计算 + 公告提炼 + 文件修改，配套 R-007）
 
 ---
 
@@ -90,7 +98,7 @@
 
 - [ ] 三层塔楼功能扩展：房间内床/宝箱可交互、顶层宝箱奖励
 - [ ] NPC AI 对话增强：私聊模式 + 每用户独立上下文（未来调研项）
-- [ ] **R-007 发版流程落地**：R-007 已完成代码与 ADR，下次发版时需实际执行 bump 流程（bump package.json version -> 改 seedVersion.js 新增版本记录 -> 部署），见 ADR-004「影响」章节
+- [ ] **R-007 发版流程落地**：R-007 已完成代码 + ADR + release-helper skill。下次发版直接对 AI 说"**发版**"即可触发 skill 自动执行 bump 流程（算版本号 + 提炼公告 + 改文件 + 确认提交），见 ADR-004「影响」章节和 `.zcode/skills/release-helper/`
 
 ---
 
@@ -240,4 +248,5 @@ ssh root@47.96.158.104 "cd /root/projects/www.nandexueyuan.top && tar -xzf dist.
 | 德塔 Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
 | 德塔 Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
 | ADR-004 版本号规则 | `prd/01-需求文档/00-调研/decisions/ADR-004-版本号规则规范化.md` |
+| release-helper 发版 skill | `.zcode/skills/release-helper/SKILL.md` |
 | ZCode 项目指令 | `AGENTS.md` |

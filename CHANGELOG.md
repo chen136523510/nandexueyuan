@@ -23,6 +23,7 @@
 - **历史版本补录**：`seedVersion.js` 从单版本写死改造为版本数组循环幂等写入，补录 v1.1.0（2026-07-20 NPC 精灵+检索优化+公告系统）、v1.2.0（2026-07-21 黑机外包检索），依据根 CHANGELOG.md 还原
 - **API 校验**：`announcementController.js` 的 `createVersion`/`updateVersion` 新增 semver 格式校验（正则 `^v\d+\.\d+\.\d+$`），不合规返回 PARAM_ERROR
 - **发版流程文档化**：`deploy.sh` 第9步注释更新；ADR-004「影响」章节明确发版 bump 流程（bump package.json -> 改 seedVersion.js -> 部署）
+- **发版 skill 配套**：新增 `.zcode/skills/release-helper/SKILL.md`（发版助手 skill），自动计算版本号、提炼公告、修改 package.json/seedVersion.js/CHANGELOG/handoff，触发词"发版"/"release"/"版本号"
 - **关联文档**：`prd/01-需求文档/00-基础数据/需求池.md` R-007、ADR-004
 
 ### 关键决策
