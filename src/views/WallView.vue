@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { listPosts, createPost, deletePost, createComment, deleteComment, likePost, unlikePost } from '../api/wall'
 
@@ -85,6 +85,10 @@ async function handlePublish() {
     postContent.value = ''
     clearImage()
     showPostForm.value = false
+    // 滚动到最左侧，展示刚发布的新动态
+    await nextTick()
+    const track = document.querySelector('.gallery-track')
+    if (track) track.scrollTo({ left: 0, behavior: 'smooth' })
   } catch (e) {
     alert(e.message || '发布失败')
   } finally {
