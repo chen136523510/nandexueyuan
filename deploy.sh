@@ -57,7 +57,8 @@ pm2 restart nandexueyuan-game 2>/dev/null || pm2 start game-server/src/index.js 
 pm2 save
 
 echo "=== 9/11 写入版本公告 ==="
-# 插入 v2.0.0 版本公告（幂等，已存在则跳过）
+# 写入版本公告（seedVersion.js 含 v1.1.0/v1.2.0/v2.0.0 三条，幂等：已存在则更新）
+# 版本号规则见 ADR-004，新增版本时在 seedVersion.js 顶部数组追加
 cd "$DEPLOY_DIR/server"
 node prisma/seedVersion.js
 
