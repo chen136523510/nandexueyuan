@@ -322,6 +322,36 @@ npx pm2 logs search-worker --err --lines 30
 - [x] 黑机：`prod.db` 已同步（07-21 完成）
 - [x] 黑机：PM2 `search-worker` 启动成功，已 `pm2 save`
 - [x] 黑机：日志显示"认证成功，黑机已上线"
+
+---
+
+## 2026-07-23 v2.0.0 师德墙模块部署
+
+### 部署内容
+- 师德墙模块（Post/Comment/Like 三表 + 7 个 API + WallView.vue 横向画展布局）
+- 系统管理员 `_system` 账号（disabled，不可登录）
+- 种子动态 3 条（爱因斯坦/牛顿/丘序明"低迷"，作者均为系统管理员）
+- 版本公告 v2.0.0
+
+### Nginx 配置变更
+新增 `/uploads/` 静态资源反代（师德墙图片），需用 `^~` 提升优先级避免被 `.jpg` 正则 location 截获：
+```nginx
+# 师德墙图片静态资源代理（^~ 优先级高于正则）
+location ^~ /uploads/ {
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+### 部署结果
+- [x] 数据库迁移 `20260723020354_add_wall_tables` 应用成功
+- [x] seed.js（系统管理员）+ seedWall.js（种子动态）+ seedVersion.js（版本公告）执行成功
+- [x] PM2 `nandexueyuan-api` + `nandexueyuan-game` 重启成功
+- [x] Nginx `/uploads/` 代理配置 + reload 成功
+- [x] 线上验证：师德墙页面图片加载正常，零报错
 - [x] 云端：日志显示"黑机认证成功，已上线"
 - [x] 降级验证：网络中断后 Worker 自动重连成功（5s 重连机制验证通过）
 - [ ] 端到端：用户提问验证全量检索结果（待用户在浏览器操作）
