@@ -1,6 +1,9 @@
 import prisma from '../lib/prisma.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 
+// 版本号格式校验：vx.y.z 三段式语义化版本（带 v 前缀），见 ADR-004
+const VERSION_REGEX = /^v\d+\.\d+\.\d+$/
+
 // GET /api/announcement - 获取最新版本公告（公开，向后兼容旧 { content, updatedAt } 格式）
 export async function getAnnouncement(req, res, next) {
   try {
@@ -67,6 +70,9 @@ export async function createVersion(req, res, next) {
     if (!version || !version.trim()) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '版本号不能为空', ErrorCode.PARAM_ERROR.httpStatus)
     }
+    if (!VERSION_REGEX.test(version.trim())) {
+      return fail(res, ErrorCode.PARAM_ERROR.code, '版本号格式错误，需为 vx.y.z（如 v2.0.0）', ErrorCode.PARAM_ERROR.httpStatus)
+    }
     if (!date) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '日期不能为空', ErrorCode.PARAM_ERROR.httpStatus)
     }
@@ -111,8 +117,11 @@ export async function updateVersion(req, res, next) {
       return fail(res, ErrorCode.NOT_FOUND.code, '版本不存在', ErrorCode.NOT_FOUND.httpStatus)
     }
 
-    // 如果改了版本号，检查唯一性
+    // 如果改了版本号，检查格式和唯一性
     if (version && version.trim() !== existing.version) {
+      if (!VERSION_REGEX.test(version.trim())) {
+        return fail(res, ErrorCode.PARAM_ERROR.code, '版本号格式错误，需为 vx.y.z（如 v2.0.0）', ErrorCode.PARAM_ERROR.httpStatus)
+      }
       const dup = await prisma.version.findUnique({ where: { version: version.trim() } })
       if (dup) {
         return fail(res, ErrorCode.PARAM_ERROR.code, `版本号 ${version} 已存在`, ErrorCode.PARAM_ERROR.httpStatus)

@@ -1,6 +1,6 @@
 # 男德学院
 
-> 朋友圈限定社区（约 20 人）—— 一个带 2D 虚拟世界「德塔」的 Web 平台
+> 朋友圈限定社区（约 20 人）—— 带德塔虚拟世界和师德墙的 Web 平台
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen)](https://vuejs.org/)
@@ -32,6 +32,7 @@ cd game-server && npm run dev        # 终端 3：游戏后端 → localhost:256
 
 - 用户认证 —— 注册、登录、JWT 鉴权
 - 管理后台 —— 成员管理、角色变更、邀请码生成
+- 师德墙 —— 横向画展式社交动态墙，图文动态、评论、点赞
 - 德塔虚拟世界 —— 2D 侧视角、三层塔楼地图、WASD 移动 + 跳跃
 - 多人实时同步 —— 位置、动画、聊天气泡实时同步
 - NPC / 物品交互 —— 按 E 触发对话、查看物品、大门彩蛋
@@ -80,7 +81,8 @@ nandexueyuan/
 │   │   ├── routes/         # 路由
 │   │   ├── middleware/      # 中间件（auth, errorHandler, rateLimit）
 │   │   └── utils/          # 工具（jwt, password, llm 等）
-│   └── prisma/             # 数据库 Schema + 迁移
+│   ├── prisma/             # 数据库 Schema + 迁移 + 种子脚本
+│   └── uploads/            # 师德墙图片上传目录
 ├── shared/                 # 前后端共享常量
 ├── prd/                    # 产品需求文档
 ├── public/                 # 静态资源

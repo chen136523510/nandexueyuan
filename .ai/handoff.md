@@ -1,15 +1,15 @@
 # AI 交接单
 
-> 最后更新：2026-07-23（黑机，P4 立绘原神卡风格重做 + 4 项体验修复 + 迁移修复）
-> 所在设备：黑机
-> 稳定版本：`eb4e00a`（最新提交，含本次代码+文档+脚本，未含美术资源）
-> **当前阶段**：德塔 P0~P5 基础功能全部上线，P4 美术资源待黑机下次继续优化
+> 最后更新：2026-07-23（黑白机合并，立绘修复 + 师德墙 v2.0.0 + 版本号规范化 + 战斗系统调研 V2）
+> 所在设备：白机（合并后）
+> 稳定版本：`71da456`（生产环境，已部署，线上 v2.0.0）
+> **当前阶段**：德塔 P0~P5 + 师德墙 v2.0.0 均已上线；R-007 版本号规则 + 发版 skill 已完成（本地待提交部署）；黑机下次继续优化立绘美术资源
 
 ---
 
 ## 当前状态：代码+文档+脚本已提交，美术资源待黑机下次继续优化
 
-**生产环境稳定版：`44e4975`（已部署）**
+**生产环境已部署并验证通过：`71da456`（线上版本 v2.0.0）**
 
 | 服务 | 状态 | 端口 |
 |------|------|------|
@@ -30,24 +30,33 @@
 - 生成脚本已提交（`scripts/gen_player_portraits_api.py`、`scripts/portrait_to_spritesheet.py`）
 - **前端代码不依赖美术资源**：`CharacterView.vue` 有 fallback 色块，缺图时显示字母色块不影响功能
 
-### 本轮会话（07-22~23 黑机）已完成并提交的内容
+### 白机已完成并部署（07-23，commit `71da456`，线上 v2.0.0）
 
-**代码修复**：
-- BUG-32~33：个人中心/角色选择 换形象"保存失败" → 根因有两个：
-  1. 旧后端进程未加载 skin 路由（返回 404）→ 重启修复
-  2. Prisma Client 未同步 + 数据库 3 个迁移未应用 → `prisma generate` + `migrate deploy` 修复
-- BUG-34：精灵图显示整张四方图 → CSS background 只显示第一帧
-- BUG-35：角色选择页无返回 → 左上角新增返回按钮
-- BUG-36：公告"加载失败" → 同 Prisma Client 未同步根因，一并修复
+**师德墙模块 v2.0.0 + TopBar 公共组件**：
+- 数据库：新增 `Post`/`Comment`/`Like` 三表，迁移 `20260723020354_add_wall_tables`
+- API：7 个 RESTful 接口（`/api/wall/*`），含 multer 图片上传（5MB 限制）
+- 前端：`WallView.vue`（横向画展）+ `src/api/wall.js` + 导航入口
+- 系统管理员账号：`_system`（status=disabled 不可登录）
+- TopBar 公共组件：统一 MainView/AdminView/WallView 三页导航
+- Nginx：新增 `/uploads/` 代理
+- deploy.sh：步骤 9→11，新增 seed 执行
 
-**脚本提交**：
-- `scripts/gen_player_portraits_api.py`：ComfyUI API 调用脚本
-- `scripts/portrait_to_spritesheet.py`：立绘转精灵图脚本
+**版本号规则规范化（R-007，本地完成待提交）**：
+- ADR-004：x.y.z 三段式 + v 前缀 + 三者一致性约定
+- package.json 校准：`0.0.1` → `2.0.0`
+- seedVersion.js 改造：补录 v1.1.0/v1.2.0
+- API 校验：createVersion/updateVersion 新增 semver 正则
+- release-helper 发版 skill：`.zcode/skills/release-helper/SKILL.md`
 
-**立绘重做（美术资源未提交）**：
-- 提示词改为原神卡风格（半身胸像 + 渐变单色背景）
-- 已在黑机生成 5 套新立绘+头像+精灵图，但**用户认为仍需优化**
-- 工作流 JSON 已提交，黑机下次在此基础上继续迭代
+**战斗系统调研 V2**：`德塔战斗系统调研方案.md`，世界观骨架 + 泰拉瑞亚战斗机制 + 4 种怪物行为
+
+### 黑机已完成并提交（07-22~23，commit `54079b5`）
+
+**BUG-32~36 修复**：
+- BUG-32~33：个人中心/角色选择换形象保存失败（Prisma Client 未同步 + 迁移未应用）
+- BUG-34：精灵图显示整张四方图（CSS background 裁切）
+- BUG-35：角色选择页无返回按钮
+- BUG-36：公告加载失败（Prisma Client 未同步）
 
 ---
 
@@ -64,6 +73,10 @@
 - [x] 传送门（返回首页）
 - [x] 玩家精灵系统代码接入（色块 fallback，待真实美术资源）
 - [x] P4 角色创建系统（skinId 后端持久化 + 角色选择页 + 个人中心切换）
+- [x] 师德墙模块 v2.0.0（图文动态 + 评论 + 点赞 + 横向画展布局，R-008）
+- [x] 公共 TopBar 导航组件（统一三页导航，BUG-W04）
+- [x] 版本号规则规范化（ADR-004 + package.json 校准 + API semver 校验，R-007，待部署）
+- [x] release-helper 发版 skill（自动化版本号计算 + 公告提炼 + 文件修改，配套 R-007）
 
 ---
 
@@ -71,30 +84,28 @@
 
 ### 黑机下次继续（美术资源优化）
 
-- [ ] **R-003 立绘继续优化**：当前原神卡风格立绘仍需打磨（构图/一致性/背景细节），用户要求达标后再入库提交
+- [ ] **R-003 立绘继续优化**（黑机下次）：当前原神卡风格立绘仍需打磨（构图/一致性/背景细节），用户要求达标后再入库提交
   - 工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`（已提交，在此基础上迭代）
-  - 脚本：`scripts/gen_player_portraits_api.py`（已提交）
-  - 优化方向：参考 `tmp/立绘参考.png`（原神角色卡牌风格），确保半身胸像 + 干净渐变背景 + 角色居中
+  - 脚本：`scripts/gen_player_portraits_api.py`、`scripts/portrait_to_spritesheet.py`（已提交）
   - **达标后入库 `public/game/portraits/` + `public/game/sprites/` 并提交 git**
 
-### 已完成（本轮）
-- [x] **R-003 立绘+头像+精灵图生成**：ComfyUI 生成 5 套（原神卡风格，待继续优化）
-  - 立绘工作流 JSON：`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`
-  - 提示词已重写为半身胸像风格（bust shot + 渐变单色背景）
-  - 精灵图采用程序化生成 4×4 网格（暂未用 ControlNet）
-  - 脚本：`scripts/gen_player_portraits_api.py`、`scripts/portrait_to_avatar.py`、`scripts/portrait_to_spritesheet.py`
-  - **美术资源未提交 git（留黑机待优化），工作流 JSON + 脚本已提交**
+- [ ] **德塔战斗系统**（白机进行中）：调研方案见 `prd/01-需求文档/04-德塔/01-需求/德塔战斗系统调研方案.md` V2
+  - **下一步**：需求池登记 R-009 → PRD MECE → ADR-005
+  - **前置任务**：黑机启动酒馆世界观创作（基于文档第1.3节骨架）→ 世界观产出后白机提炼游戏性
 
-### 中优先级
+- [ ] **R-007 发版流程落地**：R-007 已完成代码 + ADR + release-helper skill。下次发版直接对 AI 说"**发版**"即可触发 skill 自动执行 bump 流程
+
+### 低优先级
 
 - [ ] 三层塔楼功能扩展：房间内床/宝箱可交互、顶层宝箱奖励
 - [ ] NPC AI 对话增强：私聊模式 + 每用户独立上下文（未来调研项）
+- [ ] **R-007 发版流程落地**：R-007 已完成代码 + ADR + release-helper skill。下次发版直接对 AI 说"**发版**"即可触发 skill 自动执行 bump 流程（算版本号 + 提炼公告 + 改文件 + 确认提交），见 ADR-004「影响」章节和 `.zcode/skills/release-helper/`
 
 ---
 
 ## 关键未解决问题（下次接手必看）
 
-1. **角色坐标系**：色块时代坐标是凑合的，换 PNG 后暴露。`origin(0.5,1)` + body offset 方案导致玩家掉虚空，已回退。下次需重新设计，建议参考 ADR-002
+1. **角色坐标系**（留待 R-003 角色精灵需求处理）：色块时代坐标是凑合的，换 PNG 后暴露。`origin(0.5,1)` + body offset 方案导致玩家掉虚空，已回退。下次需重新设计，建议参考 ADR-002。**用户已明确：坐标系问题与 R-003 美术资源一起处理，不单独做**
 2. **ComfyUI 输出目录**：绘世启动器会覆盖 `preference.json` 的 `output_directory`。当前方案是 AI 直接读 ComfyUI 默认 output 目录，验证后手动复制
 3. **男德通人设锁定**：参考 MyGo 千早爱音（粉发、眼镜、虎牙），mygo LoRA 触发词 `chihaya anon`，**人物形象只留触发词，其余靠 LoRA**
 4. **立绘风格稳定性**：提示词已改为原神卡风格（半身胸像 + 渐变背景），但首轮结果用户认为仍需优化，**美术资源未提交 git**，黑机下次继续打磨
@@ -123,12 +134,12 @@
 | 项目 | 值 |
 |------|-----|
 | Git 分支 | `master` |
-| 最新 commit | `44e4975`（已推送 + 已部署） |
-| 数据库迁移 | 本地 5 个 + 生产 5 个（已同步） |
+| 最新 commit | `71da456`（已推送 + 已部署，线上版本 v2.0.0） |
+| 数据库迁移 | 本地 8 个 + 生产 8 个（已同步，最新 `add_wall_tables`） |
 | 前端端口 | 4396（本地）/ 80（服务器 Nginx） |
 | 后端端口 | 3000 |
 | 游戏服务器端口 | 2567 |
-| 数据库 | 已初始化（4 迁移 + 21 种子账号） |
+| 数据库 | 已初始化（8 迁移 + 21 种子账号 + 系统管理员 `_system`） |
 | 服务器 SSH | `ssh root@47.96.158.104` |
 
 **服务器 PM2 进程**：
@@ -158,6 +169,10 @@ location /search-hub {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+}
+# 师德墙图片静态资源（注意 ^~ 前缀修饰符提升优先级，否则被 .jpg 正则 location 截获 404）
+location ^~ /uploads/ {
+    proxy_pass http://127.0.0.1:3000;
 }
 ```
 
@@ -221,13 +236,19 @@ ssh root@47.96.158.104 "cd /root/projects/www.nandexueyuan.top && tar -xzf dist.
 | 文档 | 路径 |
 |------|------|
 | MVP 需求 | `prd/01-需求文档/04-德塔/01-需求/MVP需求文档.md` |
+| 德塔战斗系统调研方案 | `prd/01-需求文档/04-德塔/01-需求/德塔战斗系统调研方案.md` |
 | 德塔男德通交互需求 | `prd/01-需求文档/04-德塔/01-需求/德塔男德通交互需求.md` |
 | 德塔世界观 | `prd/01-需求文档/04-德塔/02-设计/德塔世界观.md` |
 | 美术规范 | `prd/01-需求文档/04-德塔/02-设计/美术设计规范.md` |
 | 架构设计 | `prd/01-需求文档/04-德塔/04-技术方案/架构设计.md` |
 | 开发路线 | `prd/01-需求文档/04-德塔/04-技术方案/开发路线与占位策略.md` |
 | Colyseus 部署方案 | `prd/01-需求文档/04-德塔/04-技术方案/Colyseus多人同步部署方案.md` |
+| 师德墙 PRD | `prd/01-需求文档/06-师德墙/师德墙.md` |
+| 师德墙 Changelog | `prd/01-需求文档/06-师德墙/changelog.md` |
+| 师德墙 Bug Log | `prd/01-需求文档/06-师德墙/bug-log.md` |
 | 需求池 | `prd/01-需求文档/00-基础数据/需求池.md` |
-| Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
-| Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
+| 德塔 Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
+| 德塔 Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
+| ADR-004 版本号规则 | `prd/01-需求文档/00-调研/decisions/ADR-004-版本号规则规范化.md` |
+| release-helper 发版 skill | `.zcode/skills/release-helper/SKILL.md` |
 | ZCode 项目指令 | `AGENTS.md` |

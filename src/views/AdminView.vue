@@ -1,12 +1,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../api/admin'
 import { createInviteCode, listInviteCodes } from '../api/inviteCode'
+import TopBar from '../components/TopBar.vue'
 import { BookUser, RefreshCw, Plus, Copy, Check, Ban, CheckCircle, KeyRound, ShieldCheck } from 'lucide-vue-next'
 
-const router = useRouter()
 const auth = useAuthStore()
 
 // 权限
@@ -156,14 +155,7 @@ onMounted(() => {
 <template>
   <div class="admin-page">
     <!-- 顶部导航 -->
-    <nav class="topbar">
-      <span class="topbar-brand" @click="router.push('/')">男德学院</span>
-      <div class="topbar-menu">
-        <router-link to="/home" class="menu-item">首页</router-link>
-        <router-link to="/chat" class="menu-item">男德通</router-link>
-        <router-link to="/admin" class="menu-item router-link-active">男通讯录</router-link>
-      </div>
-    </nav>
+    <TopBar />
 
     <!-- 内容区 -->
     <div class="admin-container">
@@ -255,44 +247,6 @@ onMounted(() => {
 .admin-page {
   min-height: 100vh;
   background: var(--md-bg, #f5f5f5);
-}
-
-/* 导航 */
-.topbar {
-  height: 52px;
-  background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.topbar-brand {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--md-primary, #6b8e6b);
-  cursor: pointer;
-  margin-right: 32px;
-}
-.topbar-menu {
-  display: flex;
-  gap: 4px;
-}
-.menu-item {
-  padding: 6px 14px;
-  font-size: 14px;
-  color: #888;
-  text-decoration: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.menu-item:hover,
-.menu-item.router-link-active {
-  color: var(--md-primary, #6b8e6b);
-  background: rgba(168, 197, 160, 0.12);
 }
 
 /* 内容区 */
