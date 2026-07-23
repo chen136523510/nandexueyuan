@@ -1,5 +1,5 @@
 """
-通过 ComfyUI API 批量生成 5 套玩家立绘
+通过 ComfyUI API 批量生成 5 套玩家类原神立绘
 
 用途：
     读取 .ai/comfyui-workflows/players/portrait_player_set{1-5}.json
@@ -7,15 +7,20 @@
     提交到本地 ComfyUI（http://127.0.0.1:8188）
     等待生成完成，下载结果到 public/game/portraits/
 
+v2 变更：
+    - 去掉 BiRefNet 抠图（保留渐变背景作为立绘一部分，类原神风格）
+    - 提示词优化（确保半身胸像 + 单角色 + 干净渐变背景）
+    - 加 --force 参数可强制重新生成
+
 前提：
     ComfyUI 已启动（端口 8188）
     SDXL 模型 Qpipi.com_waiIllustriousSDXL_v160.safetensors 已加载
 
 用法：
-    python scripts/gen_player_portraits_api.py
+    python scripts/gen_player_portraits_api.py [--force]
 
 输出：
-    public/game/portraits/player_set{1-5}.png（透明背景立绘）
+    public/game/portraits/player_set{1-5}.png（带渐变背景的类原神立绘）
 """
 
 import json
@@ -217,7 +222,7 @@ def generate_portrait(set_num):
         print(f"    messages: {status.get('messages', [])}")
         return False
 
-    # 下载结果
+    # 下载结果（v2: 直接保存带渐变背景的图作为最终立绘）
     outputs = history.get("outputs", {})
     saved_count = 0
     for node_id, output in outputs.items():
@@ -225,22 +230,14 @@ def generate_portrait(set_num):
             for img in output["images"]:
                 filename = img["filename"]
                 subfolder = img.get("subfolder", "")
-                # 我们需要 cutout 版本（透明背景）
-                if "cutout" in filename:
-                    out_path = OUTPUT_DIR / f"player_set{set_num}.png"
-                    size = download_image(filename, subfolder, out_path)
-                    print(f"  ✓ 透明立绘: {out_path} ({size} bytes)")
-                    saved_count += 1
-                elif "raw" in filename:
-                    # 也保存 raw 版本（有背景）作为备份
-                    raw_dir = OUTPUT_DIR / "raw"
-                    raw_dir.mkdir(exist_ok=True)
-                    out_path = raw_dir / f"player_set{set_num}_raw.png"
-                    size = download_image(filename, subfolder, out_path)
-                    print(f"  ✓ 原始立绘: {out_path} ({size} bytes)")
+                # v2: 所有 SaveImage 输出都是最终立绘（带渐变背景）
+                out_path = OUTPUT_DIR / f"player_set{set_num}.png"
+                size = download_image(filename, subfolder, out_path)
+                print(f"  ✓ 立绘: {out_path} ({size} bytes)")
+                saved_count += 1
 
     if saved_count == 0:
-        print(f"  ✗ 未找到 cutout 输出！")
+        print(f"  ✗ 未找到输出！")
         print(f"    所有输出: {json.dumps(outputs, indent=2)[:500]}")
         return False
 
@@ -262,12 +259,13 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # 生成所有 5 套
+    force = "--force" in sys.argv or "-f" in sys.argv
     success = 0
     for i in range(1, 6):
-        # 检查是否已存在
+        # 检查是否已存在（除非 --force）
         target = OUTPUT_DIR / f"player_set{i}.png"
-        if target.exists():
-            print(f"\n✓ player_set{i}.png 已存在，跳过")
+        if target.exists() and not force:
+            print(f"\n✓ player_set{i}.png 已存在，跳过（--force 可重新生成）")
             success += 1
             continue
 

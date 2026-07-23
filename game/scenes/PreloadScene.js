@@ -82,13 +82,13 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('npc_nandetong', '/game/sprites/npcs/nandetong.png')
 
     // === 玩家形象 5 套（R-003 角色精灵表）===
-    // spritesheet 4×4 网格（128×128，每格 32×32）
+    // spritesheet 4×4 网格（256×256，每格 64×64 = 占 2 格瓦片）
     // 行 = 方向（0:down, 1:up, 2:left, 3:right），列 = 帧（0:stand, 1:midL, 2:stand, 3:midR）
     for (let i = 1; i <= 5; i++) {
       this.load.spritesheet(
         `player_set${i}`,
         `/game/sprites/players/player_set${i}_walk.png`,
-        { frameWidth: 32, frameHeight: 32 }
+        { frameWidth: 64, frameHeight: 64 }
       )
       // 立绘（角色信息面板「查看立绘」用）
       this.load.image(`portrait_set${i}`, `/game/portraits/player_set${i}.png`)
@@ -137,7 +137,7 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     // === 5 套玩家形象 fallback ===
-    // 玩家精灵表 fallback：32×32 单色块（真实资源是 128×128 4×4 网格 spritesheet）
+    // 玩家精灵表 fallback：64×64 单色块（真实资源是 256×256 4×4 网格 spritesheet，每帧 64×64）
     // anims 注册时会自适应检测 frame 数量，fallback 只有 1 帧时退化为静态显示
     const playerColors = [
       0xF48FB1,  // set1 粉
@@ -151,8 +151,8 @@ export class PreloadScene extends Phaser.Scene {
       if (!this.textures.exists(skinKey)) {
         gfx.clear()
         gfx.fillStyle(playerColors[i])
-        gfx.fillRect(0, 0, 32, 32)
-        gfx.generateTexture(skinKey, 32, 32)
+        gfx.fillRect(0, 0, 64, 64)
+        gfx.generateTexture(skinKey, 64, 64)
       }
       // 立绘 fallback（深灰色矩形，含 "set N" 文字）
       const portraitKey = `portrait_set${i + 1}`
@@ -176,8 +176,8 @@ export class PreloadScene extends Phaser.Scene {
     if (!this.textures.exists('player_default')) {
       gfx.clear()
       gfx.fillStyle(0x2196F3)
-      gfx.fillRect(0, 0, 32, 32)
-      gfx.generateTexture('player_default', 32, 32)
+      gfx.fillRect(0, 0, 64, 64)
+      gfx.generateTexture('player_default', 64, 64)
     }
 
     // 头像占位（始终生成，向后兼容）
@@ -203,7 +203,7 @@ export class PreloadScene extends Phaser.Scene {
   /**
    * 注册玩家精灵动画（5 套 × 4 方向 × 2 状态 = 40 个 anim）
    *
-   * spritesheet 布局（128×128，每格 32×32）：
+   * spritesheet 布局（256×256，每格 64×64）：
    *   行 0: down  | 帧 0(stand) 1(midL) 2(stand) 3(midR)
    *   行 1: up    | 帧 4(stand) 5(midL) 6(stand) 7(midR)
    *   行 2: left  | 帧 8(stand) 9(midL) 10(stand) 11(midR)

@@ -2,9 +2,9 @@
 立绘 → 精灵图（4 方向行走动画）转换脚本
 
 用途：
-    从透明背景的立绘（1024×1024 RGBA）生成 128×128 精灵图（4×4 网格）。
+    从透明背景的立绘（832×1216 RGBA）生成 256×256 精灵图（4×4 网格）。
 
-精灵图布局（128×128，每格 32×32）：
+精灵图布局（256×256，每格 64×64）：
     行 0: down  | 帧 0(stand) 1(walkA) 2(stand) 3(walkB)
     行 1: up    | 帧 4(stand) 5(walkA) 6(stand) 7(walkB)
     行 2: left  | 帧 8(stand) 9(walkA) 10(stand) 11(walkB)
@@ -12,7 +12,7 @@
 
 策略（立绘只有正面图，无背/侧视图）：
     1. 从立绘裁切透明边 → 得到紧致角色
-    2. 取角色全身 → 缩小到 32×32（NEAREST 采样，保留像素感）
+    2. 取角色全身 → 缩小到 64×64（NEAREST 采样，保留像素感）
     3. 四方向：
        - down: 正面原图
        - up:   正面水平翻转（模拟背面）
@@ -20,16 +20,16 @@
        - right: 正面水平翻转
     4. 四帧行走动画：
        - 帧 0 (stand):  角色居中，无偏移
-       - 帧 1 (walkA):  角色左偏 1px + 上移 1px（模拟迈左脚）
+       - 帧 1 (walkA):  角色左偏 2px + 上移 2px（模拟迈左脚）
        - 帧 2 (stand):  同帧 0
-       - 帧 3 (walkB):  角色右偏 1px + 上移 1px（模拟迈右脚）
+       - 帧 3 (walkB):  角色右偏 2px + 上移 2px（模拟迈右脚）
 
 用法：
     python scripts/portrait_to_spritesheet.py <输入立绘> [--output <输出路径>]
     # 批量
     for i in 1 2 3 4 5; do
         python scripts/portrait_to_spritesheet.py \\
-            public/game/portraits/player_set${i}.png \\
+            public/game/portraits/cutout/player_set${i}.png \\
             --output public/game/sprites/players/player_set${i}_walk.png
     done
 """
@@ -41,9 +41,9 @@ from pathlib import Path
 
 from PIL import Image
 
-TILE = 32  # 每帧尺寸
+TILE = 64  # 每帧尺寸（占 2 格瓦片）
 GRID = 4   # 4×4 网格
-SHEET = TILE * GRID  # 128×128
+SHEET = TILE * GRID  # 256×256
 
 
 def shrink_character(img, target=TILE):
@@ -88,11 +88,11 @@ def make_walk_frame(base_img, frame_idx):
         # 站立
         frame.paste(base_img, (0, 0), base_img)
     elif frame_idx == 1:
-        # 迈左脚：整体上移 1px，左偏 1px
-        frame.paste(base_img, (-1, -1), base_img)
+        # 迈左脚：整体上移 2px，左偏 2px
+        frame.paste(base_img, (-2, -2), base_img)
     elif frame_idx == 3:
-        # 迈右脚：整体上移 1px，右偏 1px
-        frame.paste(base_img, (1, -1), base_img)
+        # 迈右脚：整体上移 2px，右偏 2px
+        frame.paste(base_img, (2, -2), base_img)
     return frame
 
 
@@ -146,7 +146,7 @@ def portrait_to_spritesheet(input_path, output_path=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="立绘 → 128×128 4×4 精灵图（4 方向行走动画）",
+        description="立绘 → 256×256 4×4 精灵图（4 方向行走动画，每帧 64×64）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("input", help="输入立绘路径（RGBA 透明 PNG）")

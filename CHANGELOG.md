@@ -6,11 +6,11 @@
 
 ---
 
-## 2026-07-23 P4 立绘原神卡风格重做 + 角色选择页 4 项体验修复
+## 2026-07-23 P4 立绘类原神立绘重做 + 角色选择页 4 项体验修复
 
 ### 决策依据
 - **背景**：首轮 P4 立绘为全身 + 复杂场景背景（街道/城堡/魔法阵），多角色和文字污染问题反复，用户反馈风格与参考图（原神角色卡）差距大
-- **触发**：用户提供原神卡牌参考图，要求半身胸像 + 干净渐变单色背景；同时反馈 4 个体验问题
+- **触发**：用户提供类原神立绘参考图，要求半身胸像 + 干净渐变单色背景；同时反馈 4 个体验问题
 
 ### 问题修复（BUG-32~36）
 | # | 问题 | 根因 | 解决方案 |
@@ -22,7 +22,7 @@
 | 6 | 公告显示"加载失败" | Prisma Client 未同步（Announcement 模型未加载） | 同 BUG-1+2 根因②，一并修复 |
 
 ### 立绘提示词重构
-- **正面**：`masterpiece, 1girl, solo, {角色描述}, bust shot, upper body, chest up, portrait composition, centered, {情绪}, looking at viewer, soft gradient background, {主题色}, clean simple background, game character card`
+- **正面**：`masterpiece, 1girl, solo, {角色描述}, bust shot, upper body, chest up, portrait composition, centered, {情绪}, looking at viewer, soft gradient background, {主题色}, clean simple background, genshin impact style portrait`
 - **负面**：追加 `background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor`
 - **主题色**：set1粉 / set2紫 / set3蓝 / set4深蓝 / set5青
 - **状态**：工作流 JSON + 脚本已提交；**美术资源（立绘/头像/精灵图）未提交 git**，用户认为仍需优化，留黑机下次继续打磨
@@ -31,7 +31,7 @@
 | 文件 | 动作 |
 |------|------|
 | `src/views/CharacterView.vue` | 改 - 精灵帧裁切（CSS background）+ 返回按钮 |
-| `.ai/comfyui-workflows/players/portrait_player_set{1..5}.json` | 新增 - 提示词全部重写为原神卡风格 |
+| `.ai/comfyui-workflows/players/portrait_player_set{1..5}.json` | 新增 - 提示词全部重写为类原神立绘 |
 | `scripts/gen_player_portraits_api.py` | 新增 - ComfyUI API 调用脚本 |
 | `scripts/portrait_to_spritesheet.py` | 新增 - 立绘转精灵图脚本 |
 
@@ -164,7 +164,7 @@
 
 ### 关键决策
 1. **路由守卫按需拦截**：初版"任何页面 + skinId=null 强制跳角色选择"改为"仅进德塔 `/nde` 时拦截"，首页/男德通/个人中心等页面不受影响，用户体验更自然
-2. **角色选择页横向卡片**：5 个形象横向均分排列（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述文字，暗色原神风格 UI
+2. **角色选择页横向卡片**：5 个形象横向均分排列（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述文字，暗色类原神风格 UI
 3. **localStorage 兜底**：初始化时读 localStorage 避免刷新误判，后端 user.skinId 覆盖后同步写回 localStorage
 
 ---

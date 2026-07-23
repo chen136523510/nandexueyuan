@@ -27,7 +27,9 @@ export class Player {
     this.sprite = scene.physics.add.sprite(x, y, textureKey)
     this.sprite.setCollideWorldBounds(false)
     this.sprite.setBounce(0)
+    // 精灵显示 64×64（占 2 格），物理碰撞体保持 32×32（1 格）在脚下居中
     this.sprite.setSize(32, 32)
+    this.sprite.setOffset(16, 32)  // body 左上角偏移：(64-32)/2=16, (64-32)=32 → 底部居中
     this.sprite.setDepth(10)
 
     // 当前朝向 + 动画状态（用于检测变化，避免每帧重复 play）
@@ -40,8 +42,8 @@ export class Player {
     // 爬梯状态
     this.isClimbing = false
 
-    // 昵称（从外部传入）
-    this.nickname = scene.add.text(x, y - 22, nickname || '学员', {
+    // 昵称（从外部传入）——精灵 64×64，昵称放在头顶上方
+    this.nickname = scene.add.text(x, y - 38, nickname || '学员', {
       fontSize: '10px',
       color: '#fff',
       stroke: '#000',
@@ -164,6 +166,6 @@ export class Player {
       this._playAnim(newAnim, newFacing)
     }
 
-    this.nickname.setPosition(this.sprite.x, this.sprite.y - 22)
+    this.nickname.setPosition(this.sprite.x, this.sprite.y - 38)
   }
 }

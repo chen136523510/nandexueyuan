@@ -4,11 +4,52 @@
 
 ---
 
-### [fix] P4 立绘原神卡风格重做 + 角色选择页 4 项体验修复
+### [feat] R-003 角色行走精灵表（4方向×4帧 全量入库）
+
+- **时间**：2026-07-24
+- **变更人**：陈梓键（黑机）
+- **背景**：P4 立绘已完成，需将角色 PNG 转为 Phaser 可用的行走精灵表
+
+**新增脚本**：
+- [新增] `scripts/gen_walk_sprites_api.py` — ComfyUI API 批量生成 5 套 × 3 方向（正/背/侧）chibi 行走图
+- [新增] `scripts/batch_cutout_api.py` — ComfyUI BiRefNet 批量抠图（透明 PNG）
+- [新增] `scripts/batch_cutout_walk.py` — 行走图专用批量抠图
+- [新增] `scripts/assemble_walk_spritesheet.py` — 合成 256×256 精灵表（4×4 网格，含 side 朝向自动检测）
+- [新增] `scripts/gen_set5_side_cn.py` — SD1.5 Canny ControlNet 生成侧面（从 set4_side 提取姿态轮廓）
+
+**新增美术资源**：
+- [新增] `public/game/sprites/players/player_set{1..5}_walk.png` — 5 套行走精灵表
+- [新增] `public/game/sprites/players/raw/` — 15 张原始生成图（5 套 × 3 方向）
+- [新增] `public/game/sprites/players/cutout/` — 15 张 BiRefNet 抠图透明 PNG
+
+**代码修改**：
+- [修改] `game/scenes/PreloadScene.js` — 加载 5 套行走精灵表纹理
+- [修改] `game/objects/Player.js` — 按方向播放行走动画
+- [修改] `src/views/CharacterView.vue` — CSS 4×4 网格预览（`background-size: 192px 192px`）
+
+**精灵表布局**（每套 256×256，4 行 × 4 列）：
+| 行 | 方向 | 4 帧动画 |
+|----|------|----------|
+| 0 | down（正面） | stand → walkL → stand → walkR |
+| 1 | up（背面） | stand → walkL → stand → walkR |
+| 2 | left（左侧） | stand → walkL → stand → walkR |
+| 3 | right（右侧） | stand → walkL → stand → walkR |
+
+**踩坑记录**：
+1. waiIllustriousSDXL 对 "back view" 会画参考表 → 换 novaAnimeXL
+2. AI 生成 "side view" 常画参考表或正面 → 用 Canny ControlNet 从已知侧面提取轮廓
+3. BiRefNet 抠图过度（head 5%/身体半透明）→ `refine_foreground=True` 修复
+4. 脚本硬编码 side 朝向导致左右反 → `detect_facing()` 自动检测后动态翻转
+
+- commit: 未提交
+
+---
+
+### [fix] P4 立绘类原神立绘重做 + 角色选择页 4 项体验修复
 
 - **时间**：2026-07-22
 - **变更人**：陈梓键（黑机）
-- **背景**：首轮 P4 立绘为全身 + 复杂场景背景，多角色和文字污染反复，用户提供原神卡牌参考图要求改为半身胸像 + 渐变单色背景。同时反馈 4 个体验问题
+- **背景**：首轮 P4 立绘为全身 + 复杂场景背景，多角色和文字污染反复，用户提供类原神立绘参考图要求改为半身胸像 + 渐变单色背景。同时反馈 4 个体验问题
 - **变更内容**：
   1. **立绘提示词重构**（`.ai/comfyui-workflows/players/portrait_player_set{1..5}.json`）：正面提示词改为 `bust shot, upper body, chest up, portrait composition, centered` + 角色主题色渐变背景；负面提示词追加 `background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor`
   2. **5 套立绘+头像+精灵图全部重新生成**：set1粉(校园)/set2紫(巫女)/set3蓝(骑士)/set4深蓝(法师)/set5青(赛博朋克)，15 个文件总计 7.1MB
@@ -53,7 +94,7 @@
   3. **后端认证**（`server/src/controllers/authController.js`）：`publicUser()` 投影新增 `skinId` 字段，login/register/me 三接口均返回；`updateProfile` 响应也补 skinId
   4. **前端状态**（`src/stores/auth.js`）：`skinId` 初始化改为读 localStorage 兜底；login/register/fetchMe 从后端 `user.skinId` 覆盖同步；新增 `loaded` ref 标记用户数据是否已从后端加载（供路由守卫判空，避免刷新时误判）；logout 清理 skinId
   5. **前端 API**（`src/api/user.js`）：新增 `updateSkin(data)` 封装
-  6. **角色选择页**（`src/views/CharacterView.vue` 新增）：横向 5 卡片均分布局（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述；暗色原神风格（金色选中边框+光晕+勾选标记）；确认后调 API 保存并跳 `/nde`
+  6. **角色选择页**（`src/views/CharacterView.vue` 新增）：横向 5 卡片均分布局（flex 自适应），上立绘下精灵，仅标注"形象 A~E"无描述；暗色类原神风格（金色选中边框+光晕+勾选标记）；确认后调 API 保存并跳 `/nde`
   7. **路由守卫**（`src/router/index.js`）：新增 `/character` 路由（requiresAuth）；守卫改为"仅进 `/nde` 且 loaded + skinId===null → 跳 /character"，首页/男德通等页面不受影响
   8. **个人中心**（`src/components/ProfileDialog.vue`）：个人信息 Tab 新增"玩家形象"5 宫格选择器，点选即调 API 保存 + 更新 auth store（提示重进德塔生效）
 - **数据流**：注册/登录 → 后端返回 skinId（新用户为 null）→ 进入首页正常浏览 → 点"德塔"时路由守卫拦截 null → /character 选择 → PUT /api/user/skin → auth 同步 + localStorage → 进入德塔 GameView 读 `auth.skinId || '1'` 传 Phaser 渲染

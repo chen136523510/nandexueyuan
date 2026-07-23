@@ -123,3 +123,5 @@ e2e-test.png
 *.db-shm
 *.db-wal
 dist.tar.gz
+__pycache__/
+*.pyc

@@ -4,7 +4,52 @@
 
 ---
 
-## 2026-07-22（黑机 立绘原神卡风格重做 + 4 项体验修复）
+## 2026-07-24（黑机 R-003 行走精灵表生成）
+
+---
+
+### BUG-42：set1/set3 行走图左右方向反了
+
+- **现象**：set1 和 set3 的 side 行在精灵表中左右方向与实际朝向相反
+- **根因**：`assemble_walk_spritesheet.py` 硬编码假设 side 图朝左（left 行用原图、right 行翻转），但 AI 生成的 side 图朝向不定（可能朝右）
+- **修复**：新增 `detect_facing()` 函数，通过比较左/右半不透明像素分布自动检测朝向，动态决定 left/right 行的翻转标志
+- **文件**：`scripts/assemble_walk_spritesheet.py`
+- **状态**：已修复
+
+---
+
+### BUG-41：set1 背面行走图「空头」（BiRefNet 抠图过度）
+
+- **现象**：set1 背面 cutout 不透明像素仅 5%，角色头几乎被抠空
+- **根因**：set1_back raw 图背景杂乱（有设备/窗口按钮等），BiRefNet 误把头部细节当作背景抠掉
+- **修复**：novaAnimeXL 重新生成干净的背面 raw 图（白底），重新抠图后不透明度恢复到 30%
+- **文件**：`public/game/sprites/players/raw/player_set1_back.png`、`cutout/player_set1_back.png`
+- **状态**：已修复
+
+---
+
+### BUG-40：set3 正面/背面行走图「隐身衣」（抠图半透明）
+
+- **现象**：set3 front/back cutout 身体大面积半透明，像穿了隐身衣
+- **根因**：BiRefNet 默认参数对盔甲高光/白色斗篷判断失误，部分身体被抠成半透明
+- **修复**：重新抠图时开启 `refine_foreground=True` + `mask_blur=2`，半透明残留从 5% 降到可接受范围
+- **文件**：`cutout/player_set3_front.png`、`cutout/player_set3_back.png`
+- **状态**：已修复
+
+---
+
+### BUG-39：set5 无法生成侧面图（AI 总画参考表或正面）
+
+- **现象**：无论用什么文本提示（side view / profile / side profile），novaAnimeXL 和 anything-v5 都会把侧面画成 6 格参考表或正面
+- **根因**：AI 对 "side/profile" 文本提示不敏感，倾向生成 character sheet / reference sheet
+- **尝试**：① 文本提示调参（多种子 785001~785003）→ 仍是参考表/正面 ② AnimeLineArt ControlNet → 需要联网下载模型失败 ③ SDXL union ControlNet → 节点类型不对卡死
+- **修复**：用 **SD1.5 Canny ControlNet**（纯边缘检测不需下载），从 set4_side（已知完美侧面）提取 Canny 轮廓线，作为 ControlNet 条件让 anything-v5 生成 set5 侧面
+- **文件**：`scripts/gen_set5_side_cn.py`、`raw/player_set5_side.png`
+- **状态**：已修复（Canny 控制姿态，文本控制角色外观）
+
+---
+
+## 2026-07-22（黑机 立绘类原神立绘重做 + 4 项体验修复）
 
 ---
 

@@ -158,15 +158,15 @@ export class NetworkSystem {
       finalTextureKey = `player_${sessionId}`
       const gfx = this.scene.make.graphics({ add: false })
       gfx.fillStyle(color)
-      gfx.fillRect(0, 0, 32, 32)
-      gfx.generateTexture(finalTextureKey, 32, 32)
+      gfx.fillRect(0, 0, 64, 64)
+      gfx.generateTexture(finalTextureKey, 64, 64)
       gfx.destroy()
     }
 
     const sprite = this.scene.add.image(state.x, state.y, finalTextureKey)
     sprite.setDepth(8)
 
-    const nameText = this.scene.add.text(state.x, state.y - 22, state.nickname, {
+    const nameText = this.scene.add.text(state.x, state.y - 38, state.nickname, {
       fontSize: '10px',
       color: '#fff',
       stroke: '#000',
@@ -201,7 +201,7 @@ export class NetworkSystem {
 
     other.sprite.x = state.x
     other.sprite.y = state.y
-    other.nameText.setPosition(state.x, state.y - 22)
+    other.nameText.setPosition(state.x, state.y - 38)
 
     // 消费 facing + anim 字段，切换动画
     const skinId = String(state.skinId || '1')

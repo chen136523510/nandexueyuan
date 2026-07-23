@@ -1,6 +1,6 @@
 {
-  "id": "ndexueyuan-wf-player-portrait-set5-v1",
-  "revision": 0,
+  "id": "ndexueyuan-wf-player-portrait-set5-v3",
+  "revision": 3,
   "last_node_id": 14,
   "last_link_id": 16,
   "nodes": [
@@ -116,7 +116,7 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "masterpiece, best quality, 1girl, solo, blue hair, two long braids, cyberpunk outfit, mechanical arms, glowing neon lines, techwear, bust shot, upper body, chest up, portrait composition, centered, character focus, cheerful smile, looking at viewer, soft gradient background, teal cyan gradient background, clean simple background, anime style, high detail, official art, game character card"
+        "masterpiece, best quality, 1girl, solo, blue hair, two long braids, blue eyes, cyborg body, mechanical body, robotic joints, cybernetic arms, exposed mechanical parts, glowing circuit lines, metal plating, pink and blue neon accents on dark armor, tech wear, futuristic boots, full body, full body portrait, standing pose, from head to toe, shoes visible, character centered, looking at viewer, playful smile, gradient background, dark teal to cyan gradient, clean simple background, anime style, high detail, official art, genshin impact style character art, full body illustration"
       ]
     },
     {
@@ -167,7 +167,7 @@
         "Node name for S&R": "CLIPTextEncode"
       },
       "widgets_values": [
-        "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, complex background, multiple characters, nsfw, nude, bikini, lingerie, child, loli, design sheet, character sheet, reference sheet, turnarounds, multiple views, japanese text, kanji, hiragana, katakana, chinese text, letters, numbers, words, speech bubble, text overlay, multiple characters, design sheet, character sheet, reference sheet, turnarounds, multiple views, background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, complex background, outdoor, indoor, furniture, japanese text, kanji, hiragana, katakana, chinese text, letters, numbers, words, speech bubble, text overlay"
+        "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, complex background, multiple characters, nsfw, nude, bikini, lingerie, child, loli, design sheet, character sheet, reference sheet, turnarounds, multiple views, japanese text, kanji, hiragana, katakana, chinese text, letters, numbers, words, speech bubble, text overlay, background scenery, environment, buildings, city, street, nature, landscape, detailed background, busy background, outdoor, indoor, furniture, cropped body, cut off, bust shot, upper body, chest up, close up, portrait composition, logo, game logo, genshin logo, hoyoverse, copyright symbol"
       ]
     },
     {
@@ -230,8 +230,8 @@
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
-        1024,
-        1024,
+        832,
+        1216,
         1
       ]
     },
@@ -346,7 +346,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        100005,
+        350005,
         "fixed",
         30,
         6,
@@ -390,8 +390,7 @@
           "type": "IMAGE",
           "slot_index": 0,
           "links": [
-            9,
-            11
+            9
           ]
         }
       ],
@@ -439,109 +438,7 @@
         "ver": "0.9.2"
       },
       "widgets_values": [
-        "ND_player_portrait_set5_raw"
-      ]
-    },
-    {
-      "id": 10,
-      "type": "BiRefNetRMBG",
-      "pos": [
-        910,
-        420
-      ],
-      "size": [
-        320,
-        200
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "图像",
-          "name": "image",
-          "type": "IMAGE",
-          "link": 11
-        }
-      ],
-      "outputs": [
-        {
-          "localized_name": "图像",
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "slot_index": 0,
-          "links": [
-            12
-          ]
-        },
-        {
-          "localized_name": "MASK",
-          "name": "MASK",
-          "type": "MASK",
-          "slot_index": 1,
-          "links": []
-        },
-        {
-          "localized_name": "MASK图像",
-          "name": "MASK_IMAGE",
-          "type": "IMAGE",
-          "slot_index": 2,
-          "links": []
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-RMBG",
-        "ver": "3.0.0",
-        "Node name for S&R": "BiRefNetRMBG"
-      },
-      "widgets_values": [
-        "BiRefNet-portrait",
-        0,
-        0,
-        false,
-        false,
-        "Alpha",
-        "#222222"
-      ]
-    },
-    {
-      "id": 11,
-      "type": "SaveImage",
-      "pos": [
-        1270,
-        460
-      ],
-      "size": [
-        320,
-        180
-      ],
-      "flags": {},
-      "order": 9,
-      "mode": 0,
-      "inputs": [
-        {
-          "localized_name": "图片",
-          "name": "images",
-          "type": "IMAGE",
-          "link": 12
-        },
-        {
-          "localized_name": "文件名前缀",
-          "name": "filename_prefix",
-          "type": "STRING",
-          "widget": {
-            "name": "filename_prefix"
-          },
-          "link": null
-        }
-      ],
-      "outputs": [],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.9.2"
-      },
-      "widgets_values": [
-        "ND_player_portrait_set5_cutout"
+        "ND_player_set5"
       ]
     }
   ],
@@ -591,22 +488,6 @@
       8,
       0,
       9,
-      0,
-      "IMAGE"
-    ],
-    [
-      11,
-      8,
-      0,
-      10,
-      0,
-      "IMAGE"
-    ],
-    [
-      12,
-      10,
-      0,
-      11,
       0,
       "IMAGE"
     ],

@@ -213,8 +213,8 @@ async function confirm() {
 .sprite-frame {
   width: 48px;
   height: 48px;
-  background-size: 96px 96px;  /* 2x2 网格缩小到 96px，每帧 48px */
-  background-position: 0 0;    /* 左上角帧 */
+  background-size: 192px 192px;  /* 4×4 网格缩放到 192px，每帧 48px */
+  background-position: 0 0;      /* 左上角帧（正面站立） */
   background-repeat: no-repeat;
   image-rendering: pixelated;
 }
