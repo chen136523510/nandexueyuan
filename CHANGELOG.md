@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-07-24 R-003 角色行走精灵表全量上线（v2.1.0）
+
+### 决策依据
+- **背景**：P4 角色创建系统已上线，但角色在德塔内仍是色块占位（32×32 纯色方块），缺乏辨识度和沉浸感
+- **触发**：R-003 立绘已完成（类原神风格半身胸像），需将立绘转化为 Phaser 可用的行走精灵表，替换色块占位
+- **方案**：黑机 ComfyUI 生成 5 套 × 3 方向（正/背/侧）chibi 行走图 → BiRefNet 抠图 → Python 脚本合成 256×256 精灵表（4×4 网格，每帧 64×64）
+
+### 变更内容
+
+| 类别 | 内容 |
+|------|------|
+| **美术资源** | 5 套角色行走精灵表（256×256，4方向×4帧），从色块占位升级为真实像素角色 |
+| **流水线脚本** | 7 个 Python 脚本（ComfyUI 生成 → BiRefNet 抠图 → 自动合成精灵表 + 朝向自动检测） |
+| **前端代码** | PreloadScene（32→64加载）、Player（碰撞体偏移 setOffset）、NetworkSystem（多人尺寸同步）、CharacterView（CSS裁帧+返回按钮） |
+| **Bug 修复** | BUG-39（AI侧面图生成）/ BUG-40（抠图半透明）/ BUG-41（背面空头）/ BUG-42（方向反转） |
+
+### 文件变更
+| 文件 | 动作 |
+|------|------|
+| `public/game/sprites/players/player_set{1..5}_walk.png` | 新增 — 5 套行走精灵表 |
+| `public/game/sprites/players/raw/` + `cutout/` | 新增 — 30 张源文件（生成原图+抠图透明PNG） |
+| `public/game/portraits/player_set{1..5}.png` | 新增 — 5 套立绘 |
+| `public/game/sprites/avatars/player_set{1..5}.png` | 新增 — 5 套头像 |
+| `game/scenes/PreloadScene.js` | 改 — 精灵表加载从 32×32 改为 64×64 |
+| `game/objects/Player.js` | 改 — 碰撞体偏移 setOffset(16,32)，昵称位置-38 |
+| `game/systems/NetworkSystem.js` | 改 — 多人精灵尺寸 32→64 同步 |
+| `src/views/CharacterView.vue` | 改 — CSS裁帧预览+返回按钮 |
+| `scripts/*.py` | 新增 — 7 个生成/抠图/合成脚本 |
+| `package.json` + `server/package.json` | 改 — version 2.0.0 → 2.1.0 |
+| `server/prisma/seedVersion.js` | 改 — 新增 v2.1.0 版本公告 |
+
+### 影响评估
+- **线上版本**：v2.0.0 → v2.1.0（minor 递增，功能新增）
+- **下一步**：德塔战斗系统调研 V2 已完成 → 需求池登记 R-009 → 黑机世界观创作 → 白机 PRD MECE → 阶段 1 开发
+
 ---
 
 ## 2026-07-23 P4 立绘类原神立绘重做 + 角色选择页 4 项体验修复

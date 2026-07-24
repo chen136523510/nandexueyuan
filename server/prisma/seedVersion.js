@@ -5,6 +5,20 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v2.1.0',
+    date: new Date('2026-07-24'),
+    summary: '角色行走精灵表全量上线，5套真实像素角色替换色块占位',
+    updates: JSON.stringify([
+      '新增5套角色行走精灵表（4方向×4帧动画），替换原来的色块占位',
+      '角色选择页支持精灵预览，新增返回按钮',
+      '多人同屏角色显示尺寸从32×32升级到64×64',
+    ], null, 0),
+    plans: JSON.stringify([
+      '德塔战斗系统（塔外区域+怪物+装备）',
+      '世界观创作（酒馆+DeepSeek）',
+    ], null, 0),
+  },
+  {
     version: 'v2.0.0',
     date: new Date('2026-07-23'),
     summary: '新增师德墙模块，横向画展式浏览，支持图文动态、评论、点赞',
