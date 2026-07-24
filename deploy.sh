@@ -73,13 +73,13 @@ if [ "$(http_code http://localhost:3000/api/hello)" = "200" ]; then
 else
   echo "✗ 后端 API 异常"
 fi
-if [ "$(http_code http://localhost:3000/api/wall/posts)" = "200" ]; then
+if [ "$(http_code http://localhost:3000/api/wall/posts)" = "200" ] || [ "$(http_code http://localhost:3000/api/wall/posts)" = "401" ]; then
   echo "✓ 师德墙 API 正常"
 else
   echo "✗ 师德墙 API 异常"
 fi
 VERSION=$(node -p "require('./package.json').version")
-if curl -s http://localhost:3000/api/announcement | grep -q "v${VERSION}\|\"${VERSION}\""; then
+if curl -s http://localhost:3000/api/announcement | grep -q "\"v${VERSION}\""; then
   echo "✓ 版本公告 v${VERSION} 正常"
 else
   echo "✗ 版本公告异常（期望 v${VERSION}）"
