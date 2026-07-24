@@ -17,8 +17,28 @@ const showItemDialog = ref(false)
 const itemId = ref('')
 const showPortalDialog = ref(false)
 
-// 玩家形象选择弹窗（查看立绘 / 切换形象）
-const showSkinDialog = ref(false)
+// 角色面板弹窗（博德之门风格：立绘 + 装备栏 + 背包 + 属性面板）
+const showCharPanel = ref(false)
+const activeEquipSlot = ref(null)  // 当前选中的装备槽（点击卸下），null=无选中
+const activeSkillSlot = ref(null)  // 当前选中的技能槽，null=无选中
+
+// 装备占位数据（R-012 接入后端后替换）
+const equipment = reactive({
+  head: null,    // 头盔 { name, icon, def, res }
+  chest: null,   // 胸甲 { name, icon, def, hp }
+  legs: null,    // 护腿 { name, icon, def, speed }
+  boots: null,   // 靴子 { name, icon, res, speed }
+  weapon: null,  // 武器 { name, icon, atk, type }
+})
+
+// 基础属性（德塔剧情加护：DEF 5 / RES 3）
+const baseStats = reactive({
+  hp: 100,
+  mp: 200,
+  atk: 10,
+  def: 5,
+  res: 3,
+})
 
 // NPC 对话
 const npcConfig = ref(null)           // 当前交互的 NPC 配置（从 shared/npcs.js 匹配）
@@ -57,15 +77,15 @@ const skinId = ref(auth.skinId || '1')
 const avatarUrl = computed(() => `/game/sprites/avatars/player_set${skinId.value}.png`)
 const portraitUrl = computed(() => `/game/portraits/player_set${skinId.value}.png`)
 
-/** 打开形象弹窗（查看立绘） */
-function openSkinDialog() {
-  showSkinDialog.value = true
+/** 打开角色面板（查看立绘+装备+背包） */
+function openCharPanel() {
+  showCharPanel.value = true
   pauseGame()
 }
 
-/** 关闭形象弹窗 */
-function closeSkinDialog() {
-  showSkinDialog.value = false
+/** 关闭角色面板 */
+function closeCharPanel() {
+  showCharPanel.value = false
   resumeGame()
 }
 
@@ -451,7 +471,7 @@ function drawMinimap() {
     <div class="nde-panel">
       <!-- 1. 角色信息 -->
       <div class="panel-char">
-        <div class="char-avatar" @click="openSkinDialog" :title="`点击查看立绘 / 切换形象（当前 ${skinId}/5）`">
+        <div class="char-avatar" @click="openCharPanel" :title="`点击查看角色面板`">
           <img :src="avatarUrl" :alt="`形象 ${skinId}`" @error="onAvatarError" />
         </div>
         <div class="char-info">
@@ -477,7 +497,40 @@ function drawMinimap() {
       <!-- 分隔线 -->
       <div class="panel-divider"></div>
 
-      <!-- 2. 背包 -->
+      <!-- 2. 装备槽 + 技能槽 -->
+      <div class="panel-equip">
+        <div class="equip-grid">
+          <!-- 装备槽（头盔/胸甲/护腿/靴子） -->
+          <div class="equip-slot" :class="{ active: activeEquipSlot === 'head' }" title="头盔">
+            <span v-if="!equipment.head" class="slot-empty">头</span>
+            <img v-else :src="equipment.head.icon" class="slot-icon" />
+          </div>
+          <div class="equip-slot" :class="{ active: activeEquipSlot === 'chest' }" title="胸甲">
+            <span v-if="!equipment.chest" class="slot-empty">胸</span>
+            <img v-else :src="equipment.chest.icon" class="slot-icon" />
+          </div>
+          <div class="equip-slot" :class="{ active: activeEquipSlot === 'legs' }" title="护腿">
+            <span v-if="!equipment.legs" class="slot-empty">腿</span>
+            <img v-else :src="equipment.legs.icon" class="slot-icon" />
+          </div>
+          <div class="equip-slot" :class="{ active: activeEquipSlot === 'boots' }" title="靴子">
+            <span v-if="!equipment.boots" class="slot-empty">靴</span>
+            <img v-else :src="equipment.boots.icon" class="slot-icon" />
+          </div>
+          <!-- 技能槽（当前用3个，预留1个） -->
+          <div v-for="i in 4" :key="'skill'+i" class="skill-slot" :class="{ active: activeSkillSlot === i }" @click="activeSkillSlot = activeSkillSlot === i ? null : i" :title="`技能位 ${i}`">
+            <span v-if="i === 1" class="slot-key">1</span>
+            <span v-else-if="i === 2" class="slot-key">2</span>
+            <span v-else-if="i === 3" class="slot-key">3</span>
+            <span v-else class="slot-key">4</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分隔线 -->
+      <div class="panel-divider"></div>
+
+      <!-- 3. 背包 -->
       <div class="panel-bag">
         <div class="bag-grid">
           <div v-for="i in 8" :key="i" class="bag-slot"></div>
@@ -593,26 +646,65 @@ function drawMinimap() {
       </div>
     </div>
 
-    <!-- 玩家形象弹窗（查看立绘 + 切换形象） -->
-    <div v-if="showSkinDialog" class="nde-dialog-overlay" @click.self="closeSkinDialog">
-      <div class="nde-dialog nde-skin-dialog">
+    <!-- 角色面板弹窗（博德之门风格：立绘 + 装备栏 + 背包 + 属性） -->
+    <div v-if="showCharPanel" class="nde-dialog-overlay" @click.self="closeCharPanel">
+      <div class="nde-dialog nde-char-dialog">
         <div class="nde-dialog-header">
-          <span>玩家形象 · {{ skinId }}/5</span>
-          <button @click="closeSkinDialog" class="nde-dialog-close">✕</button>
+          <span>{{ nickname }} · 角色面板</span>
+          <button @click="closeCharPanel" class="nde-dialog-close">✕</button>
         </div>
-        <div class="nde-skin-body">
+        <div class="nde-char-body">
           <!-- 左侧：立绘 -->
-          <div class="nde-skin-portrait">
+          <div class="nde-char-portrait">
             <img :src="portraitUrl" :alt="`形象 ${skinId} 立绘`" @error="onPortraitError" />
+            <div class="nde-char-skin-label">形象 {{ skinId }} / 5</div>
           </div>
-          <!-- 右侧：5 套头像列表（点击切换） -->
-          <div class="nde-skin-list">
-            <div class="nde-skin-list-title">选择形象（重进德塔生效）</div>
-            <div v-for="i in 5" :key="i" class="nde-skin-item"
-                 :class="{ active: String(i) === skinId }"
-                 @click="switchSkin(i)">
-              <img :src="`/game/sprites/avatars/player_set${i}.png`" :alt="`形象 ${i}`" @error="onAvatarError" />
-              <span>形象 {{ i }}</span>
+
+          <!-- 中间：装备栏 + 属性面板 -->
+          <div class="nde-char-equip">
+            <div class="equip-section-title">装备栏</div>
+            <div class="equip-panel-grid">
+              <div class="equip-panel-slot" :class="{ active: activeEquipSlot === 'weapon' }"
+                   @click="activeEquipSlot = activeEquipSlot === 'weapon' ? null : 'weapon'" title="武器">
+                <span v-if="!equipment.weapon" class="slot-empty">武</span>
+                <img v-else :src="equipment.weapon.icon" class="slot-icon" />
+              </div>
+              <div class="equip-panel-slot" :class="{ active: activeEquipSlot === 'head' }"
+                   @click="activeEquipSlot = activeEquipSlot === 'head' ? null : 'head'" title="头盔">
+                <span v-if="!equipment.head" class="slot-empty">头</span>
+                <img v-else :src="equipment.head.icon" class="slot-icon" />
+              </div>
+              <div class="equip-panel-slot" :class="{ active: activeEquipSlot === 'chest' }"
+                   @click="activeEquipSlot = activeEquipSlot === 'chest' ? null : 'chest'" title="胸甲">
+                <span v-if="!equipment.chest" class="slot-empty">胸</span>
+                <img v-else :src="equipment.chest.icon" class="slot-icon" />
+              </div>
+              <div class="equip-panel-slot" :class="{ active: activeEquipSlot === 'legs' }"
+                   @click="activeEquipSlot = activeEquipSlot === 'legs' ? null : 'legs'" title="护腿">
+                <span v-if="!equipment.legs" class="slot-empty">腿</span>
+                <img v-else :src="equipment.legs.icon" class="slot-icon" />
+              </div>
+              <div class="equip-panel-slot" :class="{ active: activeEquipSlot === 'boots' }"
+                   @click="activeEquipSlot = activeEquipSlot === 'boots' ? null : 'boots'" title="靴子">
+                <span v-if="!equipment.boots" class="slot-empty">靴</span>
+                <img v-else :src="equipment.boots.icon" class="slot-icon" />
+              </div>
+            </div>
+            <div class="equip-section-title">属性</div>
+            <div class="nde-char-stats">
+              <div class="stat-row"><span class="stat-label">生命</span><span class="stat-value">{{ baseStats.hp }} / {{ baseStats.hp }}</span></div>
+              <div class="stat-row"><span class="stat-label">魔力</span><span class="stat-value">{{ baseStats.mp }} / {{ baseStats.mp }}</span></div>
+              <div class="stat-row"><span class="stat-label">攻击</span><span class="stat-value">{{ baseStats.atk }}</span></div>
+              <div class="stat-row"><span class="stat-label">护甲</span><span class="stat-value">{{ baseStats.def }}</span></div>
+              <div class="stat-row"><span class="stat-label">魔抗</span><span class="stat-value">{{ baseStats.res }}</span></div>
+            </div>
+          </div>
+
+          <!-- 右侧：背包 -->
+          <div class="nde-char-bag">
+            <div class="equip-section-title">背包（0 / 8）</div>
+            <div class="char-bag-grid">
+              <div v-for="i in 8" :key="i" class="char-bag-slot"></div>
             </div>
           </div>
         </div>
@@ -768,7 +860,61 @@ function drawMinimap() {
   background: #1a1a22;
 }
 
-/* ===== 2. 背包 ===== */
+/* ===== 2. 装备槽 + 技能槽 ===== */
+.panel-equip {
+  width: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2a 50%, #2a2a3a 100%);
+}
+.equip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 3px;
+  padding: 6px;
+}
+.equip-slot, .skill-slot {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #4a4a5a;
+  background: linear-gradient(135deg, #1a1a2a, #2a2a3a);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.equip-slot:hover, .skill-slot:hover {
+  border-color: #6b8e6b;
+  box-shadow: 0 0 6px rgba(107, 142, 107, 0.4);
+}
+.equip-slot.active, .skill-slot.active {
+  border-color: #c9a96e;
+  box-shadow: 0 0 6px rgba(201, 169, 110, 0.5);
+}
+.slot-empty {
+  font-size: 13px;
+  color: #5a5a6a;
+  font-weight: 600;
+}
+.slot-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.slot-key {
+  font-size: 12px;
+  color: #5a5a6a;
+  font-weight: 600;
+}
+
+/* ===== 3. 背包 ===== */
 .panel-bag {
   width: 160px;
   display: flex;
@@ -793,7 +939,7 @@ function drawMinimap() {
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
 }
 
-/* ===== 3. 聊天 ===== */
+/* ===== 4. 聊天 ===== */
 .panel-chat {
   flex: 1;
   display: flex;
@@ -990,80 +1136,125 @@ function drawMinimap() {
   font-size: 14px;
 }
 
-/* ===== 玩家形象弹窗 ===== */
-.nde-skin-dialog {
-  width: 720px;
-  max-width: 92vw;
+/* ===== 角色面板弹窗 ===== */
+.nde-char-dialog {
+  width: 760px;
+  max-width: 94vw;
   max-height: 90vh;
 }
-.nde-skin-body {
+.nde-char-body {
   display: flex;
-  gap: 16px;
-  padding: 16px;
-  min-height: 480px;
+  gap: 12px;
+  padding: 12px;
+  min-height: 360px;
 }
-.nde-skin-portrait {
+/* 左侧立绘 */
+.nde-char-portrait {
   flex: 1;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #1a1a22;
   border-radius: 4px;
   overflow: hidden;
-  min-width: 0;
+  position: relative;
 }
-.nde-skin-portrait img {
+.nde-char-portrait img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
-.nde-skin-list {
-  width: 220px;
+.nde-char-skin-label {
+  font-size: 12px;
+  color: #c9a96e;
+  margin-top: 8px;
+  padding: 2px 8px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+}
+/* 中间装备栏 + 属性 */
+.nde-char-equip {
+  width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.nde-skin-list-title {
-  font-size: 13px;
+.equip-section-title {
+  font-size: 12px;
   color: #c9a96e;
-  margin-bottom: 4px;
   font-weight: 600;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #3a3a44;
 }
-.nde-skin-item {
+.equip-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.equip-panel-slot {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #4a4a5a;
+  background: linear-gradient(135deg, #1a1a2a, #2a2a3a);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  background: #2a2a32;
-  border: 1px solid #3a3a44;
-  border-radius: 4px;
+  justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.nde-skin-item:hover {
+.equip-panel-slot:hover {
+  border-color: #6b8e6b;
+  box-shadow: 0 0 6px rgba(107, 142, 107, 0.4);
+}
+.equip-panel-slot.active {
   border-color: #c9a96e;
-  background: #353540;
+  box-shadow: 0 0 6px rgba(201, 169, 110, 0.5);
 }
-.nde-skin-item.active {
-  border-color: #c9a96e;
-  background: #3a3530;
-  box-shadow: 0 0 6px rgba(201, 169, 110, 0.3);
+/* 属性面板 */
+.nde-char-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
 }
-.nde-skin-item img {
-  width: 40px;
-  height: 40px;
-  border-radius: 3px;
-  object-fit: cover;
-  background: #1a1a22;
-}
-.nde-skin-item span {
-  color: #e0d8c0;
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 13px;
 }
-.nde-skin-item.active span {
-  color: #c9a96e;
+.stat-label {
+  color: #999;
+}
+.stat-value {
+  color: #e0d8c0;
   font-weight: 600;
+}
+/* 右侧背包 */
+.nde-char-bag {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.char-bag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+.char-bag-slot {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #5a4a3a;
+  background: linear-gradient(135deg, #2a1a0a, #3a2a1a);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
 }
 .nde-npc-chat {
   flex: 1;

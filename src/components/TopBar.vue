@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import UserAvatar from './UserAvatar.vue'
 import ProfileDialog from './ProfileDialog.vue'
+import NdeSettingsDialog from './NdeSettingsDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const showProfile = ref(false)
+const showNdeSettings = ref(false)
 
 function handleLogout() {
   auth.logout()
@@ -26,9 +28,10 @@ function handleLogout() {
       <router-link to="/nde" class="menu-item">德塔</router-link>
     </div>
     <div class="topbar-right">
-      <UserAvatar @profile="showProfile = true" @logout="handleLogout" />
+      <UserAvatar @profile="showProfile = true" @nde-settings="showNdeSettings = true" @logout="handleLogout" />
     </div>
     <ProfileDialog :show="showProfile" @close="showProfile = false" />
+    <NdeSettingsDialog :show="showNdeSettings" @close="showNdeSettings = false" />
   </nav>
 </template>
 

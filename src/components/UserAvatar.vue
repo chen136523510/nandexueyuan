@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
-const emit = defineEmits(['profile', 'logout'])
+const emit = defineEmits(['profile', 'nde-settings', 'logout'])
 
 const auth = useAuthStore()
 const showDropdown = ref(false)
@@ -43,6 +43,11 @@ function handleProfile() {
   emit('profile')
 }
 
+function handleNdeSettings() {
+  showDropdown.value = false
+  emit('nde-settings')
+}
+
 function handleLogout() {
   showDropdown.value = false
   emit('logout')
@@ -66,6 +71,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
         </div>
         <div class="dropdown-divider"></div>
         <button class="dropdown-item" @click="handleProfile">个人中心</button>
+        <button class="dropdown-item" @click="handleNdeSettings">德塔相关设置</button>
         <button class="dropdown-item danger" @click="handleLogout">退出登录</button>
       </div>
     </Transition>
