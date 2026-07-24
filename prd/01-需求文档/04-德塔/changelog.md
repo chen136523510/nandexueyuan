@@ -41,7 +41,7 @@
 3. BiRefNet 抠图过度（head 5%/身体半透明）→ `refine_foreground=True` 修复
 4. 脚本硬编码 side 朝向导致左右反 → `detect_facing()` 自动检测后动态翻转
 
-- commit: 未提交
+- commit: `433ddb2`（v2.1.0 已部署）
 
 ---
 
@@ -56,7 +56,7 @@
   3. **精灵图裁帧显示**（`src/views/CharacterView.vue`）：精灵区域从 `<img>` 拉伸整图改为 CSS `background-image` + `background-size:96px` 只显示第一帧
   4. **返回按钮**（`src/views/CharacterView.vue`）：左上角新增「← 返回」按钮，跳转 `/` 首页
 - **BUG 修复**：BUG-31（立绘风格）/ BUG-32~33（skin API 404→重启后端）/ BUG-34（四方图）/ BUG-35（无返回按钮），详见 `bug-log.md`
-- commit: 未提交
+- commit: `54079b5`
 
 ---
 
@@ -79,7 +79,7 @@
   | 精灵图 | `public/game/sprites/players/player_set{1-5}_walk.png` | 128×128 RGBA (4×4) | PreloadScene spritesheet 4 方向行走动画 |
 - **工作流文件**：`.ai/comfyui-workflows/players/portrait_player_set{1-5}.json`（5 套不同角色设定：校园风/巫女/骑士/法师/赛博朋克）
 - **注意**：精灵图为程序化生成（立绘全身缩放 + 像素偏移模拟行走），非真正的多视角像素动画。后续可考虑用 ControlNet OpenPose 生成精确的 32×32 像素行走动画替换
-- commit: 未提交
+- commit: `54079b5`
 
 ---
 
