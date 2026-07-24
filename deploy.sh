@@ -64,30 +64,36 @@ node prisma/seedVersion.js
 
 echo "=== 10/11 验证 ==="
 sleep 2
-if curl -s http://localhost:3000/api/hello | grep -q "message"; then
+http_code() {
+  curl -s -o /dev/null -w "%{http_code}" "$1"
+}
+
+if [ "$(http_code http://localhost:3000/api/hello)" = "200" ]; then
   echo "✓ 后端 API 正常"
 else
   echo "✗ 后端 API 异常"
 fi
-if curl -s http://localhost:3000/api/wall/posts | grep -q "posts"; then
+if [ "$(http_code http://localhost:3000/api/wall/posts)" = "200" ]; then
   echo "✓ 师德墙 API 正常"
 else
   echo "✗ 师德墙 API 异常"
 fi
-if curl -s http://localhost:3000/api/announcement | grep -q "v2.0.0"; then
-  echo "✓ 版本公告 v2.0.0 正常"
+VERSION=$(node -p "require('./package.json').version")
+if curl -s http://localhost:3000/api/announcement | grep -q "v${VERSION}\|\"${VERSION}\""; then
+  echo "✓ 版本公告 v${VERSION} 正常"
 else
-  echo "✗ 版本公告异常"
+  echo "✗ 版本公告异常（期望 v${VERSION}）"
 fi
-if curl -sI http://localhost/ | grep -q "200\|301\|302"; then
+if [ "$(http_code http://localhost/)" = "200" ] || [ "$(http_code http://localhost/)" = "301" ] || [ "$(http_code http://localhost/)" = "302" ]; then
   echo "✓ 前端正常"
 else
   echo "✗ 前端异常"
 fi
-if curl -s http://localhost:2567/matchmake | grep -q "."; then
-  echo "✓ 游戏服务器正常"
+GAME_CODE=$(http_code http://localhost:2567/matchmake)
+if [ "$GAME_CODE" != "000" ]; then
+  echo "✓ 游戏服务器正常（HTTP $GAME_CODE）"
 else
-  echo "✗ 游戏服务器异常（可能未启动或端口未开放）"
+  echo "✗ 游戏服务器异常（连接失败）"
 fi
 
 # 可选:数据重新导入 + FTS5 重建
