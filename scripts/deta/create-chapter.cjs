@@ -16,6 +16,34 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// ===== 字符清洗：替换酒馆无法正常显示的特殊Unicode字符 =====
+function cleanText(text) {
+  return text
+    // 箭头符号替换为 ASCII
+    .replace(/→/g, '->')
+    .replace(/←/g, '<-')
+    .replace(/↑/g, '(上)')
+    .replace(/↓/g, '(下)')
+    .replace(/⇒/g, '=>')
+    .replace(/⇐/g, '<=')
+    // 数学符号
+    .replace(/≈/g, '约')
+    .replace(/±/g, '+/-')
+    // 特殊引号统一为标准引号
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/〔〕/g, '()')
+    // U+FFFD 替换字符（编码损坏）直接删除
+    .replace(/\uFFFD/g, '')
+    // 零宽字符删除
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
+    // 其他酒馆可能显示不全的特殊符号
+    .replace(/✓/g, '[确认]')
+    .replace(/✗/g, '[否]')
+    .replace(/[🔴]/g, '[!]')
+    .replace(/[→←↑↓⇒⇐]/g, '');
+}
+
 // ===== 配置 =====
 const DEEPSEEK_KEY = 'sk-43913328a48d4760804173b473b1251e';
 const DEEPSEEK_URL = 'https://api.deepseek.com';
@@ -52,7 +80,7 @@ function callDeepSeek(messages) {
           const j = JSON.parse(body);
           if (j.choices) {
             resolve({
-              content: j.choices[0].message.content,
+              content: cleanText(j.choices[0].message.content),
               reasoning: j.choices[0].message.reasoning_content || '',
               usage: j.usage
             });
