@@ -45,7 +45,26 @@ function cleanText(text) {
 }
 
 // ===== 配置 =====
-const DEEPSEEK_KEY = 'sk-43913328a48d4760804173b473b1251e';
+// 从项目根 .env 读取 DeepSeek key（不硬编码，避免泄露）
+// 零依赖解析 .env：dotenv 未安装，用极简实现
+function loadEnv() {
+  const envPath = path.join(__dirname, '..', '..', '.env');
+  try {
+    const content = fs.readFileSync(envPath, 'utf8');
+    for (const line of content.split('\n')) {
+      const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+    }
+  } catch (e) {
+    console.warn('[warn] 未读到 .env（' + envPath + '），将使用环境变量 DEEPSEEK_API_KEY');
+  }
+}
+loadEnv();
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY;
+if (!DEEPSEEK_KEY) {
+  console.error('[fatal] 缺少 DeepSeek API Key：请在项目根 .env 设置 DEEPSEEK_API_KEY');
+  process.exit(1);
+}
 const DEEPSEEK_URL = 'https://api.deepseek.com';
 const ST_HOST = '127.0.0.1';
 const ST_PORT = 8000;
