@@ -10,6 +10,11 @@
 | [德塔战斗数值设计文档](01-需求/德塔战斗数值设计文档.md) | 战斗数值平衡（属性/伤害公式/装备/技能） |
 | [德塔战斗系统调研方案](01-需求/德塔战斗系统调研方案.md) | 战斗系统技术选型与调研 |
 | [德塔男德通交互需求](01-需求/德塔男德通交互需求.md) | NPC AI 对话交互需求 |
+| [形态重构战略规划](02-设计/德塔形态重构战略规划.md) | 横版像素风 -> 等距俯视角 + 分层美术方案路线图 |
+| [世界观设定集](02-设计/德塔世界观设定集-正式版v1.0.md) | 唯一权威设定文档（v1.3） |
+| [世界观](02-设计/德塔世界观.md) | 世界观核心设定（双世界/德塔结构/物理法则） |
+| [美术资源索引](00-基础数据/美术资源索引.md) | 全项目美术资产清单 |
+| [ADR-005](../00-调研/decisions/ADR-005-德塔世界观承载方式.md) | 世界观承载方式决策（CG/漫画演出层 + 不切 3D） |
 | [changelog.md](./changelog.md) | 德塔变更记录 |
 | [bug-log.md](./bug-log.md) | Bug 记录 |
 
@@ -19,7 +24,7 @@
 |----|----------|
 | 前端视图 | `src/views/GameView.vue` |
 | 顶部导航 | `src/components/TopBar.vue` + `src/components/UserAvatar.vue` |
-| 游戏引擎 | Phaser 3（`game/` 目录） |
+| 游戏引擎 | Phaser 4（`game/` 目录） |
 | 状态管理 | `src/stores/auth.js` |
 | 前端 API | `src/api/user.js` |
 
@@ -27,7 +32,7 @@
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| TopBar | `src/components/TopBar.vue` | 德塔页面顶部导航（返回学院 + 标题） |
+| TopBar | `src/components/TopBar.vue` | 公共导航组件（首页/男德通/师德墙/通讯录/德塔 五项菜单） |
 | UserAvatar | `src/components/UserAvatar.vue` | 头像 + 下拉菜单（个人中心 / 德塔相关设置 / 退出登录） |
 | ProfileDialog | `src/components/ProfileDialog.vue` | 个人中心弹窗（昵称/头像/修改密码） |
 | NdeSettingsDialog | `src/components/NdeSettingsDialog.vue` | 德塔相关设置弹窗（形象选择：立绘 + 精灵预览） |

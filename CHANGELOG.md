@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-07-28 画风方向决策 + 文档全量同步 + changelog 补全
+
+### 画风方向决策（方向性，无代码改动）
+
+| 决策项 | 结论 |
+|---|---|
+| 画风分层方案 | **立绘/漫画/CG = 美漫厚涂**（Hades / Jen Zee 路线），**游戏内精灵 = Q版/低分辨率** |
+| 决策依据 | 院长选定美漫厚涂方向（参考 WLOP 鬼刀厚涂），能承载世界观深度；精灵走 Q版/低分辨率方便开发 |
+| 画风原则 | 画风保持一致严肃（厚涂质感托住世界分量），轻松感交给文本层。入戏玩家不被打扰，戏谑玩家也有出口 |
+| 影响 | M-2 美术 PoC 验证目标更新为：① ComfyUI+LoRA 能否产出美漫厚涂立绘 ② 精灵方向决策（Q版 vs 低分辨率降采样） |
+| 降级方案 | 美术 PoC 失败则保持现有像素风，只做视角+氛围，立绘/漫画可独立推进 |
+
+### 文档全量同步
+
+| 文档 | 变更 |
+|------|------|
+| 战略规划 / ROADMAP / handoff | "饥荒手绘暗黑童话风"描述全量替换为"分层美术方案" |
+| 需求池 | 修复 pm 搬迁后路径断裂 + 精简已完成详情(-195行) + 登记 R-014~R-017 + 更新 R-009 描述 |
+| 根 README.md | 功能描述更新 + 技术栈修正 + 项目结构补全 + 环境变量补 BLACK_WORKER_TOKEN |
+| 德塔 README.md | Phaser 3->4 + 文档索引补全（形态重构战略规划/设定集/ADR-005） |
+| 德塔设计 README.md | 设定集版本号标注 v1.3 + 补形态重构战略规划索引 |
+
+### 代码级 changelog 断档补全
+
+10 个代码目录级 changelog 全部从 git 历史补全，共 +442 行：
+
+| 目录 | 补全条目 |
+|------|---------|
+| `server/src/controllers/` | 12 个 commit（男德通/公告/角色/师德墙等） |
+| `server/src/middleware/` | 1 个 commit（rateLimit） |
+| `server/src/utils/` | 4 个 commit（llm/knowledge/超时修复） |
+| `server/src/routes/` | 6 个 commit（路由注册系列） |
+| `src/api/` | 6 个 commit |
+| `src/components/` | 5 个 commit（TopBar/NdeSettings 等） |
+| `src/router/` | 4 个 commit |
+| `src/stores/` | 2 个 commit |
+| `src/styles/` | 2 个 commit |
+| `src/views/` | 23 个 commit（最大量） |
+
+> `server/src/lib/` 确认无断档（仅 1 个 commit，已被初始化条目覆盖），不改动。
+
+---
+
 ## 2026-07-27 ADR-005 德塔世界观承载方式决策（方向性，无代码改动）
 
 ### 决策依据
