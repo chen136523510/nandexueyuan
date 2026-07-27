@@ -11,5 +11,31 @@
 ---
 
 ## 2026-06-29
-- [新增] `index.js` — Vue Router 配置，路由：`/`（HomeView）、`/about`（AboutView）
+- [新增] `index.js` - Vue Router 配置，路由：`/`（HomeView）、`/about`（AboutView）
 - commit: 未提交
+
+---
+
+> 以下为断档补全（基于 git 历史，正序追加）
+
+## 2026-07-05
+- [修改] `index.js` - 新增 `/chat` 路由（ChatView，requiresAuth）
+- commit: 739306d feat: 新增「男德通」AI群聊助手
+
+---
+
+## 2026-07-14
+- [修改] `index.js` - 新增 `/admin` 路由（AdminView，requiresAuth+requiresAdmin）、`/nde` 路由（GameView，requiresAuth）；路由守卫新增 requiresAdmin 管理员校验
+- commit: 7329e25 feat: 德塔P0+P1完成
+
+---
+
+## 2026-07-22
+- [修改] `index.js` - 新增 `/character` 路由（CharacterView 角色选择页）；路由守卫新增进德塔前 skinId===null 拦截跳转角色选择
+- commit: c6306d3 [feat](德塔): P4 角色创建系统
+
+---
+
+## 2026-07-23
+- [修改] `index.js` - 新增 `/wall` 路由（WallView 师德墙，requiresAuth）
+- commit: 5698107 [feat](男德墙): R-008 男德墙模块完整实现

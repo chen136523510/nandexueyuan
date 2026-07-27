@@ -14,5 +14,79 @@
 ---
 
 ## 2026-06-29
-- [新增] `helloController.js` — hello 控制器，返回联通测试消息
+- [新增] `helloController.js` - hello 控制器，返回联通测试消息
 - commit: 未提交
+
+---
+
+## 2026-07-05
+- [新增] `chatController.js` - 男德通 AI 群聊助手（意图分类+SQL/FTS5 问答+会话历史）
+- [新增] `chatImportController.js` - 群聊 CSV 导入控制器（上传解析+批次列表）
+- commit: 739306d feat: 新增「男德通」AI群聊助手(意图分类+SQL/FTS5问答+对话UI+会话历史)
+
+---
+
+## 2026-07-07
+- [修改] `chatController.js` - 群友人设+知识库+上下文记忆+语义检索修复
+- commit: 399ee8f feat: 男德通全面优化 - 群友人设+知识库+上下文+语义检索修复
+
+---
+
+## 2026-07-13
+- [修改] `chatController.js` - 语义检索分块提示词+流式输出+SSE 代理修复
+- commit: a7cebac feat: 语义检索分块提示词+流式输出+SSE代理修复
+
+---
+
+## 2026-07-14
+- [修改] `chatController.js` - 语义检索增加 LIKE 后备查询，解决 trigram 无法匹配 2 字词
+- commit: 94f04b7 fix: 语义检索增加 LIKE 后备查询，解决 trigram 无法匹配 2 字词
+
+---
+
+## 2026-07-17
+- [修改] `chatController.js` - 修复统计查询把毫秒时间戳当字符串切片导致误报「只有2022年7月数据」（BUG-22）
+- commit: 9f4c48b [fix](男德通): 修复统计查询把毫秒时间戳当字符串切片，导致误报'只有2022年7月数据'（BUG-22）
+
+---
+
+## 2026-07-18
+- [修改] `chatController.js` - 新增 NPC AI 对话接口 talkNpc（SSE 流式，德塔专属 persona）
+- commit: 76fe825 [feat](P2): 后端 NPC AI 对话接口 + 德塔专属 persona
+
+---
+
+## 2026-07-20
+- [修改] `chatController.js` - NPC 广播@提问者+身份感知+花名册注入
+- commit: c391dc0 [feat](德塔): NPC 广播@提问者 + 身份感知 + 花名册注入 + sync-docs 技能
+
+---
+
+## 2026-07-20
+- [修改] `announcementController.js` - 重构为版本公告系统（5 个 REST API：公告+版本 CRUD，向后兼容旧接口）
+- commit: 6d8ce17 [feat](首页): 版本公告系统 R-004 - 版本管理+变更日志+未来规划
+
+---
+
+## 2026-07-21
+- [修改] `chatController.js` - 多 Agent 协作检索架构（统计+语义并行检索），精简冗余逻辑
+- commit: 956aad2 [feat](男德通): 多Agent协作检索架构 - 统计+语义并行检索
+
+---
+
+## 2026-07-22
+- [修改] `authController.js` - publicUser 投影新增 skinId 字段
+- [修改] `userController.js` - 新增 updateSkin（PUT /user/skin，形象 1-5 校验+持久化）
+- commit: c6306d3 [feat](德塔): P4 角色创建系统 - skinId后端持久化+角色选择页
+
+---
+
+## 2026-07-23
+- [新增] `wallController.js` - 男德墙模块（发帖/评论/点赞/删除，图文上传 multer）
+- commit: 5698107 [feat](男德墙): R-008 男德墙模块完整实现
+
+---
+
+## 2026-07-23
+- [修改] `announcementController.js` - 版本号格式校验（vx.y.z 三段式 semver，ADR-004）
+- commit: 975d2c6 [feat](版本): R-007 版本号规则规范化 - ADR-004决策 + package.json校准 + 历史版本补录 + API semver校验
