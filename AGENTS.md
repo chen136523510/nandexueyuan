@@ -99,12 +99,28 @@ cd game-server && node src/index.js  # 游戏服务器 → localhost:2567
 接手第一件事：
 1. `git fetch origin && git pull origin master`
 2. **先合并对方遗留的 PR**（如有），再开始自己的开发
-3. 阅读 `.ai/handoff.md` 恢复上下文
+3. 阅读以下文件恢复上下文（**按顺序**）：
+   - `.ai/handoff.md` -- 战术级交接（上次做到哪、进行中任务、环境状态）
+   - `prd/01-需求文档/00-基础数据/ROADMAP.md` -- 战略级路线图（整体往哪走、当前里程碑）
+
+### 山丘图标注规则（AI 行为约束）
+
+ROADMAP.md 中每个任务标注状态，AI 据此决定行为：
+
+| 标注 | 含义 | AI 行为 |
+|---|---|---|
+| ⛰️ uphill | 探索中，方案未定 | **禁止直接写代码**，先做 PoC/调研/方案验证 |
+| ⛰️ downhill | 方案已定，可预估 | 可直接执行，按步骤清单推进 |
+| ✅ done | 已完成 | 不再修改，仅可查阅 |
+
+handoff.md 的"待办"部分也应标注 uphill/downhill。
 
 ### 会话结束必做
 
 1. `git push` 所有提交到 feature 分支或 master
 2. 更新 `.ai/handoff.md`（当前分支、未完成事项、下一步、环境状态）
+3. 执行 `sync-docs` 技能同步四文档（changelog/bug-log/需求池/handoff）
+4. 若里程碑状态变化，更新 `prd/01-需求文档/00-基础数据/ROADMAP.md`（状态+完成日期+产出物）
 
 ## 禁止事项
 
