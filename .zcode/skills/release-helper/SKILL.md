@@ -184,7 +184,7 @@ package.json version（不带 v） = 数据库最新 Version.version（带 v） 
 ## 参考文件
 
 - `../../prd/01-需求文档/00-调研/decisions/ADR-004-版本号规则规范化.md` — 完整版本号规则
-- `../../prd/01-需求文档/00-基础数据/需求池.md` — 需求池（提取未来规划时参考）
+- `../../pm/需求池.md` — 需求池（提取未来规划时参考）
 - `../../.ai/handoff.md` — 交接单（更新版本号）
 - `../../server/prisma/seedVersion.js` — 版本公告种子数据
 - `../../CHANGELOG.md` — 根 changelog（插入发版记录）

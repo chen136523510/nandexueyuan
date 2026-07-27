@@ -10,7 +10,7 @@
 - 仓库：`chen136523510/nandexueyuan`（GitHub，私有）
 - 开发模式：**单人双机协作**（白机白天 / 黑机晚上），详见下文「双机协作」
 - 交接单：`.ai/handoff.md`（每次换机必读）
-- 路线图：`prd/01-需求文档/00-基础数据/ROADMAP.md`（战略级，必读）
+- 路线图：`pm/ROADMAP.md`（战略级，必读）
 
 ## 技术栈与启动
 
@@ -102,7 +102,7 @@ cd game-server && node src/index.js  # 游戏服务器 → localhost:2567
 2. **先合并对方遗留的 PR**（如有），再开始自己的开发
 3. 阅读以下文件恢复上下文（**按顺序**）：
    - `.ai/handoff.md` -- 战术级交接（上次做到哪、进行中任务、环境状态）
-   - `prd/01-需求文档/00-基础数据/ROADMAP.md` -- 战略级路线图（整体往哪走、当前里程碑）
+   - `pm/ROADMAP.md` -- 战略级路线图（整体往哪走、当前里程碑）
 
 ### 山丘图标注规则（AI 行为约束）
 
@@ -121,7 +121,7 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 1. `git push` 所有提交到 feature 分支或 master
 2. 更新 `.ai/handoff.md`（当前分支、未完成事项、下一步、环境状态）
 3. 执行 `sync-docs` 技能同步四文档（changelog/bug-log/需求池/handoff）
-4. 若里程碑状态变化，更新 `prd/01-需求文档/00-基础数据/ROADMAP.md`（状态+完成日期+产出物）
+4. 若里程碑状态变化，更新 `pm/ROADMAP.md`（状态+完成日期+产出物）
 
 ## 禁止事项
 

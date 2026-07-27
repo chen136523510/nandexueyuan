@@ -28,7 +28,7 @@
 
 AI 新会话接手时，**第二份必读文件**变为：
 1. `.ai/handoff.md`（本文件，战术级）
-2. **`prd/01-需求文档/00-基础数据/ROADMAP.md`（战略级路线图，新增）**
+2. **`pm/ROADMAP.md`（战略级路线图，新增）**
 
 详见 AGENTS.md「换机铁律」和「山丘图标注规则」。
 
@@ -167,7 +167,7 @@ DeepSeek key `sk-43913328...` 曾在 commit `8ab1860`/`a887467` 进入 git 历�
 ## 待办（按优先级，标注山丘图状态）
 
 > 山丘图说明：⛰️ uphill = 探索中，禁止直接写代码，先做PoC；⛰️ downhill = 方案已定可执行
-> 完整路线图见 `prd/01-需求文档/00-基础数据/ROADMAP.md`
+> 完整路线图见 `pm/ROADMAP.md`
 
 ### 形态重构路线图（已锁定方向）
 
@@ -356,8 +356,8 @@ ssh root@47.96.158.104 "cd /root/projects/www.nandexueyuan.top && tar -xzf dist.
 | 师德墙 PRD | `prd/01-需求文档/06-师德墙/师德墙.md` |
 | 师德墙 Changelog | `prd/01-需求文档/06-师德墙/changelog.md` |
 | 师德墙 Bug Log | `prd/01-需求文档/06-师德墙/bug-log.md` |
-| 需求池 | `prd/01-需求文档/00-基础数据/需求池.md` |
-| **产品路线图** | **`prd/01-需求文档/00-基础数据/ROADMAP.md`**（战略级，AI接手必读） |
+| 需求池 | `pm/需求池.md` |
+| **产品路线图** | **`pm/ROADMAP.md`**（战略级，AI接手必读） |
 | 形态重构规划 | `prd/01-需求文档/04-德塔/02-设计/德塔形态重构战略规划.md` |
 | 德塔 Changelog | `prd/01-需求文档/04-德塔/changelog.md` |
 | 德塔 Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` |
