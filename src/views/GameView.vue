@@ -32,13 +32,27 @@ const equipment = reactive({
 })
 
 // 基础属性（德塔剧情加护：DEF 5 / RES 3）
+// currentHp/currentMp 由战斗服务端权威驱动（player-hp-change 事件），默认满血
 const baseStats = reactive({
-  hp: 100,
-  mp: 200,
+  hp: 100,        // 最大 HP
+  mp: 200,        // 最大 MP
   atk: 10,
   def: 5,
   res: 3,
+  currentHp: 100, // 当前 HP（实时，服务端同步）
+  currentMp: 200, // 当前 MP（实时，服务端同步）
 })
+
+// HP 血条宽度比例（CSS 用）+ 低血量警示
+const hpRatio = computed(() => {
+  const r = baseStats.hp > 0 ? (baseStats.currentHp / baseStats.hp) * 100 : 0
+  return Math.max(0, Math.min(100, r)) + '%'
+})
+const mpRatio = computed(() => {
+  const r = baseStats.mp > 0 ? (baseStats.currentMp / baseStats.mp) * 100 : 0
+  return Math.max(0, Math.min(100, r)) + '%'
+})
+const isLowHp = computed(() => baseStats.currentHp / baseStats.hp < 0.3)
 
 // NPC 对话
 const npcConfig = ref(null)           // 当前交互的 NPC 配置（从 shared/npcs.js 匹配）
@@ -137,6 +151,7 @@ onMounted(async () => {
   gameOn('chat-received', onChatReceived)
   gameOn('player-position', onPlayerPosition)
   gameOn('game-ready', onGameReady)
+  gameOn('player-hp-change', onPlayerHpChange)
 })
 
 onUnmounted(() => {
@@ -148,7 +163,23 @@ onUnmounted(() => {
   gameOff('chat-received', null)
   gameOff('player-position', null)
   gameOff('game-ready', null)
+  gameOff('player-hp-change', null)
 })
+
+/**
+ * 战斗阶段1：自身 HP 变化（服务端权威同步）
+ * 更新 baseStats.currentHp/currentMp，驱动 HUD 血条宽度
+ * @param {object} data { hp, maxHp }
+ */
+function onPlayerHpChange(data) {
+  if (typeof data.hp === 'number') {
+    baseStats.currentHp = data.hp
+  }
+  if (typeof data.maxHp === 'number' && data.maxHp > 0) {
+    // 同步最大值（服务端 PlayerState 初始化时可能携带装备加成，阶段1无装备=基础值）
+    baseStats.hp = data.maxHp
+  }
+}
 
 function onNpcInteract(data) {
   npcId.value = data.npcId
@@ -479,11 +510,13 @@ function drawMinimap() {
           <div class="char-bars">
             <div class="bar-row">
               <span class="bar-label">HP</span>
-              <div class="bar-track"><div class="bar-fill hp-fill" :style="{ width: '100%' }"></div></div>
+              <div class="bar-track"><div class="bar-fill hp-fill" :class="{ 'low-hp': isLowHp }" :style="{ width: hpRatio }"></div></div>
+              <span class="bar-text">{{ Math.round(baseStats.currentHp) }}/{{ baseStats.hp }}</span>
             </div>
             <div class="bar-row">
               <span class="bar-label">MP</span>
-              <div class="bar-track"><div class="bar-fill mp-fill" :style="{ width: '100%' }"></div></div>
+              <div class="bar-track"><div class="bar-fill mp-fill" :style="{ width: mpRatio }"></div></div>
+              <span class="bar-text">{{ Math.round(baseStats.currentMp) }}/{{ baseStats.mp }}</span>
             </div>
           </div>
           <div class="char-buffs">
@@ -846,6 +879,18 @@ function drawMinimap() {
 }
 .hp-fill { background: linear-gradient(90deg, #c62828, #e53935); }
 .mp-fill { background: linear-gradient(90deg, #1565c0, #1e88e5); }
+.hp-fill.low-hp { animation: lowhp-pulse 0.6s ease-in-out infinite alternate; }
+@keyframes lowhp-pulse {
+  from { background: linear-gradient(90deg, #b71c1c, #d32f2f); }
+  to { background: linear-gradient(90deg, #ff5252, #ff8a80); }
+}
+.bar-text {
+  font-size: 9px;
+  color: #ccc;
+  width: 42px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 .char-buffs {
   display: flex;

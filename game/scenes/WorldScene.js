@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { TILE_SIZE } from '../config.js'
 import { PLAYER_SPEED, JUMP_VELOCITY, GRAVITY, INTERACT_DISTANCE } from '../../shared/constants.js'
+import { getMonsterDef } from '../../shared/monsters.js'
 import { Player } from '../objects/Player.js'
 import { InputSystem } from '../systems/InputSystem.js'
 import { NetworkSystem } from '../systems/NetworkSystem.js'
@@ -72,6 +73,34 @@ export class WorldScene extends Phaser.Scene {
       this.add.image(t.x, groundY - 16, 'tile_tree').setDepth(0)
     }
 
+    // === 战斗阶段1：森林战斗区装饰（x∈[880,3150]）===
+    // 加密树木形成森林感 + 灌木装饰，玩家从大门(x=824)走出即进入森林
+    const forestTrees = [
+      950, 1080, 1180, 1300, 1420, 1550, 1680, 1800, 1920,
+      2050, 2180, 2300, 2420, 2550, 2680, 2800, 2920, 3050,
+    ]
+    for (const x of forestTrees) {
+      // 树木在地面层之上，但深度低于玩家/怪物，避免遮挡战斗
+      this.add.image(x, groundY - 16, 'tile_tree').setDepth(0)
+    }
+    // 灌木/石头装饰（用 tile_dirt 深色块模拟灌木，散点分布）
+    const bushPositions = [
+      { x: 900, y: groundY - 8 }, { x: 1150, y: groundY - 8 },
+      { x: 1400, y: groundY - 8 }, { x: 1700, y: groundY - 8 },
+      { x: 2000, y: groundY - 8 }, { x: 2400, y: groundY - 8 },
+      { x: 2700, y: groundY - 8 }, { x: 3000, y: groundY - 8 },
+    ]
+    for (const b of bushPositions) {
+      this.add.image(b.x, b.y, 'tile_stone').setDepth(1).setScale(0.6).setAlpha(0.8)
+    }
+
+    // === 森林边界：x=3150 处隐形墙（防玩家走出世界）===
+    // 用 staticGroup 创建一个不可见的碰撞体
+    const forestWall = this.ground.create(3170, groundY - 100, 'tile_stone')
+    forestWall.setVisible(false)  // 隐形
+    forestWall.setDisplaySize(16, 200)
+    // 同样在塔楼左侧加边界（防止玩家走出左侧世界，复用现有世界边界即可，这里不重复）
+
     // === NPC ===
     this.npcs = []
     const npcConfig = NPCS[0] || { id: 'nandetong', name: '男德通', spriteKey: 'npc_nandetong' }
@@ -104,6 +133,7 @@ export class WorldScene extends Phaser.Scene {
     const doorX = towerX + towerWpx - 16
     const doorY = groundY - 32  // 门高 64，中心在地板上方 32
     this.door = this.add.image(doorX, doorY, 'door_full').setOrigin(0.5, 0.5).setDepth(5)
+    this.doorIsOpen = false  // 大门初始关闭
     const doorName = this.add.text(this.door.x, this.door.y - 40, '大门', {
       fontSize: '10px', color: '#aaa', stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(20)
@@ -194,6 +224,33 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('shutdown', cleanup)
     this.events.on('destroy', cleanup)
 
+    // === 战斗阶段1：怪物精灵管理 ===
+    // monsterSprites: Map<monsterId, { sprite, hpBarBg, hpBarFill, hpText }>
+    this.monsterSprites = new Map()
+
+    // === 战斗阶段1：事件监听（NetworkSystem -> WorldScene 渲染）===
+    // 注意：存引用以便 shutdown 时 off，避免内存泄漏
+    this._battleHandlers = {
+      'monster-added': (data) => this.createMonster(data.monsterId, data.state),
+      'monster-updated': (data) => this.updateMonster(data.monsterId, data.state),
+      'monster-removed': (data) => this.removeMonster(data.monsterId),
+      'monster-killed': (data) => this.onMonsterKilled(data),
+      'player-hp-change': (data) => this.onSelfHpChange(data),
+      'player-revived': (data) => this.onPlayerRevived(data),
+      'attack-hit': (data) => this.onAttackHit(data),
+    }
+    for (const [evt, fn] of Object.entries(this._battleHandlers)) {
+      events.on(evt, fn)
+    }
+    // 场景销毁时移除监听
+    this.events.once('shutdown', () => {
+      if (this._battleHandlers) {
+        for (const [evt, fn] of Object.entries(this._battleHandlers)) {
+          events.off(evt, fn)
+        }
+      }
+    })
+
     events.emit('game-ready', {})
   }
 
@@ -242,6 +299,8 @@ export class WorldScene extends Phaser.Scene {
       for (let y = 0; y < floorH; y++) {
         const wy = floorTopY - y * TS
         ground.create(towerX + 16, wy, wallKey)
+        // 底层右墙在门位置留缺口（门高 2 格），让玩家可通行到森林
+        if (floor === 0 && y <= 1) continue
         ground.create(towerX + towerWpx - 16, wy, wallKey)
       }
 
@@ -429,10 +488,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update() {
-    // 聊天模式不移动
+    // 聊天模式不移动、不攻击
     if (!this.registry.get('chatOpen')) {
       this.player.update(this.inputSystem)
       this.updateLadderState()
+      this.handlePlayerAttack()
     }
     this.checkInteraction()
     this.checkChatToggle()
@@ -440,6 +500,22 @@ export class WorldScene extends Phaser.Scene {
     this.emitPosition()
     this.sendNetworkPosition()
     this.updateChatBubble()
+  }
+
+  /**
+   * 玩家攻击输入处理（鼠标左键 -> 服务端权威判定）
+   * - 非聊天模式 + 鼠标左键 justDown -> player.attack() -> network.sendAttack()
+   * - 攻击冷却在 Player.attack() 内部判断（ATTACK_COOLDOWN=500ms）
+   */
+  handlePlayerAttack() {
+    if (!this.inputSystem.mouseAttack.justDown) return
+    if (!this.player || !this.network) return
+    const mouseX = this.inputSystem.pointer.worldX
+    const ok = this.player.attack(mouseX)
+    if (ok) {
+      // 发送朝向给服务端做扇形判定
+      this.network.sendAttack(this.player.facing)
+    }
   }
 
   /** Enter 键打开聊天（通过 InputSystem 检测，兼容 Phaser 4） */
@@ -578,7 +654,6 @@ export class WorldScene extends Phaser.Scene {
       nearest = { type: 'door', target: this.door, dist: doorDist }
       nearestDist = doorDist
     }
-
     // 新增：中层房间门检测（物理障碍门）
     if (this.doors) {
       for (const door of this.doors) {
@@ -606,6 +681,8 @@ export class WorldScene extends Phaser.Scene {
         ? `按 E 返回男德学院`
         : nearest.type === 'roomDoor'
         ? (nearest.target.isOpen ? '按 E 关门' : '按 E 开门')
+        : nearest.type === 'door'
+        ? (this.doorIsOpen ? '按 E 关门' : '按 E 开门')
         : `按 E 开门`
 
       this.interactPrompt.setText(label)
@@ -629,7 +706,7 @@ export class WorldScene extends Phaser.Scene {
     } else if (nearest.type === 'item') {
       events.emit('item-interact', { itemId: nearest.target.config.id })
     } else if (nearest.type === 'door') {
-      this.showDoorBubble()
+      this.toggleDoor()
     } else if (nearest.type === 'roomDoor') {
       // 新增：房间门物理开关
       this.toggleRoomDoor(nearest.target)
@@ -656,6 +733,29 @@ export class WorldScene extends Phaser.Scene {
       door.sprite.setAlpha(0.3)
       door.isOpen = true
       console.log('[Door] 开门', door.x)
+    }
+  }
+
+  /**
+   * 切换大门状态（装饰门，无物理障碍，右墙已留缺口）
+   * 关 -> 不透明；开 -> 半透明可通行
+   * 开门时触发彩蛋气泡（致敬梗）
+   */
+  toggleDoor() {
+    if (this.doorIsOpen) {
+      // 关门：恢复不透明
+      this.door.setAlpha(1)
+      this.doorIsOpen = false
+      console.log('[Door] 大门关闭')
+      // 隐藏彩蛋气泡
+      if (this.doorBubbleTimer) this.doorBubbleTimer.remove()
+      this.doorBubble.setVisible(false)
+    } else {
+      // 开门：半透明 + 触发彩蛋
+      this.door.setAlpha(0.3)
+      this.doorIsOpen = true
+      console.log('[Door] 大门打开')
+      this.showDoorBubble()
     }
   }
 
@@ -706,6 +806,228 @@ export class WorldScene extends Phaser.Scene {
         duration: 500,
         onComplete: () => npc.bubble.setVisible(false)
       })
+    })
+  }
+
+  // ============ 战斗阶段1：怪物渲染 + 战斗事件 ============
+
+  /**
+   * 创建怪物精灵 + 头顶 HP 条
+   * 由 NetworkSystem 'monster-added' 事件触发（state diff 检测到新怪物）
+   * @param {string} monsterId 怪物实例 ID
+   * @param {object} state 怪物状态快照
+   */
+  createMonster(monsterId, state) {
+    if (this.monsterSprites.has(monsterId)) return  // 已存在，跳过
+    const def = getMonsterDef(state.monsterId)
+    const textureKey = def?.spriteKey || 'monster_slime'
+
+    // 怪物精灵（32×32，depth=9 在玩家10之下，避免遮挡玩家头顶昵称）
+    const sprite = this.add.image(state.x, state.y, textureKey).setDepth(9)
+    // 怪物比玩家小，显示略放大到 40×40 更易点击/观察
+    sprite.setDisplaySize(40, 40)
+    // 根据朝向翻转
+    sprite.setFlipX(state.facing === 'left')
+
+    // 头顶 HP 条（背景红 + 前景绿，宽度按 hp/maxHp 比例）
+    const barW = 36
+    const barH = 4
+    const hpRatio = state.maxHp > 0 ? Math.max(0, state.hp / state.maxHp) : 1
+    const hpBarBg = this.add.rectangle(state.x, state.y - 26, barW, barH, 0x000000, 0.7).setDepth(11)
+    const hpBarFill = this.add.rectangle(
+      state.x - barW / 2 + (barW * hpRatio) / 2,
+      state.y - 26,
+      barW * hpRatio,
+      barH,
+      0x4caf50
+    ).setDepth(12).setOrigin(0.5, 0.5)
+
+    this.monsterSprites.set(monsterId, {
+      sprite,
+      hpBarBg,
+      hpBarFill,
+      lastHp: state.hp,
+      maxHp: state.maxHp,
+    })
+    console.log('[WorldScene] 创建怪物精灵:', monsterId, 'at', Math.round(state.x), Math.round(state.y))
+  }
+
+  /**
+   * 更新怪物（位置 / HP / 朝向 / 状态）
+   * 由 NetworkSystem 'monster-updated' 事件触发
+   * @param {string} monsterId
+   * @param {object} state
+   */
+  updateMonster(monsterId, state) {
+    const m = this.monsterSprites.get(monsterId)
+    if (!m) {
+      // 理论上 'monster-added' 先触发，但保险起见兜底创建
+      this.createMonster(monsterId, state)
+      return
+    }
+
+    // 更新位置（无插值，与现有玩家同步一致）
+    m.sprite.x = state.x
+    m.sprite.y = state.y
+    m.sprite.setFlipX(state.facing === 'left')
+
+    // 更新 HP 条
+    const barW = 36
+    const hpRatio = state.maxHp > 0 ? Math.max(0, state.hp / state.maxHp) : 1
+    m.hpBarBg.setPosition(state.x, state.y - 26)
+    m.hpBarFill.setPosition(
+      state.x - barW / 2 + (barW * hpRatio) / 2,
+      state.y - 26
+    )
+    m.hpBarFill.width = barW * hpRatio
+
+    // HP 下降 -> 受击视觉反馈（红色闪烁 + 轻微缩放）
+    if (state.hp < m.lastHp) {
+      m.sprite.setTint(0xff4444)
+      this.time.delayedCall(120, () => m.sprite.clearTint())
+      // 受击抖动
+      this.tweens.add({
+        targets: m.sprite,
+        scaleX: 1.15, scaleY: 1.15,
+        duration: 60, yoyo: true,
+        onComplete: () => { m.sprite.setScale(1) },
+      })
+    }
+    m.lastHp = state.hp
+
+    // 怪物状态指示（attack 时变橙色提示危险）
+    if (state.state === 'attack') {
+      m.sprite.setTint(0xffaa00)
+    } else {
+      m.sprite.clearTint()
+    }
+  }
+
+  /**
+   * 移除怪物精灵（死亡 / 超出范围）
+   * 由 NetworkSystem 'monster-removed' 事件触发
+   * @param {string} monsterId
+   */
+  removeMonster(monsterId) {
+    const m = this.monsterSprites.get(monsterId)
+    if (!m) return
+    // 淡出动画
+    this.tweens.add({
+      targets: [m.sprite, m.hpBarBg, m.hpBarFill],
+      alpha: 0,
+      duration: 300,
+      onComplete: () => {
+        m.sprite.destroy()
+        m.hpBarBg.destroy()
+        m.hpBarFill.destroy()
+      },
+    })
+    this.monsterSprites.delete(monsterId)
+  }
+
+  /**
+   * 怪物被击杀：显示掉落提示（阶段1最简，不做物品入库）
+   * 由 'monster-killed' 广播消息触发（服务端判定死亡后广播）
+   * @param {object} data { monsterId, monsterDefId, x, y }
+   */
+  onMonsterKilled(data) {
+    const def = getMonsterDef(data.monsterDefId)
+    const dropText = def ? `${def.name} 倒下了` : '怪物倒下了'
+    // 简单飘字提示
+    const text = this.add.text(data.x, data.y - 20, dropText, {
+      fontSize: '11px',
+      color: '#FFD700',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(50)
+    this.tweens.add({
+      targets: text,
+      y: data.y - 60,
+      alpha: 0,
+      duration: 1500,
+      onComplete: () => text.destroy(),
+    })
+  }
+
+  /**
+   * 自身 HP 变化：触发玩家受击反馈 + 屏幕震动
+   * 由 NetworkSystem 'player-hp-change' 事件触发
+   * @param {object} data { hp, maxHp }
+   */
+  onSelfHpChange(data) {
+    if (!this.player) return
+    const prev = this.player._lastHp ?? data.maxHp
+    // HP 下降 = 受击
+    if (data.hp < prev) {
+      this.player.takeHit()
+      // 屏幕轻微震动（受击打击感）
+      this.cameras.main.shake(100, 0.003)
+    }
+    this.player._lastHp = data.hp
+    // HP 归零由 'player-revived' 处理，这里不处理死亡
+  }
+
+  /**
+   * 玩家复活：屏幕渐黑过渡 + 提示文字
+   * 由 'player-revived' 广播消息触发
+   * @param {object} data { sessionId, nickname }
+   */
+  onPlayerRevived(data) {
+    // 只处理自己的复活
+    if (!this.network || data.sessionId !== this.network.room?.sessionId) return
+    console.log('[WorldScene] 本玩家复活，位置重置到塔楼一层')
+
+    // 半透明黑色遮罩渐入渐出
+    const overlay = this.add.rectangle(
+      this.cameras.main.width / 2,
+      this.cameras.main.height / 2,
+      this.cameras.main.width,
+      this.cameras.main.height,
+      0x000000, 0
+    ).setDepth(200).setScrollFactor(0)
+    this.tweens.add({
+      targets: overlay,
+      alpha: 1,
+      duration: 300,
+      onComplete: () => {
+        // 提示文字
+        const reviveText = this.add.text(
+          this.cameras.main.width / 2,
+          this.cameras.main.height / 2,
+          '你在塔楼一层苏醒...',
+          { fontSize: '20px', color: '#fff', stroke: '#000', strokeThickness: 4 }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0)
+        this.time.delayedCall(800, () => {
+          this.tweens.add({
+            targets: [overlay, reviveText],
+            alpha: 0,
+            duration: 500,
+            onComplete: () => { overlay.destroy(); reviveText.destroy() },
+          })
+        })
+      },
+    })
+  }
+
+  /**
+   * 攻击命中反馈：屏幕中央显示命中数（短提示）
+   * 由 'attack-hit' 广播消息触发（仅自己）
+   * @param {object} data { sessionId, hitCount, facing }
+   */
+  onAttackHit(data) {
+    if (data.hitCount <= 0) return
+    const text = this.add.text(
+      this.player.sprite.x,
+      this.player.sprite.y - 50,
+      `命中 ×${data.hitCount}`,
+      { fontSize: '12px', color: '#fff', stroke: '#000', strokeThickness: 2 }
+    ).setOrigin(0.5).setDepth(50)
+    this.tweens.add({
+      targets: text,
+      y: this.player.sprite.y - 70,
+      alpha: 0,
+      duration: 600,
+      onComplete: () => text.destroy(),
     })
   }
 }

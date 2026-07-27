@@ -16,6 +16,9 @@ export class NetworkSystem {
     this.knownPlayers = new Set()  // 已知的 sessionId 集合，用于 diff
     this.lastSend = 0
     this.sendInterval = 50
+    // === 战斗阶段1：怪物 diff ===
+    this.knownMonsters = new Set()  // 已知 monsterId 集合，用于 diff
+    this.lastSelfHp = -1  // 自身 HP 上次值（用于检测变化触发事件，-1 表示未初始化）
   }
 
   async connect(token, nickname, skinId) {
@@ -61,6 +64,22 @@ export class NetworkSystem {
           }
         })
 
+        // === 战斗：初始化已知怪物列表（房间创建时服务端已生成）===
+        if (this.room.state.monsters) {
+          this.room.state.monsters.forEach((m, mid) => {
+            this.knownMonsters.add(mid)
+            emit('monster-added', { monsterId: mid, state: this._snapshotMonster(m) })
+          })
+          console.log('[NetworkSystem] 初始怪物数:', this.room.state.monsters.size)
+        }
+
+        // === 战斗：初始化自身 HP（满血时不触发，记录初始值）===
+        const selfPlayer = this.room.state.players.get(this.room.sessionId)
+        if (selfPlayer) {
+          this.lastSelfHp = selfPlayer.hp
+          emit('player-hp-change', { hp: selfPlayer.hp, maxHp: selfPlayer.maxHp })
+        }
+
         // 监听后续状态变化
         this.room.onStateChange((state) => {
           this.onStateUpdated(state)
@@ -102,6 +121,53 @@ export class NetworkSystem {
     }
 
     this.knownPlayers = currentPlayers
+
+    // === 战斗：怪物 diff（新增/更新/移除）===
+    if (state.monsters) {
+      const currentMonsters = new Set()
+      state.monsters.forEach((m, mid) => {
+        currentMonsters.add(mid)
+        if (!this.knownMonsters.has(mid)) {
+          // 新怪物
+          console.log('[NetworkSystem] 怪物出现:', mid, m.monsterId)
+          emit('monster-added', { monsterId: mid, state: this._snapshotMonster(m) })
+        } else {
+          // 更新怪物（位置/hp/状态变化）
+          emit('monster-updated', { monsterId: mid, state: this._snapshotMonster(m) })
+        }
+      })
+      // 检查消失的怪物
+      for (const mid of this.knownMonsters) {
+        if (!currentMonsters.has(mid)) {
+          console.log('[NetworkSystem] 怪物消失:', mid)
+          emit('monster-removed', { monsterId: mid })
+        }
+      }
+      this.knownMonsters = currentMonsters
+    }
+
+    // === 战斗：自身 HP 变化检测（受击/回血/复活）===
+    const self = state.players.get(this.room.sessionId)
+    if (self && self.hp !== this.lastSelfHp) {
+      emit('player-hp-change', { hp: self.hp, maxHp: self.maxHp })
+      this.lastSelfHp = self.hp
+    }
+  }
+
+  /**
+   * 快照怪物状态（从 Colyseus schema 转普通对象，避免 emit 传引用被后续突变）
+   */
+  _snapshotMonster(m) {
+    return {
+      monsterId: m.monsterId,
+      x: m.x,
+      y: m.y,
+      hp: m.hp,
+      maxHp: m.maxHp,
+      state: m.state,
+      facing: m.facing,
+      behaviorType: m.behaviorType,
+    }
   }
 
   setupMessageListeners() {
@@ -138,6 +204,26 @@ export class NetworkSystem {
 
     this.room.onMessage('player-left', (data) => {
       console.log('[NetworkSystem] 广播:玩家离开', data.nickname)
+    })
+
+    // === 战斗阶段1消息 ===
+    // 怪物死亡：客户端播淡出特效（monster-removed 事件由 state diff 触发，这里只做特效/掉落提示）
+    this.room.onMessage('monster-killed', (data) => {
+      console.log('[NetworkSystem] 怪物击杀:', data.monsterId)
+      emit('monster-killed', data)
+    })
+
+    // 玩家复活：触发屏幕过渡提示
+    this.room.onMessage('player-revived', (data) => {
+      console.log('[NetworkSystem] 玩家复活:', data.nickname)
+      emit('player-revived', data)
+    })
+
+    // 攻击命中反馈（攻击者看到命中的特效提示）
+    this.room.onMessage('attack-hit', (data) => {
+      if (data.sessionId === this.room.sessionId) {
+        emit('attack-hit', data)
+      }
     })
   }
 
@@ -253,6 +339,16 @@ export class NetworkSystem {
   sendNpcReply(nickname, npcId, text) {
     if (!this.connected || !this.room) return
     this.room.send('npc-reply', { nickname, npcId, text })
+  }
+
+  /**
+   * 发送玩家攻击请求（战斗阶段1：鼠标左键近战扇形）
+   * 服务端做权威扇形判定 + 伤害结算，客户端只发朝向
+   * @param {string} facing 'left' | 'right'
+   */
+  sendAttack(facing) {
+    if (!this.connected || !this.room) return
+    this.room.send('attack', { facing })
   }
 
   showOtherChatBubble(other, text) {

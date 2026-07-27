@@ -5,6 +5,20 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v2.1.1',
+    date: new Date('2026-07-27'),
+    summary: '德塔大门开放可前往森林，形象3/4方向修正，体验优化',
+    updates: JSON.stringify([
+      '德塔大门开放：按E开门后可通行至森林战斗区，开门时触发彩蛋对话',
+      '角色形象3、形象4左右朝向修正：精灵表方向行映射修正',
+      '大门右墙留出缺口，移除通行障碍',
+    ], null, 0),
+    plans: JSON.stringify([
+      '更多形象精灵表资源接入',
+      '战斗系统数值平衡调优',
+    ], null, 0),
+  },
+  {
     version: 'v2.1.0',
     date: new Date('2026-07-24'),
     summary: '角色行走精灵表全量上线，5套真实像素角色替换色块占位',

@@ -196,6 +196,28 @@ export class PreloadScene extends Phaser.Scene {
     gfx.fillCircle(24, 24, 8)
     gfx.generateTexture('portal', 48, 48)
 
+    // === 战斗阶段1：怪物色块纹理（虚空史莱姆）===
+    // 32×32 紫红色圆角块 + 两个白色眼睛，key=monster_slime（对应 shared/monsters.js）
+    // 后续替换真实 spritesheet 时只需保持 key 一致，调用方代码不变
+    if (!this.textures.exists('monster_slime')) {
+      gfx.clear()
+      // 主体：紫红色圆角矩形（史莱姆感）
+      gfx.fillStyle(0x9b30ff, 1)
+      gfx.fillRoundedRect(2, 6, 28, 24, 8)
+      // 高光（左上角，体现果冻质感）
+      gfx.fillStyle(0xd6a2ff, 0.7)
+      gfx.fillRoundedRect(6, 10, 8, 6, 3)
+      // 眼睛（两只白色小圆 + 黑色瞳孔）
+      gfx.fillStyle(0xffffff, 1)
+      gfx.fillCircle(12, 18, 3)
+      gfx.fillCircle(20, 18, 3)
+      gfx.fillStyle(0x000000, 1)
+      gfx.fillCircle(13, 18, 1.5)
+      gfx.fillCircle(21, 18, 1.5)
+      gfx.generateTexture('monster_slime', 32, 32)
+      console.log('[PreloadScene] 生成怪物色块纹理 monster_slime')
+    }
+
     gfx.destroy()
     console.log('[PreloadScene] 资源加载完成，可用纹理:', this.textures.getTextureKeys().length, '个')
   }
@@ -233,7 +255,11 @@ export class PreloadScene extends Phaser.Scene {
       console.log(`[PreloadScene] ${skinKey} frameTotal=${tex.frameTotal}, hasAnimFrames=${hasAnimFrames}`)
 
       for (const dir of directions) {
-        const dirIndex = directions.indexOf(dir)  // 0=down, 1=up, 2=left, 3=right
+        let dirIndex = directions.indexOf(dir)  // 0=down, 1=up, 2=left, 3=right
+        // 形象3/4 精灵表 left/right 行画反，交换映射修正
+        if ((n === 3 || n === 4) && (dir === 'left' || dir === 'right')) {
+          dirIndex = dir === 'left' ? 3 : 2
+        }
         const standFrame = dirIndex * 4 + 0       // 站立帧
         const walkFrames = [dirIndex * 4 + 0, dirIndex * 4 + 1, dirIndex * 4 + 2, dirIndex * 4 + 3]
 
