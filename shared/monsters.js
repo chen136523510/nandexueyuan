@@ -33,6 +33,11 @@ export const MONSTERS = [
     def: 3,
     res: 3,
     spriteKey: 'monster_slime',
+    // ⚠️ 阶段1 隐患（黑机 2026-07-28 发现）：
+    // 这两个字段当前未被 WorldRoom 使用，WorldRoom 读的是 shared/constants.js 的
+    // MONSTER_ATTACK_RANGE / MONSTER_ATTACK_COOLDOWN。当前数值相等所以无影响，
+    // 但阶段2 加入攻击间隔不同的怪物（如远程怪 1.2s）时，改这里不生效会被坑。
+    // 阶段2 修复：WorldRoom 改为读 def.attackRange / def.attackCooldown。
     attackRange: 36,         // = MONSTER_ATTACK_RANGE
     attackCooldown: 1500,    // = MONSTER_ATTACK_COOLDOWN
   },

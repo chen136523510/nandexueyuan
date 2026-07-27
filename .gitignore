@@ -110,6 +110,9 @@ askpass.bat
 # CC0 素材包原始下载（解压后的源文件，不入库，只保留切片）
 .ai/asset-staging/
 
+# ComfyUI 生图原始输出（大二进制，不入库；精选图在 .ai/comfyui-output/ 也不入库）
+raw/
+
 # Playwright MCP 临时截图/快照
 .playwright-mcp/
 # 临时测试截图（根目录下的调试截图，不包含 public/ 目录下的游戏资源）

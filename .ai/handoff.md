@@ -1,15 +1,95 @@
 # AI 交接单
 
-> 最后更新：2026-07-28（白机：画风方向决策 + 文档全量同步 + changelog 补全）
-> 所在设备：白机（荣耀便携本）-> **待黑机接手**
-> 稳定版本：`9b9b31a`（生产环境 v2.1.1，已部署上线）
-> **当前阶段**：v2.1.1 已部署，德塔形态重构战略规划已锁定方向（等距俯视+分层美术），画风方向已决策，待启动 M-1 等距 PoC
+> 最后更新：2026-07-28（黑机：睿帝形象 PoC + ComfyUI 环境修复 + 油画 LoRA 测试）
+> 所在设备：黑机（台式 4070）-> **待白机接手**
+> 稳定版本：`9b9b31a`（生产环境 v2.1.1，已部署上线，本轮无代码改动）
+> **当前阶段**：v2.1.1 已部署，德塔形态重构方向已锁定，画风方向已决策，睿帝形象 PoC v2 完成（8/8），待开代理下载 Civitai 专业厚涂 LoRA 进一步优化
 
 ---
 
-## 当前状态：v2.1.1 已上线 + 战略规划已落地 + 画风方向已决策
+## 当前状态：v2.1.1 已上线 + 睿帝形象 PoC v2 完成
 
-**生产环境 v2.1.1 已部署，线上五项验证全绿。德塔形态重构方向已锁定（横版像素 -> 等距俯视 + 分层美术），画风方向已决策（美漫厚涂立绘 + Q版精灵），文档体系全量同步。**
+**生产环境 v2.1.1 已部署，线上五项验证全绿。德塔形态重构方向已锁定（横版像素 -> 等距俯视 + 分层美术），画风方向已决策（美漫厚涂立绘 + Q版精灵）。黑机完成睿帝形象 PoC 两轮迭代（v1 waiIllustrious 8张 + v2 novaAnimeXL+油画LoRA 8张），核心问题（骷髅面具/胡须/AI自由发挥）已解决，最佳组合已确定。**
+
+### 黑机本轮工作总结（2026-07-28，睿帝形象 PoC + 环境修复）
+
+| 事项 | 状态 |
+|------|------|
+| 战略规划.md 状态修正（Draft -> Accepted） | ✅ |
+| monsters.js 一致性隐患记录（attackRange/attackCooldown 阶段1未生效，阶段2需切WorldRoom读取） | ✅ |
+| search-worker 重启（pm2 online） | ✅ |
+| ComfyUI 启动 + **spacy 崩溃根治**（argostranslate 缓存缺失 -> 手动缓存 spacy 模型 -> 30秒启动不再卡死） | ✅ |
+| 睿帝 v1 PoC 8张（waiIllustrious 底模）：骷髅面具/胡须/AI自由道具问题 | ✅ |
+| 三模型对比（waiIllustrious / Pony / novaAnimeXL）：novaAnimeXL 设定还原最佳 | ✅ |
+| FLUX 1-dev-fp8 测试：12GB VRAM 跑不动（lowvram 模式卡死 0/12 步） | ❌ 已排除 |
+| 从 hf-mirror 下载 2 个油画 slider LoRA（oil_painting + epic_oil_painting，各 8.4MB） | ✅ |
+| LoRA 权重对比测试（w2.0 / w3.0）：**epic_oil_painting w2.0 最佳** | ✅ |
+| 睿帝 v2 PoC 8张（novaAnimeXL + epic_oil_painting LoRA w2.0）：核心问题全部解决 | ✅ |
+| 睿帝发色设定补充（银灰 -> 写入形象设计文档） | ✅ |
+
+### 睿帝形象 PoC 结论
+
+**最佳组合：novaAnimeXL + epic_oil_painting_slider LoRA (w2.0)**
+
+| 指标 | v1 (waiIllustrious) | v2 (novaAnimeXL+LoRA) |
+|------|---------------------|----------------------|
+| 骷髅面具 | ❌ 图4/8 严重 | ✅ 完全消除 |
+| 胡须 | ❌ 图2 出现 | ✅ 完全消除 |
+| AI 自由道具 | ❌ 扫帚/燃烧物 | ✅ 大幅改善 |
+| 设定还原 | ⭐⭐ | ⭐⭐⭐ |
+| 油画厚涂感 | ⭐⭐ | ⭐⭐⭐（有提升但仍不够） |
+
+**v2 最佳产出**：图5（王座坐姿）⭐⭐⭐⭐、图6（特写肖像）⭐⭐⭐⭐
+
+**仍存瓶颈**：
+1. 袍色偏灰（设定象牙白）—— 提示词需加强 `pure white, bright white`
+2. 油画厚涂感不够强 —— slider LoRA 仅 8.4MB（概念滑块），需 Civitai 专业风格 LoRA（50-300MB）
+3. 发色偶尔不稳定（图4头发变深色）—— 需加强 `silver grey hair` 权重
+
+### ⚠️ 美工下次继续（需院长开 Clash 代理 7890 端口）
+
+- [ ] 从 Civitai 搜索下载专业厚涂/油画风格 LoRA（SDXL，50-300MB），进一步逼近 Hades 美术风格
+- [ ] Civitai 搜索关键词：`oil painting` / `impasto` / `painterly` / `Hades style`（按下载量排序）
+- [ ] 用专业 LoRA 重跑睿帝 8 变体，对比 v2 效果
+- [ ] 袍色偏灰修复：提示词加强 `pure ivory white, bright white robe`
+- [ ] 跑通后扩展到丘/杰/汪神/牧羊人四个角色形象
+
+### 睿帝 PoC 图片位置
+
+- **v1（waiIllustrious）**：`.ai/comfyui-output/rui_poc/rui_0X_*.png`
+- **v2（novaAnimeXL+LoRA）**：`.ai/comfyui-output/rui_poc/rui_v2_0X_*.png`
+- **三模型对比**：`.ai/comfyui-output/rui_poc/rui_pony_front.png` / `rui_nova_front.png` / `rui_nova_oilpaint_*.png`
+- **生成脚本**：`scripts/gen_rui_portraits.js`（v2，支持 LoRA，可复用跑其他角色）
+
+### ComfyUI 环境关键信息（黑机）
+
+| 项目 | 值 |
+|------|-----|
+| ComfyUI 路径 | `E:/ai/ComfyUI-aki(1)/ComfyUI-aki-v3/ComfyUI` |
+| Python | `E:/ai/ComfyUI-aki(1)/ComfyUI-aki-v3/python/python.exe` |
+| API 端口 | 8188 |
+| 启动命令 | `cd ComfyUI && ../python/python.exe main.py --listen 127.0.0.1 --port 8188` |
+| spacy 缓存 | `C:\Users\{user}\.local\cache\argos-translate\spacy\`（已修复，勿删） |
+| ComfyUI-Manager | network_mode = offline（避免 github 下载） |
+
+**可用底模**（ComfyUI checkpoints 目录）：
+| 模型 | 类型 | 画风 | 备注 |
+|------|------|------|------|
+| flux1-dev-fp8 (17G) | FLUX 12B | 写实/通用 | ❌ 12GB VRAM 跑不动 |
+| waiIllustriousSDXL_v160 (6.5G) | SDXL | 二次元 | v1 用，先验太强 |
+| novaAnimeXL_xlV10 (6.5G) | SDXL | 二次元 | **v2 用，设定还原最佳** |
+| mklanNSFWPony_mklan22 (6.5G) | SDXL Pony | 半写实/3D | 无乱发挥但偏照片 |
+| anything-v5 (2.0G) | SD1.5 | 二次元 | 分辨率太低，不推荐 |
+| master_proSDXLV7-inpainting (6.7G) | SDXL inpaint | 修复 | 仅用于修图 |
+
+**可用 LoRA**（ComfyUI loras 目录）：
+| LoRA | 大小 | 用途 | 最佳权重 |
+|------|------|------|---------|
+| epic_oil_painting_slider | 8.4M | 增加油画厚涂感 | w2.0 |
+| oil_painting_slider | 8.4M | 增加油画感（不如 epic 版） | w2.0 |
+| uso-flux1-dit-lora-v1 | 457M | FLUX 专用（VRAM 不够暂不可用） | - |
+
+---
 
 ### 白机本轮工作总结（2026-07-28，画风决策 + 文档同步 + changelog 补全）
 
@@ -199,6 +279,12 @@ DeepSeek key `sk-43913328...` 曾在 commit `8ab1860`/`a887467` 进入 git 历�
 
 ### 黑机下次继续（美术资源迭代）
 
+- [x] **睿帝形象 PoC v2 完成**（novaAnimeXL + epic_oil_painting LoRA w2.0，8/8，核心问题解决）
+  - 生成脚本：`scripts/gen_rui_portraits.js`（v2，支持 LoRA + 多底模切换）
+  - 图片：`.ai/comfyui-output/rui_poc/rui_v2_0X_*.png`
+  - 最佳产出：图5 王座坐姿 ⭐⭐⭐⭐、图6 特写肖像 ⭐⭐⭐⭐
+  - **待优化**：需 Civitai 专业厚涂 LoRA（需开代理 7890）、袍色偏灰、发色偶尔不稳定
+- [ ] **Civitai 专业厚涂 LoRA**（需院长开 Clash 代理 7890 端口）：搜索 `oil painting` / `impasto` / `painterly` SDXL LoRA，下载量过万优先
 - [ ] **R-003 精灵表/立绘继续优化**（可选，当前已入库可用）：精灵表生成流水线已自动化，如需迭代只需修改提示词重跑脚本
   - 生成脚本：`scripts/gen_walk_sprites_api.py`（生成）→ `scripts/batch_cutout_walk.py`（抠图）→ `scripts/assemble_walk_spritesheet.py`（合成）
   - **已知遗留**：set5 side 是 Canny ControlNet 从 set4 提取轮廓生成的，角色外观与正面一致性有偏差（粉斗篷 vs 紧身衣）；如不满意可换更强 ControlNet 或用图生图（img2img）方式
@@ -211,6 +297,9 @@ DeepSeek key `sk-43913328...` 曾在 commit `8ab1860`/`a887467` 进入 git 历�
 2. **ComfyUI 输出目录**：绘世启动器会覆盖 `preference.json` 的 `output_directory`。当前方案是 AI 直接读 ComfyUI 默认 output 目录，验证后手动复制
 3. **男德通人设锁定**：参考 MyGo 千早爱音（粉发、眼镜、虎牙），mygo LoRA 触发词 `chihaya anon`，**人物形象只留触发词，其余靠 LoRA**
 4. **set5 侧面角色一致性偏差**：set5_side 由 Canny ControlNet 从 set4_side 提取轮廓生成，外观与正面有偏差（粉斗篷 vs 紧身衣）。当前可用，如需修正可改用 img2img 重绘
+5. **ComfyUI spacy 崩溃已修复**（2026-07-28）：根因是 `argostranslate` 库每次启动检查 `~/.local/cache/argos-translate/spacy/senter/model` 路径，不存在则触发 pip install（github 被墙 -> retry 5 次 -> ERROR -> 进程退出）。已手动将 spacy 模型缓存到该路径，**勿删该缓存目录**
+6. **FLUX 12GB VRAM 不可用**：flux1-dev-fp8 (17G) 在 4070 12GB 上 lowvram 模式卡死（0/12 步不动）。如需用 FLUX 需换 GGUF Q4 量化版（约 6G）或升级显存
+7. **Civitai 被墙**：需 Clash 代理（7890 端口）才能访问。hf-mirror.com 可作为 HuggingFace 替代，但 Civitai 专业 LoRA 只能走代理
 
 ---
 
