@@ -5,6 +5,18 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v2.2.0',
+    date: new Date('2026-07-29'),
+    summary: '原德塔设计废弃，正处于重构中',
+    updates: JSON.stringify([
+      '原德塔2D游戏设计废弃，正在重构为全新方向',
+      '德塔页签暂时显示"正在重构"占位页',
+    ], null, 0),
+    plans: JSON.stringify([
+      '德塔将以全新形态回归',
+    ], null, 0),
+  },
+  {
     version: 'v2.1.1',
     date: new Date('2026-07-27'),
     summary: '德塔大门开放可前往森林，形象3/4方向修正，体验优化',

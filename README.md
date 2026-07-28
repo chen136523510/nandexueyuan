@@ -1,17 +1,16 @@
 # 男德学院
 
-> 朋友圈限定社区（约 20 人）-- 带德塔虚拟世界和师德墙的 Web 平台
+> 朋友圈限定社区（约 20 人）-- 带师德墙和 AI 问答的 Web 平台
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen)](https://vuejs.org/)
-[![Phaser](https://img.shields.io/badge/Phaser-4.x-orange)](https://phaser.io/)
 [![License](https://img.shields.io/badge/license-Private-red)](./LICENSE)
 
 线上地址：https://www.nandexueyuan.top
 
 ## 这是什么
 
-男德学院是一个面向朋友圈的限定社区平台。除了常规的 Web 功能（认证、管理后台、AI 问答），核心亮点是一个名为「德塔」的 2D 虚拟世界——成员可以操作角色探索塔楼地图、与 NPC 交互、战斗打怪，并能实时看到其他在线成员并聊天。德塔正在从横版像素风向**等距俯视角 + 分层美术方案**（立绘/漫画=美漫厚涂，精灵=Q版/低分辨率）重构。
+男德学院是一个面向朋友圈的限定社区平台。除了常规的 Web 功能（认证、管理后台、AI 问答、师德墙），还有一个名为「德塔」的核心模块正在重构中 -- 原 2D 游戏设计已废弃，正在基于已有的世界观设定集（黑深残×戏谑反差，118 年正史）重构为全新的叙事体验。
 
 ## 快速开始
 

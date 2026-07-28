@@ -34,7 +34,7 @@ const routes = [
   {
     path: '/nde',
     name: 'nde',
-    component: () => import('../views/GameView.vue'),
+    component: () => import('../views/NdeRebuildingView.vue'),
     meta: { requiresAuth: true },
   },
   {
@@ -69,11 +69,6 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
-
-  // 进德塔前检查形象：已登录 + skinId 为 null -> 先去选形象
-  if (to.name === 'nde' && auth.isLoggedIn && auth.loaded && auth.skinId === null) {
-    return { name: 'character' }
-  }
 
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
