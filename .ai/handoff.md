@@ -1,13 +1,13 @@
 # AI 交接单
 
-> 最后更新：2026-07-28（黑机：睿帝v2验收 + 杰v7验收 + 沐阳形象设计 + 发色速查表 + LoRA调研）
+> 最后更新：2026-07-28（黑机：睿帝v2验收 + 杰v7验收 + 丘v5游侠出图 + 沐阳形象设计 + 发色速查表）
 > 所在设备：黑机（台式 4070 12GB）
-> 稳定版本：`9a31071`（设定集，本轮无代码改动）
-> **当前阶段**：睿帝v2 + 杰v7 形象定稿验收通过，沐阳形象设计文档完成，LoRA训练搁置（数据集不足）
+> 稳定版本：`a3994a9`（沐阳设计+年龄修订已提交推送，本轮无代码改动）
+> **当前阶段**：睿帝v2 + 杰v7 + 丘v5游侠形态定稿，沐阳形象设计文档完成，LoRA训练搁置
 
 ---
 
-## 当前状态：睿帝 + 杰 形象定稿完成，沐阳形象设计文档完成
+## 当前状态：睿帝 + 杰 + 丘游侠 形象定稿完成，沐阳形象设计文档完成
 
 ### 角色：睿帝 - v2 验收通过 ✅
 
@@ -48,6 +48,30 @@
 | 发色 | 纯白（pure white hair，70-80岁稀疏垂肩）|
 | 出图 | ⏳ 待生成（排在出丘/出汪神之后）|
 | 速查表 | `.ai/角色发色速查表.md`（生成图前必查发色，防杰v1银发翻车）|
+
+### 角色：丘 - v5 游侠形态定稿 ✅
+
+| 项目 | 状态 |
+|------|------|
+| 精选图 | `.ai/comfyui-output/精选_丘/` 4张（v4备选1 + v5三张）|
+| 画风 | 同睿帝/杰：novaAnimeXL + epic_oil_painting_slider (w2.0) |
+| 形态 | 游侠形态（总统形态待后续） |
+| 最终参数 | IP-Adapter: jie_v7_01袍装参考图, **weight=0.3**, end_at=0.5, seed=1782158939 |
+| 提示词核心 | (jet black hair:1.3), forest green hooded short cape, dark brown leather armor, coarse linen tunic shirt buttoned, quiver red fletching |
+| 负面关键 | bare chest/topless/shirtless（防裸露）+ brown/blonde/silver hair（防发色漂）|
+| 精选三张 | v5_01正面定妆 / v5_02拉弓动作 / v5_03兜帽半侧面 |
+
+**丘出图5轮迭代经验（重要，供后续角色复用）**：
+
+| 问题 | 根因 | 解法 |
+|------|------|------|
+| v1-v2 全裸 | novaAnimeXL底模对"muscular male"先验=肌肉男裸露模板 | 去掉 `athletic muscular build` 触发词 |
+| v1-v3 发色棕 | SDXL对"black hair"常出深棕 | `(jet black hair:1.3)` 加权 + 负面补 brown hair |
+| v3 斗篷变色 | 服装过度加权冲淡斗篷色 | 不加权，靠参考图辅助 |
+| v4-v5 突破 | 换 closeup 特写参考图→袍装正面参考图 | **参考图本身的"穿衣"模式能压制底模裸露先验** |
+| v5 定稿 | IP-Adapter weight 0.4→0.3 | 降权重减少服装干扰，保留面部锁定 |
+
+**通用出图工具**：`.ai/comfyui-output/comfyui_gen.py`（封装杰v7配方，支持 `--ref/--weight/--seed/--prefix`，无参考图自动跳过IP-Adapter）
 
 ### 设定集年龄体系修订
 
@@ -141,8 +165,8 @@ KSampler: dpmpp_2m / karras / 30步 / cfg7 / 832×1216
 
 ## 下一步计划
 
-1. **出丘**（黑发）- 用杰v7配方（IP-Adapter + 成年提示词），需先出一张好图做参考
-2. **出汪神**（淡蓝发）- 同上
+1. **出丘-总统形态**（墨绿立领礼服+箭羽胸针）- 游侠形态已完成，补总统形态
+2. **出汪神**（淡蓝发）- 用杰v7配方 + 丘v5经验（袍装参考图 + 降IP权重）
 3. **沐阳出图**（纯白发）- 设计文档已完成，待出图
 4. **积累数据集** - 等各角色精选图够15-30张后启动SDXL LoRA训练
 
@@ -154,7 +178,9 @@ KSampler: dpmpp_2m / karras / 30步 / cfg7 / 832×1216
 |------|------|
 | 睿帝精选（8张） | `.ai/comfyui-output/精选_睿/` |
 | 杰精选（6张） | `.ai/comfyui-output/精选_杰/` |
+| 丘精选（4张） | `.ai/comfyui-output/精选_丘/` |
 | 睿帝全部实验 | `.ai/comfyui-output/rui_poc/v1~v9/` |
 | 杰全部实验 | `.ai/comfyui-output/jie_poc/v1~v7/` |
+| 丘全部实验 | ComfyUI原始output目录 `qiu_v1~v5_*`（未单独建poc子目录）|
 | ComfyUI原始输出 | `E:/ai/ComfyUI-aki(1)/ComfyUI-aki-v3/ComfyUI/output/` |
 | 完整管理规范 | `.ai/comfyui-output/README.md` |
