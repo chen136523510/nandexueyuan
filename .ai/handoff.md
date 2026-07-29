@@ -1,9 +1,79 @@
 # AI 交接单
 
-> 最后更新：2026-07-29（白机：目录重构 + 创作速查手册 + sync-docs 优化）
-> 所在设备：白机（荣耀便携本）
-> 稳定版本：已 commit，最新 commit `9b5c8ed`（master）
-> **当前阶段**：M-G1 引擎核心 PoC 完成 + R-026/R-027 已完成 + 全文档同步审计完成
+> 最后更新：2026-07-29（黑机：世界书同步+3角色卡+序章台词+汪神沐阳出图+法刺形象设计+出图）
+> 所在设备：黑机（RTX 4070 主力机）
+> 稳定版本：尚未 commit（本轮产出待白机验收后提交）
+> **当前阶段**：M-G1 引擎核心 PoC 完成 + 序章台词初稿完成 + 汪神/沐阳/法刺幸/法刺荣出图完成
+
+---
+
+## 黑机本轮产出（2026-07-29 晚）
+
+### 1. 世界书同步（德塔设定集.json）
+- 删除 6 条旧 2D 战斗条目（UID 5-10：战斗系统/数值/武器/防具/技能/怪物）
+- 更新 5 条旧语言条目（UID 0-4/11：塔楼/塔外/裂隙/学院/男德通/核心基调 -> 视觉小说方向）
+- 新增 9 条视觉小说设定（序章核心/法刺幸/法刺荣/睿帝令/纳戒/三线剧变节奏/地图系统/男德通Q&A/视觉小说形态）
+- 同步后 51 -> 54 条，备份 `德塔设定集.bak.vn_sync_20260729_200934.json`
+- 路径：`E:/ai/SillyTavern Launcher GUI/data/st_data/default-user/worlds/德塔设定集.json`
+
+### 2. 三个新角色卡注入酒馆
+| 角色 | 定位 | 路径 |
+|------|------|------|
+| 德塔编剧 | 台词与对话创作 | `characters/德塔编剧.png` |
+| 德塔导演 | 剧情节奏与叙事结构 | `characters/德塔导演.png` |
+| 德塔造型师 | 角色形象设计+AI出图提示词 | `characters/德塔造型师.png` |
+- 用 ST 自带 character-card-parser.js 的 write() 注入 PNG（chara+ccv3 chunk）
+- 载体 PNG 用 Pillow 生成的纯色图（棕/蓝/紫代表色）
+
+### 3. 序章四幕台词创作（德塔编剧角色卡 + DeepSeek API）
+| 幕 | 文件 | 要点 |
+|----|------|------|
+| 第一幕·降临 | `剧情设计/序章-第一幕-降临-台词.md` | 旁白黑深残基调+院长沉稳务实+"今天有客人来"钩子 |
+| 第二幕·法刺来访 | `剧情设计/序章-第二幕-法刺来访-台词.md` | 幸的潜台词设计+自我命名+四选择支+试探性回答 |
+| 第三四幕·储物与探索 | `剧情设计/序章-第三四幕-储物与探索-台词.md` | 纳戒发放+男德通六话题Q&A（嘴上不正经手上靠得住） |
+- 创作脚本：`.ai/comfyui-workflows/tavern_chat.py`（角色卡+世界书->DeepSeek API）
+- DeepSeek API（deepseek-chat模型）链路验证通过
+
+### 4. ComfyUI 环境修复 + 批量出图
+**修复**：管道模式下 tqdm 写 stderr 报 OSError [Errno 22]
+- 根因：ComfyUI logger.py 的 LogInterceptor + ComfyUI-Manager prestartup_script.py 双重拦截 stderr，管道模式写入失败
+- 修复：logger.py `write()` 加 try-except + Manager `write_stderr` 加安全包装
+- 文件：`ComfyUI/app/logger.py` + `ComfyUI/custom_nodes/ComfyUI-Manager/prestartup_script.py`
+
+**出图**（全部成功，novaAnimeXL + epic_oil_painting_slider）：
+| 角色 | 张数 | 路径 | 状态 |
+|------|:----:|------|:----:|
+| 汪神 | 4 | `.ai/comfyui-output/wang_poc/v1/` | ✅ 传奇标准像/接见/航海/重现剪影 |
+| 沐阳 | 4 | `.ai/comfyui-output/muyang_poc/v1/` | ✅ 牧羊/观察草/举杖远眺/夜营刻杖 |
+| 法刺·幸 | 2 | `.ai/comfyui-output/faci_xing_poc/v1/` | ✅ 外交官标准像/试探微笑特写 |
+| 法刺·荣 | 2 | `.ai/comfyui-output/faci_rong_poc/v1/` | ✅ 暗处站姿/拔刃战斗 |
+- 出图脚本：`.ai/comfyui-workflows/gen_portrait.py` + `gen_wang_mu.py`
+
+### 5. 法刺·幸 + 法刺·荣 形象设计文档
+| 文档 | 路径 | 设计主轴 |
+|------|------|----------|
+| 法刺幸-形象设计.md | `形象设计/` | 精致体面是壳，锐利试探是魂。深靛蓝+珍珠白，芯核胸针 |
+| 法刺荣-形象设计.md | `形象设计/` | 帝国之刃。哑黑半甲+刺刃，高马尾无碎发，不对称甲片 |
+- 由德塔造型师角色卡 + DeepSeek API 生成，8段标准结构 + ComfyUI提示词
+- 状态：**初稿，待院长验收**
+
+---
+
+## 环境状态
+
+| 服务 | 端口 | 状态 |
+|------|:----:|:----:|
+| 酒馆 SillyTavern 1.18.0 | 8000 | ✅ 运行中（--dataRoot 已配置） |
+| ComfyUI 0.9.2 | 8188 | ✅ 运行中（--lowvram，logger.py已修复） |
+| DeepSeek API | - | ✅ deepseek-chat 可用（sk-e608...） |
+
+**酒馆新增角色卡**（4个）：德塔世界观架构师(旧) + 德塔编剧 + 德塔导演 + 德塔造型师
+**世界书**：54条（已同步视觉小说方向）
+**ComfyUI 代码修改**：logger.py + Manager prestartup_script.py（管道模式 OSError 修复，不影响正常使用）
+
+---
+
+## 以下为白机上轮交接内容（保留备查）
 
 ---
 
