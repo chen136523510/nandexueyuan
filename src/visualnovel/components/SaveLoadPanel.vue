@@ -22,9 +22,19 @@ const slots = computed(() => {
       slot: i,
       save,
       label: i === 0 ? '自动' : `槽位 ${i}`,
+      isAuto: i === 0,
+      isEmpty: !save,
     })
   }
   return list
+})
+
+// 第一个空的手动槽位（用于"新建存档"）
+const firstEmptySlot = computed(() => {
+  for (let i = 1; i <= 10; i++) {
+    if (!saves.value.find((s) => s.slot === i)) return i
+  }
+  return null
 })
 
 async function fetchSaves() {
@@ -55,6 +65,17 @@ async function handleSave(slot) {
   } else {
     msg.value = '保存失败，请重试'
   }
+}
+
+// 新建存档：自动找到第一个空槽位保存
+async function handleNewSave() {
+  const slot = firstEmptySlot.value
+  if (!slot) {
+    msg.value = '所有槽位已满，请先删除旧存档'
+    setTimeout(() => { msg.value = '' }, 3000)
+    return
+  }
+  await handleSave(slot)
 }
 
 async function handleLoad(slot) {
@@ -103,7 +124,7 @@ function formatDate(dateStr) {
           v-for="item in slots"
           :key="item.slot"
           class="sl-slot"
-          :class="{ empty: !item.save }"
+          :class="{ empty: !item.save, auto: item.isAuto }"
         >
           <!-- 缩略图区 -->
           <div class="sl-thumb">
@@ -119,21 +140,31 @@ function formatDate(dateStr) {
 
           <!-- 信息区 -->
           <div class="sl-info">
-            <span class="sl-slot-label">{{ item.label }}</span>
+            <span class="sl-slot-label">
+              {{ item.label }}
+              <span v-if="item.isAuto" class="sl-tag-auto">自动</span>
+            </span>
             <span v-if="item.save" class="sl-date">{{ formatDate(item.save.updatedAt) }}</span>
             <span v-if="item.save" class="sl-chapter">{{ item.save.chapter }} · {{ item.save.node }}</span>
           </div>
 
           <!-- 操作按钮 -->
           <div class="sl-actions">
-            <button
-              v-if="mode === 'save'"
-              class="sl-btn primary"
-              :disabled="loading"
-              @click="handleSave(item.slot)"
-            >
-              保存
-            </button>
+            <!-- 存档模式 -->
+            <template v-if="mode === 'save'">
+              <!-- 自动存档：只读，不允许手动覆盖 -->
+              <span v-if="item.isAuto" class="sl-readonly">系统自动</span>
+              <!-- 手动槽位：有存档显示"覆盖"，空槽位显示"新建" -->
+              <button
+                v-else
+                class="sl-btn primary"
+                :disabled="loading"
+                @click="handleSave(item.slot)"
+              >
+                {{ item.isEmpty ? '新建' : '覆盖' }}
+              </button>
+            </template>
+            <!-- 读档模式 -->
             <button
               v-else
               class="sl-btn primary"
@@ -142,8 +173,9 @@ function formatDate(dateStr) {
             >
               读取
             </button>
+            <!-- 删除（自动存档不可删除） -->
             <button
-              v-if="item.save"
+              v-if="item.save && !item.isAuto"
               class="sl-btn danger"
               :disabled="loading"
               @click="handleDelete(item.slot)"
@@ -152,6 +184,17 @@ function formatDate(dateStr) {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- 底部：新建存档快捷按钮（仅存档模式） -->
+      <div v-if="mode === 'save'" class="sl-footer">
+        <button
+          class="sl-new-btn"
+          :disabled="loading || !firstEmptySlot"
+          @click="handleNewSave"
+        >
+          {{ firstEmptySlot ? `新建存档（槽位 ${firstEmptySlot}）` : '所有槽位已满' }}
+        </button>
       </div>
     </div>
   </div>
@@ -246,6 +289,26 @@ function formatDate(dateStr) {
   opacity: 0.5;
 }
 
+.sl-slot.auto {
+  border-color: rgba(201, 169, 110, 0.15);
+}
+
+.sl-tag-auto {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: rgba(201, 169, 110, 0.7);
+  background: rgba(201, 169, 110, 0.1);
+  border-radius: 3px;
+}
+
+.sl-readonly {
+  font-size: 12px;
+  color: rgba(139, 149, 168, 0.5);
+  white-space: nowrap;
+}
+
 .sl-thumb {
   width: 80px;
   height: 50px;
@@ -333,6 +396,36 @@ function formatDate(dateStr) {
 
 .sl-btn:disabled {
   opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 底部新建存档按钮 */
+.sl-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sl-new-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.2) 0%, rgba(201, 169, 110, 0.1) 100%);
+  border: 1px dashed rgba(201, 169, 110, 0.3);
+  border-radius: 8px;
+  color: rgba(201, 169, 110, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sl-new-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.3) 0%, rgba(201, 169, 110, 0.15) 100%);
+  border-color: rgba(201, 169, 110, 0.5);
+  border-style: solid;
+}
+
+.sl-new-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 

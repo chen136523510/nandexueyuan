@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent } from '../engine/engine.js'
-import { NodeType } from '../engine/types.js'
+import { NodeType, ChoiceImpact } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
 
 // 章节注册表（章节 id -> 剧本数据模块）
@@ -268,6 +268,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     // 应用好感度效果
     if (choice.effects) {
       affinity.value = applyEffects(affinity.value, choice.effects)
+    }
+
+    // 关键选项（critical）触发自动存档到 slot=0
+    if (choice.impact === ChoiceImpact.CRITICAL) {
+      // 异步写入，不阻塞跳转
+      saveToSlot(0).catch(err => console.error('[VisualNovelStore] 自动存档失败:', err))
     }
 
     // 跳转到选项指定的节点
