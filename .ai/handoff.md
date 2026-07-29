@@ -1,58 +1,57 @@
 # AI 交接单
 
-> 最后更新：2026-07-29（白机：视觉小说 引擎核心 PoC 完成 + 全文档同步）
+> 最后更新：2026-07-29（白机：R-026/R-027 开发 + 全文档同步审计）
 > 所在设备：白机（荣耀便携本）
-> 稳定版本：本轮代码未 commit（待院长确认后提交）
-> **当前阶段**：德塔 视觉小说 M-G1 引擎核心 PoC 已完成验证，7 项验收全通过
+> 稳定版本：已 commit，最新 commit `03140f5`（master）
+> **当前阶段**：M-G1 引擎核心 PoC 完成 + R-026 自我命名 + R-027 储物空间 已开发验证
 
 ---
 
 ## 白机本轮产出（2026-07-29）
 
-### M-G1：视觉小说 引擎核心 PoC ✅ 已完成
+### R-026 自我命名系统 + R-027 储物空间系统 ✅ 已开发验证
 
-院长确认方向后，白机完成了完整的 视觉小说 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。
+**代码变更**（11 文件，2 新建，commit `7643964`）：
+- `engine/types.js` -- 新增 INPUT 节点类型 + ItemType 枚举
+- `engine/engine.js` -- getNextNodeId 处理 input + executeEvent 支持 grantItem
+- `data/items.js` -- **新建**，睿帝令物品定义（纳戒=背包本身不入物品列表）
+- `stores/visualNovelStore.js` -- inventory/playerName/submitInput/hasItem/{playerName}模板替换/持久化
+- `components/InventoryPanel.vue` -- **新建**，背包面板（网格+详情弹窗）
+- `components/DialogueBox.vue` -- input 输入框渲染
+- `components/QuickMenu.vue` -- 背包按钮
+- `views/NdeVisualNovelView.vue` -- 挂载 InventoryPanel + B 键 + input 屏蔽 Enter
+- `server/.../visualNovelController.js` + `schema.prisma` -- inventory 字段 + migration
 
-**前端新增**（`src/视觉小说/`）：
-- `engine/engine.js` -- 剧本引擎核心（节点解析/跳转/条件判断/好感度效果）
-- `engine/types.js` -- 节点类型定义 + 角色色彩配置
-- `stores/视觉小说Store.js` -- Pinia store（状态管理 + 存档/进度 API 对接）
-- `components/` -- 8 个 Vue 组件：DialogueBox/CharacterLayer/ChoiceMenu/QuickMenu/SaveLoadPanel/HistoryPanel/SettingsPanel/BackgroundLayer
-- `data/prologue.js` -- 序章"学院降临"剧本（22 节点，含选项分支+好感度）
-- `views/Nde视觉小说View.vue` -- 视觉小说 主视图（替换占位页）
-- `api/视觉小说.js` -- 存档/进度 API 封装
+**验证结果**（浏览器实测全通过）：
+1. ✅ input 节点：输入框出现 -> 输入名字 -> {playerName} 替换正确
+2. ✅ event grantItem：物品进入背包
+3. ✅ B 键打开/关闭背包面板
+4. ✅ 物品详情弹窗（图标/名称/类型/描述）
+5. ✅ QuickMenu 背包按钮可用
+6. ✅ 刷新页面后 inventory 持久化正常
 
-**后端新增**：
-- `server/prisma/schema.prisma` -- 新增 GameSave + GameProgress 两张表
-- `server/src/controllers/视觉小说Controller.js` -- 存档/进度 controller（6 个 API）
-- `server/src/routes/api.js` -- 挂载 `/api/视觉小说/*` 路由
+### 地图系统设计文档 ✅ 已记录
 
-**路由变更**：`/nde` 从 `NdeRebuildingView.vue`（占位页）切换到 `Nde视觉小说View.vue`
+- 新建 `地图系统设计.md` -- 大地图6地点+小地图区域细分+解锁条件+学院-势力关系
+- 睿河大桥命名确定：帝国称「南方大桥」，草原人称「帝桥」
 
-**文档新增/更新**：
-- 新建 `prd/01-需求文档/04-德塔/02-设计/德塔视觉小说重构规划.md`
-- 新建 `prd/01-需求文档/00-调研/decisions/ADR-006-德塔视觉小说引擎选型.md`
-- 更新 `pm/ROADMAP.md` -- M-G1 标记 done，新增 M-G1~M-G4 里程碑
-- 更新 `pm/需求池.md` -- R-009~R-017 标记废弃，R-018~R-023 新增
+### 全文档同步审计 ✅ 已完成
 
-### PoC 验收结果（浏览器实测全通过）
-
-1. ✅ 进入 `/nde` 看到 视觉小说 主界面（深色主题 + 开始界面）
-2. ✅ 点击/空格/Enter 推进对话，打字机效果正常
-3. ✅ 立绘随说话者切换，非说话者 dim，角色名标签颜色正确
-4. ✅ 选项菜单弹出，选择后跳转正确分支，好感度变更
-5. ✅ 存档到服务端（槽位1），读档恢复到存档节点
-6. ✅ 快捷栏打开存档/读档/回看/设置面板
-7. ✅ 章节结束画面"- 章节结束 -"正常显示
+- `00-基础数据/世界观.md` -- V4：标注指向设定集v1.3，历史方案归档
+- 设定集文件重命名 `v1.0` -> `v1.3`，7 个引用链全部更新
+- 三份废弃文档移入 `归档-旧版本/`（形态重构战略规划/开发路线与占位策略）
+- `04-德塔/changelog.md` -- 补 R-018~R-020/R-026/R-027 + 方向废弃条目
+- `README.md` -- 修复部署章节矛盾（game-server 已废弃不启动）
+- `pm/需求池.md` -- R-019/R-020 从待开发移至已完成，R-026/R-027 登记已完成
 
 ### 下一步计划
 
-1. **commit 代码** -- 本轮代码尚未提交，待院长确认后 commit + push
-2. **黑机任务**：
+1. **黑机任务**：
    - 序章剧情大纲完善（连酒馆 AI）
-   - 睿/杰/丘立绘替换占位色块（路径：`/视觉小说/portraits/角色名/表情.png`）
-   - 背景图替换 CSS 渐变占位（路径：`/视觉小说/bg/场景名.jpg`）
-3. **M-G2**：序章完整 + 手机/消息系统
+   - 睿/杰/丘立绘替换占位色块（路径：`/visualnovel/portraits/角色名/表情.png`）
+   - 背景图替换 CSS 渐变占位（路径：`/visualnovel/bg/场景名.jpg`）
+   - 大地图线稿（院长提供线稿，黑机生成）
+2. **M-G2**：序章完整（R-028 剧本重写）+ 手机/消息系统（R-021）
 
 ---
 

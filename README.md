@@ -54,7 +54,7 @@ cd server && npm run dev             # 终端 2：API 后端 -> localhost:3000
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `JWT_SECRET` | JWT 签名密钥（Express 和 game-server 共用） | - |
+| `JWT_SECRET` | JWT 签名密钥（Express 服务端使用） | - |
 | `DATABASE_URL` | Prisma 数据库连接 | `file:./dev.db` |
 | `BLACK_WORKER_TOKEN` | 黑机 WS 检索算力鉴权 token | - |
 | `CLOUD_WS_URL` | 黑机连接云端的 WS Hub 地址 | - |
@@ -99,7 +99,7 @@ nandexueyuan/
 bash deploy.sh
 ```
 
-部署脚本会自动：构建前端 -> 安装依赖 -> 启动/重启 Express 和 game-server（通过 PM2）。
+部署脚本会自动：构建前端 -> 安装依赖 -> 启动/重启 Express 服务（通过 PM2）。game-server 已废弃不启动。
 
 ## License
 

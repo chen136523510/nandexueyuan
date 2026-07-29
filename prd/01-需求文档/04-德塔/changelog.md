@@ -1,8 +1,47 @@
 # 德塔（NDO）Changelog
 
-> 倒序排列，最新在最上方。涵盖游戏前端、游戏后端、Vue 桥接层。
+> 倒序排列，最新在最上方。涵盖视觉小说前端/后端、历史 2D 游戏记录。
 
 ---
+
+### [feat] R-026/R-027 自我命名系统 + 储物空间系统
+
+- **时间**：2026-07-29
+- **变更人**：陈梓键（白机）
+- **需求来源**：R-026 自我命名 + R-027 储物空间
+- **变更范围**（11 文件，2 新建）：
+  1. **引擎层**：`types.js` 新增 INPUT 节点类型 + ItemType 枚举；`engine.js` getNextNodeId 处理 input + executeEvent 支持 grantItem
+  2. **数据层**：新建 `data/items.js`（睿帝令物品定义）；纳戒=背包本身不入物品列表
+  3. **Store**：`visualNovelStore.js` 新增 inventory/playerName computed/submitInput/hasItem/{playerName}模板替换/持久化
+  4. **组件**：新建 `InventoryPanel.vue`（网格+详情弹窗）；`DialogueBox.vue` input 输入框渲染；`QuickMenu.vue` 背包按钮
+  5. **入口**：`NdeVisualNovelView.vue` 挂载 InventoryPanel + B 键 + input 屏蔽 Enter
+  6. **后端**：`visualNovelController.js` + `schema.prisma` GameProgress/GameSave 加 inventory 字段 + migration
+- **验证**：input 命名 -> {playerName}替换 | grantItem 物品进背包 | B 键面板 | 持久化 全部通过
+
+### [feat] R-018~R-020 视觉小说引擎核心 PoC（M-G1 完成）
+
+- **时间**：2026-07-29
+- **变更人**：陈梓键（白机）
+- **需求来源**：R-018 视觉小说引擎核心 / R-019 存档系统 / R-020 好感度系统
+- **决策**：ADR-006（Vue3 自研视觉小说引擎，非 Ren'Py/KiriKiri）
+- **变更范围**：
+  1. **前端引擎**：`src/visualnovel/` 全新建（engine/types.js + engine.js 纯函数引擎、stores/visualNovelStore.js Pinia store、data/prologue.js 序章剧本、8 个 Vue 组件）
+  2. **后端**：`server/controllers/visualNovelController.js`（getProgress/updateProgress/listSaves/getSave/writeSave/deleteSave）；Prisma GameProgress + GameSave 两表
+  3. **路由**：`/nde` 从 GameView.vue 切到 NdeVisualNovelView.vue
+  4. **文档**：ADR-006 + 德塔视觉小说重构规划（M-G1~M-G4 里程碑）
+- **验收**：7 项 PoC 验收通过（对话/打字机/选项/好感度/存档/回看/设置）
+
+### [refactor] 德塔方向废弃--2D 游戏取消，转向视觉小说
+
+- **时间**：2026-07-29
+- **变更人**：陈梓键（院长决策）
+- **内容**：
+  - 原 2D 动作游戏方向（Phaser + Colyseus 多人同步）全部废弃
+  - 原 M-1~M-6 等距俯视重构里程碑全部废弃（pm/ROADMAP.md 已标记）
+  - 德塔形态重构战略规划、开发路线与占位策略 移入归档-旧版本/
+  - game/ 和 game-server/ 代码保留不启动
+  - 新方向：视觉小说（叙事驱动 + 立绘 + 背景 + 对话 + 分支世界线）
+  - 新里程碑：M-G1（引擎 PoC 完成）-> M-G2（序章完整）-> M-G3（地图+男德通）-> M-G4（正式上线）
 
 ### [feat] R-009 德塔战斗系统阶段1 — 追击型怪物 + 鼠标攻击 + 服务端权威 HP
 
@@ -71,7 +110,7 @@
 - **时间**：2026-07-26
 - **变更人**：陈梓键（院长）
 - **需求来源**：DS产出剧情钩子总框架（主线/支线/势力互动三线，11874字），院长逐条验收
-- **文档**：[德塔世界观设定集-正式版v1.0.md](./02-设计/德塔世界观设定集-正式版v1.0.md)
+- **文档**：[德塔世界观设定集-v1.3.md](./02-设计/德塔世界观设定集-v1.3.md)
 - **核心新增：虚空净化原理（世界观底层支柱，1.3节重写）**：
   - 三位面：异世界 / 虚空 / 地球（学院来源，第三位面）
   - 裂隙 = 异世界与虚空位面相交的空间虫洞；两界相交118年形成同源相交机制
@@ -95,7 +134,7 @@
 - **时间**：2026-07-26
 - **变更人**：陈梓键（院长）
 - **需求来源**：设定集 v1.1 附录「待确认事项 [建议]」10 项逐条确认
-- **文档**：[德塔世界观设定集-正式版v1.0.md](./02-设计/德塔世界观设定集-正式版v1.0.md)
+- **文档**：[德塔世界观设定集-v1.3.md](./02-设计/德塔世界观设定集-v1.3.md)
 - **10 项确认结果**：
   1. **纪年法正式采用** A.V./B.V.（虚空降临 = A.V.0）。**当前年份定为 A.V.118**（三线剧变当年，丘就任大总统的动荡时刻）
   2. **时间锚点决策**：学院降临仍为 A.V.115（学院有3年经营积累），游戏主线起点挪到 A.V.118
