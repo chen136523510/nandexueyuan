@@ -4,6 +4,44 @@
 
 ---
 
+## 2026-07-29 Galgame 引擎核心 PoC 完成（v2.2.0）
+
+### 概要
+
+院长确认 Galgame 方向后，白机完成 M-G1 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。Vue3 自研 Galgame 引擎上线，`/nde` 路由从占位页切换到 Galgame 主界面。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `src/galgame/engine/` | 新增 -- 剧本引擎核心（engine.js + types.js），支持 dialogue/choice/condition/event/end 五种节点 |
+| `src/galgame/stores/galgameStore.js` | 新增 -- Pinia store，状态管理 + 存档/进度 API 对接 + 打字机效果 |
+| `src/galgame/components/` | 新增 -- 8 个 Vue 组件：DialogueBox/CharacterLayer/ChoiceMenu/QuickMenu/SaveLoadPanel/HistoryPanel/SettingsPanel/BackgroundLayer |
+| `src/galgame/data/prologue.js` | 新增 -- 序章「学院降临」22 节点剧本 |
+| `src/views/NdeGalgameView.vue` | 新增 -- Galgame 主视图，快捷键绑定（Space/Enter/H/S/L/Esc） |
+| `src/api/galgame.js` | 新增 -- 存档/进度 API 封装 |
+| `src/router/index.js` | `/nde` 路由从 NdeRebuildingView 切换到 NdeGalgameView |
+| `server/prisma/schema.prisma` | 新增 GameSave + GameProgress 两张表 |
+| `server/src/controllers/galgameController.js` | 新增 -- 6 个 API 端点（progress/saves CRUD） |
+| `server/src/routes/api.js` | 挂载 `/api/galgame/*` 路由 |
+
+### 文档同步
+
+| 文档 | 变更 |
+|------|------|
+| ADR-006 | 新增 -- Galgame 引擎选型决策（Vue3 Web 自研 vs Unity vs Ren'Py） |
+| 德塔Galgame重构规划.md | 新增 -- M-G1~M-G4 里程碑规划 |
+| pm/ROADMAP | M-G1 标记 done，新增 M-G1~M-G4 里程碑 |
+| pm/需求池 | R-009~R-017 废弃，R-018~R-023 新增 |
+| 根 README | 功能描述/技术栈/项目结构更新，废弃 game/game-server |
+| .ai/handoff.md | 白机本轮产出记录 |
+
+### 数据变更
+
+- 公告版本记录新增 v2.2.0
+
+---
+
 ## 2026-07-29 德塔方向废弃 + Galgame 重构
 
 ### 方向决策（院长确认）

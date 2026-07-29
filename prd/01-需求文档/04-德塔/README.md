@@ -1,12 +1,19 @@
 # 德塔（NDO）
 
-> ⚠️ **正在重构中** -- 原 2D 游戏设计已废弃，正在重构为基于原世界观的全新叙事体验。
+> 🎮 **Galgame 引擎已上线**（M-G1 PoC）-- Vue3 自研叙事引擎，立绘对话/选项分支/好感度系统/服务端存档，序章「学院降临」22 节点可玩。
 >
-> 世界观设定集、角色形象设计等核心资产保留不变，继续作为重构基础。
+> 世界观设定集、角色形象设计等核心资产保留不变，作为 Galgame 叙事基础。
 
 ## 文档索引
 
-### 保留有效（重构后继续使用）
+### Galgame 引擎（当前）
+
+| 文档 | 说明 |
+|------|------|
+| [ADR-006](../00-调研/decisions/ADR-006-德塔Galgame引擎选型.md) | Galgame 引擎选型决策（Vue3 Web 自研） |
+| [Galgame 重构规划](02-设计/德塔Galgame重构规划.md) | M-G1~M-G4 里程碑规划 + 技术架构 + UI/UX 设计 |
+
+### 保留有效（Galgame 叙事基础）
 
 | 文档 | 说明 |
 |------|------|
@@ -36,7 +43,10 @@
 
 | 代码 | 状态 |
 |------|------|
-| `src/views/NdeRebuildingView.vue` | ✅ 当前生效 -- "正在重构"占位页 |
+| `src/galgame/` | ✅ 当前生效 -- Galgame 引擎（engine + components + stores + data） |
+| `src/views/NdeGalgameView.vue` | ✅ 当前生效 -- Galgame 主视图 |
+| `server/src/controllers/galgameController.js` | ✅ 当前生效 -- 存档/进度 API |
+| `src/views/NdeRebuildingView.vue` | ❌ 已废弃（保留不删） |
 | `src/views/GameView.vue` | ❌ 已废弃（保留不删，路由已断开） |
 | `game/` 目录（Phaser） | ❌ 已废弃（保留不删） |
 | `game-server/` 目录（Colyseus） | ❌ 已废弃（保留不删） |
