@@ -15,6 +15,16 @@ export const NodeType = {
   END: 'end',                // 章节/结局结束节点
 }
 
+/**
+ * 选项类型枚举（choice 节点中每个 choice 的 impact 字段）
+ * - CRITICAL: 选了会推进剧情/产生不可逆后果，标黄高亮
+ * - INFO: 选了只补充信息，选完返回继续选，标白常规
+ */
+export const ChoiceImpact = {
+  CRITICAL: 'critical',   // 推进剧情（标黄）
+  INFO: 'info',           // 信息补充（标白，可重复选）
+}
+
 // 立绘位置
 export const CharPosition = {
   LEFT: 'left',

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
-import { NodeType } from '../engine/types.js'
+import { NodeType, ChoiceImpact } from '../engine/types.js'
 
 const store = useVisualNovelStore()
 
@@ -20,6 +20,11 @@ function isChoiceSelected(index) {
   return made && made.includes(index)
 }
 
+// 是否为推进剧情的关键选项（标黄）
+function isCritical(choice) {
+  return choice.impact === ChoiceImpact.CRITICAL
+}
+
 function handleSelect(index) {
   store.selectChoice(index)
 }
@@ -32,11 +37,16 @@ function handleSelect(index) {
         v-for="(choice, index) in choices"
         :key="index"
         class="choice-btn"
-        :class="{ selected: isChoiceSelected(index) }"
+        :class="{
+          selected: isChoiceSelected(index),
+          critical: isCritical(choice),
+          info: !isCritical(choice)
+        }"
         @click="handleSelect(index)"
       >
         <span class="choice-marker" />
         <span class="choice-text">{{ choice.text }}</span>
+        <span v-if="isCritical(choice)" class="choice-tag">关键</span>
         <span v-if="isChoiceSelected(index)" class="choice-check">✓</span>
       </div>
     </div>
@@ -67,8 +77,6 @@ function handleSelect(index) {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 16px 24px;
   cursor: pointer;
@@ -77,32 +85,80 @@ function handleSelect(index) {
   overflow: hidden;
 }
 
-.choice-btn:hover {
-  background: rgba(201, 169, 110, 0.15);
-  border-color: rgba(201, 169, 110, 0.4);
+/* 关键选项 - 标黄（推进剧情，不可逆） */
+.choice-btn.critical {
+  background: rgba(201, 169, 97, 0.12);
+  border: 1px solid rgba(201, 169, 97, 0.35);
+}
+
+.choice-btn.critical:hover {
+  background: rgba(201, 169, 97, 0.25);
+  border-color: rgba(201, 169, 97, 0.7);
   transform: translateX(4px);
 }
 
-/* 左侧暖金竖条 */
-.choice-marker {
+.choice-btn.critical .choice-marker {
   width: 3px;
   height: 24px;
-  background: rgba(201, 169, 110, 0.3);
+  background: rgba(201, 169, 97, 0.6);
   border-radius: 2px;
   transition: all 0.25s ease;
   flex-shrink: 0;
 }
 
-.choice-btn:hover .choice-marker {
-  background: rgba(201, 169, 110, 0.8);
+.choice-btn.critical:hover .choice-marker {
+  background: rgba(201, 169, 97, 1);
   height: 32px;
 }
 
-.choice-text {
-  color: #e8e0cc;
+.choice-btn.critical .choice-text {
+  color: #f0d896;
   font-size: 15px;
   line-height: 1.6;
   flex: 1;
+}
+
+/* 信息选项 - 标白（补充信息，可返回重选） */
+.choice-btn.info {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.choice-btn.info:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateX(4px);
+}
+
+.choice-btn.info .choice-marker {
+  width: 3px;
+  height: 24px;
+  background: rgba(200, 210, 225, 0.3);
+  border-radius: 2px;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.choice-btn.info:hover .choice-marker {
+  background: rgba(200, 210, 225, 0.6);
+  height: 32px;
+}
+
+.choice-btn.info .choice-text {
+  color: #c8d2e1;
+  font-size: 15px;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* 关键选项标签 */
+.choice-tag {
+  font-size: 11px;
+  color: rgba(201, 169, 97, 0.8);
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  border-radius: 3px;
+  padding: 1px 6px;
+  flex-shrink: 0;
 }
 
 /* 已选过的选项标灰 */
