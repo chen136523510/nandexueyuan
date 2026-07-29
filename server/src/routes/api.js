@@ -12,6 +12,10 @@ import {
   createComment, deleteComment,
   likePost, unlikePost, wallUpload,
 } from '../controllers/wallController.js'
+import {
+  getProgress, updateProgress,
+  listSaves, getSave, writeSave, deleteSave,
+} from '../controllers/galgameController.js'
 import { auth, requireRole } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
 
@@ -69,5 +73,13 @@ router.post('/wall/posts/:id/comments', auth, createComment)
 router.delete('/wall/comments/:id', auth, deleteComment)
 router.post('/wall/posts/:id/like', auth, likePost)
 router.delete('/wall/posts/:id/like', auth, unlikePost)
+
+// 德塔 Galgame - 存档/进度（需登录）
+router.get('/galgame/progress', auth, getProgress)
+router.post('/galgame/progress', auth, updateProgress)
+router.get('/galgame/saves', auth, listSaves)
+router.get('/galgame/saves/:slot', auth, getSave)
+router.post('/galgame/saves/:slot', auth, writeSave)
+router.delete('/galgame/saves/:slot', auth, deleteSave)
 
 export default router

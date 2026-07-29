@@ -26,6 +26,8 @@ model User {
   posts          Post[]        @relation("PostAuthor")
   comments       Comment[]     @relation("CommentAuthor")
   likes          Like[]        @relation("PostLiker")
+  gameSaves      GameSave[]
+  gameProgress   GameProgress?
 
   @@map("users")
 }
@@ -189,4 +191,39 @@ model MessageChunk {
 
   @@index([chunkDate])
   @@map("message_chunks")
+}
+
+// ===== 德塔 Galgame =====
+
+// 存档槽（每用户最多 10 个手动存档 + 1 个自动存档）
+model GameSave {
+  id        String   @id @default(cuid())
+  userId    Int
+  slot      Int      // 0=自动存档, 1-10=手动
+  node      String   // 当前剧本节点ID
+  chapter   String   // 当前章节
+  affinity  String   // JSON: 各角色好感度快照
+  variables String   // JSON: 剧情变量快照
+  thumbnail String?  // 存档缩略图（base64）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slot])
+  @@map("game_saves")
+}
+
+// 全局进度（好感度/解锁CG/解锁章节，每用户一条）
+model GameProgress {
+  userId           Int      @id
+  unlockedChapters String   @default("[]") // JSON: 已解锁章节列表
+  unlockedCGs      String   @default("[]") // JSON: 已解锁CG ID列表
+  affinity         String   @default("{}") // JSON: 各角色好感度（跨存档持久化）
+  storyVariables   String   @default("{}") // JSON: 全局剧情变量
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("game_progress")
 }
