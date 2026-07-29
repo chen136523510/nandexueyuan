@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 import { NodeType } from '../engine/types.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 // 当前选项列表
 const choices = computed(() => {

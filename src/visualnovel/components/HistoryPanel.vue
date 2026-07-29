@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 import { CHAR_COLORS } from '../engine/types.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 // 倒序显示历史（最新在最上）
 const historyList = computed(() => {

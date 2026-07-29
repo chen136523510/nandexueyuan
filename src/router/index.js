@@ -34,7 +34,7 @@ const routes = [
   {
     path: '/nde',
     name: 'nde',
-    component: () => import('../views/NdeGalgameView.vue'),
+    component: () => import('../views/NdeVisualNovelView.vue'),
     meta: { requiresAuth: true },
   },
   {

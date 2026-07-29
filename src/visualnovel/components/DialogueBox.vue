@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 import { CHAR_COLORS, NodeType } from '../engine/types.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 // 当前说话者颜色
 const speakerColor = computed(() => {

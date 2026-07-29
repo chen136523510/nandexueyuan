@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 const buttons = computed(() => [
   { id: 'save', label: '存档', icon: '💾', action: () => store.togglePanel('save') },

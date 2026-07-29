@@ -1,7 +1,7 @@
 <script setup>
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 function close() {
   store.closePanel()

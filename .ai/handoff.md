@@ -1,43 +1,43 @@
 # AI 交接单
 
-> 最后更新：2026-07-29（白机：Galgame 引擎核心 PoC 完成 + 全文档同步）
+> 最后更新：2026-07-29（白机：视觉小说 引擎核心 PoC 完成 + 全文档同步）
 > 所在设备：白机（荣耀便携本）
 > 稳定版本：本轮代码未 commit（待院长确认后提交）
-> **当前阶段**：德塔 Galgame M-G1 引擎核心 PoC 已完成验证，7 项验收全通过
+> **当前阶段**：德塔 视觉小说 M-G1 引擎核心 PoC 已完成验证，7 项验收全通过
 
 ---
 
 ## 白机本轮产出（2026-07-29）
 
-### M-G1：Galgame 引擎核心 PoC ✅ 已完成
+### M-G1：视觉小说 引擎核心 PoC ✅ 已完成
 
-院长确认方向后，白机完成了完整的 Galgame 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。
+院长确认方向后，白机完成了完整的 视觉小说 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。
 
-**前端新增**（`src/galgame/`）：
+**前端新增**（`src/视觉小说/`）：
 - `engine/engine.js` -- 剧本引擎核心（节点解析/跳转/条件判断/好感度效果）
 - `engine/types.js` -- 节点类型定义 + 角色色彩配置
-- `stores/galgameStore.js` -- Pinia store（状态管理 + 存档/进度 API 对接）
+- `stores/视觉小说Store.js` -- Pinia store（状态管理 + 存档/进度 API 对接）
 - `components/` -- 8 个 Vue 组件：DialogueBox/CharacterLayer/ChoiceMenu/QuickMenu/SaveLoadPanel/HistoryPanel/SettingsPanel/BackgroundLayer
 - `data/prologue.js` -- 序章"学院降临"剧本（22 节点，含选项分支+好感度）
-- `views/NdeGalgameView.vue` -- Galgame 主视图（替换占位页）
-- `api/galgame.js` -- 存档/进度 API 封装
+- `views/Nde视觉小说View.vue` -- 视觉小说 主视图（替换占位页）
+- `api/视觉小说.js` -- 存档/进度 API 封装
 
 **后端新增**：
 - `server/prisma/schema.prisma` -- 新增 GameSave + GameProgress 两张表
-- `server/src/controllers/galgameController.js` -- 存档/进度 controller（6 个 API）
-- `server/src/routes/api.js` -- 挂载 `/api/galgame/*` 路由
+- `server/src/controllers/视觉小说Controller.js` -- 存档/进度 controller（6 个 API）
+- `server/src/routes/api.js` -- 挂载 `/api/视觉小说/*` 路由
 
-**路由变更**：`/nde` 从 `NdeRebuildingView.vue`（占位页）切换到 `NdeGalgameView.vue`
+**路由变更**：`/nde` 从 `NdeRebuildingView.vue`（占位页）切换到 `Nde视觉小说View.vue`
 
 **文档新增/更新**：
-- 新建 `prd/01-需求文档/04-德塔/02-设计/德塔Galgame重构规划.md`
-- 新建 `prd/01-需求文档/00-调研/decisions/ADR-006-德塔Galgame引擎选型.md`
+- 新建 `prd/01-需求文档/04-德塔/02-设计/德塔视觉小说重构规划.md`
+- 新建 `prd/01-需求文档/00-调研/decisions/ADR-006-德塔视觉小说引擎选型.md`
 - 更新 `pm/ROADMAP.md` -- M-G1 标记 done，新增 M-G1~M-G4 里程碑
 - 更新 `pm/需求池.md` -- R-009~R-017 标记废弃，R-018~R-023 新增
 
 ### PoC 验收结果（浏览器实测全通过）
 
-1. ✅ 进入 `/nde` 看到 Galgame 主界面（深色主题 + 开始界面）
+1. ✅ 进入 `/nde` 看到 视觉小说 主界面（深色主题 + 开始界面）
 2. ✅ 点击/空格/Enter 推进对话，打字机效果正常
 3. ✅ 立绘随说话者切换，非说话者 dim，角色名标签颜色正确
 4. ✅ 选项菜单弹出，选择后跳转正确分支，好感度变更
@@ -50,8 +50,8 @@
 1. **commit 代码** -- 本轮代码尚未提交，待院长确认后 commit + push
 2. **黑机任务**：
    - 序章剧情大纲完善（连酒馆 AI）
-   - 睿/杰/丘立绘替换占位色块（路径：`/galgame/portraits/角色名/表情.png`）
-   - 背景图替换 CSS 渐变占位（路径：`/galgame/bg/场景名.jpg`）
+   - 睿/杰/丘立绘替换占位色块（路径：`/视觉小说/portraits/角色名/表情.png`）
+   - 背景图替换 CSS 渐变占位（路径：`/视觉小说/bg/场景名.jpg`）
 3. **M-G2**：序章完整 + 手机/消息系统
 
 ---
@@ -60,13 +60,13 @@
 
 ---
 
-## 当前状态：德塔方向废弃 + Galgame 重构，占位页已上线
+## 当前状态：德塔方向废弃 + 视觉小说 重构，占位页已上线
 
-### 德塔 Galgame 重构（2026-07-29 院长确认）
+### 德塔 视觉小说 重构（2026-07-29 院长确认）
 
 | 项目 | 状态 |
 |------|------|
-| 方向决策 | 废弃 2D 游戏（Phaser/Colyseus/俯视角全部停止），改为 Galgame（叙事驱动+立绘+背景+对话+分支） |
+| 方向决策 | 废弃 2D 游戏（Phaser/Colyseus/俯视角全部停止），改为 视觉小说（叙事驱动+立绘+背景+对话+分支） |
 | 前端占位页 | `src/views/NdeRebuildingView.vue` 已创建，`/nde` 路由已切换 |
 | 旧代码 | GameView.vue / game/ / game-server/ 废弃保留不删，路由已断开 |
 | 公告 | v2.2.0 已新增："原德塔设计废弃，正处于重构中" |
@@ -234,7 +234,7 @@ KSampler: dpmpp_2m / karras / 30步 / cfg7 / 832×1216
 
 1. **出汪神**（淡蓝发，50岁，水元素+王者气质）- 用杰v7配方 + 丘经验
 2. **沐阳出图**（纯白发）- 设计文档已完成，待出图
-3. **Galgame 重构规划** - 方向已确认，待详细设计（主线剧情、分支结构、技术选型）
+3. **视觉小说 重构规划** - 方向已确认，待详细设计（主线剧情、分支结构、技术选型）
 4. **积累数据集** - 等各角色精选图够15-30张后启动SDXL LoRA训练
 
 ---

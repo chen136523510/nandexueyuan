@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 import { CHAR_COLORS } from '../engine/types.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 // 当前场景的角色列表（带活跃状态：说话者高亮，其他 dim）
 const characters = computed(() => {
@@ -40,7 +40,7 @@ const CHAR_NAMES = {
           :class="[`pos-${char.position || 'center'}`, { active: char.isActive, dim: !char.isActive }]"
         >
           <!-- PoC 占位：色块 + 角色名 -->
-          <!-- 后续替换为: <img :src="`/galgame/portraits/${char.id}/${char.portrait}.png`" /> -->
+          <!-- 后续替换为: <img :src="`/visualnovel/portraits/${char.id}/${char.portrait}.png`" /> -->
           <div class="char-placeholder" :style="{ borderColor: char.color }">
             <span class="char-name-tag" :style="{ color: char.color }">
               {{ CHAR_NAMES[char.id] || char.id }}

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent } from '../engine/engine.js'
 import { NodeType } from '../engine/types.js'
-import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/galgame.js'
+import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
 
 // 章节注册表（章节 id -> 剧本数据模块）
 // 用动态 import 避免一次性加载所有章节
@@ -10,7 +10,7 @@ const CHAPTER_LOADERS = {
   prologue: () => import('../data/prologue.js'),
 }
 
-export const useGalgameStore = defineStore('galgame', () => {
+export const useVisualNovelStore = defineStore('visualNovel', () => {
   // ===== 运行时状态 =====
   const currentIndex = ref(null)       // 当前章节的节点索引 Map
   const currentChapter = ref('prologue')
@@ -68,7 +68,7 @@ export const useGalgameStore = defineStore('galgame', () => {
   async function loadChapter(chapterId) {
     const loader = CHAPTER_LOADERS[chapterId]
     if (!loader) {
-      console.error(`[GalgameStore] 未知章节: ${chapterId}`)
+      console.error(`[VisualNovelStore] 未知章节: ${chapterId}`)
       return false
     }
     try {
@@ -78,7 +78,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       currentChapter.value = chapterId
       return true
     } catch (err) {
-      console.error(`[GalgameStore] 加载章节失败: ${chapterId}`, err)
+      console.error(`[VisualNovelStore] 加载章节失败: ${chapterId}`, err)
       return false
     }
   }
@@ -104,7 +104,7 @@ export const useGalgameStore = defineStore('galgame', () => {
         goToNode(startId)
       }
     } catch (err) {
-      console.error('[GalgameStore] initGame 失败:', err)
+      console.error('[VisualNovelStore] initGame 失败:', err)
     } finally {
       isLoading.value = false
     }
@@ -120,7 +120,7 @@ export const useGalgameStore = defineStore('galgame', () => {
     if (!nodeId || !currentIndex.value) return
     const node = getNode(currentIndex.value, nodeId)
     if (!node) {
-      console.error(`[GalgameStore] 节点不存在: ${nodeId}`)
+      console.error(`[VisualNovelStore] 节点不存在: ${nodeId}`)
       return
     }
 
@@ -153,7 +153,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       if (nextId) {
         goToNode(nextId)
       } else {
-        console.warn('[GalgameStore] condition 节点无后续:', nodeId)
+        console.warn('[VisualNovelStore] condition 节点无后续:', nodeId)
         isEnded.value = true
       }
       return
@@ -333,7 +333,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       })
       return true
     } catch (err) {
-      console.error('[GalgameStore] 存档失败:', err)
+      console.error('[VisualNovelStore] 存档失败:', err)
       return false
     }
   }
@@ -356,7 +356,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       goToNode(data.node)
       return true
     } catch (err) {
-      console.error('[GalgameStore] 读档失败:', err)
+      console.error('[VisualNovelStore] 读档失败:', err)
       return false
     }
   }
@@ -369,7 +369,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       const res = await listSaves()
       return res.data || []
     } catch (err) {
-      console.error('[GalgameStore] 获取存档列表失败:', err)
+      console.error('[VisualNovelStore] 获取存档列表失败:', err)
       return []
     }
   }
@@ -382,7 +382,7 @@ export const useGalgameStore = defineStore('galgame', () => {
       await deleteSave(slot)
       return true
     } catch (err) {
-      console.error('[GalgameStore] 删除存档失败:', err)
+      console.error('[VisualNovelStore] 删除存档失败:', err)
       return false
     }
   }
@@ -405,7 +405,7 @@ export const useGalgameStore = defineStore('galgame', () => {
           storyVariables: storyVariables.value,
         })
       } catch (err) {
-        console.error('[GalgameStore] 同步进度失败:', err)
+        console.error('[VisualNovelStore] 同步进度失败:', err)
       }
     }, 2000)
   }

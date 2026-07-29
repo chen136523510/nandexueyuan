@@ -1,19 +1,19 @@
 # 德塔（NDO）
 
-> 🎮 **Galgame 引擎已上线**（M-G1 PoC）-- Vue3 自研叙事引擎，立绘对话/选项分支/好感度系统/服务端存档，序章「学院降临」22 节点可玩。
+> 🎮 **视觉小说 引擎已上线**（M-G1 PoC）-- Vue3 自研叙事引擎，立绘对话/选项分支/好感度系统/服务端存档，序章「学院降临」22 节点可玩。
 >
-> 世界观设定集、角色形象设计等核心资产保留不变，作为 Galgame 叙事基础。
+> 世界观设定集、角色形象设计等核心资产保留不变，作为 视觉小说 叙事基础。
 
 ## 文档索引
 
-### Galgame 引擎（当前）
+### 视觉小说 引擎（当前）
 
 | 文档 | 说明 |
 |------|------|
-| [ADR-006](../00-调研/decisions/ADR-006-德塔Galgame引擎选型.md) | Galgame 引擎选型决策（Vue3 Web 自研） |
-| [Galgame 重构规划](02-设计/德塔Galgame重构规划.md) | M-G1~M-G4 里程碑规划 + 技术架构 + UI/UX 设计 |
+| [ADR-006](../00-调研/decisions/ADR-006-德塔视觉小说引擎选型.md) | 视觉小说 引擎选型决策（Vue3 Web 自研） |
+| [视觉小说 重构规划](02-设计/德塔视觉小说重构规划.md) | M-G1~M-G4 里程碑规划 + 技术架构 + UI/UX 设计 |
 
-### 保留有效（Galgame 叙事基础）
+### 保留有效（视觉小说 叙事基础）
 
 | 文档 | 说明 |
 |------|------|
@@ -35,7 +35,7 @@
 | [德塔男德通交互需求](01-需求/德塔男德通交互需求.md) | NPC 对话交互，重构后重新设计 |
 | [形态重构战略规划](02-设计/德塔形态重构战略规划.md) | 横版->俯视方向已取消 |
 | [美术设计规范](02-设计/美术设计规范.md) | SNES 像素风规范，已废弃 |
-| [ADR-005](../00-调研/decisions/ADR-005-德塔世界观承载方式.md) | CG演出层决策，已被 Galgame 方向取代 |
+| [ADR-005](../00-调研/decisions/ADR-005-德塔世界观承载方式.md) | CG演出层决策，已被 视觉小说 方向取代 |
 | [泰拉瑞亚模块调研](03-调研/nandexueyuan-terraria-like-module-research.md) | 俯视游戏调研，已废弃 |
 | [NPC AI 对话接入调研](03-调研/npc-ai-chat-integration.md) | 重构后重新评估 |
 
@@ -43,9 +43,9 @@
 
 | 代码 | 状态 |
 |------|------|
-| `src/galgame/` | ✅ 当前生效 -- Galgame 引擎（engine + components + stores + data） |
-| `src/views/NdeGalgameView.vue` | ✅ 当前生效 -- Galgame 主视图 |
-| `server/src/controllers/galgameController.js` | ✅ 当前生效 -- 存档/进度 API |
+| `src/视觉小说/` | ✅ 当前生效 -- 视觉小说 引擎（engine + components + stores + data） |
+| `src/views/Nde视觉小说View.vue` | ✅ 当前生效 -- 视觉小说 主视图 |
+| `server/src/controllers/视觉小说Controller.js` | ✅ 当前生效 -- 存档/进度 API |
 | `src/views/NdeRebuildingView.vue` | ❌ 已废弃（保留不删） |
 | `src/views/GameView.vue` | ❌ 已废弃（保留不删，路由已断开） |
 | `game/` 目录（Phaser） | ❌ 已废弃（保留不删） |

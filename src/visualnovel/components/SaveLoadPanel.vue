@@ -1,12 +1,12 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
 const props = defineProps({
   mode: { type: String, default: 'save' }, // 'save' | 'load'
 })
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 const saves = ref([])
 const loading = ref(false)
 const msg = ref('')

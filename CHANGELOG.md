@@ -4,33 +4,33 @@
 
 ---
 
-## 2026-07-29 Galgame 引擎核心 PoC 完成（v2.2.0）
+## 2026-07-29 视觉小说 引擎核心 PoC 完成（v2.2.0）
 
 ### 概要
 
-院长确认 Galgame 方向后，白机完成 M-G1 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。Vue3 自研 Galgame 引擎上线，`/nde` 路由从占位页切换到 Galgame 主界面。
+院长确认 视觉小说 方向后，白机完成 M-G1 引擎核心 PoC，浏览器实测 7 项验收标准全部通过。Vue3 自研 视觉小说 引擎上线，`/nde` 路由从占位页切换到 视觉小说 主界面。
 
 ### 代码变更
 
 | 文件 | 变更 |
 |------|------|
-| `src/galgame/engine/` | 新增 -- 剧本引擎核心（engine.js + types.js），支持 dialogue/choice/condition/event/end 五种节点 |
-| `src/galgame/stores/galgameStore.js` | 新增 -- Pinia store，状态管理 + 存档/进度 API 对接 + 打字机效果 |
-| `src/galgame/components/` | 新增 -- 8 个 Vue 组件：DialogueBox/CharacterLayer/ChoiceMenu/QuickMenu/SaveLoadPanel/HistoryPanel/SettingsPanel/BackgroundLayer |
-| `src/galgame/data/prologue.js` | 新增 -- 序章「学院降临」22 节点剧本 |
-| `src/views/NdeGalgameView.vue` | 新增 -- Galgame 主视图，快捷键绑定（Space/Enter/H/S/L/Esc） |
-| `src/api/galgame.js` | 新增 -- 存档/进度 API 封装 |
-| `src/router/index.js` | `/nde` 路由从 NdeRebuildingView 切换到 NdeGalgameView |
+| `src/视觉小说/engine/` | 新增 -- 剧本引擎核心（engine.js + types.js），支持 dialogue/choice/condition/event/end 五种节点 |
+| `src/视觉小说/stores/视觉小说Store.js` | 新增 -- Pinia store，状态管理 + 存档/进度 API 对接 + 打字机效果 |
+| `src/视觉小说/components/` | 新增 -- 8 个 Vue 组件：DialogueBox/CharacterLayer/ChoiceMenu/QuickMenu/SaveLoadPanel/HistoryPanel/SettingsPanel/BackgroundLayer |
+| `src/视觉小说/data/prologue.js` | 新增 -- 序章「学院降临」22 节点剧本 |
+| `src/views/Nde视觉小说View.vue` | 新增 -- 视觉小说 主视图，快捷键绑定（Space/Enter/H/S/L/Esc） |
+| `src/api/视觉小说.js` | 新增 -- 存档/进度 API 封装 |
+| `src/router/index.js` | `/nde` 路由从 NdeRebuildingView 切换到 Nde视觉小说View |
 | `server/prisma/schema.prisma` | 新增 GameSave + GameProgress 两张表 |
-| `server/src/controllers/galgameController.js` | 新增 -- 6 个 API 端点（progress/saves CRUD） |
-| `server/src/routes/api.js` | 挂载 `/api/galgame/*` 路由 |
+| `server/src/controllers/视觉小说Controller.js` | 新增 -- 6 个 API 端点（progress/saves CRUD） |
+| `server/src/routes/api.js` | 挂载 `/api/视觉小说/*` 路由 |
 
 ### 文档同步
 
 | 文档 | 变更 |
 |------|------|
-| ADR-006 | 新增 -- Galgame 引擎选型决策（Vue3 Web 自研 vs Unity vs Ren'Py） |
-| 德塔Galgame重构规划.md | 新增 -- M-G1~M-G4 里程碑规划 |
+| ADR-006 | 新增 -- 视觉小说 引擎选型决策（Vue3 Web 自研 vs Unity vs Ren'Py） |
+| 德塔视觉小说重构规划.md | 新增 -- M-G1~M-G4 里程碑规划 |
 | pm/ROADMAP | M-G1 标记 done，新增 M-G1~M-G4 里程碑 |
 | pm/需求池 | R-009~R-017 废弃，R-018~R-023 新增 |
 | 根 README | 功能描述/技术栈/项目结构更新，废弃 game/game-server |
@@ -42,15 +42,15 @@
 
 ---
 
-## 2026-07-29 德塔方向废弃 + Galgame 重构
+## 2026-07-29 德塔方向废弃 + 视觉小说 重构
 
 ### 方向决策（院长确认）
 
 | 决策项 | 结论 |
 |---|---|
 | 原 2D 游戏方向 | **废弃**（横版像素、等距俯视、Phaser/Colyseus 多人同步全部停止） |
-| 新方向 | **Galgame**（基于原世界观，叙事驱动、立绘+背景+对话文本、分支世界线） |
-| 决策依据 | 世界观设定集 v1.3 足够庞大适合叙事；galgame 三件套（立绘+背景+对话）已有 AI 出图管线支撑；俯视游戏基础设施工作量过大且无法展现世界观深度 |
+| 新方向 | **视觉小说**（基于原世界观，叙事驱动、立绘+背景+对话文本、分支世界线） |
+| 决策依据 | 世界观设定集 v1.3 足够庞大适合叙事；视觉小说 三件套（立绘+背景+对话）已有 AI 出图管线支撑；俯视游戏基础设施工作量过大且无法展现世界观深度 |
 | 保留资产 | 世界观设定集 v1.3、5 角色形象设计文档、AI 出图精选资产（睿/杰/丘）、ComfyUI 出图管线 |
 
 ### 代码变更
@@ -69,7 +69,7 @@
 | 德塔 README | 重写 -- 保留有效/已废弃分区 |
 | 设计 README | 形态重构规划标记已废弃 |
 | PRD README | 德塔描述改为"正在重构中" |
-| pm/ROADMAP | M-1~M-6 全部废弃，当前阶段改为 Galgame 方向 |
+| pm/ROADMAP | M-1~M-6 全部废弃，当前阶段改为 视觉小说 方向 |
 | 根 README | 德塔描述更新 |
 | AGENTS.md | 项目概览更新 |
 | .ai/handoff.md | 当前阶段 + 下一步更新 |

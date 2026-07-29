@@ -193,7 +193,7 @@ model MessageChunk {
   @@map("message_chunks")
 }
 
-// ===== 德塔 Galgame =====
+// ===== 德塔视觉小说 =====
 
 // 存档槽（每用户最多 10 个手动存档 + 1 个自动存档）
 model GameSave {

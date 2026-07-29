@@ -1,7 +1,7 @@
 import prisma from '../lib/prisma.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 
-// ===== 德塔 Galgame 存档/进度 =====
+// ===== 德塔视觉小说 存档/进度 =====
 
 // 默认全局进度
 function defaultProgress() {
@@ -33,7 +33,7 @@ export async function getProgress(req, res) {
       updatedAt: record.updatedAt,
     })
   } catch (err) {
-    console.error('[Galgame] getProgress error:', err)
+    console.error('[VisualNovel] getProgress error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '获取进度失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }
@@ -61,7 +61,7 @@ export async function updateProgress(req, res) {
       updatedAt: record.updatedAt,
     })
   } catch (err) {
-    console.error('[Galgame] updateProgress error:', err)
+    console.error('[VisualNovel] updateProgress error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '更新进度失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }
@@ -84,7 +84,7 @@ export async function listSaves(req, res) {
       updatedAt: s.updatedAt,
     })))
   } catch (err) {
-    console.error('[Galgame] listSaves error:', err)
+    console.error('[VisualNovel] listSaves error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '获取存档列表失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }
@@ -113,7 +113,7 @@ export async function getSave(req, res) {
       updatedAt: save.updatedAt,
     })
   } catch (err) {
-    console.error('[Galgame] getSave error:', err)
+    console.error('[VisualNovel] getSave error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '读取存档失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }
@@ -156,7 +156,7 @@ export async function writeSave(req, res) {
       updatedAt: save.updatedAt,
     }, '存档成功')
   } catch (err) {
-    console.error('[Galgame] writeSave error:', err)
+    console.error('[VisualNovel] writeSave error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '存档失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }
@@ -173,7 +173,7 @@ export async function deleteSave(req, res) {
     })
     success(res, null, '删除成功')
   } catch (err) {
-    console.error('[Galgame] deleteSave error:', err)
+    console.error('[VisualNovel] deleteSave error:', err)
     fail(res, ErrorCode.SERVER_ERROR.code, '删除存档失败', ErrorCode.SERVER_ERROR.httpStatus)
   }
 }

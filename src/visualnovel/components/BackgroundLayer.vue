@@ -1,8 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { useGalgameStore } from '../stores/galgameStore.js'
+import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 
 // 当前显示的背景（带过渡动画）
 const displayBg = ref('')
@@ -35,7 +35,7 @@ watch(
 
 function getBgStyle(bgKey) {
   // PoC 阶段：优先用 CSS 渐变占位
-  // 后续：return `url(/galgame/${bgKey}.jpg)`
+  // 后续：return `url(/visualnovel/${bgKey}.jpg)`
   return BG_FALLBACK[bgKey] || 'radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%)'
 }
 </script>

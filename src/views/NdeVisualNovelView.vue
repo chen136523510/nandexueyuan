@@ -1,17 +1,17 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useGalgameStore } from '../galgame/stores/galgameStore.js'
-import BackgroundLayer from '../galgame/components/BackgroundLayer.vue'
-import CharacterLayer from '../galgame/components/CharacterLayer.vue'
-import DialogueBox from '../galgame/components/DialogueBox.vue'
-import ChoiceMenu from '../galgame/components/ChoiceMenu.vue'
-import QuickMenu from '../galgame/components/QuickMenu.vue'
-import SaveLoadPanel from '../galgame/components/SaveLoadPanel.vue'
-import HistoryPanel from '../galgame/components/HistoryPanel.vue'
-import SettingsPanel from '../galgame/components/SettingsPanel.vue'
+import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
+import BackgroundLayer from '../visualnovel/components/BackgroundLayer.vue'
+import CharacterLayer from '../visualnovel/components/CharacterLayer.vue'
+import DialogueBox from '../visualnovel/components/DialogueBox.vue'
+import ChoiceMenu from '../visualnovel/components/ChoiceMenu.vue'
+import QuickMenu from '../visualnovel/components/QuickMenu.vue'
+import SaveLoadPanel from '../visualnovel/components/SaveLoadPanel.vue'
+import HistoryPanel from '../visualnovel/components/HistoryPanel.vue'
+import SettingsPanel from '../visualnovel/components/SettingsPanel.vue'
 import TopBar from '../components/TopBar.vue'
 
-const store = useGalgameStore()
+const store = useVisualNovelStore()
 const showStartScreen = ref(true)
 
 // 开始游戏
@@ -82,7 +82,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="galgame-page">
+  <div class="visualnovel-page">
     <TopBar />
 
     <!-- 开始界面 -->
@@ -129,7 +129,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.galgame-page {
+.visualnovel-page {
   height: 100vh;
   display: flex;
   flex-direction: column;
