@@ -1,9 +1,12 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 import { CHAR_COLORS, NodeType } from '../engine/types.js'
 
 const store = useVisualNovelStore()
+
+// 输入框值（本地 ref）
+const inputValue = ref('')
 
 // 当前说话者颜色
 const speakerColor = computed(() => {
@@ -29,19 +32,37 @@ const isChoice = computed(() => {
   return store.currentNode?.type === NodeType.CHOICE
 })
 
-// 是否显示对话内容
+// 是否是输入节点
+const isInput = computed(() => {
+  return store.currentNode?.type === NodeType.INPUT
+})
+
+// 是否显示对话内容（dialogue 和 input 都需要文本框）
 const showDialogue = computed(() => {
   const node = store.currentNode
   if (!node) return false
-  return node.type === NodeType.DIALOGUE
+  return node.type === NodeType.DIALOGUE || node.type === NodeType.INPUT
 })
 
 // 是否章节结束
 const showEnd = computed(() => store.isEnded)
 
+// 当前 input 节点的 placeholder
+const inputPlaceholder = computed(() => {
+  return store.currentNode?.placeholder || '请输入...'
+})
+
 function handleClick() {
-  if (isChoice.value || showEnd.value) return
+  // input 节点不响应点击推进
+  if (isChoice.value || showEnd.value || isInput.value) return
   store.advance()
+}
+
+// 提交输入
+function handleSubmit() {
+  if (!inputValue.value.trim()) return
+  store.submitInput(inputValue.value)
+  inputValue.value = ''
 }
 </script>
 
@@ -62,8 +83,23 @@ function handleClick() {
       <p class="dialogue-text">
         {{ store.displayedText }}
         <span v-if="store.isTyping" class="cursor">▋</span>
-        <span v-else class="advance-hint">▼</span>
+        <span v-else-if="!isInput" class="advance-hint">▼</span>
       </p>
+
+      <!-- 输入框（input 节点打字完成后显示） -->
+      <div v-if="isInput && !store.isTyping" class="input-area">
+        <input
+          ref="inputField"
+          v-model="inputValue"
+          type="text"
+          class="vn-input"
+          :placeholder="inputPlaceholder"
+          maxlength="12"
+          @keydown.enter.prevent="handleSubmit"
+          @click.stop
+        />
+        <button class="input-btn" @click.stop="handleSubmit">确认</button>
+      </div>
     </div>
 
     <!-- 章节结束 -->
@@ -157,6 +193,52 @@ function handleClick() {
   letter-spacing: 4px;
 }
 
+/* 输入框区域 */
+.input-area {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.vn-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  color: #e8e0cc;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.vn-input::placeholder {
+  color: rgba(139, 149, 168, 0.6);
+}
+
+.vn-input:focus {
+  border-color: rgba(201, 169, 110, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.input-btn {
+  padding: 8px 20px;
+  background: rgba(201, 169, 110, 0.15);
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  border-radius: 6px;
+  color: rgba(201, 169, 110, 0.9);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.input-btn:hover {
+  background: rgba(201, 169, 110, 0.25);
+  border-color: rgba(201, 169, 110, 0.5);
+}
+
 /* 移动端 */
 @media (max-width: 768px) {
   .dialogue-area {
@@ -174,6 +256,14 @@ function handleClick() {
     left: 12px;
     font-size: 12px;
     padding: 2px 12px;
+  }
+  .vn-input {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  .input-btn {
+    padding: 6px 14px;
+    font-size: 13px;
   }
 }
 </style>

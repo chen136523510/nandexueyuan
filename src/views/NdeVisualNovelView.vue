@@ -9,6 +9,7 @@ import QuickMenu from '../visualnovel/components/QuickMenu.vue'
 import SaveLoadPanel from '../visualnovel/components/SaveLoadPanel.vue'
 import HistoryPanel from '../visualnovel/components/HistoryPanel.vue'
 import SettingsPanel from '../visualnovel/components/SettingsPanel.vue'
+import InventoryPanel from '../visualnovel/components/InventoryPanel.vue'
 import TopBar from '../components/TopBar.vue'
 
 const store = useVisualNovelStore()
@@ -36,11 +37,21 @@ function handleKeydown(e) {
     return
   }
 
+  // input 节点时，不响应空格/Enter推进（输入框自行处理 Enter）
+  const isInputNode = store.currentNode?.type === 'input'
+  if (isInputNode && (e.key === ' ' || e.key === 'Enter')) {
+    return
+  }
+
   switch (e.key) {
     case ' ':
     case 'Enter':
       e.preventDefault()
       store.advance()
+      break
+    case 'b':
+    case 'B':
+      store.togglePanel('inventory')
       break
     case 'h':
     case 'H':
@@ -119,6 +130,7 @@ onUnmounted(() => {
       <SaveLoadPanel mode="load" />
       <HistoryPanel />
       <SettingsPanel />
+      <InventoryPanel />
 
       <!-- 加载中遮罩 -->
       <div v-if="store.isLoading" class="loading-overlay">

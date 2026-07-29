@@ -10,6 +10,7 @@ function defaultProgress() {
     unlockedCGs: [],
     affinity: {},
     storyVariables: {},
+    inventory: [],
   }
 }
 
@@ -30,6 +31,7 @@ export async function getProgress(req, res) {
       unlockedCGs: JSON.parse(record.unlockedCGs),
       affinity: JSON.parse(record.affinity),
       storyVariables: JSON.parse(record.storyVariables),
+      inventory: JSON.parse(record.inventory),
       updatedAt: record.updatedAt,
     })
   } catch (err) {
@@ -41,12 +43,13 @@ export async function getProgress(req, res) {
 // 更新全局进度
 export async function updateProgress(req, res) {
   try {
-    const { unlockedChapters, unlockedCGs, affinity, storyVariables } = req.body
+    const { unlockedChapters, unlockedCGs, affinity, storyVariables, inventory } = req.body
     const data = {}
     if (Array.isArray(unlockedChapters)) data.unlockedChapters = JSON.stringify(unlockedChapters)
     if (Array.isArray(unlockedCGs)) data.unlockedCGs = JSON.stringify(unlockedCGs)
     if (affinity && typeof affinity === 'object') data.affinity = JSON.stringify(affinity)
     if (storyVariables && typeof storyVariables === 'object') data.storyVariables = JSON.stringify(storyVariables)
+    if (Array.isArray(inventory)) data.inventory = JSON.stringify(inventory)
 
     const record = await prisma.gameProgress.upsert({
       where: { userId: req.user.id },
@@ -58,6 +61,7 @@ export async function updateProgress(req, res) {
       unlockedCGs: JSON.parse(record.unlockedCGs),
       affinity: JSON.parse(record.affinity),
       storyVariables: JSON.parse(record.storyVariables),
+      inventory: JSON.parse(record.inventory),
       updatedAt: record.updatedAt,
     })
   } catch (err) {
@@ -79,6 +83,7 @@ export async function listSaves(req, res) {
       chapter: s.chapter,
       affinity: JSON.parse(s.affinity),
       variables: JSON.parse(s.variables),
+      inventory: JSON.parse(s.inventory),
       thumbnail: s.thumbnail,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
@@ -108,6 +113,7 @@ export async function getSave(req, res) {
       chapter: save.chapter,
       affinity: JSON.parse(save.affinity),
       variables: JSON.parse(save.variables),
+      inventory: JSON.parse(save.inventory),
       thumbnail: save.thumbnail,
       createdAt: save.createdAt,
       updatedAt: save.updatedAt,
@@ -125,7 +131,7 @@ export async function writeSave(req, res) {
     if (isNaN(slot) || slot < 0 || slot > 10) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '槽位号无效（0-10）', ErrorCode.PARAM_ERROR.httpStatus)
     }
-    const { node, chapter, affinity, variables, thumbnail } = req.body
+    const { node, chapter, affinity, variables, inventory, thumbnail } = req.body
     if (!node || !chapter) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '缺少 node 或 chapter', ErrorCode.PARAM_ERROR.httpStatus)
     }
@@ -137,6 +143,7 @@ export async function writeSave(req, res) {
         chapter,
         affinity: JSON.stringify(affinity || {}),
         variables: JSON.stringify(variables || {}),
+        inventory: JSON.stringify(inventory || []),
         thumbnail: thumbnail || null,
       },
       create: {
@@ -146,6 +153,7 @@ export async function writeSave(req, res) {
         chapter,
         affinity: JSON.stringify(affinity || {}),
         variables: JSON.stringify(variables || {}),
+        inventory: JSON.stringify(inventory || []),
         thumbnail: thumbnail || null,
       },
     })

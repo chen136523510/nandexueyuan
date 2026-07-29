@@ -10,7 +10,8 @@ export const NodeType = {
   DIALOGUE: 'dialogue',     // 对话/旁白节点（最常见）
   CHOICE: 'choice',          // 选项分支节点
   CONDITION: 'condition',    // 条件分支节点（基于好感度/变量）
-  EVENT: 'event',            // 事件节点（触发特效/解锁CG等，无UI，自动跳转）
+  EVENT: 'event',            // 事件节点（触发特效/解锁CG/发放物品等，无UI，自动跳转）
+  INPUT: 'input',            // 输入节点（玩家命名等文本输入）
   END: 'end',                // 章节/结局结束节点
 }
 
@@ -31,6 +32,13 @@ export const CHAR_COLORS = {
   faci: '#A04040',       // 法刺：暗红（帝国密探）
   narrator: '#B0B0C0',   // 旁白：灰
   member: '#94B48C',     // 学院成员：莫兰迪绿
+}
+
+// 物品类型枚举
+export const ItemType = {
+  KEY_ITEM: 'key_item',      // 关键道具（剧情相关，不可丢弃）
+  CONSUMABLE: 'consumable',   // 消耗品
+  MATERIAL: 'material',       // 材料
 }
 
 // 条件比较运算符

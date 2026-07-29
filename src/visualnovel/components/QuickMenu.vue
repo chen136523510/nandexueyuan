@@ -5,6 +5,7 @@ import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 const store = useVisualNovelStore()
 
 const buttons = computed(() => [
+  { id: 'inventory', label: '背包', icon: '🎒', action: () => store.togglePanel('inventory') },
   { id: 'save', label: '存档', icon: '💾', action: () => store.togglePanel('save') },
   { id: 'load', label: '读档', icon: '📂', action: () => store.togglePanel('load') },
   { id: 'history', label: '回看', icon: '📜', action: () => store.togglePanel('history') },

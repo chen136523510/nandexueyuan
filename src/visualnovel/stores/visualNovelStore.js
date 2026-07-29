@@ -21,6 +21,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const unlockedCGs = ref([])
   const history = ref([])               // 文本回看历史 [{ speaker, text, nodeId }]
   const choicesMade = ref({})           // 已选过的选项 { nodeId: [choiceIndex, ...] }
+  const inventory = ref([])             // 背包物品 id 列表
 
   // ===== UI 状态 =====
   const isTyping = ref(false)           // 打字机是否正在播放
@@ -60,6 +61,11 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     return currentNode.value?.bgm || ''
   })
 
+  // 玩家名称（从剧情变量取，默认"漂泊者"）
+  const playerName = computed(() => {
+    return storyVariables.value.playerName || '漂泊者'
+  })
+
   // ===== 章节加载 =====
 
   /**
@@ -96,6 +102,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       storyVariables.value = progress.storyVariables || {}
       unlockedChapters.value = progress.unlockedChapters || ['prologue']
       unlockedCGs.value = progress.unlockedCGs || []
+      inventory.value = progress.inventory || []
 
       // 加载章节并定位到起始节点
       await loadChapter('prologue')
@@ -135,6 +142,10 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       if (result.cg) {
         triggeredCG.value = result.cg
       }
+      // 发放物品
+      if (result.grantedItem && !inventory.value.includes(result.grantedItem)) {
+        inventory.value = [...inventory.value, result.grantedItem]
+      }
       // 同步进度
       syncProgress()
       // event 节点自动跳到 next
@@ -168,7 +179,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       return
     }
 
-    // dialogue / choice 节点：正常设置当前节点
+    // dialogue / choice / input 节点：正常设置当前节点
     currentNodeId.value = nodeId
 
     // 应用好感度效果
@@ -176,17 +187,19 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       affinity.value = applyEffects(affinity.value, node.effects)
     }
 
-    // 设置文本（dialogue 节点）
-    if (node.type === NodeType.DIALOGUE) {
-      fullText.value = node.text || ''
+    // 设置文本（dialogue / input 节点）
+    if (node.type === NodeType.DIALOGUE || node.type === NodeType.INPUT) {
+      // 文本模板替换：{playerName} -> 玩家名称
+      const rawText = node.text || ''
+      fullText.value = rawText.replace(/\{playerName\}/g, playerName.value)
       displayedText.value = ''
       startTypewriter()
 
       // 记录历史
-      if (node.text) {
+      if (rawText) {
         history.value.push({
           speaker: node.speaker || '',
-          text: node.text,
+          text: fullText.value,
           nodeId: nodeId,
         })
         // 限制历史长度，避免内存膨胀
@@ -263,6 +276,39 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     }
   }
 
+  /**
+   * 处理输入节点提交（玩家命名等）
+   * @param {string} value - 用户输入的值
+   */
+  function submitInput(value) {
+    const node = currentNode.value
+    if (!node || node.type !== NodeType.INPUT) return
+
+    const trimmed = (value || '').trim()
+    if (!trimmed) return
+
+    // 写入剧情变量
+    const varKey = node.variable || 'playerName'
+    storyVariables.value = { ...storyVariables.value, [varKey]: trimmed }
+
+    // 同步进度
+    syncProgress()
+
+    // 跳转到下一节点
+    if (node.next) {
+      goToNode(node.next)
+    }
+  }
+
+  /**
+   * 检查背包中是否拥有某物品
+   * @param {string} itemId
+   * @returns {boolean}
+   */
+  function hasItem(itemId) {
+    return inventory.value.includes(itemId)
+  }
+
   // ===== 打字机效果 =====
 
   let typewriterTimer = null
@@ -318,6 +364,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       chapter: currentChapter.value,
       affinity: { ...affinity.value },
       variables: { ...storyVariables.value },
+      inventory: [...inventory.value],
     }
   }
 
@@ -348,6 +395,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       // 恢复状态
       affinity.value = data.affinity || {}
       storyVariables.value = data.variables || {}
+      inventory.value = data.inventory || []
       currentChapter.value = data.chapter
 
       // 重新加载章节
@@ -403,6 +451,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
           unlockedCGs: unlockedCGs.value,
           affinity: affinity.value,
           storyVariables: storyVariables.value,
+          inventory: inventory.value,
         })
       } catch (err) {
         console.error('[VisualNovelStore] 同步进度失败:', err)
@@ -436,13 +485,15 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     // 状态
     currentNode, currentChapter, currentNodeId,
     affinity, storyVariables, unlockedChapters, unlockedCGs,
-    history, choicesMade,
+    history, choicesMade, inventory,
     isTyping, fullText, displayedText,
     activePanel, hideUI, isEnded, isLoading, triggeredCG,
     currentCharacters, currentSpeaker, currentBackground, currentBGM,
+    playerName,
     textSpeed, autoMode, autoDelay,
     // 方法
     initGame, loadChapter, goToNode, advance, selectChoice,
+    submitInput, hasItem,
     startTypewriter, stopTypewriter, completeTypewriter,
     saveToSlot, loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,

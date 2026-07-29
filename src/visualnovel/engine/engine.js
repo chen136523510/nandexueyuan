@@ -200,6 +200,10 @@ export function getNextNodeId(node, index, affinity, variables, maxDepth = 10) {
       // 选项节点不自动跳转，等待用户选择
       return null
 
+    case NodeType.INPUT:
+      // 输入节点不自动跳转，等待用户提交
+      return null
+
     case NodeType.END:
       return null
 
@@ -210,16 +214,17 @@ export function getNextNodeId(node, index, affinity, variables, maxDepth = 10) {
 }
 
 /**
- * 执行 event 节点的副作用（解锁CG、修改变量等）
+ * 执行 event 节点的副作用（解锁CG、修改变量、发放物品等）
  * @param {object} node - event 节点
  * @param {object} variables - 当前剧情变量
  * @param {Array} unlockedCGs - 已解锁CG列表
- * @returns {object} { variables, unlockedCGs, cg } 更新后的状态
+ * @returns {object} { variables, unlockedCGs, cg, grantedItem } 更新后的状态
  */
 export function executeEvent(node, variables, unlockedCGs) {
   const newVars = { ...variables }
   const newCGs = [...unlockedCGs]
   let triggeredCG = null
+  let grantedItem = null
 
   // 解锁 CG
   if (node.unlockCG && !newCGs.includes(node.unlockCG)) {
@@ -232,5 +237,10 @@ export function executeEvent(node, variables, unlockedCGs) {
     Object.assign(newVars, node.setVariables)
   }
 
-  return { variables: newVars, unlockedCGs: newCGs, cg: triggeredCG }
+  // 发放物品
+  if (node.grantItem) {
+    grantedItem = node.grantItem
+  }
+
+  return { variables: newVars, unlockedCGs: newCGs, cg: triggeredCG, grantedItem }
 }
