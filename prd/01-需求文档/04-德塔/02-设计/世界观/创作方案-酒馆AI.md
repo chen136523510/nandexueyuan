@@ -11,7 +11,7 @@
 |---|--------|------|:----:|
 | 1 | **角色卡**「德塔世界观架构师」 | `E:/ai/SillyTavern Launcher GUI/data/st_data/default-user/characters/德塔世界观架构师.json` | ✅ 已生成 |
 | 2 | **世界书**「德塔设定集」 | `E:/ai/SillyTavern Launcher GUI/data/st_data/default-user/worlds/德塔设定集.json` | ✅ 已生成 |
-| 3 | 本方案文档 | `prd/01-需求文档/04-德塔/02-设计/德塔世界观创作方案.md` | ✅ 本文档 |
+| 3 | 本方案文档 | `prd/01-需求文档/04-德塔/02-设计/世界观/创作方案-酒馆AI.md` | ✅ 本文档 |
 
 > 这些文件已放在 ST 的数据目录，**启动酒馆后直接可见、无需导入**。
 
