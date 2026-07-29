@@ -100,8 +100,8 @@ onUnmounted(() => {
     <div v-if="showStartScreen" class="start-screen">
       <div class="start-content">
         <h1 class="start-title">德塔</h1>
-        <p class="start-subtitle">A.V.115 — 虚空降临的第115年</p>
-        <p class="start-desc">来自另一个位面的存在，降临在裂隙最深的大草原。</p>
+        <p class="start-subtitle">A.V.118 — 虚空降临的第118年</p>
+        <p class="start-desc">三年前，男德学院降临大草原，塔楼拔地而起，裂隙开始消散。<br>如今，第二批漂泊者到来。风暴才刚刚开始。</p>
         <button class="start-btn" @click="startGame">
           开始故事
         </button>
