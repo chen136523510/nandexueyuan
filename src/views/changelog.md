@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-07-29
+- [新增] `NdeVisualNovelView.vue` - 视觉小说主视图（替换原 NdeRebuildingView 占位页）。挂载 8 组件 + InventoryPanel，快捷键 Space/Enter/H/S/L/Esc/B
+- [重命名] `NdeGalgameView.vue` -> `NdeVisualNovelView.vue`（Galgame 全局重命名）
+- commit: 5cf0b32 + 44f5587 + 7643964
+
+---
+
 ## 2026-07-16
 - [新增] `GameView.vue` — F13 传送门交互：按 E 确认弹窗（是/否），确认后离开德塔返回主界面
 - 原因：德塔出生点传送门交互需求，玩家需能离开德塔回到主界面

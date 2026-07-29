@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-07-29 Galgame -> 视觉小说 全局重命名 + 02-设计目录重构
+
+### 概要
+
+两轮架构级文档/代码重构：① Galgame 全局重命名为视觉小说（避免 R18 歧义），涉及代码目录/文件/变量/API 路由/CSS class + 全部文档；② 02-设计目录按设计领域分类为 7 个子目录。
+
+### 代码变更（重命名）
+
+| 旧 | 新 |
+|----|-----|
+| `src/galgame/` | `src/visualnovel/` |
+| `galgameStore.js` / `useGalgameStore` | `visualNovelStore.js` / `useVisualNovelStore` |
+| `galgameController.js` | `visualNovelController.js` |
+| `NdeGalgameView.vue` | `NdeVisualNovelView.vue` |
+| `api/galgame.js` | `api/visualNovel.js` |
+| API `/api/galgame/*` | `/api/visualnovel/*` |
+| CSS `.galgame-page` | `.visualnovel-page` |
+
+### 文档变更（目录重构）
+
+| 旧 | 新 |
+|----|-----|
+| `02-设计/` 下 10 个文件平铺 | 7 个子目录：世界观/剧情设计/形象设计/美术设计/音频设计/技术设计/归档-旧版本 |
+| `德塔世界观设定集-正式版v1.0.md` | `世界观/设定集-v1.3.md` |
+| `AI交接单.md` | `创作速查手册.md`（区分换机交接与创作参考） |
+
+### 决策依据
+
+- Galgame 一词在中文语境有 R18 歧义，项目是朋友圈限定社区不适合
+- 02-设计目录文件平铺难看，按设计领域分类便于管理
+- AI交接单.md 与 .ai/handoff.md 名字混淆，重命名明确分工
+
+---
+
 ## 2026-07-29 视觉小说 引擎核心 PoC 完成（v2.2.0）
 
 ### 概要

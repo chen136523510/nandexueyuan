@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-07-29
+- [新增] `visualNovelController.js` - 视觉小说存档/进度 controller（getProgress/updateProgress/listSaves/getSave/writeSave/deleteSave）
+- [重命名] `galgameController.js` -> `visualNovelController.js`（Galgame 全局重命名）
+- [修改] `visualNovelController.js` - 增加 inventory 字段读写（GameProgress + GameSave）
+- commit: 5cf0b32 + 44f5587 + 7643964
+
+---
+
 ## 2026-07-01
 - [新增] `authController.js` — 认证控制器（注册/登录/登出/获取当前用户）
 - [新增] `userController.js` — 用户控制器（修改个人信息/修改密码）
