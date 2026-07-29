@@ -4,7 +4,35 @@
 
 ---
 
-### [refactor] 02-设计目录重构 + 创作速查手册 + sync-docs 技能优化
+### [feat] 存档系统增强 + UI隐藏恢复按钮 + Seedream调研 + 院长形象设计
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（黑机）
+- **背景**：院长验收序章后提出4个改进需求 + 调研在线生图工具 + 新角色院长形象设计
+- **变更内容**：
+  1. `src/visualnovel/components/SaveLoadPanel.vue` - 新建存档功能（空槽位显示"新建"按钮，底部加快捷新建按钮自动找第一个空槽位）+ 自动存档(slot=0)只读保护（标记"系统自动"，禁止手动覆盖/删除）
+  2. `src/visualnovel/stores/visualNovelStore.js` - 自动存档逻辑（selectChoice中critical选项触发saveToSlot(0)自动写入）+ import ChoiceImpact
+  3. `src/visualnovel/components/QuickMenu.vue` - 隐藏UI后显示半透明圆形浮动恢复按钮（右上角），点击恢复
+  4. `src/views/NdeVisualNovelView.vue` - 封面文案A.V.115->A.V.118 + 第二批漂泊者降临描述
+  5. `prd/.../美术设计/Seedream网页生图操作指南.md` - 新增文档（账号/能力评估/操作流程/提示词技巧/实测产出）
+  6. `prd/.../形象设计/院长-形象设计.md` - 新增文档（院长"见"：25岁英俊黑发魔法师+炭黑色旧黑袍+琥珀眼+小麦肤）
+  7. `.ai/seedream-test/` - Seedream实测图6张（法刺幸换动作/幸荣同框/院长出图v1-03成功）
+- **验证**：Playwright实测序章正常运行 + 存档面板新建/只读/删除功能正常 + 隐藏UI浮动按钮恢复正常
+- **状态**：已验证并推送
+- **关联文档**：[Seedream网页生图操作指南](../02-设计/美术设计/Seedream网页生图操作指南.md)、[院长-形象设计](../02-设计/形象设计/院长-形象设计.md)
+
+### [feat] 序章prologue.js全量重写 + 法刺幸/荣出图精选 + DB表补建
+
+- **时间**：2026-07-29
+- **变更人**：陈梓键（黑机）
+- **背景**：序章剧本初稿（酒馆编剧角色卡+DeepSeek API）完成后，全量重写prologue.js落地到引擎
+- **变更内容**：
+  1. `src/visualnovel/data/prologue.js` - 四幕全量重写：第一幕降临（旁白+院长）、第二幕法刺来访（input自命名+四选项ABCD）、第三幕储物发放（condition分支有/无睿帝令）、第四幕添Q&A（6话题info+结束critical）
+  2. `server/prisma/dev.db` - 补建 game_progress + game_saves 表（白机写了代码但DB schema未同步，导致500错误）
+  3. `.ai/comfyui-output/精选_法刺幸/` - 法刺幸v2-01/02进精选
+  4. `.ai/comfyui-output/精选_法刺荣/` - 法刺荣v2-01/02/v3-01进精选
+- **验证**：Playwright实测序章四幕完整运行，无API错误
+- **状态**：已验证并推送
 
 - **时间**：2026-07-29
 - **变更人**：陈梓键（白机）

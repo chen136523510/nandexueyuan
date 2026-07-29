@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-07-30（黑机 序章验收+存档系统增强）
+
+---
+
+### BUG-43：VN存档表缺失导致500错误
+
+- **现象**：点"开始故事"后控制台报500错误 `/api/visualnovel/progress`，页面卡住无法进入序章
+- **根因**：白机写了 `GameProgress` 和 `GameSave` 的 Prisma schema 和 controller 代码，但 `db push` 因 FTS 表报错未成功执行，SQLite 数据库中实际没有这两张表。Prisma Client 查询时报 `The table main.game_progress does not exist`（P2021）
+- **修复**：用 `prisma db execute --file` 直接执行原始 SQL 创建 `game_progress` 和 `game_saves` 表 + 唯一索引
+- **文件**：`server/prisma/dev.db`（数据库文件）
+- **教训**：`db push` 失败时不会创建新表，必须检查退出码和输出。换机后第一次跑服务前应执行 `npx prisma db push` 确认 schema 同步
+- **状态**：已修复
+
 ## 2026-07-24（黑机 R-003 行走精灵表生成）
 
 ---
