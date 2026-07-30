@@ -967,6 +967,7 @@ export default [
       { impact: 'info', next: 'pro_qa_xing_1' },
       { impact: 'info', next: 'pro_qa_rift_1' },
       { impact: 'info', next: 'pro_qa_next_1' },
+      { impact: 'info', next: 'pro_qa_home_1' },
       { impact: 'critical', next: 'pro_qa_end_1' },
     ],
   },
@@ -1311,6 +1312,42 @@ export default [
       { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
     ],
     speaker: '添',
+    next: 'pro_qa_choice'
+  },
+
+  // ----- 话题七：你有想过回去吗？-----
+  {
+    id: 'pro_qa_home_1',
+    type: 'dialogue',
+    background: 'bg/tower_lobby',
+    characters: [
+      { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
+    ],
+    speaker: '添',
+    next: 'pro_qa_home_2'
+  },
+  {
+    id: 'pro_qa_home_2',
+    type: 'dialogue',
+    background: 'bg/tower_lobby',
+    speaker: '旁白',
+    next: 'pro_qa_home_3'
+  },
+  {
+    id: 'pro_qa_home_3',
+    type: 'dialogue',
+    background: 'bg/tower_lobby',
+    characters: [
+      { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
+    ],
+    speaker: '添',
+    next: 'pro_qa_home_4'
+  },
+  {
+    id: 'pro_qa_home_4',
+    type: 'dialogue',
+    background: 'bg/tower_lobby',
+    speaker: '旁白',
     next: 'pro_qa_choice'
   },
 
