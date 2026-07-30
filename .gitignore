@@ -69,6 +69,9 @@ pnpm.tgz
 # ComfyUI 原始输出图（验证前暂存，不入库；验证通过后移动到 public/game/ 正式入库）
 .ai/comfyui-output/
 
+# Seedream 网页生图测试输出（黑机美工专用；白机不处理任何美工，图片不进白机）
+.ai/seedream-test/
+
 # Trae IDE 内置技能/工具（非项目共享，不跟踪）
 .trae/tool-WeChatMsg-master/
 .trae/rules/directory-rules.md

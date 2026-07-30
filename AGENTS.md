@@ -129,6 +129,7 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 1. **禁止 TRAE SOLO 徽章注入** — 不得在 `package.json`/`vite.config.js`/`index.html` 中添加 `vite-plugin-trae-solo-badge` 或任何 TRAE 推广内容。发现立即删除。
 2. **禁止提交敏感文件** — `.env`、`askass.bat` 等已在 `.gitignore`，不得 `git add` 强制入库。
 3. 自行部署、跳过文档更新 — 见上文「部署纪律」和「文档与 Changelog 纪律」。
+4. **禁止美工图片入库** — 白机不处理任何美工相关工作，图片不得进入白机。美工图片（ComfyUI/Seedream 出图等）属于黑机本地资产，已纳入 `.gitignore`（`.ai/seedream-test/`、`.ai/comfyui-output/`、`.ai/comfyui-workflows/`、`raw/`）。**严禁** `git add` 这些目录下的任何图片。最终入库的只能是 `public/` 下经抠图处理的正式游戏资产。
 
 ## AI 行为准则
 
