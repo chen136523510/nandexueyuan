@@ -157,6 +157,35 @@ characters: [{ id: 'dean', portrait: 'dean/gentle' }]  // ← 情绪键
 
 ---
 
+## 纪律六：参考图压缩（防超时）
+
+**大参考图(>500KB)直接上传易导致 API 超时。** 参考图作用是"锁特征"，不需要高分辨率。
+
+### 压缩脚本（jimp v1）
+
+```js
+const { Jimp } = require('jimp');  // npm install jimp --no-save
+
+const img = await Jimp.read('原图路径.png');
+await img.resize({ w: 512 });                       // 缩到512宽
+const buf = await img.getBuffer('image/jpeg', { quality: 85 });  // jpeg q85
+// base64后通常 <150KB, 不再超时
+```
+
+| 原图大小 | 压缩后(base64) | API响应 |
+|---------|--------------|---------|
+| 1.4MB png | 139KB jpeg | 28s ✅ |
+| 1.9MB png | —（不压缩） | 110s+ 超时 ❌ |
+
+### 氛围背景图（角色入画）专用流程
+
+1. **压缩角色精选图**作参考（锁人物形象+服装，不只是画风）
+2. 提示词结构：`BACKGROUND:` 写纯场景 → `CHARACTER CENTER FOREGROUND:` 写人物站位+硬特征 → 画风锁
+3. `response_format: 'url'`（响应只返回下载链接，比 b64_json 快）
+4. 背景多余元素用负面词排除：`building, ruins, monument, city, wall, fence, table, chairs, furniture`
+
+---
+
 ## 强制工作流
 
 ### Step 1：读文档，提取硬特征
