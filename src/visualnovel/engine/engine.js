@@ -244,3 +244,67 @@ export function executeEvent(node, variables, unlockedCGs) {
 
   return { variables: newVars, unlockedCGs: newCGs, cg: triggeredCG, grantedItem }
 }
+
+/**
+ * 文案合并：把外部文案注入剧本骨架节点（按 id 匹配）
+ *
+ * 背景：剧本的「逻辑」（type/background/characters/next/effects/branches...）
+ * 与「文案」（text/choices/placeholder）分离维护。prologue.js 是逻辑骨架，
+ * scripts/*.script.js 是文案。本函数在加载时按 id 合并，返回完整节点数组。
+ *
+ * 合并规则：
+ *   - text/placeholder：文案存在则覆盖骨架
+ *   - choices：按下标对应，只覆盖每项的 text（impact/next/effects 保留骨架的）
+ *   - 骨架里没有对应文案的节点：原样返回（如纯逻辑节点 condition/event/end）
+ *   - 文案里多出的 id（骨架没有）：忽略并告警（通常是文案写错了 id）
+ *
+ * @param {Array} nodes - 剧本逻辑骨架（prologue.js）
+ * @param {Array} scriptNodes - 文案节点数组（scripts/*.script.js 合并）
+ * @returns {Array} 合并后的完整节点数组
+ */
+export function mergeScript(nodes, scriptNodes) {
+  const textMap = new Map()
+  for (const t of scriptNodes) {
+    if (t && t.id) {
+      if (textMap.has(t.id)) {
+        console.warn(`[Engine] mergeScript 文案 id 重复: ${t.id}，后者覆盖前者`)
+      }
+      textMap.set(t.id, t)
+    }
+  }
+
+  return nodes.map(node => {
+    const t = textMap.get(node.id)
+    if (!t) return node
+    const merged = { ...node }
+    if ('text' in t) merged.text = t.text
+    if ('placeholder' in t) merged.placeholder = t.placeholder
+    // 选项文案按下标对应：只替换 text，保留 impact/next/effects
+    if (t.choices && Array.isArray(node.choices)) {
+      merged.choices = node.choices.map((c, i) => ({
+        ...c,
+        text: t.choices[i] ?? c.text,
+      }))
+    }
+    return merged
+  })
+}
+
+/**
+ * 通用文本插值：把 {变量名} 替换为实际值
+ *
+ * 支持任意变量名（如 {playerName}、{affinity}）。
+ * 未找到的变量原样保留占位符（便于发现配置错误）。
+ *
+ * @param {string} text - 原始文案（可能含 {playerName} 等占位符）
+ * @param {object} variables - 变量字典（如 { playerName: '阿明', rui: 30 }）
+ * @returns {string} 替换后的文案
+ */
+export function interpolate(text, variables) {
+  if (!text) return ''
+  if (!variables) return text
+  return text.replace(/\{(\w+)\}/g, (match, key) => {
+    const value = variables[key]
+    return value !== undefined && value !== null ? String(value) : match
+  })
+}

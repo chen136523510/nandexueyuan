@@ -1,13 +1,25 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent } from '../engine/engine.js'
+import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent, mergeScript, interpolate } from '../engine/engine.js'
 import { NodeType, ChoiceImpact } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
 
-// 章节注册表（章节 id -> 剧本数据模块）
-// 用动态 import 避免一次性加载所有章节
+// 章节注册表（章节 id -> 剧本数据加载器）
+// 用动态 import 避免一次性加载所有章节。
+// 每个加载器返回 { default: nodes }，其中 nodes 是「逻辑骨架 + 文案」合并后的完整节点数组。
+// 文案拆分在 data/scripts/ 下，按幕维护，院长改台词只动 scripts，不碰本目录的逻辑文件。
 const CHAPTER_LOADERS = {
-  prologue: () => import('../data/prologue.js'),
+  prologue: async () => {
+    const [{ default: skeleton }, s1, s2, s3, s4] = await Promise.all([
+      import('../data/prologue.js'),
+      import('../data/scripts/序章-第一幕-降临.script.js'),
+      import('../data/scripts/序章-第二幕-法刺来访.script.js'),
+      import('../data/scripts/序章-第三幕-储物发放.script.js'),
+      import('../data/scripts/序章-第四幕-自由探索.script.js'),
+    ])
+    const allScripts = [s1.default, s2.default, s3.default, s4.default].flat()
+    return { default: mergeScript(skeleton, allScripts) }
+  },
 }
 
 export const useVisualNovelStore = defineStore('visualNovel', () => {
@@ -189,9 +201,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
     // 设置文本（dialogue / input 节点）
     if (node.type === NodeType.DIALOGUE || node.type === NodeType.INPUT) {
-      // 文本模板替换：{playerName} -> 玩家名称
+      // 文本插值：把 {playerName} 等占位符替换为实际值（通用，支持任意变量名）
       const rawText = node.text || ''
-      fullText.value = rawText.replace(/\{playerName\}/g, playerName.value)
+      fullText.value = interpolate(rawText, { playerName: playerName.value, ...storyVariables.value })
       displayedText.value = ''
       startTypewriter()
 

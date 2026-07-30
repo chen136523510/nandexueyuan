@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-07-30 视觉小说 剧本文案与逻辑分离（ADR-008）
+
+### 概要
+
+把剧本的「文案」（台词/选项/输入提示）从 `prologue.js` 抽离到独立的 `data/scripts/` 目录，按幕拆分、带中文注释。院长改台词只动文案文件，碰不到任何引擎逻辑，改完 Vite HMR 立即生效。
+
+### 决策依据
+
+- 原 `prologue.js` 1454 行，文案与逻辑焊死，改一句台词要在海量逻辑字段中定位，易碰坏 `next`/`effects`/`branches`
+- 院长需要能独立微调台词，不依赖 AI、不碰代码
+- ADR-006 曾设想 JSON，但 JSON 无注释可读性差，改用 JS 文案文件（支持说话人/场景注释）
+
+### 替代方案
+
+- JSON 文案：否决（无注释，可读性差）
+- Markdown+脚本同步：否决（双份数据源，易漂移）
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `src/visualnovel/data/scripts/`（新建） | 4 个按幕拆分的文案文件 + README 操作指南 |
+| `src/visualnovel/data/prologue.js` | 删除全部 text/placeholder/choices文案，变为纯逻辑骨架（129节点，id 不变） |
+| `src/visualnovel/engine/engine.js` | 新增 `mergeScript()`（按 id 合并文案）+ `interpolate()`（通用变量插值） |
+| `src/visualnovel/stores/visualNovelStore.js` | `CHAPTER_LOADERS` 改为多 import + merge；插值改用通用 `interpolate()` |
+| `prd/.../剧情设计/序章-*-台词.md`（4份） | 标注为历史创作稿，运行文案以 scripts/ 为准 |
+
+### 影响评估
+
+- **旧存档 100% 兼容**：存档只存节点 id，id（pro_001~pro_end）未变
+- **choice 选项顺序不变**：合并按下标对应
+- Playwright 全流程实测通过（四幕通关 + 热更新验证）
+
+### 产出物
+
+- ADR-008：`prd/01-需求文档/00-调研/decisions/ADR-008-剧本文案与逻辑分离.md`
+- 文案操作指南：`src/visualnovel/data/scripts/README.md`
+
+---
+
 ## 2026-07-29 Galgame -> 视觉小说 全局重命名 + 02-设计目录重构
 
 ### 概要

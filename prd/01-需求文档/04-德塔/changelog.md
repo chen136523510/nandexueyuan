@@ -4,6 +4,22 @@
 
 ---
 
+### [refactor] 剧本文案与逻辑分离 + 院长形象设计 v2 优化
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（白机）
+- **背景**：院长要求文案可独立微调（不碰代码逻辑）+ 院长"见"形象设计需补全结构/双面性格
+- **变更内容**：
+  1. `src/visualnovel/data/scripts/`（新建）- 4 个按幕拆分的文案文件（第一幕降临/第二幕法刺来访/第三幕储物发放/第四幕自由探索）+ README 操作指南。院长改台词只动这里，Vite HMR 立即生效
+  2. `src/visualnovel/data/prologue.js` - 删除全部 text/placeholder/choices文案，变为纯逻辑骨架（129节点，id不变，旧存档兼容）
+  3. `src/visualnovel/engine/engine.js` - 新增 `mergeScript()`（按id合并文案到骨架）+ `interpolate()`（通用变量插值，替代硬编码`{playerName}`）
+  4. `src/visualnovel/stores/visualNovelStore.js` - `CHAPTER_LOADERS.prologue` 改为多import+merge；插值改用通用`interpolate()`
+  5. `prd/.../形象设计/院长-形象设计.md` - v2优化：补命名哲学（见=看见+远见）+ 贯穿信物独立章节（虚空晶石项链）+ 双面性格（对内抽象搞怪/对外严肃得体）+ 差异对比表 + 提示词负面词
+  6. `prd/.../剧情设计/序章-*-台词.md`（4份）- 标注为历史创作稿，运行文案以 scripts/ 为准
+- **验证**：Playwright全流程实测通过（四幕通关+命名插值+条件分支+Q&A可重选+热更新验证改文案即生效）
+- **状态**：已验证
+- **关联文档**：[ADR-008 剧本文案与逻辑分离](../../00-调研/decisions/ADR-008-剧本文案与逻辑分离.md)、[文案操作指南](../../../src/visualnovel/data/scripts/README.md)、[院长-形象设计](../02-设计/形象设计/院长-形象设计.md)
+
 ### [feat] 存档系统增强 + UI隐藏恢复按钮 + Seedream调研 + 院长形象设计
 
 - **时间**：2026-07-30
