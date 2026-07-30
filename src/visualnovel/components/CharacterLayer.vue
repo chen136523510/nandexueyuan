@@ -45,12 +45,12 @@ const characters = computed(() => {
 
 .char-container {
   position: absolute;
-  bottom: 180px; /* 留出底部对话框空间 */
+  bottom: 0; /* 立绘脚底贴屏幕底边，对话框(z-index更高)自然遮住下半身 */
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: flex-end; /* 末行对齐 = 脚底对齐 */
   gap: 20px;
 }
 
@@ -58,11 +58,11 @@ const characters = computed(() => {
   transition: filter 0.4s ease, transform 0.4s ease;
 }
 
-/* 立绘图 */
+/* 立绘图（日系VN标准：脚底贴底，对话框压住膝盖以下） */
 .char-img {
   display: block;
-  height: 70vh;
-  max-height: 720px;
+  height: 85vh;
+  max-height: 860px;
   width: auto;
   object-fit: contain;
   pointer-events: none;
