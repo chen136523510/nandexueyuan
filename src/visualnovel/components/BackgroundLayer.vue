@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
 const store = useVisualNovelStore()
@@ -8,6 +8,18 @@ const store = useVisualNovelStore()
 const displayBg = ref('')
 const prevBg = ref('')
 const transitioning = ref(false)
+
+// 已生成的真实背景图清单（存在于 public/visualnovel/bg/ 下）
+// 未列入的 bgKey 仍回退 CSS 渐变占位
+// key -> 实际文件名(不含扩展名)。同名可省略value，不同名用映射(如多个key指向同一张图)
+const REAL_BG_MAP = {
+  'bg/void_world': null,
+  'bg/grassland': null,
+  'bg/tower_day': null,
+  'bg/tower_interior_hall': null,
+  'bg/tower_lobby': 'bg/tower_interior_hall', // 命名不统一，指向同一张大厅图
+  'bg/tower_outdoor_mist': null,
+}
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
 const BG_FALLBACK = {
@@ -33,9 +45,12 @@ watch(
   }
 )
 
+// 优先加载真实图片，未生成的回退 CSS 渐变占位
 function getBgStyle(bgKey) {
-  // PoC 阶段：优先用 CSS 渐变占位
-  // 后续：return `url(/visualnovel/${bgKey}.jpg)`
+  if (bgKey in REAL_BG_MAP) {
+    const fileKey = REAL_BG_MAP[bgKey] || bgKey
+    return `url(/visualnovel/${fileKey}.png)`
+  }
   return BG_FALLBACK[bgKey] || 'radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%)'
 }
 </script>
@@ -46,20 +61,20 @@ function getBgStyle(bgKey) {
     <div
       v-if="transitioning && prevBg"
       class="bg-image bg-prev"
-      :style="{ background: getBgStyle(prevBg) }"
+      :style="{ backgroundImage: getBgStyle(prevBg), backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }"
     />
     <!-- 新背景（淡入） -->
     <div
       v-if="displayBg"
       class="bg-image bg-current"
       :class="{ 'fade-in': transitioning }"
-      :style="{ background: getBgStyle(displayBg) }"
+      :style="{ backgroundImage: getBgStyle(displayBg), backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }"
     />
     <!-- 默认背景（无背景时） -->
     <div
       v-if="!displayBg"
       class="bg-image"
-      style="background: radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%)"
+      style="background-image: radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%); background-size: cover; background-repeat: no-repeat; background-position: center"
     />
   </div>
 </template>
@@ -77,6 +92,7 @@ function getBgStyle(bgKey) {
   inset: 0;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   transition: opacity 0.6s ease;
 }
 

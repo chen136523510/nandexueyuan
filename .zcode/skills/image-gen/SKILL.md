@@ -54,6 +54,8 @@ profile view, side view, back view, looking away, closed eyes
 1. **纯文生图偏古风**：Seedream 无参考图时倾向中国古风。**必须上传同画风参考图**（如已定稿立绘）锁住西方奇幻油画厚涂风。参考图「仅锁画风，不锁人物」。
 2. **3 张参考图并发超时**：豆包并发多张 + 多参考图易超时。稳定配置 = `fast 模式 + 1K + 单参考图`。
 3. **同色系撞脸**：杰和见都是暖色系（金发琥珀眼 / 黑发栗色眼），脸模极容易撞。**出图前先查「发色/眼色矩阵」，用负面词排除近似色**。
+4. **带大参考图(>1MB) + b64_json 响应 → 超时**：参考图 base64 上传 + b64 响应回传双重慢，110s 内拿不到结果。**优化方案**：① 改用 `response_format: url`（响应只返回下载链接，体积小）② 参考图压到 512px jpeg ③ 复杂场景可先用纯文生图快速出图（14s），人物硬特征靠提示词写死。
+5. **背景图双 key 不统一**：prologue.js 存在 `bg/tower_interior_hall` 和 `bg/tower_lobby` 指同一大厅场景。BackgroundLayer 用 `REAL_BG_MAP` 映射，多 key 指向同一张图。**新增背景时先 grep 确认 key 是否唯一。**
 
 ---
 
@@ -73,6 +75,23 @@ profile view, side view, back view, looking away, closed eyes
 - [ ] 院长已明确说"合格"
 - [ ] 统一命名（`face_vX_XX.png` / `full_vX_XX.png` / `expr_vX_XX.png`）
 - [ ] 附 README 或清单记录元数据（发色/眼色/气质/生成工具）
+
+---
+
+## 纪律 2.5：背景图两种用法（重要）
+
+背景图有两种渲染模式，**出图前必须先确认当前节点用哪种**：
+
+### A. 纯场景背景（无角色）
+- **用途**：场景转换、环境交代。人物靠 `characters` 立绘层独立叠加。
+- **提示词**：只写环境，禁止写人物。负面词加 `people, character, person`。
+- **示例**：`bg/void_world`（虚空）、`bg/grassland`（草原塔楼远景）
+
+### B. 氛围背景（角色画在图里）
+- **用途**：过场/转场/特定情绪节点，给玩家身临其境感。角色直接画死在背景里，**该节点应禁用立绘层**（或立绘层不显示该角色），避免双角色重叠。
+- **提示词结构**：先写 `BACKGROUND:`（环境），再写 `IN THE FOREGROUND CENTER:`（人物站位+角色硬特征），最后画风锁。
+- **示例**：`bg/tower_outdoor_mist`（幸站在雾中外交场景）
+- **判断依据**：看 prologue.js 该节点是否需要换表情--需要换表情用 A，不需要用 B。
 
 ---
 
