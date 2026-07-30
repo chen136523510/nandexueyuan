@@ -4,6 +4,26 @@
 
 ---
 
+### [feat] 见+添立绘接入 + 立绘三态交互系统（旁白对齐/说话人上移提亮）
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（黑机）
+- **背景**：序章立绘一直是占位色块（PoC），需替换真实立绘；立绘交互需实现"旁白时全部对齐、说话人上移提亮"的视觉规则
+- **变更内容**：
+  - **立绘生成**：Seedream API（脸模参考图锁形象+纯色背景）出见和添全身立绘 → jimp floodfill 纯色背景抠图 → 缩放 832×1216 入库
+    - `public/visualnovel/portraits/dean/normal.png`（见：黑袍年轻院长）
+    - `public/visualnovel/portraits/tian/normal.png`（添：魁梧西装峰哥脸）
+  - **三态交互系统**：立绘状态从"数据手写 active"改为"speaker 驱动运行时推导"
+    - `types.js`：新增 `SPEAKER_TO_ID` 映射（中文名→英文id）；修正 `CHAR_COLORS`（补 dean/xing/tian，原 id 与 prologue 不匹配）
+    - `visualNovelStore.js`：`currentCharacters` 根据 speaker 推导三态（narrator/active/dim）
+    - `CharacterLayer.vue`：占位色块→真实立绘 `<img>`；active 态上移24px+提亮，narrator 态全部对齐，dim 态变暗
+  - **实测确认**：Seedream API 无法通过提示词生成透明背景（四角 Alpha 全 255，jimp 打印验证），透明背景需额外抠图
+- **影响范围**：所有序章节点的立绘渲染与交互
+- **验证**：evaluate 打印断点验证三态推导（pro_103幸active/见dim、pro_104切换、pro_012旁白narrator）；DOM 验证立绘 img 加载+active transform/filter
+- **待优化**：当前 jimp floodfill 抠图，rembg 语义抠图待 GitHub 网络恢复后替换（发丝边缘更精细）
+
+---
+
 ### [fix] 缓几天路径第四幕死循环修复 + 6张序章背景图接入
 
 - **时间**：2026-07-30

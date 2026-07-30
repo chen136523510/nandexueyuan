@@ -5,28 +5,17 @@ import { CHAR_COLORS } from '../engine/types.js'
 
 const store = useVisualNovelStore()
 
-// 当前场景的角色列表（带活跃状态：说话者高亮，其他 dim）
+// 当前场景的角色列表（三态：narrator/active/dim，由 store 根据 speaker 推导）
 const characters = computed(() => {
   return store.currentCharacters.map((char) => {
-    const isActive = char.active === true
     return {
       ...char,
       color: CHAR_COLORS[char.id] || '#B0B0C0',
-      isActive,
+      // 立绘图路径：portrait 字段格式为 "{id}/{表情}"，直接拼
+      imgSrc: `/visualnovel/portraits/${char.portrait || (char.id + '/normal')}.png`,
     }
   })
 })
-
-// PoC 占位：根据角色 id 显示名字色块（后续替换为真实立绘图）
-const CHAR_NAMES = {
-  rui: '睿帝',
-  qiu: '丘',
-  jie: '杰',
-  wang: '汪神',
-  muren: '牧羊人',
-  faci: '法刺',
-  member: '冒险者',
-}
 </script>
 
 <template>
@@ -37,15 +26,9 @@ const CHAR_NAMES = {
           v-for="char in characters"
           :key="char.id"
           class="char-portrait"
-          :class="[`pos-${char.position || 'center'}`, { active: char.isActive, dim: !char.isActive }]"
+          :class="[`pos-${char.position || 'center'}`, char.state || 'narrator']"
         >
-          <!-- PoC 占位：色块 + 角色名 -->
-          <!-- 后续替换为: <img :src="`/visualnovel/portraits/${char.id}/${char.portrait}.png`" /> -->
-          <div class="char-placeholder" :style="{ borderColor: char.color }">
-            <span class="char-name-tag" :style="{ color: char.color }">
-              {{ CHAR_NAMES[char.id] || char.id }}
-            </span>
-          </div>
+          <img :src="char.imgSrc" :alt="char.id" class="char-img" @error="$event.target.style.display='none'" />
         </div>
       </div>
     </Transition>
@@ -75,9 +58,19 @@ const CHAR_NAMES = {
   transition: filter 0.4s ease, transform 0.4s ease;
 }
 
+/* 立绘图 */
+.char-img {
+  display: block;
+  height: 70vh;
+  max-height: 720px;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 /* 位置 */
 .pos-left {
-  align-self: flex-start;
+  align-self: flex-end;
   margin-right: auto;
   margin-left: 8%;
 }
@@ -90,35 +83,24 @@ const CHAR_NAMES = {
   flex-shrink: 0;
 }
 
-/* 活跃状态（说话者）：清晰 + 轻微放大 */
+/* ===== 三态：narrator / active / dim ===== */
+
+/* 说话人：上移 + 提亮 */
 .char-portrait.active {
+  filter: brightness(1.12) saturate(1.08);
+  transform: translateY(-24px);
+}
+
+/* 旁白态：全部对齐，正常亮度 */
+.char-portrait.narrator {
   filter: brightness(1) saturate(1);
-  transform: scale(1);
+  transform: translateY(0);
 }
 
-/* 非活跃状态：dim（变暗 + 去饱和） */
+/* 非说话人：变暗 */
 .char-portrait.dim {
-  filter: brightness(0.5) saturate(0.4);
-  transform: scale(0.95);
-}
-
-/* PoC 占位样式 */
-.char-placeholder {
-  width: 200px;
-  height: 380px;
-  border: 2px solid;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 16px;
-}
-
-.char-name-tag {
-  font-size: 18px;
-  font-weight: 700;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  filter: brightness(0.55) saturate(0.4);
+  transform: translateY(0);
 }
 
 /* 立绘滑入动画 */
@@ -141,12 +123,9 @@ const CHAR_NAMES = {
     bottom: 160px;
     gap: 8px;
   }
-  .char-placeholder {
-    width: 120px;
-    height: 240px;
-  }
-  .char-name-tag {
-    font-size: 14px;
+  .char-img {
+    height: 55vh;
+    max-height: 480px;
   }
   .pos-left {
     margin-left: 4%;

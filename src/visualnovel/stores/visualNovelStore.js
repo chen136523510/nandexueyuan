@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent, mergeScript, interpolate } from '../engine/engine.js'
-import { NodeType, ChoiceImpact } from '../engine/types.js'
+import { NodeType, ChoiceImpact, SPEAKER_TO_ID } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
 
 // 章节注册表（章节 id -> 剧本数据加载器）
@@ -56,9 +56,26 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     return getNode(currentIndex.value, currentNodeId.value)
   })
 
+  // 立绘三态推导（narrator/active/dim），由 speaker 驱动，不依赖数据手写 active
   const currentCharacters = computed(() => {
-    if (!currentNode.value) return []
-    return currentNode.value.characters || []
+    const node = currentNode.value
+    if (!node) return []
+    const chars = node.characters || []
+    if (chars.length === 0) return []
+
+    const speaker = node.speaker || ''
+    const isNarrator = speaker === '旁白'
+
+    return chars.map((char) => {
+      let state
+      if (isNarrator) {
+        state = 'narrator'  // 旁白：所有立绘对齐，正常亮度
+      } else {
+        const speakerId = SPEAKER_TO_ID[speaker]
+        state = char.id === speakerId ? 'active' : 'dim'
+      }
+      return { ...char, state }
+    })
   })
 
   const currentSpeaker = computed(() => {

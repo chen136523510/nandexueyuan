@@ -34,14 +34,35 @@ export const CharPosition = {
 
 // 角色色彩配置（UI 标签颜色，与设定集角色绑定）
 export const CHAR_COLORS = {
-  rui: '#C0C0D0',        // 睿帝：银灰
-  qiu: '#7A9E72',        // 丘：林绿
-  jie: '#D4A574',        // 杰：金沙
-  wang: '#7EC8E3',       // 汪神：淡蓝
-  muren: '#E8E8F0',      // 牧羊人：纯白
-  faci: '#A04040',       // 法刺：暗红（帝国密探）
-  narrator: '#B0B0C0',   // 旁白：灰
-  member: '#94B48C',     // 学院成员：莫兰迪绿
+  // 序章实际使用
+  dean: '#C8B070',        // 见（院长）：暖金栗
+  xing: '#7A9EC8',        // 幸：冷蓝
+  tian: '#D4A574',        // 添：大地金
+  narrator: '#B0B0C0',    // 旁白：灰
+  // 其他角色（预留）
+  rui: '#C0C0D0',         // 睿帝：银灰
+  qiu: '#7A9E72',         // 丘：林绿
+  jie: '#D4A574',         // 杰：金沙
+  wang: '#7EC8E3',        // 汪神：淡蓝
+  rong: '#A04040',        // 荣：暗红
+  muren: '#E8E8F0',       // 牧阳：纯白
+  muyang: '#E8E8F0',      // 沐阳：纯白（别名）
+  wangshen: '#7EC8E3',    // 汪神别名
+  member: '#94B48C',      // 学院成员：莫兰迪绿
+}
+
+// speaker中文名 → 角色英文id 映射（用于运行时推导说话人立绘状态）
+export const SPEAKER_TO_ID = {
+  '见': 'dean',
+  '院长': 'dean',
+  '幸': 'xing',
+  '添': 'tian',
+  '睿帝': 'rui',
+  '丘': 'qiu',
+  '杰': 'jie',
+  '汪神': 'wangshen',
+  '荣': 'rong',
+  '沐阳': 'muyang',
 }
 
 // 物品类型枚举
