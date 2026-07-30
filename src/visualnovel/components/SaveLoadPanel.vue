@@ -2,16 +2,10 @@
 import { ref, watch, computed } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
-const props = defineProps({
-  mode: { type: String, default: 'save' }, // 'save' | 'load'
-})
-
 const store = useVisualNovelStore()
 const saves = ref([])
 const loading = ref(false)
 const msg = ref('')
-
-const title = computed(() => props.mode === 'save' ? '存档' : '读档')
 
 // 11 个槽位：0=自动，1-10=手动
 const slots = computed(() => {
@@ -47,7 +41,7 @@ async function fetchSaves() {
 watch(
   () => store.activePanel,
   (panel) => {
-    if (panel === 'save' || panel === 'load') {
+    if (panel === 'save') {
       fetchSaves()
     }
   }
@@ -110,10 +104,10 @@ function formatDate(dateStr) {
 </script>
 
 <template>
-  <div v-if="store.activePanel === mode" class="sl-overlay" @click.self="close">
+  <div v-if="store.activePanel === 'save'" class="sl-overlay" @click.self="close">
     <div class="sl-panel">
       <div class="sl-header">
-        <h2 class="sl-title">{{ title }}</h2>
+        <h2 class="sl-title">存档管理</h2>
         <button class="sl-close" @click="close">✕</button>
       </div>
 
@@ -148,31 +142,29 @@ function formatDate(dateStr) {
             <span v-if="item.save" class="sl-chapter">{{ item.save.chapter }} · {{ item.save.node }}</span>
           </div>
 
-          <!-- 操作按钮 -->
+          <!-- 操作按钮：每个槽位都有存档+读档 -->
           <div class="sl-actions">
-            <!-- 存档模式 -->
-            <template v-if="mode === 'save'">
-              <!-- 自动存档：只读，不允许手动覆盖 -->
-              <span v-if="item.isAuto" class="sl-readonly">系统自动</span>
-              <!-- 手动槽位：有存档显示"覆盖"，空槽位显示"新建" -->
-              <button
-                v-else
-                class="sl-btn primary"
-                :disabled="loading"
-                @click="handleSave(item.slot)"
-              >
-                {{ item.isEmpty ? '新建' : '覆盖' }}
-              </button>
-            </template>
-            <!-- 读档模式 -->
+            <!-- 存档按钮 -->
             <button
-              v-else
+              v-if="!item.isAuto"
               class="sl-btn primary"
+              :disabled="loading"
+              @click="handleSave(item.slot)"
+            >
+              {{ item.isEmpty ? '存档' : '覆盖' }}
+            </button>
+            <!-- 自动存档：存档只读 -->
+            <span v-else class="sl-readonly">系统自动</span>
+
+            <!-- 读档按钮：空槽位置灰 -->
+            <button
+              class="sl-btn load"
               :disabled="loading || !item.save"
               @click="handleLoad(item.slot)"
             >
-              读取
+              读档
             </button>
+
             <!-- 删除（自动存档不可删除） -->
             <button
               v-if="item.save && !item.isAuto"
@@ -186,8 +178,8 @@ function formatDate(dateStr) {
         </div>
       </div>
 
-      <!-- 底部：新建存档快捷按钮（仅存档模式） -->
-      <div v-if="mode === 'save'" class="sl-footer">
+      <!-- 底部：新建存档快捷按钮 -->
+      <div class="sl-footer">
         <button
           class="sl-new-btn"
           :disabled="loading || !firstEmptySlot"
@@ -383,6 +375,15 @@ function formatDate(dateStr) {
 
 .sl-btn.primary:hover:not(:disabled) {
   background: rgba(201, 169, 110, 0.3);
+}
+
+.sl-btn.load {
+  background: rgba(100, 160, 220, 0.15);
+  color: rgba(140, 180, 220, 0.9);
+}
+
+.sl-btn.load:hover:not(:disabled) {
+  background: rgba(100, 160, 220, 0.25);
 }
 
 .sl-btn.danger {

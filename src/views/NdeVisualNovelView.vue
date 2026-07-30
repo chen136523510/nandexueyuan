@@ -61,10 +61,6 @@ function handleKeydown(e) {
     case 'S':
       store.togglePanel('save')
       break
-    case 'l':
-    case 'L':
-      store.togglePanel('load')
-      break
     case 'Escape':
       store.togglePanel('settings')
       break
@@ -126,8 +122,7 @@ onUnmounted(() => {
       <QuickMenu />
 
       <!-- 面板层 -->
-      <SaveLoadPanel mode="save" />
-      <SaveLoadPanel mode="load" />
+      <SaveLoadPanel />
       <HistoryPanel />
       <SettingsPanel />
       <InventoryPanel />
