@@ -496,7 +496,7 @@ export default [
     next: 'pro_choice_1'
   },
 
-  // ===== 核心选择：四选项（A/B critical，C/D info）=====
+  // ===== 核心选择：五选项（A/B/C critical，D/E info）=====
   {
     id: 'pro_choice_1',
     type: 'choice',
@@ -507,9 +507,51 @@ export default [
     choices: [
       { impact: 'critical', next: 'pro_agree_1', effects: { rui: 5 } },
       { impact: 'critical', next: 'pro_refuse_1', effects: { rui: 0 } },
+      { impact: 'critical', next: 'pro_delay_1' },
       { impact: 'info', next: 'pro_ask_rui_1' },
       { impact: 'info', next: 'pro_ask_city_1' },
     ],
+  },
+
+  // ----- 分支C：缓几天（critical，添救场→接入Q&A→回choice）-----
+  {
+    id: 'pro_delay_1',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    characters: [
+      { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
+    ],
+    speaker: '旁白',
+    next: 'pro_delay_2'
+  },
+  {
+    id: 'pro_delay_2',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    characters: [
+      { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/normal', position: 'right', active: false },
+    ],
+    speaker: '添',
+    next: 'pro_delay_3'
+  },
+  {
+    id: 'pro_delay_3',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    characters: [
+      { id: 'dean', portrait: 'dean/normal', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/normal', position: 'right', active: false },
+    ],
+    speaker: '见',
+    next: 'pro_delay_4'
+  },
+  {
+    id: 'pro_delay_4',
+    type: 'event',
+    background: 'bg/tower_outdoor_mist',
+    setVariables: { met_tian: true },
+    next: 'pro_qa_choice'
   },
 
   // ----- 分支C：询问睿帝（info，回答后回到选择）-----
@@ -820,7 +862,17 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior',
     speaker: '旁白',
-    next: 'pro_303'
+    next: 'pro_cond_met_tian'
+  },
+
+  // ===== condition：是否已和添聊过（缓几天分支提前Q&A过）=====
+  {
+    id: 'pro_cond_met_tian',
+    type: 'condition',
+    branches: [
+      { if: { variables: { met_tian: true } }, next: 'pro_qa_end_1' },
+      { else: true, next: 'pro_303' },
+    ],
   },
 
   // ================================================================
@@ -1269,7 +1321,29 @@ export default [
       { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
     ],
     speaker: '添',
-    next: 'pro_end'
+    next: 'pro_cond_qa_end'
+  },
+
+  // ===== condition：Q&A结束后去向（缓几天→回choice答复，正常→结束）=====
+  {
+    id: 'pro_cond_qa_end',
+    type: 'condition',
+    branches: [
+      { if: { variables: { met_tian: true } }, next: 'pro_delay_back_1' },
+      { else: true, next: 'pro_end' },
+    ],
+  },
+
+  // ----- 缓几天：Q&A走完，添送玩家下楼答复幸 -----
+  {
+    id: 'pro_delay_back_1',
+    type: 'dialogue',
+    background: 'bg/tower_lobby',
+    characters: [
+      { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
+    ],
+    speaker: '添',
+    next: 'pro_choice_1'
   },
 
   // ================================================================

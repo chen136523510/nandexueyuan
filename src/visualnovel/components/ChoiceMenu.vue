@@ -46,7 +46,6 @@ function handleSelect(index) {
       >
         <span class="choice-marker" />
         <span class="choice-text">{{ choice.text }}</span>
-        <span v-if="isCritical(choice)" class="choice-tag">关键</span>
         <span v-if="isChoiceSelected(index)" class="choice-check">✓</span>
       </div>
     </div>
