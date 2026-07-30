@@ -234,7 +234,7 @@ export default [
   {
     id: 'pro_101',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -244,14 +244,14 @@ export default [
   {
     id: 'pro_102',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_outdoor_mist',  // 过场：幸从晨雾中走来（角色入画氛围图，无立绘）
     speaker: '旁白',
     next: 'pro_103'
   },
   {
     id: 'pro_103',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: false },
@@ -262,7 +262,7 @@ export default [
   {
     id: 'pro_104',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: false },
@@ -273,7 +273,7 @@ export default [
   {
     id: 'pro_105',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: false },
@@ -284,14 +284,14 @@ export default [
   {
     id: 'pro_106',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_107'
   },
   {
     id: 'pro_107',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -301,7 +301,7 @@ export default [
   {
     id: 'pro_108',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -311,7 +311,7 @@ export default [
   {
     id: 'pro_109',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -321,7 +321,7 @@ export default [
   {
     id: 'pro_110',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_111'
   },
@@ -330,7 +330,7 @@ export default [
   {
     id: 'pro_111',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -340,7 +340,7 @@ export default [
   {
     id: 'pro_112',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -350,14 +350,14 @@ export default [
   {
     id: 'pro_113',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_114'
   },
   {
     id: 'pro_114',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -367,14 +367,14 @@ export default [
   {
     id: 'pro_115',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_116'
   },
   {
     id: 'pro_116',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -384,7 +384,7 @@ export default [
   {
     id: 'pro_117',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -394,7 +394,7 @@ export default [
   {
     id: 'pro_118',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -406,7 +406,7 @@ export default [
   {
     id: 'pro_brief_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -416,7 +416,7 @@ export default [
   {
     id: 'pro_brief_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -426,14 +426,14 @@ export default [
   {
     id: 'pro_brief_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_119'
   },
   {
     id: 'pro_119',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -443,14 +443,14 @@ export default [
   {
     id: 'pro_120',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_121'
   },
   {
     id: 'pro_121',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -460,7 +460,7 @@ export default [
   {
     id: 'pro_122',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -470,7 +470,7 @@ export default [
   {
     id: 'pro_123',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_124'
   },
@@ -479,7 +479,7 @@ export default [
   {
     id: 'pro_124',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -489,7 +489,7 @@ export default [
   {
     id: 'pro_125',
     type: 'input',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -500,7 +500,7 @@ export default [
   {
     id: 'pro_126',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -510,14 +510,14 @@ export default [
   {
     id: 'pro_127',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_128'
   },
   {
     id: 'pro_128',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -529,7 +529,7 @@ export default [
   {
     id: 'pro_choice_1',
     type: 'choice',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -546,7 +546,7 @@ export default [
   {
     id: 'pro_delay_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -556,7 +556,7 @@ export default [
   {
     id: 'pro_delay_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'tian', portrait: 'tian/normal', position: 'center', active: true },
       { id: 'xing', portrait: 'xing/normal', position: 'right', active: false },
@@ -567,7 +567,7 @@ export default [
   {
     id: 'pro_delay_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'center', active: true },
       { id: 'xing', portrait: 'xing/normal', position: 'right', active: false },
@@ -578,7 +578,7 @@ export default [
   {
     id: 'pro_delay_4',
     type: 'event',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     setVariables: { met_tian: true },
     next: 'pro_qa_choice'
   },
@@ -587,7 +587,7 @@ export default [
   {
     id: 'pro_ask_rui_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -597,14 +597,14 @@ export default [
   {
     id: 'pro_ask_rui_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_ask_rui_3'
   },
   {
     id: 'pro_ask_rui_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -616,7 +616,7 @@ export default [
   {
     id: 'pro_ask_city_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -626,14 +626,14 @@ export default [
   {
     id: 'pro_ask_city_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_ask_city_3'
   },
   {
     id: 'pro_ask_city_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -645,7 +645,7 @@ export default [
   {
     id: 'pro_agree_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -655,7 +655,7 @@ export default [
   {
     id: 'pro_agree_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -665,7 +665,7 @@ export default [
   {
     id: 'pro_agree_3',
     type: 'event',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     grantItem: 'rui_emblem',
     setVariables: { agreed_to_rui: true },
     next: 'pro_depart_1'
@@ -675,7 +675,7 @@ export default [
   {
     id: 'pro_refuse_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -685,7 +685,7 @@ export default [
   {
     id: 'pro_refuse_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -695,7 +695,7 @@ export default [
   {
     id: 'pro_refuse_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_depart_1'
   },
@@ -704,7 +704,7 @@ export default [
   {
     id: 'pro_depart_1',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -714,7 +714,7 @@ export default [
   {
     id: 'pro_depart_2',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
@@ -724,14 +724,14 @@ export default [
   {
     id: 'pro_depart_3',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_depart_4'
   },
   {
     id: 'pro_depart_4',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
@@ -741,14 +741,14 @@ export default [
   {
     id: 'pro_depart_5',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'pro_depart_6'
   },
   {
     id: 'pro_depart_6',
     type: 'dialogue',
-    background: 'bg/tower_outdoor_mist',
+    background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/normal', position: 'left', active: true },
     ],
