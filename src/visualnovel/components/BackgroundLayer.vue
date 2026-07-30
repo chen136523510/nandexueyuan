@@ -19,6 +19,7 @@ const REAL_BG_MAP = {
   'bg/tower_interior_hall': null,
   'bg/tower_lobby': 'bg/tower_interior_hall', // 命名不统一，指向同一张大厅图
   'bg/tower_outdoor_mist': null,
+  'bg/tower_interior': null,
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
