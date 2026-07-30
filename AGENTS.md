@@ -120,6 +120,7 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 
 1. `git push` 所有提交到 feature 分支或 master
 2. 更新 `.ai/handoff.md`（当前分支、未完成事项、下一步、环境状态）
+   - **时间精确到时分**：`最后更新`行与各「本轮产出」节标题一律写 `YYYY-MM-DD HH:MM`（本地时间）。同日双机多轮交接时用于区分先后；无法回填的旧记录保持原样，不得编造
 3. 执行 `sync-docs` 技能同步四文档（changelog/bug-log/需求池/handoff）
 4. 若里程碑状态变化，更新 `pm/ROADMAP.md`（状态+完成日期+产出物）
 
