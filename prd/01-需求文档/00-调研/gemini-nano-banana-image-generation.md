@@ -135,31 +135,69 @@
 | 角色一致性 | 🟡 与网页版同源，预期相当（项目评级5星） | 同源模型；**参考图机制确认是混合引导非分类，见下** |
 | **参考图机制** | ⚠️ **混合不分类**（关键）| PDF：`image` 为 string[] 数组，无角色/物体/风格分类标注。**与网页版一致，不如 Gemini 的分类通道** |
 | 参考图张数上限 | 5.0 pro 最多 **10 张**；5.0 lite/4.5/4.0 最多 **14 张** | PDF 明确 |
-| 参考图格式 | jpeg/png/webp/bmp/tiff/gif/heic/heif；单张最大 30MB、≤6000×6000 | PDF |
+| 参考图格式 | jpeg/png/webp/bmp/tiff/gif/heic/heif；单张最大 30MB、≤6000×6000、宽高比[1/16,16] | PDF |
+| **水印** | ⚠️ 默认加「AI生成」水印，**可 `watermark:false` 关闭**（对项目重要） | PDF |
+| **交互编辑** | ✅ **5.0 pro 独有**：坐标/框选/箭头指定编辑位置，精准精修 | PDF |
+| fast模式 | ✅ `optimize_prompt_options.mode=fast`（standard质量优但慢，fast更快） | PDF |
+| 组图 | 5.0 pro ❌不支持；lite/4.5/4.0 ✅（`sequential_image_generation=auto`，最多15张） | PDF |
+| 联网搜索 | 仅 5.0 lite 支持（`tools.type=web_search`） | PDF |
 | 可编程接入 | ✅ **REST API**（解决网页版无API痛点） | endpoint + 模型ID |
 | 国内直连 | ✅ **无需翻墙** | 火山引擎北京区 `ark.cn-beijing.volces.com` |
-| 连续生成 | ✅ `sequential_image_generation` 参数（2-10+ 张连发） | PDF；pro 版支持 |
-| 文字渲染 | ❓ 未确认 | PDF 字体编码乱码未读出，待实测 |
+| 组图/连续生成 | 🟡 5.0 pro ❌不支持组图（只生单图）；lite/4.5/4.0 ✅组图（最多15张，参考图+生成图≤15） | PDF 修正 |
+| 文字渲染 | ❓ PDF 全文未提及文字渲染能力，待实测 | docling OCR 通读 PDF 确认 |
 
 **参考图机制的重要结论**：豆包 Seedream API 的 `image` 参数是**混合数组**（把角色图、风格图、物体图混在一起传），模型自行理解，**没有像 Gemini 那样的角色/物体/风格分类通道**。这意味着：
 - 豆包 = API 化的网页版 Seedream（解决"无API"，但参考图引导方式不变）
 - Gemini Pro 在参考图分类机制上**仍机制更优**（但更贵、需翻墙）
 - 二者的取舍是「价格+国内直连」vs「参考图分类精度」
 
-### 4B.3 API 调用参数（PDF 确认）
-
-| 参数 | 类型 | 说明 |
-|---|---|---|
-| `model` | string | 模型ID，如 `doubao-seedream-5-0-pro-260628`；或火山方舟接入点 Endpoint ID |
-| `prompt` | string | 文本，4.0-5.0 支持 300-600 字 |
-| `image` | string / string[] | 参考图，URL 或 Base64。Base64 格式 `data:image/png;base64,<base64_image>` |
-| `size` | string | 输出分辨率，如 `2K`=2048×2048；自定义总像素区间 [921600, 4624220] |
-| `watermark` | bool | 水印开关（推测） |
-| `sequential_image_generation` | enum | 连续图像生成：5.0 pro 支持 `==new==`（2-10+张）；lite/4.5/4.0 支持 `auto`/`disabled` |
+### 4B.3 API 调用参数（docling OCR 通读 PDF 完整确认）
 
 **端点**：`POST https://ark.cn-beijing.volces.com/api/v3/images/generations`
 **鉴权**：Bearer + 火山引擎 API Key（与现有 Key 通用）
 **支持模型**：Doubao Seedream 5.0 pro / 5.0 lite / 4.5 / 4.0（均同一 endpoint）
+
+**Body 请求参数**：
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `model` | string 必选 | 模型ID，如 `doubao-seedream-5-0-pro-260628`；或 Endpoint ID |
+| `prompt` | string 必选 | 提示词，支持中英文；建议≤300汉字/600英文单词，过多会忽略细节 |
+| `image` | string / string[] | 参考图，URL 或 Base64（`data:image/png;base64,<base64>`）；pro 最多10张，lite/4.5/4.0 最多14张 |
+| `size` | string | 输出尺寸。方式1：分辨率档位（`1K`/`2K`/`3K`/`4K`，在prompt描述宽高比）；方式2：宽高像素（`2048x1024`）。不可混用 |
+| `watermark` | bool 默认true | **水印开关**：true=右下角加「AI生成」水印；false=不加水印（**项目立绘应设false**） |
+| `optimize_prompt_options.mode` | string 默认standard | `standard`（质量优但慢）/ `fast`（更快，时延敏感用） |
+| `output_format` | string 默认jpeg | 输出格式：`png`/`jpeg`（仅 5.0 pro/lite 支持） |
+| `response_format` | string 默认url | 返回格式：`url`（24h有效链接）/ `b64_json`（base64） |
+| `sequential_image_generation` | string 默认disabled | 组图：`auto`（自动判断）/ `disabled`（仅单图）。**仅 lite/4.5/4.0 支持，pro 不支持组图** |
+| `sequential_image_generation_options.max_images` | int 默认15 | 组图最大张数[1,15]，且 参考图数+生成图数≤15 |
+| `stream` | bool 默认false | 流式输出（仅 lite/4.5/4.0） |
+| `tools` | object[] | 工具配置，仅 5.0 lite 支持 `web_search` 联网搜索 |
+
+**各模型能力差异（PDF 确认）**：
+
+| 能力 | 5.0 pro | 5.0 lite | 4.5 | 4.0 |
+|---|---|---|---|---|
+| 文生图/单图生图/多图生图(单图输出) | ✅ | ✅ | ✅ | ✅ |
+| 组图生成 | ❌ | ✅ | ✅ | ✅ |
+| 交互编辑(坐标/框选/箭头精准编辑) | ✅ 独有 | - | - | - |
+| 联网搜索(web_search) | ❌ | ✅ | ❌ | ❌ |
+| 流式输出 | ❌ | ✅ | ✅ | ✅ |
+| 参考图上限 | 10张 | 14张 | 14张 | 14张 |
+
+**分辨率映射表（立绘比例 3:4 相关，PDF 确认）**：
+
+项目立绘规格 832×1216 接近 3:4。各模型在 `size` 方式1（指定档位）下 3:4 比例的实际像素：
+
+| 模型 | 档位 | 3:4 宽高像素 |
+|---|---|---|
+| 5.0 pro | 1K | 864×1152 |
+| 5.0 pro | 2K | 1776×2368 |
+| 5.0 lite / 4.5 / 4.0 | 2K | 1728×2304 |
+| 5.0 lite / 4.5 | 3K | 2592×3456 |
+| 5.0 lite / 4.5 / 4.0 | 4K | 3520×4704 |
+
+> pro 只支持 1K/2K 两档；项目立绘用 pro 2K 即 1776×2368，超出现有规格 832×1216，后续抠图缩放即可。背景图 16:9 用 pro 2K = 2816×1584。
 
 ### 4B.4 价格横向对比（单张立绘，2K≈300万像素级）
 
@@ -224,13 +262,13 @@
 2. **豆包 Seedream API 角色一致性**（待实测）：同源网页版已验证5星，但 API 版实际效果需调 API 实测。
 3. **内容审核**：Google 全系列图像生成默认走安全过滤，对刀剑/施法/受伤的奇幻战斗场景**可能误判拒图**（基于 Google 通用安全策略的推断，未获实测确认）；豆包火山引擎的审核严格度同样待实测。
 4. **速率限制**：Gemini 官方未公布通用 RPM/RPD，需登录 AI Studio 按账号层级查看；豆包标注 IPM=500（每分钟图片数），相对明确。
-5. **PDF 中文乱码**：火山 PDF 因字体编码问题，中文说明提取为乱码，仅英文/数字/参数名可读；文字渲染能力等需中文描述的特性未能从 PDF 确认，待实测。
+5. **文字渲染**：火山 PDF 全文（docling OCR 提取）未提及文字渲染能力，待实测豆包 API 实际效果。
 
 ### 6.2 信息可信度分级
 
 - **高可信**（官方/院长直接确认）：Gemini 四档产品线/模型名/定价/参考图分类/分辨率阶梯；豆包两档模型ID/定价/分辨率范围/IPM=500。
 - **中可信**（机制推断）：豆包 API 角色一致性/油画风保持预期与网页版相当（同源模型）；内容审核对奇幻战斗偏严（通用策略推断）。
-- **未确认**：豆包参考图分类机制与张数上限；豆包文字渲染能力；Gemini 具体 RPM/RPD；社区实测优缺点与已知 bug（本轮社区源抓取超时或被验证拦截，未取到一手社区帖）。
+- **未确认**：豆包文字渲染能力（PDF 未提及）；豆包角色一致性实际效果（待 API 实测）；Gemini 具体 RPM/RPD；社区实测优缺点与已知 bug（本轮社区源抓取超时或被验证拦截，未取到一手社区帖）。
 
 ---
 
@@ -241,6 +279,7 @@
 | 2026-07-30 | 初版：Gemini 全系调研 + Seedream 网页版对比，选型 Gemini 3 Pro Image |
 | 2026-07-30 | **修订**：新增火山引擎豆包 Seedream API（§四-B），首选方案改为豆包 Seedream API Pro（更便宜/国内直连/复用火山Key），Gemini Pro 降为备选。选型与落地路径同步更新 |
 | 2026-07-30 | **补充**：读官方 PDF 确认豆包参考图机制为混合 `image` 数组（不分类，pro 最多10张），补 §4B.2/4B.3 API 参数；选型表参考图分类项从 ❓ 改为 ⚠️ 确认混合不分类；待验证风险 #1 标记已解决 |
+| 2026-07-30 | **完整读取**：用 docling OCR 全文提取火山 PDF（pdftotext 中文乱码，改用 docling 全页 OCR 成功），补全水印可关/交互编辑/fast模式/组图限制/各模型能力差异表/完整请求参数表/分辨率映射表 |
 
 ## 附录：API 请求体示例（REST）
 
