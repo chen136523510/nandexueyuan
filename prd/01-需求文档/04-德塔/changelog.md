@@ -4,6 +4,25 @@
 
 ---
 
+### [fix] 幸立绘重出v2(双手叠前+得体表情) + 立绘位置跳动修复(绝对定位)
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（黑机）
+- **背景**：用户反馈三个问题：①立绘抠不干净 ②幸表情太妖邪 ③双人同框切换说话人时立绘消失/位置互换
+- **变更内容**：
+  - **立绘位置跳动根因**（DOM断点定位）：CharacterLayer 用 flex+margin:auto 布局，角色增减/class 变化时 flex 重新分配空间导致位置漂移；且单人/双人节点 position 不一致（xing 在 center/right 间跳）
+    - 修复：CharacterLayer 改**绝对定位**（pos-left=left:5%、pos-right=right:5%、pos-center=left:50%+translateX(-50%)），位置互不影响
+    - prologue.js：第二幕 28 处 position 固定（xing 始终 right、dean 始终 left），消除跨节点位置跳动
+  - **幸立绘重出 v2**（表情得体+抠图友好姿势）：
+    - 姿势改"双腿并拢+双手叠在面前"，轮廓紧凑，抠图无残留（透明率77-81%，v1是65-80%）
+    - 表情去掉"sharp intelligent gaze"等妖邪词，改"beautiful and dignified / gentle polite smile"，视觉确认得体漂亮不妖邪
+    - 4套：smile(温和礼貌)、observe(平静审视)、pleased(真心满意)、cold(礼貌但坚定)
+  - **抠图修正**：发现 resize 缩放会产生插值半透明像素（原图erode=0，resize后残留上千），修正为"原图erode → resize → 二次erode"
+- **验证**：DOM标记法（pro_103→pro_104 切换标记保留+centerX不变）；canvas像素采样（4套半透明残留=0）；像素嘴部差异（4套均有差异）；npm run build通过
+- **教训**：①Vue+flex布局对"同位置元素增减"不稳定，立绘场景应用绝对定位 ②图片resize插值会破坏alpha，erode要在resize后补一次
+
+---
+
 ### [feat] 立绘表情差分系统(7套) + 三态交互重构(修复角色消失/提亮变淡出) + 抠图灰边修复
 
 - **时间**：2026-07-30

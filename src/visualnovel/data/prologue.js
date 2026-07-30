@@ -253,7 +253,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
       { id: 'dean', portrait: 'dean/calm', position: 'left', active: false },
     ],
     speaker: '幸',
@@ -265,7 +265,7 @@ export default [
     background: 'bg/tower_interior_hall',
     characters: [
       { id: 'dean', portrait: 'dean/calm', position: 'left', active: true },
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: false },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: false },
     ],
     speaker: '见',
     next: 'pro_105'
@@ -275,7 +275,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
       { id: 'dean', portrait: 'dean/calm', position: 'left', active: false },
     ],
     speaker: '幸',
@@ -293,7 +293,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_108'
@@ -313,7 +313,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_110'
@@ -332,7 +332,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_112'
@@ -359,7 +359,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_115'
@@ -376,7 +376,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_117'
@@ -396,7 +396,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_brief_1'
@@ -408,7 +408,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_brief_2'
@@ -418,7 +418,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_brief_3'
@@ -435,7 +435,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_120'
@@ -452,7 +452,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_122'
@@ -481,7 +481,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_125'
@@ -491,7 +491,7 @@ export default [
     type: 'input',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     variable: 'playerName',
@@ -502,7 +502,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_127'
@@ -519,7 +519,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_choice_1'
@@ -531,7 +531,7 @@ export default [
     type: 'choice',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     choices: [
       { impact: 'critical', next: 'pro_agree_1', effects: { rui: 5 } },
@@ -548,7 +548,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
     ],
     speaker: '旁白',
     next: 'pro_delay_2'
@@ -569,7 +569,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'dean', portrait: 'dean/calm', position: 'center', active: true },
+      { id: 'dean', portrait: 'dean/calm', position: 'left', active: true },
       { id: 'xing', portrait: 'xing/smile', position: 'right', active: false },
     ],
     speaker: '见',
@@ -589,7 +589,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_ask_rui_2'
@@ -606,7 +606,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_choice_1'
@@ -618,7 +618,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_ask_city_2'
@@ -635,7 +635,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/observe', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/observe', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_choice_1'
@@ -647,7 +647,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/pleased', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/pleased', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_agree_2'
@@ -657,7 +657,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/pleased', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/pleased', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_agree_3'
@@ -677,7 +677,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/cold', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/cold', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_refuse_2'
@@ -687,7 +687,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/cold', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/cold', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_refuse_3'
@@ -716,7 +716,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     characters: [
-      { id: 'xing', portrait: 'xing/smile', position: 'center', active: true },
+      { id: 'xing', portrait: 'xing/smile', position: 'right', active: true },
     ],
     speaker: '幸',
     next: 'pro_depart_3'

@@ -26,6 +26,8 @@ const characters = computed(() => {
       已存在的角色不重建 DOM，其三态变化（active/dim/narrator）通过 CSS class
       的 filter + transform 过渡完成（上移提亮 / 变暗）。
       key 固定为 char.id，不随说话人变化。
+
+      布局用绝对定位（非 flex），每个角色位置独立固定，不受其他角色增减影响。
     -->
     <TransitionGroup name="char-enter" tag="div" class="char-container">
       <div
@@ -50,17 +52,20 @@ const characters = computed(() => {
 
 .char-container {
   position: absolute;
-  bottom: 0; /* 立绘脚底贴屏幕底边，对话框(z-index更高)自然遮住下半身 */
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end; /* 末行对齐 = 脚底对齐 */
-  gap: 20px;
+  inset: 0;
 }
 
+/*
+ * 绝对定位布局：每个角色独立固定在屏幕底部，互不影响。
+ * 用 CSS 变量 --tx / --ty 组合 transform，避免 translateX(-50%) 和 translateY(-24px) 冲突。
+ */
 .char-portrait {
-  transition: filter 0.4s ease, transform 0.4s ease;
+  position: absolute;
+  bottom: 0;             /* 脚底贴屏幕底边，对话框自然遮住下半身 */
+  --tx: 0px;             /* 水平偏移（center 时为 -50% 居中） */
+  --ty: 0px;             /* 垂直偏移（active 时上移） */
+  transform: translate(var(--tx), var(--ty));
+  transition: filter 0.4s ease, transform 0.4s ease, left 0.4s ease, right 0.4s ease;
 }
 
 /* 立绘图（日系VN标准：脚底贴底，对话框压住膝盖以下） */
@@ -73,21 +78,16 @@ const characters = computed(() => {
   pointer-events: none;
 }
 
-/* 位置（均 align-self: flex-end 保证脚底对齐） */
+/* ===== 位置（绝对定位，互不影响） ===== */
 .pos-left {
-  align-self: flex-end;
-  margin-right: auto;
-  margin-left: 8%;
+  left: 5%;
 }
 .pos-right {
-  align-self: flex-end;
-  margin-left: auto;
-  margin-right: 8%;
+  right: 5%;
 }
 .pos-center {
-  align-self: flex-end;
-  margin-left: auto;
-  margin-right: auto;
+  left: 50%;
+  --tx: -50%;   /* 自身宽度的一半，实现水平居中 */
 }
 
 /* ===== 三态：narrator / active / dim ===== */
@@ -95,33 +95,31 @@ const characters = computed(() => {
 
 /* 说话人：上移 + 提亮 */
 .char-portrait.active {
+  --ty: -24px;
   filter: brightness(1.15) saturate(1.1);
-  transform: translateY(-24px);
 }
 
 /* 旁白态：全部对齐，正常亮度 */
 .char-portrait.narrator {
+  --ty: 0px;
   filter: brightness(1) saturate(1);
-  transform: translateY(0);
 }
 
 /* 非说话人：变暗 */
 .char-portrait.dim {
+  --ty: 0px;
   filter: brightness(0.55) saturate(0.4);
-  transform: translateY(0);
 }
 
 /* 角色入场/退场动画（仅新增/移除角色时触发，不影响已存在角色的三态过渡） */
 .char-enter-enter-active {
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.4s ease;
 }
 .char-enter-leave-active {
   transition: opacity 0.3s ease;
-  position: absolute;
 }
 .char-enter-enter-from {
   opacity: 0;
-  transform: translateY(20px);
 }
 .char-enter-leave-to {
   opacity: 0;
