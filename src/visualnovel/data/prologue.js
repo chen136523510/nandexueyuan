@@ -399,6 +399,35 @@ export default [
       { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
     ],
     speaker: '幸',
+    next: 'pro_brief_1'
+  },
+
+  // ===== 幸科普现状（pro_brief_1~3）=====
+  {
+    id: 'pro_brief_1',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    characters: [
+      { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
+    ],
+    speaker: '幸',
+    next: 'pro_brief_2'
+  },
+  {
+    id: 'pro_brief_2',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    characters: [
+      { id: 'xing', portrait: 'xing/normal', position: 'center', active: true },
+    ],
+    speaker: '幸',
+    next: 'pro_brief_3'
+  },
+  {
+    id: 'pro_brief_3',
+    type: 'dialogue',
+    background: 'bg/tower_outdoor_mist',
+    speaker: '旁白',
     next: 'pro_119'
   },
   {
