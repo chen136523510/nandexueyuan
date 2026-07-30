@@ -58,20 +58,6 @@ function handleClick() {
   store.advance()
 }
 
-// 滚轮回滚/重做（防抖 120ms，避免滚轮连续触发跳太快）
-let wheelLock = false
-function handleWheel(e) {
-  if (isInput.value) return
-  if (wheelLock) return
-  wheelLock = true
-  setTimeout(() => { wheelLock = false }, 120)
-  if (e.deltaY < 0) {
-    store.rollback()   // 上滚 = 回退
-  } else {
-    store.forward()    // 下滚 = 前进
-  }
-}
-
 // 提交输入
 function handleSubmit() {
   if (!inputValue.value.trim()) return
@@ -81,7 +67,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div v-if="!store.hideUI" class="dialogue-area" @click="handleClick" @wheel.prevent="handleWheel">
+  <div v-if="!store.hideUI" class="dialogue-area" @click="handleClick">
     <!-- 对话框 -->
     <div v-if="showDialogue && !showEnd" class="dialogue-box">
       <!-- 角色名标签 -->
