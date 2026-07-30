@@ -4,6 +4,53 @@
 
 ---
 
+### [refactor] 删除个人中心「德塔相关设置」+ 移除滚轮回滚功能
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（白机）
+- **背景**：①院长要求清理个人中心里冗余的「德塔相关设置」入口（德塔设置已在游戏内）；②滚轮回滚功能用户反馈不可用，决定移除
+- **变更内容**：
+  1. `src/components/UserAvatar.vue` - 删除下拉框「德塔相关设置」按钮 + `handleNdeSettings` 方法 + `nde-settings` emit
+  2. `src/components/TopBar.vue` - 删除 `NdeSettingsDialog` 引用 + `showNdeSettings` ref + `@nde-settings` 监听 + `<NdeSettingsDialog>` 组件
+  3. `src/views/NdeVisualNovelView.vue` - 移除滚轮事件 `@wheel.prevent="handleWheel"` + `handleWheel` 函数 + 防抖逻辑
+  4. `src/visualnovel/components/DialogueBox.vue` - 移除滚轮事件绑定 + `handleWheel` 函数（恢复纯点击推进）
+  5. `src/visualnovel/stores/visualNovelStore.js` - 移除回滚系统全部代码（`rollbackStack`/`redoStack`/`isRestoring`/`captureSnapshot`/`pushRollback`/`restoreSnapshot`/`rollback`/`forward`），恢复 `advance`/`selectChoice`/`goToNode` 原逻辑
+- **决策记录**：滚轮回滚功能先做后移除。根因排查发现 `.dialogue-area` 的 CSS 只占底部对话框区域（`position:absolute;bottom:0`，无 height），鼠标不在对话框上时滚轮事件无法触发。已将事件提到 `.game-stage` 修复，但用户反馈仍不可用，最终决定移除。store 回滚系统代码本身逻辑正确（Playwright 直接调用 `store.rollback()` 验证通过），保留在 git 历史中，未来可复用
+- **验证**：构建通过，序章正常推进（点击/空格）
+- **状态**：已验证并推送
+- **关联commit**：`d4f555b`、`6a573f4`、`f7dabdb`、`20b63ac`
+
+### [refactor] 存档管理统一入口
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（白机）
+- **背景**：院长反馈存档/读档分两个独立面板（要切换），且没有从零开始的新存档入口。要求合并为单一弹窗，每个槽位同时有存档+读档按钮
+- **变更内容**：
+  1. `src/visualnovel/components/SaveLoadPanel.vue` - 重写为统一面板（标题改"存档管理"），去掉 mode prop 双模式逻辑。每个槽位同时显示存档/覆盖+读档+删除三个按钮。空槽位读档按钮 `disabled` 置灰
+  2. `src/visualnovel/components/QuickMenu.vue` - 删除「读档」按钮（合并进存档管理）
+  3. `src/views/NdeVisualNovelView.vue` - 删除第二个 `<SaveLoadPanel mode="load" />` 实例 + 去掉 L 快捷键
+- **验证**：Playwright 实测——11槽位（1自动+10手动），有存档槽位显示"覆盖/读档/删除"，空槽位显示"存档/读档(置灰)"，自动存档槽位显示"系统自动/读档"
+- **状态**：已验证并推送
+- **关联commit**：`3d1e983`
+
+### [feat] 序章文案优化 + 缓几天分支 + 幸科普 + 第四幕新增问答
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（白机）
+- **背景**：院长验收序章后提出多个文案优化和结构需求
+- **变更内容**：
+  1. **第一幕文案优化**（`scripts/序章-第一幕-降临.script.js`）- 开场改传送阵（玩家被传送到塔楼内部传送阵），见不再讲解裂隙原理（留给第四幕添Q&A），结尾改高跟鞋声切入幸来访，体现见"对内暖/对外冷"的双面切换
+  2. **choice新增「缓几天」分支**（`prologue.js` + `scripts/序章-第二幕`）- pro_choice_1 新增第3选项（critical标黄），选后添救场喊玩家上楼、见对幸说"沏茶招待、{playerName}得了解基本情况"，接入第四幕添Q&A，Q&A走完添送下楼回choice重选。用 `met_tian` 变量 + 2个condition控制：缓几天走过Q&A后，正式流程第三幕后第四幕跳过Q&A直接告别
+  3. **去掉选项「关键」文字标识**（`ChoiceMenu.vue`）- critical 选项只保留标黄颜色，不再显示"关键"二字
+  4. **幸科普现状**（`pro_brief_1~3`）- 幸提问前先科普帝国/草原/学院局势（pro_118后插入），解决"幸知道玩家刚来不会直接问合作"的逻辑问题
+  5. **第四幕新增话题七「你有想过回去吗」**（`pro_qa_home_1~4`）- 修复id冲突（原用pro_qa_next_1~4与话题六冲突，改为pro_qa_home）
+  6. **修复 pro_refuse_2 重复 id** - scripts 第二幕 pro_refuse_2 重复两次导致 mergeScript 后只保留后者文案，合并为一条
+  7. 同步第二三四幕文案微调（pro_118精简/pro_brief地理修正/pro_qa_world方位修正等）
+- **验证**：Playwright 实测——缓几天分支完整闭环（选C→delay→Q&A→回choice→选同意→跳过Q&A→结束）、正常路径通关、幸科普3句正确显示、新增问答4句正确显示
+- **状态**：已验证并推送
+- **关联commit**：`b51cdee`、`fd066be`、`1f67f71`、`c2f49a4`
+- **关联bug**：BUG-44（pro_refuse_2重复id）、BUG-45（pro_qa_next id冲突）
+
 ### [refactor] 剧本文案与逻辑分离 + 院长形象设计 v2 优化
 
 - **时间**：2026-07-30
