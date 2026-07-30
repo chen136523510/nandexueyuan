@@ -68,7 +68,7 @@ const characters = computed(() => {
   pointer-events: none;
 }
 
-/* 位置 */
+/* 位置（均 align-self: flex-end 保证脚底对齐） */
 .pos-left {
   align-self: flex-end;
   margin-right: auto;
@@ -80,7 +80,9 @@ const characters = computed(() => {
   margin-right: 8%;
 }
 .pos-center {
-  flex-shrink: 0;
+  align-self: flex-end;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ===== 三态：narrator / active / dim ===== */
