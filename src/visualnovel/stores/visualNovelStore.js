@@ -57,16 +57,17 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   })
 
   // 立绘三态推导（narrator/active/dim），由 speaker 驱动，不依赖数据手写 active
+  // 关键：按角色 id 固定排序，保证跨节点角色顺序稳定（避免 Vue key 抖动导致 DOM 重建）
   const currentCharacters = computed(() => {
     const node = currentNode.value
     if (!node) return []
-    const chars = node.characters || []
+    const chars = (node.characters || []).slice() // 复制，避免改原数据
     if (chars.length === 0) return []
 
     const speaker = node.speaker || ''
     const isNarrator = speaker === '旁白'
 
-    return chars.map((char) => {
+    const result = chars.map((char) => {
       let state
       if (isNarrator) {
         state = 'narrator'  // 旁白：所有立绘对齐，正常亮度
@@ -76,6 +77,10 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       }
       return { ...char, state }
     })
+
+    // 按角色 id 固定排序，保证同一场景内角色在 DOM 中的位置恒定
+    result.sort((a, b) => a.id.localeCompare(b.id))
+    return result
   })
 
   const currentSpeaker = computed(() => {

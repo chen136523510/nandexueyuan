@@ -6,6 +6,7 @@ import { CHAR_COLORS } from '../engine/types.js'
 const store = useVisualNovelStore()
 
 // 当前场景的角色列表（三态：narrator/active/dim，由 store 根据 speaker 推导）
+// store 已按角色 id 固定排序，保证跨节点 DOM 位置恒定
 const characters = computed(() => {
   return store.currentCharacters.map((char) => {
     return {
@@ -20,18 +21,22 @@ const characters = computed(() => {
 
 <template>
   <div class="char-layer">
-    <Transition name="char-slide" mode="out-in">
-      <div :key="characters.map(c => c.id + c.portrait).join(',')" class="char-container">
-        <div
-          v-for="char in characters"
-          :key="char.id"
-          class="char-portrait"
-          :class="[`pos-${char.position || 'center'}`, char.state || 'narrator']"
-        >
-          <img :src="char.imgSrc" :alt="char.id" class="char-img" @error="$event.target.style.display='none'" />
-        </div>
+    <!--
+      TransitionGroup：仅在新角色加入/离开时触发入场/退场动画。
+      已存在的角色不重建 DOM，其三态变化（active/dim/narrator）通过 CSS class
+      的 filter + transform 过渡完成（上移提亮 / 变暗）。
+      key 固定为 char.id，不随说话人变化。
+    -->
+    <TransitionGroup name="char-enter" tag="div" class="char-container">
+      <div
+        v-for="char in characters"
+        :key="char.id"
+        class="char-portrait"
+        :class="[`pos-${char.position || 'center'}`, char.state || 'narrator']"
+      >
+        <img :src="char.imgSrc" :alt="char.id" class="char-img" @error="$event.target.style.display='none'" />
       </div>
-    </Transition>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -86,10 +91,11 @@ const characters = computed(() => {
 }
 
 /* ===== 三态：narrator / active / dim ===== */
+/* 原则：说话人立绘上移 + 提亮，非说话人变暗，旁白态全部正常 */
 
 /* 说话人：上移 + 提亮 */
 .char-portrait.active {
-  filter: brightness(1.12) saturate(1.08);
+  filter: brightness(1.15) saturate(1.1);
   transform: translateY(-24px);
 }
 
@@ -105,35 +111,19 @@ const characters = computed(() => {
   transform: translateY(0);
 }
 
-/* 立绘滑入动画 */
-.char-slide-enter-active,
-.char-slide-leave-active {
-  transition: all 0.4s ease;
+/* 角色入场/退场动画（仅新增/移除角色时触发，不影响已存在角色的三态过渡） */
+.char-enter-enter-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.char-slide-enter-from {
+.char-enter-leave-active {
+  transition: opacity 0.3s ease;
+  position: absolute;
+}
+.char-enter-enter-from {
   opacity: 0;
-  transform: translateX(30px);
+  transform: translateY(20px);
 }
-.char-slide-leave-to {
+.char-enter-leave-to {
   opacity: 0;
-  transform: translateX(-30px);
-}
-
-/* 移动端适配 */
-@media (max-width: 768px) {
-  .char-container {
-    bottom: 160px;
-    gap: 8px;
-  }
-  .char-img {
-    height: 55vh;
-    max-height: 480px;
-  }
-  .pos-left {
-    margin-left: 4%;
-  }
-  .pos-right {
-    margin-right: 4%;
-  }
 }
 </style>

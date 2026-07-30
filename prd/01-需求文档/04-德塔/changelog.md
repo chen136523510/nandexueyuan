@@ -4,6 +4,31 @@
 
 ---
 
+### [feat] 立绘表情差分系统(7套) + 三态交互重构(修复角色消失/提亮变淡出) + 抠图灰边修复
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（黑机）
+- **背景**：原立绘三态有三大缺陷：①角色说完话消失再出现另一个 ②说话人提亮做成了淡出 ③抠图有灰边。同时角色表情单一，需要按场景情绪分配表情差分
+- **变更内容**：
+  - **表情差分出图**（Seedream API，脸模+服装双参考锁一致性，仅改表情描述）：
+    - 见(dean) 3套：gentle(和蔼微笑)、serious(认真收敛)、calm(沉稳冷静)
+    - 幸(xing) 4套：smile(职业微笑)、observe(审视打量)、pleased(真心满意)、cold(冷锋)
+    - 幸军装穿搭对齐场景背景图 tower_outdoor_mist（深蓝军装+金肩章+勋章+棕皮带）
+  - **抠图灰边修复**：
+    - 根因：floodfill 用 `queue.shift()` 是 O(n)，百万级队列导致算法卡住未跑完（仅抠 0.4%）
+    - 修复：改用栈 `push/pop`（O(1)），抠图率恢复到 65-80%；追加边缘 erode 清除所有半透明像素
+    - 像素验证：所有立绘半透明残留=0，四角 Alpha=0
+  - **三态交互重构**（修复角色消失+提亮变淡出）：
+    - 根因：`CharacterLayer.vue` 外层 `<Transition mode="out-in">` 包裹整个 char-container，每节点角色数组**顺序不同**导致 key 变化→整个容器淡出重建
+    - `visualNovelStore.js`：`currentCharacters` 按**角色 id 固定排序**（localeCompare），保证跨节点 DOM 位置恒定
+    - `CharacterLayer.vue`：去掉外层 Transition，改 `<TransitionGroup>`（key 固定为 char.id），仅角色增删时动画；已存在角色只做 filter/transform 的 CSS 过渡
+  - **表情键配置**（prologue.js）：按场景情绪为每个节点配 portrait——见：第一幕 gentle / pro_022 serious / 第二幕起 calm；幸：登场 smile / 打量 observe / 同意 pleased / 拒绝 cold
+- **影响范围**：所有序章含立绘的节点（56处 portrait 替换）
+- **验证**：DOM 标记法验证角色不重建（data-marker 跨节点保留）、canvas 像素采样验证抠图零灰边、4套表情全部加载成功、npm run build 通过
+- **教训**：①floodfill 用队列 shift 有 O(n) 性能陷阱，栈更稳 ②Vue Transition 的 key 不能包含会变化的数组顺序 ③立绘穿搭应以场景背景图为准
+
+---
+
 ### [feat] 见+添立绘接入 + 立绘三态交互系统（旁白对齐/说话人上移提亮）
 
 - **时间**：2026-07-30
