@@ -8,8 +8,39 @@
 | 格式 | 含义 |
 |------|------|
 | `face_vX_XX.png` | 脸模图（正面面部参考），版本递增 |
-| `full_vX_XX.png` | 全身立绘 |
-| `expr_vX_XX.png` | 表情差分 |
+| `full_vX_XX.png` | 全身立绘基准图（运行时对应 `normal.png`） |
+| `expr_{情绪}_vX_XX.png` | 表情差分（如 `expr_gentle_v1_01.png`） |
+
+> ⚠️ 立绘基准图和表情差分均为**抠图后的透明背景版**（与 `public/visualnovel/portraits/` 一致）。
+> 后续迭代需重出立绘时，以各角色的 `face_v1_01.png` 脸模 + `full_v1_01.png` 基准立绘作为双参考图输入 Seedream。
+
+## 立绘 + 背景图清单（2026-07-30 入库）
+
+### 角色立绘 + 表情差分
+
+| 角色 | 基准全身立绘 | 表情差分 | 运行时目录 |
+|------|-------------|---------|-----------|
+| 见（院长） | `院长/full_v1_01.png`（calm 沉稳冷静） | gentle / serious / calm | `public/visualnovel/portraits/dean/` |
+| 幸 | `幸/full_v1_01.png`（smile 职业微笑，军装制服） | smile / observe / pleased / cold | `public/visualnovel/portraits/xing/` |
+| 添 | `添/full_v1_01.png`（normal） | — | `public/visualnovel/portraits/tian/` |
+
+> 表情差分命名：`expr_{情绪}_v1_01.png`。生成方式：Seedream 脸模 + 服装双参考图，仅改表情描述词。
+> 幸的军装穿搭以场景背景图 `tower_outdoor_mist` 为准（深蓝军装 + 金肩章 + 勋章 + 棕皮带）。
+
+### 背景图
+
+| 文件 | 场景 |
+|------|------|
+| `背景图/void_world.png` | 开场旁白·虚空 |
+| `背景图/grassland.png` | 大草原降临 |
+| `背景图/tower_day.png` | 塔楼外景·白天 |
+| `背景图/tower_interior_hall.png` | 塔楼大厅·室内 |
+| `背景图/tower_outdoor_mist.png` | 塔楼外景·晨雾（幸来访过场） |
+| `背景图/tower_interior.png` | 塔楼内景·储物发放 |
+
+> 运行时目录：`public/visualnovel/bg/`。背景图为 16:9 宽屏，立绘为 832×1216 竖版。
+
+---
 
 ## 脸模图清单（2026-07-30）
 
