@@ -1,13 +1,74 @@
 # AI 交接单
 
-> 最后更新：2026-07-30 16:58（白机：补充火山引擎豆包Seedream API调研+选型修订为首选豆包API）
-> 所在设备：白机（荣耀便携本）
-> 稳定版本：`8abd416`（master）
-> **当前阶段**：M-G1 引擎核心 PoC ✅ 完成 + 序章四幕全量落地 ✅ 完成 + 存档系统增强 ✅ 完成 + Seedream调研 ✅ 完成 + 院长"见"形象设计v1 ✅ 完成 + Gemini生图能力调研 ✅ 完成 + 序章文案优化+缓几天分支 ✅ 完成 + 存档管理统一入口 ✅ 完成
+> 最后更新：2026-07-31 00:50（黑机：序章美术资产全套落地-脸模9角色+立绘7套+背景图6张+表情差分系统+三态交互）
+> 所在设备：黑机（RTX 4070 主力机）
+> 稳定版本：`f8c459a`（master）
+> **当前阶段**：M-G1 引擎核心 PoC ✅ 完成 + 序章四幕全量落地 ✅ 完成 + 存档系统增强 ✅ 完成 + Seedream调研 ✅ 完成 + 院长"见"形象设计v1 ✅ 完成 + Gemini生图能力调研 ✅ 完成 + 序章文案优化+缓几天分支 ✅ 完成 + 存档管理统一入口 ✅ 完成 + 豆包Seedream API实测go/no-go通过 ✅ 完成 + 9角色脸模入库 ✅ 完成 + 序章6张背景图接入 ✅ 完成 + 见/幸/添立绘+表情差分7套 ✅ 完成 + 立绘三态交互系统 ✅ 完成 + 美术资产归档 ✅ 完成
 
 ---
 
-## 白机本轮产出（2026-07-30 16:12）
+## 黑机本轮产出（2026-07-31 00:50）
+
+### 1. gitignore清理
+- 角色发色速查表+comfyui工作流JSON移出git跟踪（git rm --cached + .gitignore规则）
+- commit `4d45eb5`
+
+### 2. 豆包Seedream API实测（go/no-go门槛通过）
+- 火山Key复用（ARK_API_KEY），端点 `/api/v3/images/generations`
+- 模型 `doubao-seedream-5-0-pro-260628`，0.3元/张，国内直连
+- **实测确认不支持透明背景**（四角Alpha全255，jimp打印验证）
+- 参考图压缩方案：jimp缩512px jpeg（1.4MB->139KB），避免超时
+- 稳定配置：fast模式 + 1K + 单参考图 + url响应
+
+### 3. 9角色脸模生成+入库
+- 杰/幸/荣/见/睿/汪神/沐阳/添/丘 9角色脸模全部入库 `美术资产/<角色>/face_v1_01.png`
+- 形象设计文档同步：杰发色金色+眼色琥珀+年龄20岁对齐设定集；丘/汪神/沐阳补发色；幸发色冲突修正jet black；院长瞳色琥珀->栗色（防撞脸）
+- image-gen技能创建（.zcode/skills/image-gen/SKILL.md）：提示词精细/存储路径/成品入git/表情差分原则/辨识度矩阵/画风统一/参考图压缩/floodfill性能坑
+
+### 4. 序章6张背景图生成+接入游戏
+- void_world（虚空）/grassland（草原塔楼）/tower_day（塔楼外景）/tower_interior_hall（大厅）/tower_outdoor_mist（幸来访过场，角色入画氛围图）/tower_interior（储物内景）
+- BackgroundLayer渲染修复：background简写重置repeat导致水平拼接 -> backgroundImage+内联cover/no-repeat
+- REAL_BG_MAP映射：tower_lobby指向interior_hall（命名不统一，同一场景50+14处引用）
+- 第二幕对话背景从户外改回一层大厅，tower_outdoor_mist仅作pro_102过场（避免背景图里的幸与立绘层幸重叠）
+
+### 5. 见/幸/添立绘+表情差分7套
+- 见(dean) 3套：gentle(和蔼微笑)/serious(认真收敛)/calm(沉稳冷静)
+- 幸(xing) 4套：smile(职业微笑)/observe(审视打量)/pleased(真心满意)/cold(冷锋)
+- 幸军装穿搭对齐场景背景图tower_outdoor_mist（深蓝军装+金肩章+勋章+棕皮带）
+- 姿势统一"双腿并拢+双手叠前"（轮廓紧凑，抠图友好）
+- 抠图链路：Seedream出图(纯色背景) -> jimp floodfill(栈优化) -> erode消灰边 -> 多轮空洞填补
+- prologue.js 56处portrait按场景情绪配置表情键
+
+### 6. 立绘三态交互系统
+- speaker驱动推导三态（narrator/active/dim），不依赖数据手写active
+- types.js：SPEAKER_TO_ID映射（中文名->英文id）+ CHAR_COLORS修正（补dean/xing/tian）
+- store：currentCharacters按id固定排序 + speaker推导state
+- CharacterLayer：占位色块->真实立绘img；绝对定位（修复flex布局位置跳动）；TransitionGroup（key固定char.id，不重建DOM）
+- 第二幕position固定（xing始终right、dean始终left，28处修改）
+- 三态CSS：active=上移24px+提亮1.15，narrator=正常，dim=变暗0.55
+- 立绘贴底摆放（业界规范：脚底贴屏幕底边，对话框遮住膝盖以下）
+
+### 7. 美术资产归档
+- 立绘7套+背景图6张从seedream-test过程文件夹归档到美术资产正式目录
+- 清理seedream-test 102MB过程稿
+- README更新：立绘/背景图清单+命名规范（full_vX_XX.png基准+expr_情绪_vX_XX.png差分）
+
+### 8. Bug修复
+- BUG-46：缓几天路径第四幕死循环（pro_cond_met_tian met_tian=true改跳pro_end）
+- chenzijian密码重置（dev.db passwordHash为空）
+- 立绘消失/位置变化（Transition+flex根因 -> TransitionGroup+绝对定位）
+- 抠图floodfill性能bug（queue.shift() O(n) -> 栈push/pop O(1)）
+- 幸立绘胸口空洞（floodfill+多轮空洞填补，0.9%->0.00%）
+
+### 9. 文档同步
+- changelog多条记录（立绘/背景图/三态交互/表情差分/抠图修复等）
+- bug-log BUG-46
+- 美术资产README（立绘/背景图清单+命名规范）
+- 美术设计规范（立绘交互规则三态系统+背景图两种用法+参考图压缩）
+
+---
+
+## 白机上一轮产出（2026-07-30 16:12，存档备查）
 
 ### 1. 序章文案优化（第一幕）
 - 开场改传送阵（玩家传送到塔楼内部传送阵），见不讲解裂隙原理（留给添Q&A），结尾改高跟鞋声切入幸来访
@@ -110,16 +171,18 @@
 
 ---
 
-## 待办（交接给黑机）
+## 待办（交接给白机）
 
 ### ⛰️ downhill（方案已定，可直接执行）
 
-1. **院长"见"形象迭代出图** - v1-03方向正确但可优化（用Seedream继续改：换角度/换表情/换动作）
-2. **院长"见"形象设计文档确认** - 院长确认后可正式定稿
-3. **序章立绘注入引擎** - 法刺幸/荣/添/沐阳精选图需抠图后入 `public/visualnovel/portraits/`
-4. **生图 API 验证期实测**（引入 go/no-go 门槛，首选豆包 Seedream API）- 首选 `doubao-seedream-5-0-pro-260628`（0.3元/张、国内直连、复用火山Key）：①查API文档确认参考图机制(是否分类) ②用院长立绘做图生图验证角色一致性 ③奇幻战斗prompt审核严格度。未达标降级Gemini 3 Pro Image(参考图分类更强)。详见 `prd/01-需求文档/00-调研/gemini-nano-banana-image-generation.md`
+1. **其他角色立绘** - 序章已出见/幸/添3角色立绘+表情差分；其他角色（睿/荣/丘/杰/汪神/沐阳）立绘待按出场顺序出图
+2. **rembg语义抠图替换** - 当前jimp floodfill+空洞填补方案可用，但发丝/复杂边缘不如语义抠图精细；rembg已安装但u2net模型需从GitHub下载（当前网络超时），待网络恢复后替换
+3. **立绘表情差分扩展** - 见目前只有3套(gentle/serious/calm)，可扩展"施法态""对内搞怪态"；幸4套已覆盖序章，后续章节可扩展
+4. **prologue.js手写active清理** - store已不读active字段（改用speaker推导），数据里的active是冗余但不影响功能，后续可批量清理
 
 ### ⛰️ uphill（探索中，方案未定）
+
+5. **M-G2 序章完整 + 手机/消息系统** - 手机消息系统可行性需调研（Eternum式）
 
 5. **M-G2 序章完整 + 手机/消息系统** - 手机消息系统可行性需调研（Eternum式）
 6. **滚轮回滚功能**（已移除，未来可复用）- 白机试做了状态快照回滚（advance/selectChoice前压栈+rollback/forward），Playwright验证逻辑正确，但用户反馈实际不可用已移除。根因是 `.dialogue-area` CSS只占底部区域导致鼠标不在对话框上时事件不触发。代码保留在git历史 commit `6a573f4`，未来若重做可考虑用快捷键（PageUp/PageDown）替代滚轮
@@ -132,16 +195,18 @@
 |------|------|:---:|
 | 前端 | localhost:4396 | ✅ 运行中 |
 | API后端 | localhost:3000 | ✅ 运行中 |
-| ComfyUI | localhost:8188 | ✅ 可用（黑机） |
-| Seedream | seedream.pro | ✅ 可用（Google登录） |
+| ComfyUI | localhost:8188 | ❌ 未运行（黑机未安装ComfyUI，handoff旧记录有误） |
+| 豆包Seedream API | ark.cn-beijing.volces.com | ✅ 可用（复用ARK_API_KEY） |
 
-### Seedream 账号
-- 登录方式：Google
-- 邮箱：zijianchen064@gmail.com
-- 密码：czj136523510.
+### 豆包 Seedream API
+- 端点：`POST https://ark.cn-beijing.volces.com/api/v3/images/generations`
+- 模型：`doubao-seedream-5-0-pro-260628`（0.3元/张，国内直连）
+- Key：`.env` 里 `ARK_API_KEY`（复用火山引擎方舟Key）
+- **不支持透明背景**（实测确认，需额外抠图）
+- 稳定配置：fast模式 + 1K + jimp压缩参考图 + url响应
 
 ### DB 注意
-- 白机 `db push` 未成功导致缺表（BUG-43），黑机已补建
+- chenzijian密码已重置为 `nande666`（bcrypt加密，原passwordHash为空）
 - 白机接手后建议执行 `cd server && npx prisma db push` 确认schema同步
 
 ---
@@ -154,8 +219,15 @@
 | Nginx proxy_pass 尾部斜杠 | ✅ 已知 | `proxy_pass http://127.0.0.1:2567/;` 必须有斜杠 |
 | JWT密钥运行时读取 | ✅ 已知 | 用 `function getSecret()` 不用ESM import |
 | Phaser场景切换onUnmounted | ✅ 已知 | 用 `onUnmounted -> destroyGame()` |
-| Prisma db push失败不建表 | ⚠️ 新增 | BUG-43：FTS表报错导致push失败，新表不会创建。换机后必须检查 |
-| Seedream纯文生图偏中国风 | ⚠️ 新增 | 必须上传同画风参考图才能保持西方奇幻油画风格 |
+| Prisma db push失败不建表 | ✅ 已知 | BUG-43：FTS表报错导致push失败，新表不会创建。换机后必须检查 |
+| Seedream纯文生图偏中国风 | ✅ 已知 | 必须上传同画风参考图才能保持西方奇幻油画风格 |
+| Seedream API不支持透明背景 | ⚠️ 黑机新增 | 实测四角Alpha全255，需额外抠图（jimp floodfill+erode+空洞填补） |
+| floodfill用queue.shift()性能陷阱 | ⚠️ 黑机新增 | O(n)导致百万级队列卡住(仅抠0.4%)，改栈push/pop(O(1))恢复65-80% |
+| Vue Transition+flex立绘位置跳动 | ⚠️ 黑机新增 | Transition mode=out-in + 角色数组顺序变化导致key抖动->DOM重建。改TransitionGroup+绝对定位+position固定 |
+| 抠图resize插值破坏alpha | ⚠️ 黑机新增 | resize缩放产生半透明像素，erode要在resize后补一次 |
+| 白底/黑底背景抠图不可行 | ⚠️ 黑机新增 | 白底冲突白衬衫(空洞65%)，黑底冲突黑头发(空洞79%)，灰底+floodfill(阈值80)+空洞填补可行 |
+| 背景图background简写重置repeat | ⚠️ 黑机新增 | CSS background简写会重置background-repeat为默认repeat，改用backgroundImage+内联cover/no-repeat |
+| 双bgKey命名不统一 | ⚠️ 黑机新增 | tower_interior_hall(14处)和tower_lobby(50处)指同一大厅，用REAL_BG_MAP映射 |
 
 ---
 
@@ -163,8 +235,24 @@
 
 | commit | 说明 |
 |--------|------|
-| `0ec5425` | [设定] 院长真名定为'见' |
-| `cd599b4` | [文档] Seedream操作指南+院长形象设计v1+出图3张 |
-| `7955079` | [feat] 存档系统增强+UI隐藏恢复按钮 |
-| `354080a` | [fix] 封面文案A.V.115改A.V.118 |
-| `b233868` | [feat] 序章prologue.js全量重写 |
+| `f8c459a` | [fix] 修复幸smile立绘胸口空洞(floodfill+多轮空洞填补) |
+| `cce3d0f` | [fix] 修复幸smile立绘胸口被抠空(阈值法误删白色衬衫) |
+| `b16d4b9` | [fix] 幸立绘重出v3(背景图形象参考)+smile阈值法抠图 |
+| `0c446c8` | [fix] 幸立绘重出v2(双手叠前+得体表情)+位置跳动修复(绝对定位) |
+| `eb97cb7` | [docs] 美术资产归档-立绘7套+背景图6张+清理seedream-test 102MB |
+| `37c50d1` | [feat] 立绘表情差分7套+三态交互重构(修复角色消失/提亮变淡出/抠图灰边) |
+| `4f49561` | [fix] 幸立绘穿搭改为军装制服(与tower_outdoor_mist来访场景一致) |
+| `c2d15ea` | [feat] 幸立绘接入+pos-center塌缩修复(双人同框) |
+| `3976430` | [fix] 立绘悬浮修正为贴底摆放(业界规范) |
+| `d0cdd84` | [feat] 见+添立绘接入+立绘三态交互系统(旁白对齐/说话人上移提亮) |
+| `09b5175` | [fix] 缓几天路径第四幕死循环(pro_cond_met_tian改跳pro_end) |
+| `0714022` | [feat] 第三幕储物发放场景背景图bg/tower_interior接入 |
+| `02b9bf8` | [feat] 序章5张背景图接入游戏+背景层铺满修复+技能补充 |
+| `9527566` | [fix] 重出幸来访背景图v2(精选图锁人物+纯草原晨雾)+技能补jimp压缩 |
+| `f7c3198` | [fix] 幸来访第二幕对话切回一层大厅+tower_outdoor_mist仅作pro_102过场 |
+| `4aafcb6` | [设定] 生图技能+丘脸模+沐阳v2帅气版+9角色形象设计入库 |
+| `a34bf7b` | [设定] 8角色脸模图首批入库(杰/幸/荣/见/睿/汪神/沐阳/添) |
+| `ae3b1d7` | [docs] 院长瞳色琥珀色->栗色(与杰琥珀眼区分防撞脸) |
+| `9949408` | [docs] 幸发色冲突修正(深棕->jet black对齐院长修订) |
+| `71ab993` | [docs] 杰/丘/汪神/沐阳形象设计补发色+杰补眼色+杰年龄对齐设定集20岁 |
+| `4d45eb5` | [chore] 角色发色速查表+comfyui工作流JSON移出git跟踪并加入忽略 |
