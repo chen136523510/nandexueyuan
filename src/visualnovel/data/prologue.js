@@ -895,11 +895,13 @@ export default [
   },
 
   // ===== condition：是否已和添聊过（缓几天分支提前Q&A过）=====
+  // met_tian=true 表示缓几天分支已聊过添 -> 直接序章结束
+  // met_tian=undefined 表示正常A/B路径 -> 进入第四幕添Q&A
   {
     id: 'pro_cond_met_tian',
     type: 'condition',
     branches: [
-      { if: { variables: { met_tian: true } }, next: 'pro_qa_end_1' },
+      { if: { variables: { met_tian: true } }, next: 'pro_end' },
       { else: true, next: 'pro_303' },
     ],
   },

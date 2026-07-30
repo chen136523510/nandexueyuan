@@ -4,6 +4,21 @@
 
 ---
 
+### [fix] 缓几天路径第四幕死循环修复 + 6张序章背景图接入
+
+- **时间**：2026-07-30
+- **变更人**：陈梓键（白机）
+- **背景**：①选「缓几天」跟添聊完回复幸后，第四幕开头又让回复幸（死循环）；②序章全程用CSS渐变占位背景
+- **变更内容**：
+  - 修复 `pro_cond_met_tian`：met_tian=true 分支从 `pro_qa_end_1` 改为 `pro_end`（缓几天已聊过添，直接结束）
+  - 新增6张序章背景图接入：void_world/grassland/tower_day/tower_interior_hall/tower_outdoor_mist/tower_interior
+  - BackgroundLayer: REAL_BG_MAP映射(tower_lobby指向interior_hall统一命名)；修复background简写重置repeat导致水平拼接
+  - 第二幕对话背景从户外改回一层大厅，tower_outdoor_mist仅作pro_102过场（角色入画氛围图，避免与立绘层撞车）
+- **影响范围**：序章第二/三/四幕分支跳转、所有序章背景渲染
+- **验证**：evaluate 模拟三条分支路径打印断点确认；浏览器逐节点验证背景切换
+
+---
+
 ### [refactor] 删除个人中心「德塔相关设置」+ 移除滚轮回滚功能
 
 - **时间**：2026-07-30
