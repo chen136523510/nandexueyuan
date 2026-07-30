@@ -35,11 +35,6 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const choicesMade = ref({})           // 已选过的选项 { nodeId: [choiceIndex, ...] }
   const inventory = ref([])             // 背包物品 id 列表
 
-  // ===== 回滚系统 =====
-  const rollbackStack = ref([])         // 回滚快照栈（上滚弹出）
-  const redoStack = ref([])             // 重做栈（下滚弹出）
-  const isRestoring = ref(false)        // 正在恢复快照（goToNode 据此跳过 history push）
-
   // ===== UI 状态 =====
   const isTyping = ref(false)           // 打字机是否正在播放
   const fullText = ref('')              // 当前节点的完整文本
@@ -212,8 +207,8 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       displayedText.value = ''
       startTypewriter()
 
-      // 记录历史（回滚恢复时跳过，避免重复）
-      if (rawText && !isRestoring.value) {
+      // 记录历史
+      if (rawText) {
         history.value.push({
           speaker: node.speaker || '',
           text: fullText.value,
@@ -256,8 +251,6 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     if (node.type === NodeType.DIALOGUE || node.type === NodeType.EVENT) {
       const nextId = getNextNodeId(node, currentIndex.value, affinity.value, storyVariables.value)
       if (nextId) {
-        // 前进前压栈（记录回滚点）
-        pushRollback()
         goToNode(nextId)
       } else {
         isEnded.value = true
@@ -297,86 +290,8 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
     // 跳转到选项指定的节点
     if (choice.next) {
-      // 选择前压栈（记录回滚点）
-      pushRollback()
       goToNode(choice.next)
     }
-  }
-
-  // ===== 回滚系统 =====
-
-  /**
-   * 捕获当前状态快照
-   */
-  function captureSnapshot() {
-    return {
-      nodeId: currentNodeId.value,
-      affinity: { ...affinity.value },
-      storyVariables: { ...storyVariables.value },
-      inventory: [...inventory.value],
-      choicesMade: JSON.parse(JSON.stringify(choicesMade.value)),
-      isEnded: isEnded.value,
-      historyLen: history.value.length,
-    }
-  }
-
-  /**
-   * 前进前压栈（advance/selectChoice 调用）
-   */
-  function pushRollback() {
-    rollbackStack.value.push(captureSnapshot())
-    // 限制栈深度
-    if (rollbackStack.value.length > 100) {
-      rollbackStack.value = rollbackStack.value.slice(-100)
-    }
-    // 新前进清空重做栈
-    redoStack.value = []
-  }
-
-  /**
-   * 恢复快照状态
-   */
-  function restoreSnapshot(snap) {
-    isRestoring.value = true
-    affinity.value = { ...snap.affinity }
-    storyVariables.value = { ...snap.storyVariables }
-    inventory.value = [...snap.inventory]
-    choicesMade.value = JSON.parse(JSON.stringify(snap.choicesMade))
-    isEnded.value = snap.isEnded
-    // 截断 history 到快照时的长度
-    if (history.value.length > snap.historyLen) {
-      history.value = history.value.slice(0, snap.historyLen)
-    }
-    // 跳转到快照节点（goToNode 会因 isRestoring 跳过 history push）
-    goToNode(snap.nodeId)
-    // 完整显示文本（不等打字机）
-    completeTypewriter()
-    isRestoring.value = false
-  }
-
-  /**
-   * 回滚（滚轮上滚）：回到上一个状态
-   */
-  function rollback() {
-    // 自动模式/CG展示/面板打开时禁用
-    if (autoMode.value || triggeredCG.value || activePanel.value) return
-    if (rollbackStack.value.length === 0) return
-    // 当前状态存入重做栈
-    redoStack.value.push(captureSnapshot())
-    // 弹出上一个状态并恢复
-    const snap = rollbackStack.value.pop()
-    restoreSnapshot(snap)
-  }
-
-  /**
-   * 重做（滚轮下滚）：重新前进
-   */
-  function forward() {
-    if (autoMode.value || triggeredCG.value || activePanel.value) return
-    if (redoStack.value.length === 0) return
-    rollbackStack.value.push(captureSnapshot())
-    const snap = redoStack.value.pop()
-    restoreSnapshot(snap)
   }
 
   /**
@@ -594,11 +509,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     currentCharacters, currentSpeaker, currentBackground, currentBGM,
     playerName,
     textSpeed, autoMode, autoDelay,
-    rollbackStack, redoStack,
     // 方法
     initGame, loadChapter, goToNode, advance, selectChoice,
     submitInput, hasItem,
-    rollback, forward,
     startTypewriter, stopTypewriter, completeTypewriter,
     saveToSlot, loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,

@@ -21,22 +21,6 @@ function startGame() {
   store.initGame()
 }
 
-// 滚轮回滚/重做（防抖 120ms）
-let wheelLock = false
-function handleWheel(e) {
-  // 面板打开/输入框/开始界面时不响应
-  if (store.activePanel || store.triggeredCG) return
-  if (store.currentNode?.type === 'input') return
-  if (wheelLock) return
-  wheelLock = true
-  setTimeout(() => { wheelLock = false }, 120)
-  if (e.deltaY < 0) {
-    store.rollback()   // 上滚 = 回退
-  } else {
-    store.forward()    // 下滚 = 前进
-  }
-}
-
 // ===== 快捷键绑定 =====
 function handleKeydown(e) {
   // 面板打开时，只有 Esc 关闭面板
@@ -121,7 +105,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 游戏主界面 -->
-    <div v-else class="game-stage" :class="{ 'hide-ui': store.hideUI }" @wheel.prevent="handleWheel">
+    <div v-else class="game-stage" :class="{ 'hide-ui': store.hideUI }">
       <!-- 背景层 -->
       <BackgroundLayer />
 
