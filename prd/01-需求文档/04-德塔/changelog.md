@@ -4,6 +4,40 @@
 
 ---
 
+### [feat] 三角色立绘重做+表情差分入库+剧情文档标注表情
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（黑机）
+- **背景**：旧立绘 dean/calm + dean/gentle 带背景原图已丢失（BUG-47），无法 rembg 重抠。用户要求幸立绘改以背景图 `bg/tower_outdoor_mist` 军装形象为准（非形象设计文档的西装版），院长仅用脸模参考重出。借此机会统一重做三角色立绘并补全表情差分
+- **变更内容**：
+  1. **Seedream 出图**（doubao-seedream-5-0-pro，图生图双参考，fast模式1K）：
+     - **院长 dean**：仅脸模参考 → calm 定版（v2）；基于定版出差分 gentle（迎接微笑）、serious（戒备抿嘴）
+     - **幸 xing**：背景图裁出形象+脸模双参考 → smile 定版（v2，自然披散发型，对齐 from_bgref）；基于定版出差分 observe（审视无笑）、pleased（满意眼角弯）、cold（冷厉收伪装）
+     - **添 tian**：脸模+旧全身图双参考 → normal 定版（魁梧+络腮胡+黑框眼镜+浅灰西装）
+  2. **rembg 批量抠图入库**（8 张，u2net，透明率 42%-67%）：统一 832×1216 画布居中，替换 `public/visualnovel/portraits/`
+  3. **剧情文档标注表情**（4 个台词.md）：各幕顶部新增「🎭 立绘与表情设计」表（角色/立绘键/触发节点/情绪/视觉表现），情绪转折处加内联 `[立绘: x→y]` 注释
+  4. `.gitignore` 补充忽略 `.ai/_*` 过程文件目录 + `.ai/scripts/` 生图脚本
+- **出图踩坑**：①Seedream 响应成功但 TOS 下载域名偶发超时（网络波动），加 3 次重试解决 ②onnxruntime 报 CUDA DLL 缺失警告（`cblasLt64_13.dll`），自动回退 CPU 模式不影响结果
+- **验证**（调试思维，非推理）：Playwright 推进 pro_011/022/108/118 四节点，DOM 确认 8 张立绘全 loaded（naturalH=1216）、表情切换正确（gentle→serious→calm+smile→calm+observe）、双人同框 imgCount=2、小腿中部 top=222-246 对齐屏幕底
+- **状态**：已验证（commit `3dd9c88`）
+- **关联**：解决 BUG-47（dean/calm+gentle 重出）、落实 AGENTS.md 立绘纪律第 6/7 条
+
+---
+
+### [refactor] 立绘展示位置规则：小腿中部对齐屏幕底 + @error 隐藏 bug 修复
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（黑机）
+- **背景**：立绘原为全身居中，脚部可见但上半身不够突出。用户要求脚部超出屏幕底不可见、小腿中部对齐屏幕底，让上半身成为视觉主体
+- **变更内容**：
+  1. **AGENTS.md** 新增立绘纪律第 6/7 条：第 6 条规定小腿中部对齐屏幕底（脚部超出不可见）；第 7 条规定幸立绘基准源自背景图 `bg/tower_outdoor_mist` 军装形象
+  2. **CharacterLayer.vue**：`.char-img` 增加 `transform: translateY(18vh)` 下移（85vh 显示高度 × 0.21 ≈ 18vh），脚部超出屏幕底约 110-134px，小腿中部基本对齐屏幕底
+  3. **@error 隐藏 bug 修复**：原 `@error="$event.target.style.display='none'"` 会在立绘 404 时将 img 永久 display:none，后续切换到存在的图也不恢复。增加 `@load="$event.target.style.display='block'"` 恢复显示
+- **验证**：Playwright 实测 pro_118 双人同框，立绘 top:222-246、bottom:855-879（viewport 745），小腿中部约 top+500=722 对齐屏幕底
+- **状态**：已验证（commit `8e19149`）
+
+---
+
 ### [fix] 立绘重抠：rembg 语义级抠图替代 jimp floodfill（6张，发丝级边缘羽化）
 
 - **时间**：2026-07-31

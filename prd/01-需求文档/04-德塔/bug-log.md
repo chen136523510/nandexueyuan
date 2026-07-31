@@ -4,7 +4,17 @@
 
 ---
 
-## 2026-07-31（黑机 立绘rembg重抠）
+## 2026-07-31（黑机 立绘重抠）
+
+---
+
+### BUG-49：立绘 img @error display:none 永久隐藏（切换不恢复）
+
+- **现象**：立绘图片 404 时触发 `@error` 将 `style.display='none'`，之后即使切换到存在的图片，img 仍保持 display:none 不显示
+- **根因**：`CharacterLayer.vue` 的 `<img>` 只有 `@error` 设置 display:none，没有对应的 `@load` 恢复 display。Vue 复用同一 img 元素（:src 变化不重建 DOM），display:none 状态被保留
+- **修复**：增加 `@load="$event.target.style.display='block'"`，图片加载成功时恢复显示
+- **文件**：`src/visualnovel/components/CharacterLayer.vue`
+- **状态**：已修复（commit `8e19149`）
 
 ---
 
@@ -15,7 +25,7 @@
 - **影响**：这两张立绘无法用 rembg 重抠，仍保持旧 jimp 版（边缘硬切、可能有灰边）
 - **修复/待办**（uphill）：需黑机用 Seedream 重新生成 dean/calm + dean/gentle 的带背景图（复用脸模+黑袍服装双参考），保存原图后再 rembg 重抠
 - **教训**：AI 出图流程必须**保留带背景原图**到 `.ai/seedream-test/`（已在 .gitignore），不能只保存抠后结果。否则后续换抠图方案时无法重抠
-- **状态**：待重新出图
+- **状态**：✅ 已修复（2026-07-31 重出 calm/gentle/serious 三张并 rembg 重抠入库，见 changelog `[feat] 三角色立绘重做`）
 
 ---
 
