@@ -74,6 +74,15 @@ pnpm.tgz
 
 # Seedream 网页生图测试输出（黑机美工专用；白机不处理任何美工，图片不进白机）
 .ai/seedream-test/
+.ai/scripts/
+
+# 美工过程文件（抠图测试/备份/对比，均不入库）
+.ai/_backup_portraits/
+.ai/_compare/
+.ai/_recover_test/
+.ai/_rembg_batch/
+.ai/_rembg_test/
+.ai/_volc_test/
 
 # Trae IDE 内置技能/工具（非项目共享，不跟踪）
 .trae/tool-WeChatMsg-master/
