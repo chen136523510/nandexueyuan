@@ -4,6 +4,24 @@
 
 ---
 
+### [feat] 序章结束场景热点交互（见/添对话 + 地图敬请期待）
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（黑机）
+- **背景**：序章结束后玩家停留在空场景，缺乏自由探索感。用户要求基于一层大厅生成带角色的新场景图（见+添画入场景），并设可点击热点进入对话/触发提示，类似幸到访场景图的形式
+- **变更内容**：
+  1. **新场景图**：Seedream 图生图（4 参考图：大厅场景+幸到访风格+院长立绘+添立绘，2K，52s），生成「一层大厅-序幕」场景图（见坐沙发翘二郎腿看书+添背对工作台），裁剪 1424×800 入库 `public/visualnovel/bg/tower_interior_hall_prologue.png`
+  2. **热点交互层**（`HotspotLayer.vue`，z-index:5）：百分比坐标定位 3 个热区（见/添/地图），hover 暖金高亮+label 标签，`@click.stop` 触发 goto（跳对话）或 notice（弹窗）
+  3. **提示弹窗**（`NoticePopup.vue`，z-index:45）：复用 InventoryPanel 的 overlay 模式，`@click.self` 关闭 + Esc 关闭
+  4. **store 扩展**：`currentHotspots` computed（从 end 节点 hotspots 字段取）+ `noticeMessage` ref + `showNotice/closeNotice` 方法
+  5. **DialogueBox 调整**：end 节点有 hotspots 时显示"点击场景中的人物或物品进行互动"替代"章节结束"
+  6. **剧情节点**：pro_end 改造（新场景+hotspots 数组）；新增 pro_explore_dean_1~3（见闲聊：看书抬头→日常→合书）+ pro_explore_tian_1~5（添独立对话，复用第四幕内容不触发原 Q&A），对话结束 `next: 'pro_end'` 回热点场景，形成可反复探索循环
+- **验证**（Playwright DOM，调试思维非推理）：①goToNode('pro_end') 确认 3 热点渲染+背景正确+提示文字 ②点击地图→弹窗"地图系统开发中，敬请期待"✓ ③点击见→pro_explore_dean_1（speaker=见）→结束回 pro_end 热点恢复 ✓ ④点击添→pro_explore_tian_1（speaker=添）→结束回 pro_end 热点恢复 ✓ ⑤npm run build 通过
+- **状态**：已验证（commit `cfdea5c`）
+- **遗留**：热点坐标为初步估值，后续可根据实际画面精调对齐
+
+---
+
 ### [feat] 三角色立绘重做+表情差分入库+剧情文档标注表情
 
 - **时间**：2026-07-31
