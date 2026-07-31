@@ -4,6 +4,27 @@
 
 ---
 
+### [fix] 立绘重抠：rembg 语义级抠图替代 jimp floodfill（6张，发丝级边缘羽化）
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（黑机）
+- **背景**：jimp floodfill 方案存在边缘硬切、主体被侵蚀、灰边残留等问题。用户要求改用语义级抠图
+- **方案调研与对比**（实测，非推理）：
+  - **火山 MediaKit API**：AKLT Access Key + Bearer 认证调通（`POST /api/v1/tools-sync/remove-image-background`）。同图对比半透明边缘 3.5%。但**不支持 base64 输入**，只接受 `http/https/mediakit/tos` URL，本地图片需走 veImageX ApplyUpload 三步上传链路（工程量大）
+  - **rembg 本地**（u2net 模型）：半透明边缘 6.3%（也很好），本地直读文件零额外成本，CPU 0.2-0.3s/张（模型缓存后）。黑机已装 onnxruntime
+  - **结论**：立绘场景下两者肉眼差异极小，rembg 本地直读无需搭建上传链路，选 rembg 批量重抠
+- **变更内容**：
+  - 安装 `rembg 2.0.77 + onnxruntime + imagehash`（Python）
+  - 批量重抠 6 张：dean/serious、xing/cold、xing/observe、xing/pleased、xing/smile、tian/normal
+  - 边缘羽化 2.9%-4.6%（发丝级精度），全透明区四角 Alpha=0（背景干净去除）
+  - 裁剪透明边框保证贴底，替换 `public/visualnovel/portraits/` 正式资产（旧版备份至 `.ai/_backup_portraits/`）
+  - xing/normal 复制自 smile（与旧版一致）；dean/normal 保持 calm 副本
+- **遗留**：dean/calm + dean/gentle **带背景原图已丢失**（黑机本地未保存），仍为旧 jimp 版，待重新出图后重抠
+- **验证**：①新旧对比图（6组 OLD-jimp vs NEW-rembg）②像素分析确认边缘羽化 ③Playwright 浏览器实测 pro_118 双人同框立绘正常渲染
+- **教训**：①语义级抠图（rembg/u2net/火山MediaKit）远优于像素阈值法（jimp floodfill），后者对渐变背景+复杂发丝无能为力 ②火山 MediaKit 不支持 base64，本地图片需先变公网 URL，零散抠图任务用本地 rembg 更省事 ③视觉模型对暗色调游戏内立绘识别率低，验收时需用像素分析交叉验证
+
+---
+
 ### [refactor] 立绘演出优化：引入「舞台状态」机制（角色持续在场，不再一个出现一个消失）
 
 - **时间**：2026-07-31

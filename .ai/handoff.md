@@ -1,9 +1,36 @@
 # AI 交接单
 
-> 最后更新：2026-07-31 09:46（白机：立绘演出优化-引入舞台状态机制，多人对话不再一个出现一个消失）
-> 所在设备：白机（荣耀便携本）
-> 稳定版本：`dba7309`（master）
-> **当前阶段**：M-G1 引擎核心 PoC ✅ 完成 + 序章四幕全量落地 ✅ 完成 + 存档系统增强 ✅ 完成 + Seedream调研 ✅ 完成 + 院长"见"形象设计v1 ✅ 完成 + Gemini生图能力调研 ✅ 完成 + 序章文案优化+缓几天分支 ✅ 完成 + 存档管理统一入口 ✅ 完成 + 豆包Seedream API实测go/no-go通过 ✅ 完成 + 9角色脸模入库 ✅ 完成 + 序章6张背景图接入 ✅ 完成 + 见/幸/添立绘+表情差分7套 ✅ 完成 + 立绘三态交互系统 ✅ 完成 + 美术资产归档 ✅ 完成 + 立绘舞台状态机制 ✅ 完成
+> 最后更新：2026-07-31 20:25（黑机：rembg语义级抠图替代jimp，6张立绘重抠+边缘羽化）
+> 所在设备：黑机（RTX 4070 主力机）
+> 稳定版本：`9d16d0f`（master）
+> **当前阶段**：M-G1 引擎核心 PoC ✅ 完成 + 序章四幕全量落地 ✅ 完成 + 存档系统增强 ✅ 完成 + Seedream调研 ✅ 完成 + 院长"见"形象设计v1 ✅ 完成 + Gemini生图能力调研 ✅ 完成 + 序章文案优化+缓几天分支 ✅ 完成 + 存档管理统一入口 ✅ 完成 + 豆包Seedream API实测go/no-go通过 ✅ 完成 + 9角色脸模入库 ✅ 完成 + 序章6张背景图接入 ✅ 完成 + 见/幸/添立绘+表情差分7套 ✅ 完成 + 立绘三态交互系统 ✅ 完成 + 美术资产归档 ✅ 完成 + 立绘舞台状态机制 ✅ 完成 + 立绘rembg语义级抠图重做 ⛰️ 进行中(6/8完成)
+
+---
+
+## 黑机本轮产出（2026-07-31 20:25）
+
+### 立绘重抠：rembg 语义级抠图替代 jimp floodfill
+
+- **背景**：jimp floodfill 方案边缘硬切、主体侵蚀、灰边残留，用户要求改语义级抠图
+- **方案对比**（实测）：
+  - 火山 MediaKit API：AKLT Key + Bearer 认证调通，效果优（边缘半透明3.5%），但**不支持base64输入**，本地图片需走 veImageX 上传链路，工程量大
+  - rembg 本地（u2net）：效果良好（边缘半透明6.3%），本地直读零成本，CPU 0.2-0.3s/张，选此方案
+- **完成项**：
+  - 装 rembg + onnxruntime + imagehash（Python）
+  - 批量重抠 6 张：dean/serious、xing×4(cold/observe/pleased/smile)、tian/normal
+  - 替换 `public/visualnovel/portraits/` 正式资产，旧版备份至 `.ai/_backup_portraits/`
+  - Playwright 浏览器实测 pro_118 双人同框正常渲染
+- **遗留**（uphill，待黑机重新出图）：
+  - ⚠️ **dean/calm + dean/gentle 带背景原图已丢失**（黑机本地未保存 Seedream 出图过程文件），仍为旧 jimp 版
+  - 需重新用 Seedream 出这两张带背景图，再 rembg 重抠
+  - `.env` 新增 `VOLC_MEDIAKIT_KEY`（AKLT 格式，已调通，留作备选方案）
+
+### 火山 MediaKit 抠图 API 调研结论（备查）
+
+- 端点：`POST https://mediakit.cn-beijing.volces.com/api/v1/tools-sync/remove-image-background`
+- 认证：`Authorization: Bearer {API_Key}`，AKLT 格式 Access Key 可用
+- scene 参数：`human`/`general`/`product`；可选 `need_contour`(描边)/`output_format`
+- **限制**：image_url 只接受 `http/https/mediakit/tos/vod`，**不支持 base64**，本地图片需先上传
 
 ---
 
