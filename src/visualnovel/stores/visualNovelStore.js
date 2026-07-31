@@ -35,6 +35,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const choicesMade = ref({})           // 已选过的选项 { nodeId: [choiceIndex, ...] }
   const inventory = ref([])             // 背包物品 id 列表
 
+  // ===== 舞台状态（立绘演出核心） =====
+  // 当前「舞台上」在场的角色，跨节点持久化。
+  // 解决问题：原方案逐节点独立取 node.characters，导致多人对话时一个出现一个消失。
+  // 现在规则：角色登场后持续在场（dim/narrator），直到显式 exit 退场。
+  const stage = ref([])                 // [{ id, portrait, position }]，当前在场的角色
+
   // ===== UI 状态 =====
   const isTyping = ref(false)           // 打字机是否正在播放
   const fullText = ref('')              // 当前节点的完整文本
@@ -57,14 +63,14 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   })
 
   // 立绘三态推导（narrator/active/dim），由 speaker 驱动，不依赖数据手写 active
-  // 关键：按角色 id 固定排序，保证跨节点角色顺序稳定（避免 Vue key 抖动导致 DOM 重建）
+  // 关键：基于「舞台状态」stage（跨节点持久化），而非逐节点 node.characters。
+  // 角色一旦登场就持续在场，说话人切换只影响 active/dim，不再一个出现一个消失。
   const currentCharacters = computed(() => {
-    const node = currentNode.value
-    if (!node) return []
-    const chars = (node.characters || []).slice() // 复制，避免改原数据
+    const chars = stage.value
     if (chars.length === 0) return []
 
-    const speaker = node.speaker || ''
+    const node = currentNode.value
+    const speaker = node ? (node.speaker || '') : ''
     const isNarrator = speaker === '旁白'
 
     const result = chars.map((char) => {
@@ -137,6 +143,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       unlockedChapters.value = progress.unlockedChapters || ['prologue']
       unlockedCGs.value = progress.unlockedCGs || []
       inventory.value = progress.inventory || []
+      stage.value = [] // 重置舞台状态（新开游戏）
 
       // 加载章节并定位到起始节点
       await loadChapter('prologue')
@@ -152,6 +159,57 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   }
 
   // ===== 节点导航 =====
+
+  /**
+   * 应用节点的舞台变更（立绘演出核心）
+   *
+   * 数据约定（三种写法，向后兼容）：
+   *   - node.characters：绝对声明（旧格式）→ stage 重置为该数组，覆盖之前的舞台
+   *   - node.enter：增量登场 [{ id, portrait, position }] → 合并入 stage（已有则更新表情/位置）
+   *   - node.exit：增量退场 [id] → 从 stage 移除
+   *   - 三者都没有 → stage 延续不变（✨核心：解决多人对话来回消失）
+   *
+   * active 字段忽略（三态由 speaker 运行时推导，见 currentCharacters）
+   *
+   * @param {object} node - 当前进入的节点
+   */
+  function applyStageChange(node) {
+    // exit 退场优先处理（先退再进，避免同帧进出同角色闪烁）
+    if (node.exit && Array.isArray(node.exit) && node.exit.length) {
+      const exitSet = new Set(node.exit)
+      stage.value = stage.value.filter(c => !exitSet.has(c.id))
+    }
+
+    // enter 增量登场：合并入 stage，已有角色更新表情/位置
+    if (node.enter && Array.isArray(node.enter) && node.enter.length) {
+      const enters = node.enter.map(c => ({
+        id: c.id,
+        portrait: c.portrait || (c.id + '/normal'),
+        position: c.position || 'center',
+      }))
+      const map = new Map(stage.value.map(c => [c.id, c]))
+      for (const c of enters) {
+        map.set(c.id, c) // 已有则覆盖（更新表情/位置），没有则新增
+      }
+      stage.value = [...map.values()]
+      return
+    }
+
+    // characters 绝对声明（旧格式兼容）：重置 stage
+    // 注意：空数组 [] 也视为显式清空舞台（如纯旁白节点需要清场）
+    if (Array.isArray(node.characters)) {
+      if (node.characters.length === 0) {
+        stage.value = []
+      } else {
+        stage.value = node.characters.map(c => ({
+          id: c.id,
+          portrait: c.portrait || (c.id + '/normal'),
+          position: c.position || 'center',
+        }))
+      }
+    }
+    // 三者都没有：stage 延续不变
+  }
 
   /**
    * 跳转到指定节点（核心方法）
@@ -208,6 +266,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     if (node.type === NodeType.END) {
       currentNodeId.value = nodeId
       isEnded.value = true
+      stage.value = [] // 章节结束，舞台清空
       // 同步最终进度
       syncProgress()
       return
@@ -215,6 +274,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
     // dialogue / choice / input 节点：正常设置当前节点
     currentNodeId.value = nodeId
+
+    // 应用舞台变更（立绘演出：登退场 / 表情切换 / 位置）
+    applyStageChange(node)
 
     // 应用好感度效果
     if (node.effects) {
@@ -405,6 +467,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       affinity: { ...affinity.value },
       variables: { ...storyVariables.value },
       inventory: [...inventory.value],
+      stage: stage.value.map(c => ({ ...c })), // 舞台状态（立绘演出）
     }
   }
 
@@ -437,6 +500,11 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       storyVariables.value = data.variables || {}
       inventory.value = data.inventory || []
       currentChapter.value = data.chapter
+
+      // 恢复舞台状态（旧存档无此字段则置空，由 goToNode 重新推导）
+      stage.value = Array.isArray(data.stage)
+        ? data.stage.map(c => ({ ...c }))
+        : []
 
       // 重新加载章节
       await loadChapter(data.chapter)
@@ -525,7 +593,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     // 状态
     currentNode, currentChapter, currentNodeId,
     affinity, storyVariables, unlockedChapters, unlockedCGs,
-    history, choicesMade, inventory,
+    history, choicesMade, inventory, stage,
     isTyping, fullText, displayedText,
     activePanel, hideUI, isEnded, isLoading, triggeredCG,
     currentCharacters, currentSpeaker, currentBackground, currentBGM,

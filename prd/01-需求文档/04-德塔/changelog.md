@@ -4,6 +4,21 @@
 
 ---
 
+### [refactor] 立绘演出优化：引入「舞台状态」机制（角色持续在场，不再一个出现一个消失）
+
+- **时间**：2026-07-31
+- **变更人**：陈梓键（白机）
+- **背景**：多人对话时立绘「一个出现一个消失」--根因是 `currentCharacters` 逐节点独立取 `node.characters`，无跨节点持久化。扫描 prologue.js 156 条边发现 76 条角色突变边（如第二幕 pro_107~pro_113 见/幸来回消失），违反美术设计规范 §4.4 三态原则（非说话人应 dim 在场而非消失）
+- **变更内容**：
+  - **引擎层**（`visualNovelStore.js`）：新增 `stage` ref 维护当前在场角色（跨节点持久化）；新增 `applyStageChange()` 在 goToNode 时按节点字段更新舞台；`currentCharacters` computed 改为基于 stage + speaker 推导三态；存档快照 `getSnapshot`/`loadFromSlot` 加入 stage 字段
+  - **数据层**（`prologue.js`）：第二/三/四幕多人对话节点从「逐节点声明 characters」改为 `enter`/`exit`/延续。76 条突变边降到个位数（仅保留真正显式退场）。移除全部冗余 `active` 字段
+  - **三种舞台字段**（向后兼容）：`characters` 绝对声明（重置舞台）、`enter` 增量登场（合并+更新表情/位置）、`exit` 增量退场；三者都没有则延续不变
+  - **类型层**（`types.js`）：补充 enter/exit/characters 舞台字段 JSDoc 语义文档
+- **验证**：①stage 逻辑单元测试 10 例全过 ②stage 推进模拟脚本验证「所有说话人节点说话人都在舞台上」零 BUG ③npm run build 通过 ④Playwright 浏览器实测第二幕双人对话：见+幸始终 imgCount=2 同框，说话人 active/dim 正确切换（pro_108 见说话时 dean=active+xing=dim，对比改造前 xing 消失）
+- **教训**：视觉小说立绘演出应用「舞台状态」模型（角色登场后持续在场直到显式退场），而非逐节点独立声明。Ren'Py 等业界引擎均采用此模型。逐节点声明在多人对话时必然导致来回消失
+
+---
+
 ### [fix] 幸立绘重出v3(背景图形象参考) + smile阈值法抠图(渐变背景)
 
 - **时间**：2026-07-31
