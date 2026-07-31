@@ -3,6 +3,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
 import BackgroundLayer from '../visualnovel/components/BackgroundLayer.vue'
 import CharacterLayer from '../visualnovel/components/CharacterLayer.vue'
+import HotspotLayer from '../visualnovel/components/HotspotLayer.vue'
+import NoticePopup from '../visualnovel/components/NoticePopup.vue'
 import DialogueBox from '../visualnovel/components/DialogueBox.vue'
 import ChoiceMenu from '../visualnovel/components/ChoiceMenu.vue'
 import QuickMenu from '../visualnovel/components/QuickMenu.vue'
@@ -34,6 +36,12 @@ function handleKeydown(e) {
   // CG 展示时，任意键关闭
   if (store.triggeredCG) {
     store.closeCG()
+    return
+  }
+
+  // 轻提示弹窗时，任意键关闭
+  if (store.noticeMessage) {
+    store.closeNotice()
     return
   }
 
@@ -112,6 +120,9 @@ onUnmounted(() => {
       <!-- 立绘层 -->
       <CharacterLayer />
 
+      <!-- 热点交互层（序章结束后自由探索） -->
+      <HotspotLayer />
+
       <!-- 对话框 -->
       <DialogueBox />
 
@@ -126,6 +137,9 @@ onUnmounted(() => {
       <HistoryPanel />
       <SettingsPanel />
       <InventoryPanel />
+
+      <!-- 轻提示弹窗（敬请期待等） -->
+      <NoticePopup />
 
       <!-- 加载中遮罩 -->
       <div v-if="store.isLoading" class="loading-overlay">

@@ -50,6 +50,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const isEnded = ref(false)            // 当前章节是否结束
   const isLoading = ref(false)          // 加载状态
   const triggeredCG = ref(null)         // 当前触发的 CG（非 null 时全屏展示）
+  const noticeMessage = ref(null)       // 轻提示弹窗消息（非 null 时显示弹窗）
 
   // ===== 设置 =====
   const textSpeed = ref(30)             // 打字速度（ms/字），越小越快
@@ -99,6 +100,11 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
   const currentBGM = computed(() => {
     return currentNode.value?.bgm || ''
+  })
+
+  // 热点区域（仅 end 节点有 hotspots 字段）
+  const currentHotspots = computed(() => {
+    return currentNode.value?.hotspots || []
   })
 
   // 玩家名称（从剧情变量取，默认"漂泊者"）
@@ -589,14 +595,23 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     triggeredCG.value = null
   }
 
+  // 轻提示弹窗（"敬请期待"等）
+  function showNotice(msg) {
+    noticeMessage.value = msg
+  }
+
+  function closeNotice() {
+    noticeMessage.value = null
+  }
+
   return {
     // 状态
     currentNode, currentChapter, currentNodeId,
     affinity, storyVariables, unlockedChapters, unlockedCGs,
     history, choicesMade, inventory, stage,
     isTyping, fullText, displayedText,
-    activePanel, hideUI, isEnded, isLoading, triggeredCG,
-    currentCharacters, currentSpeaker, currentBackground, currentBGM,
+    activePanel, hideUI, isEnded, isLoading, triggeredCG, noticeMessage,
+    currentCharacters, currentSpeaker, currentBackground, currentBGM, currentHotspots,
     playerName,
     textSpeed, autoMode, autoDelay,
     // 方法
@@ -605,5 +620,6 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     startTypewriter, stopTypewriter, completeTypewriter,
     saveToSlot, loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,
+    showNotice, closeNotice,
   }
 })

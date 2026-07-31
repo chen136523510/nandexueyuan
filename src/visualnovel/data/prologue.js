@@ -1137,11 +1137,87 @@ export default [
   },
 
   // ================================================================
-  // 序章结束
+  // 序章结束 -> 自由探索热点场景
   // ================================================================
   {
     id: 'pro_end',
     type: 'end',
-    background: 'bg/tower_lobby'
+    background: 'bg/tower_interior_hall_prologue',
+    // 热点区域（百分比坐标，基于背景图比例）
+    hotspots: [
+      { id: 'meet_dean', x: 12, y: 32, w: 20, h: 58, label: '见',
+        action: { type: 'goto', target: 'pro_explore_dean_1' } },
+      { id: 'meet_tian', x: 63, y: 28, w: 22, h: 62, label: '添',
+        action: { type: 'goto', target: 'pro_explore_tian_1' } },
+      { id: 'wall_map', x: 38, y: 6, w: 16, h: 22, label: '地图',
+        action: { type: 'notice', message: '地图系统开发中，敬请期待' } },
+    ]
+  },
+
+  // ================================================================
+  // 自由探索：见的闲聊（序章后，可反复触发）
+  // ================================================================
+  {
+    id: 'pro_explore_dean_1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    enter: [{ id: 'dean', portrait: 'dean/gentle', position: 'center' }],
+    speaker: '见',
+    next: 'pro_explore_dean_2'
+  },
+  {
+    id: 'pro_explore_dean_2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'pro_explore_dean_3'
+  },
+  {
+    id: 'pro_explore_dean_3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'pro_end'  // 回到热点场景
+  },
+
+  // ================================================================
+  // 自由探索：添的独立对话（复用序章第四幕内容，不触发原有Q&A流程）
+  // ================================================================
+  {
+    id: 'pro_explore_tian_1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    exit: ['dean'],
+    enter: [{ id: 'tian', portrait: 'tian/normal', position: 'center' }],
+    speaker: '添',
+    next: 'pro_explore_tian_2'
+  },
+  {
+    id: 'pro_explore_tian_2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'pro_explore_tian_3'
+  },
+  {
+    id: 'pro_explore_tian_3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'pro_explore_tian_4'
+  },
+  {
+    id: 'pro_explore_tian_4',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'pro_explore_tian_5'
+  },
+  {
+    id: 'pro_explore_tian_5',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'pro_end'  // 回到热点场景
   }
 ]

@@ -18,6 +18,7 @@ const REAL_BG_MAP = {
   'bg/tower_day': null,
   'bg/tower_interior_hall': null,
   'bg/tower_lobby': 'bg/tower_interior_hall', // 命名不统一，指向同一张大厅图
+  'bg/tower_interior_hall_prologue': null, // 序章结束后场景（见+添画入场景）
   'bg/tower_outdoor_mist': null,
   'bg/tower_interior': null,
 }

@@ -44,8 +44,10 @@ const showDialogue = computed(() => {
   return node.type === NodeType.DIALOGUE || node.type === NodeType.INPUT
 })
 
-// 是否章节结束
-const showEnd = computed(() => store.isEnded)
+// 是否章节结束（有热点的 end 节点不算"结束"，而是自由探索模式）
+const showEnd = computed(() => store.isEnded && store.currentHotspots.length === 0)
+// 是否自由探索模式（end 节点带热点）
+const isExploreMode = computed(() => store.isEnded && store.currentHotspots.length > 0)
 
 // 当前 input 节点的 placeholder
 const inputPlaceholder = computed(() => {
@@ -104,7 +106,12 @@ function handleSubmit() {
 
     <!-- 章节结束 -->
     <div v-if="showEnd" class="end-box">
-      <p class="end-text">— 章节结束 —</p>
+      <p class="end-text">- 章节结束 -</p>
+    </div>
+
+    <!-- 自由探索提示（序章结束后热点场景） -->
+    <div v-if="isExploreMode" class="end-box explore-box">
+      <p class="explore-text">点击场景中的人物或物品进行互动</p>
     </div>
   </div>
 </template>
@@ -191,6 +198,18 @@ function handleSubmit() {
   color: rgba(201, 169, 110, 0.6);
   font-size: 18px;
   letter-spacing: 4px;
+}
+
+/* 自由探索提示 */
+.explore-box {
+  padding: 16px 0;
+}
+
+.explore-text {
+  color: rgba(232, 224, 204, 0.55);
+  font-size: 14px;
+  letter-spacing: 2px;
+  margin: 0;
 }
 
 /* 输入框区域 */
