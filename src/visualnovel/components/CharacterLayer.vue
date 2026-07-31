@@ -36,7 +36,7 @@ const characters = computed(() => {
         class="char-portrait"
         :class="[`pos-${char.position || 'center'}`, char.state || 'narrator']"
       >
-        <img :src="char.imgSrc" :alt="char.id" class="char-img" @error="$event.target.style.display='none'" />
+        <img :src="char.imgSrc" :alt="char.id" class="char-img" @error="$event.target.style.display='none'" @load="$event.target.style.display='block'" />
       </div>
     </TransitionGroup>
   </div>
@@ -58,17 +58,22 @@ const characters = computed(() => {
 /*
  * 绝对定位布局：每个角色独立固定在屏幕底部，互不影响。
  * 用 CSS 变量 --tx / --ty 组合 transform，避免 translateX(-50%) 和 translateY(-24px) 冲突。
+ *
+ * 立绘位置规则（AGENTS.md §立绘制作纪律6）：
+ * 小腿中部对齐屏幕最下方水平线，脚部和小腿下半部分超出屏幕底部不可见，上半身更突出。
+ * 实现方式：char-portrait 仍 bottom:0 贴底，img 用 margin-bottom 负值下移，
+ * 使小腿中部（约img 79%处）对齐屏幕底。
  */
 .char-portrait {
   position: absolute;
-  bottom: 0;             /* 脚底贴屏幕底边，对话框自然遮住下半身 */
+  bottom: 0;             /* 容器贴屏幕底，img 用负 margin 下移实现小腿中部对齐 */
   --tx: 0px;             /* 水平偏移（center 时为 -50% 居中） */
   --ty: 0px;             /* 垂直偏移（active 时上移） */
   transform: translate(var(--tx), var(--ty));
   transition: filter 0.4s ease, transform 0.4s ease, left 0.4s ease, right 0.4s ease;
 }
 
-/* 立绘图（日系VN标准：脚底贴底，对话框压住膝盖以下） */
+/* 立绘图（小腿中部对齐屏幕底：translateY 正值让脚部超出屏幕底不可见） */
 .char-img {
   display: block;
   height: 85vh;
@@ -76,6 +81,9 @@ const characters = computed(() => {
   width: auto;
   object-fit: contain;
   pointer-events: none;
+  /* 小腿中部约在全身79%处，底部21%需超出屏幕。
+     85vh × 21% ≈ 18vh，用 translateY 下移使小腿中部对齐屏幕底 */
+  transform: translateY(18vh);
 }
 
 /* ===== 位置（绝对定位，互不影响） ===== */
