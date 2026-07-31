@@ -1,9 +1,13 @@
 <script setup>
 /**
  * 热点交互层
- * 序章结束后的自由探索场景，在背景图上渲染可点击区域。
+ * 序章结束后的自由探索场景，在背景图上渲染可交互的按钮标识。
  * 仅在 isEnded 且当前节点有 hotspots 时显示。
  * z-index: 5（立绘层之上、对话框之下）
+ *
+ * 热点数据结构（prologue.js 的 end 节点 hotspots 数组）：
+ *   { id, x, y, label, icon, action: { type: 'goto'|'notice', target|message } }
+ *   x/y 为按钮中心点的百分比坐标
  */
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
@@ -22,20 +26,16 @@ function handleHotspot(hotspot) {
 
 <template>
   <div v-if="store.isEnded && store.currentHotspots.length" class="hotspot-layer">
-    <div
+    <button
       v-for="spot in store.currentHotspots"
       :key="spot.id"
-      class="hotspot"
-      :style="{
-        left: spot.x + '%',
-        top: spot.y + '%',
-        width: spot.w + '%',
-        height: spot.h + '%',
-      }"
+      class="hotspot-btn"
+      :style="{ left: spot.x + '%', top: spot.y + '%' }"
       @click.stop="handleHotspot(spot)"
     >
+      <span class="hotspot-icon">{{ spot.icon || '💬' }}</span>
       <span class="hotspot-label">{{ spot.label }}</span>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -47,57 +47,87 @@ function handleHotspot(hotspot) {
   pointer-events: none;
 }
 
-.hotspot {
+.hotspot-btn {
   position: absolute;
-  border: 2px solid transparent;
-  border-radius: 8px;
+  /* 用 transform 居中到 x/y 坐标点 */
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
   pointer-events: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  transition: all 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: transform 0.2s ease;
 }
 
-/* 默认轻微提示边框（可点击区域） */
-.hotspot::after {
+/* 脉冲光环（提示可交互） */
+.hotspot-btn::before {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  background: rgba(201, 169, 110, 0.04);
-  border: 1px dashed rgba(201, 169, 110, 0.2);
-  transition: all 0.2s ease;
-  pointer-events: none;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(201, 169, 110, 0.15);
+  border: 2px solid rgba(201, 169, 110, 0.5);
+  animation: hotspotPulse 2s ease-in-out infinite;
 }
 
-/* hover 高亮 */
-.hotspot:hover::after {
-  background: rgba(201, 169, 110, 0.15);
-  border: 1px solid rgba(201, 169, 110, 0.6);
-  box-shadow: 0 0 16px rgba(201, 169, 110, 0.2);
+@keyframes hotspotPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+  }
+}
+
+.hotspot-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 22px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(13, 17, 23, 0.85);
+  border: 2px solid rgba(201, 169, 110, 0.6);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
 }
 
 .hotspot-label {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 2px 10px;
-  font-size: 13px;
-  color: rgba(232, 224, 204, 0.5);
-  background: rgba(13, 17, 23, 0.6);
-  border: 1px solid rgba(201, 169, 110, 0.2);
+  font-size: 12px;
+  color: rgba(232, 224, 204, 0.8);
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(201, 169, 110, 0.25);
   border-radius: 4px;
+  padding: 1px 8px;
   white-space: nowrap;
   transition: all 0.2s ease;
-  pointer-events: none;
 }
 
-.hotspot:hover .hotspot-label {
+.hotspot-btn:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.hotspot-btn:hover .hotspot-icon {
+  background: rgba(201, 169, 110, 0.25);
+  border-color: rgba(201, 169, 110, 0.9);
+  box-shadow: 0 0 20px rgba(201, 169, 110, 0.35);
+}
+
+.hotspot-btn:hover .hotspot-label {
   color: rgba(232, 224, 204, 1);
-  background: rgba(13, 17, 23, 0.9);
   border-color: rgba(201, 169, 110, 0.6);
-  box-shadow: 0 0 12px rgba(201, 169, 110, 0.25);
 }
 </style>

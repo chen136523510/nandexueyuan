@@ -1143,13 +1143,13 @@ export default [
     id: 'pro_end',
     type: 'end',
     background: 'bg/tower_interior_hall_prologue',
-    // 热点区域（百分比坐标，基于背景图比例）
+    // 热点区域（x/y 为按钮中心点百分比坐标）
     hotspots: [
-      { id: 'meet_dean', x: 12, y: 32, w: 20, h: 58, label: '见',
+      { id: 'meet_dean', x: 22, y: 68, label: '见', icon: '📖',
         action: { type: 'goto', target: 'pro_explore_dean_1' } },
-      { id: 'meet_tian', x: 63, y: 28, w: 22, h: 62, label: '添',
+      { id: 'meet_tian', x: 72, y: 60, label: '添', icon: '🔧',
         action: { type: 'goto', target: 'pro_explore_tian_1' } },
-      { id: 'wall_map', x: 38, y: 6, w: 16, h: 22, label: '地图',
+      { id: 'wall_map', x: 46, y: 18, label: '地图', icon: '🗺️',
         action: { type: 'notice', message: '地图系统开发中，敬请期待' } },
     ]
   },
