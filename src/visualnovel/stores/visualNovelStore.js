@@ -136,12 +136,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   }
 
   /**
-   * 初始化游戏（从全局进度恢复或新开始）
+   * 初始化游戏（优先恢复自动存档 slot=0，无则从头开始）
    */
   async function initGame() {
     isLoading.value = true
     try {
-      // 拉取服务端进度
+      // 拉取服务端进度（好感度/CG/章节解锁/背包，跨存档持久化）
       const res = await getProgress()
       const progress = res.data
       affinity.value = progress.affinity || {}
@@ -151,11 +151,31 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       inventory.value = progress.inventory || []
       stage.value = [] // 重置舞台状态（新开游戏）
 
-      // 加载章节并定位到起始节点
+      // 加载章节
       await loadChapter('prologue')
-      const startId = getStartNode([...currentIndex.value.values()])
-      if (startId) {
-        goToNode(startId)
+
+      // 优先读自动存档（slot=0），恢复到上一次进度
+      let autoLoaded = false
+      try {
+        const saveRes = await getSave(0)
+        const data = saveRes.data
+        // 用存档快照覆盖（存档值比全局进度更精确，是该存档当时的完整状态）
+        affinity.value = data.affinity || {}
+        storyVariables.value = data.variables || {}
+        inventory.value = data.inventory || []
+        stage.value = [] // 后端不存 stage，由 goToNode 重新推导
+        goToNode(data.node)
+        autoLoaded = true
+      } catch (e) {
+        // 404 无自动存档，走从头开始
+      }
+
+      // 无自动存档则定位到章节起始节点
+      if (!autoLoaded) {
+        const startId = getStartNode([...currentIndex.value.values()])
+        if (startId) {
+          goToNode(startId)
+        }
       }
     } catch (err) {
       console.error('[VisualNovelStore] initGame 失败:', err)
@@ -495,6 +515,31 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   }
 
   /**
+   * 存档到指定槽位（外部传入自定义快照，如"新建存档"写入从头开始的状态）
+   */
+  async function saveSnapshotToSlot(slot, snapshot) {
+    try {
+      await writeSave(slot, {
+        ...snapshot,
+        thumbnail: null,
+      })
+      return true
+    } catch (err) {
+      console.error('[VisualNovelStore] 存档失败:', err)
+      return false
+    }
+  }
+
+  /**
+   * 获取指定章节的起始节点 id（用于"新建存档"等场景）
+   */
+  function getChapterStartNode(chapterId = 'prologue') {
+    const index = currentIndex.value
+    if (!index) return null
+    return getStartNode([...index.values()])
+  }
+
+  /**
    * 从指定槽位读档
    */
   async function loadFromSlot(slot) {
@@ -618,7 +663,8 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     initGame, loadChapter, goToNode, advance, selectChoice,
     submitInput, hasItem,
     startTypewriter, stopTypewriter, completeTypewriter,
-    saveToSlot, loadFromSlot, fetchSaves, removeSave, getSnapshot,
+    saveToSlot, saveSnapshotToSlot, getChapterStartNode,
+    loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,
     showNotice, closeNotice,
   }

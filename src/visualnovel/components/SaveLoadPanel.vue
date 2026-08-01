@@ -61,7 +61,7 @@ async function handleSave(slot) {
   }
 }
 
-// 新建存档：自动找到第一个空槽位保存
+// 新建存档：创建一个"从头开始"的全新存档（非当前进度快照）
 async function handleNewSave() {
   const slot = firstEmptySlot.value
   if (!slot) {
@@ -69,7 +69,31 @@ async function handleNewSave() {
     setTimeout(() => { msg.value = '' }, 3000)
     return
   }
-  await handleSave(slot)
+  // 构造全新快照（章节起始节点 + 空状态）
+  const startNode = store.getChapterStartNode('prologue')
+  if (!startNode) {
+    msg.value = '新建失败：无法获取起始节点'
+    setTimeout(() => { msg.value = '' }, 3000)
+    return
+  }
+  loading.value = true
+  msg.value = ''
+  const ok = await store.saveSnapshotToSlot(slot, {
+    node: startNode,
+    chapter: 'prologue',
+    affinity: {},
+    variables: {},
+    inventory: [],
+    stage: [],
+  })
+  loading.value = false
+  if (ok) {
+    msg.value = `已新建存档到槽位 ${slot}（从头开始）`
+    await fetchSaves()
+    setTimeout(() => { msg.value = '' }, 2500)
+  } else {
+    msg.value = '新建失败，请重试'
+  }
 }
 
 async function handleLoad(slot) {
