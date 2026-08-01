@@ -4,6 +4,21 @@
 
 ---
 
+### [feat] 存档系统优化-自动存档恢复+新建存档从头开始
+
+- **时间**：2026-08-01
+- **变更人**：陈梓键（黑机）
+- **背景**：两个存档体验问题：①进入德塔总是从头开始（initGame 只读全局进度 GameProgress，不碰存档槽 GameSave，虽然 selectChoice 关键选项会写 slot=0 自动存档但从未被读取）；②"新建存档"复用 handleSave 保存当前进度，与"存档"按钮功能重复
+- **变更内容**：
+  1. **initGame() 优先读自动存档**：`loadChapter` 后尝试 `getSave(0)`，成功则用存档快照覆盖全局进度（存档值更精确）+ `goToNode(data.node)` 恢复上次进度；失败(404 无存档) fallback 到 `getStartNode` 从头开始。不复用 `loadFromSlot(0)`（避免重复 loadChapter）
+  2. **新增 `saveSnapshotToSlot(slot, snapshot)`**：支持外部传入自定义快照（区别于 `saveToSlot` 恒定用 `getSnapshot()` 当前进度）
+  3. **新增 `getChapterStartNode(chapterId)`**：获取章节起始节点 id（供"新建存档"构造从头开始快照）
+  4. **handleNewSave 改造**：不再调 `handleSave(slot)`（当前进度），改为构造全新快照（`pro_001` + 空 affinity/variables/inventory/stage）写入空槽。新建存档与存档(当前进度)功能彻底区分
+- **验证**（Playwright 3 场景）：①无自动存档->initGame 到 pro_001 ✓ ②有自动存档(pro_303)->initGame 恢复到 pro_303 ✓ ③当前 pro_303 新建存档->保存 pro_001(从头) ✓；npm run build 通过
+- **状态**：已验证（commit `b5077c5`）
+
+---
+
 ### [fix] 场景图v2重出(见坐姿优化) + 热点改按钮标识 + 部署上线
 
 - **时间**：2026-08-01
