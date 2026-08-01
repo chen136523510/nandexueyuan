@@ -807,6 +807,16 @@ export default [
     ],
   },
 
+  // 共享路由：话题讲完回菜单（qa_explore=true 回探索菜单，否则回主线菜单）
+  {
+    id: 'pro_qa_router',
+    type: 'condition',
+    branches: [
+      { if: { variables: { qa_explore: true } }, next: 'pro_explore_qa_choice' },
+      { else: true, next: 'pro_qa_choice' },
+    ],
+  },
+
   // ----- 话题一：这是什么地方 -----
   {
     id: 'pro_qa_place_1',
@@ -834,7 +844,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题二：我们是谁 -----
@@ -878,7 +888,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题三：世界局势 -----
@@ -929,7 +939,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题四：刚才那个人是谁 -----
@@ -973,7 +983,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题五：裂隙是什么 -----
@@ -1010,7 +1020,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题六：我接下来该干嘛 -----
@@ -1054,7 +1064,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 话题七：你有想过回去吗？-----
@@ -1084,7 +1094,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '旁白',
-    next: 'pro_qa_choice'
+    next: 'pro_qa_router'
   },
 
   // ----- 结束话题 -----
@@ -1181,7 +1191,7 @@ export default [
   },
 
   // ================================================================
-  // 自由探索：添的独立对话（复用序章第四幕内容，不触发原有Q&A流程）
+  // 自由探索：添的问答（复用序章第四幕对答内容，独立结束链回热点场景）
   // ================================================================
   {
     id: 'pro_explore_tian_1',
@@ -1190,6 +1200,13 @@ export default [
     exit: ['dean'],
     enter: [{ id: 'tian', portrait: 'tian/normal', position: 'center' }],
     speaker: '添',
+    next: 'pro_explore_tian_event'
+  },
+  // event: 标记处于自由探索问答（隔离主线流程）
+  {
+    id: 'pro_explore_tian_event',
+    type: 'event',
+    setVariables: { qa_explore: true },
     next: 'pro_explore_tian_2'
   },
   {
@@ -1197,27 +1214,36 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     speaker: '旁白',
-    next: 'pro_explore_tian_3'
+    next: 'pro_explore_qa_choice'
+  },
+  // Q&A 选择菜单（info 话题复用原节点，结束选项独立回 pro_end）
+  {
+    id: 'pro_explore_qa_choice',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'info', next: 'pro_qa_place_1' },
+      { impact: 'info', next: 'pro_qa_who_1' },
+      { impact: 'info', next: 'pro_qa_world_1' },
+      { impact: 'info', next: 'pro_qa_xing_1' },
+      { impact: 'info', next: 'pro_qa_rift_1' },
+      { impact: 'info', next: 'pro_qa_next_1' },
+      { impact: 'info', next: 'pro_qa_home_1' },
+      { impact: 'critical', next: 'pro_explore_qa_end' },
+    ],
+  },
+  // 结束语：清 explore 标记 + 回热点场景（不走 pro_cond_qa_end 主线分叉）
+  {
+    id: 'pro_explore_qa_end',
+    type: 'event',
+    setVariables: { qa_explore: false },
+    next: 'pro_explore_qa_farewell'
   },
   {
-    id: 'pro_explore_tian_3',
+    id: 'pro_explore_qa_farewell',
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     speaker: '添',
-    next: 'pro_explore_tian_4'
-  },
-  {
-    id: 'pro_explore_tian_4',
-    type: 'dialogue',
-    background: 'bg/tower_interior_hall',
-    speaker: '添',
-    next: 'pro_explore_tian_5'
-  },
-  {
-    id: 'pro_explore_tian_5',
-    type: 'dialogue',
-    background: 'bg/tower_interior_hall',
-    speaker: '添',
-    next: 'pro_end'  // 回到热点场景
+    next: 'pro_end'
   }
 ]
