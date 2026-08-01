@@ -2,67 +2,59 @@
 # 部署脚本 - 在服务器上执行
 # 用法: bash deploy.sh [--data <csv路径>]
 #   --data: 重新导入群聊数据 + 重建 FTS5 索引
+#
+# 分层设计：
+#   每次必做：拉代码 → 装依赖 → 构建 → 重启 → 公告 → 验证
+#   首次/按需：数据库迁移 → 管理员账号 → 师德墙种子（仅在缺失时触发）
 
 set -e
 
 DEPLOY_DIR=/root/projects/www.nandexueyuan.top
 cd "$DEPLOY_DIR"
 
-echo "=== 1/11 拉取最新代码 ==="
+echo "=== 1/9 拉取最新代码 ==="
 git pull origin master
 
-echo "=== 2/11 安装后端依赖 ==="
+echo "=== 2/9 安装后端依赖 ==="
 cd server
 npm install
 # 确保 ws 依赖已安装（黑机外包检索 WebSocket）
 npm install ws 2>/dev/null || true
 
-echo "=== 2.5/11 生成 Prisma Client ==="
+echo "=== 2.5/9 生成 Prisma Client ==="
 npx prisma generate
 
-echo "=== 3/11 应用数据库迁移 ==="
-npx prisma migrate deploy
-
-echo "=== 3.5/11 创建系统管理员账号 ==="
-node prisma/seed.js
-
-echo "=== 3.6/11 师德墙种子数据 ==="
-# 确保 uploads 目录存在
-mkdir -p uploads/wall uploads/wall-seed
-# 种子图片已在 git 仓库中（uploads/wall-seed/），此处检查
-if [ -f uploads/wall-seed/einstein.jpg ]; then
-  node prisma/seedWall.js
+echo "=== 3/9 数据库迁移（按需）==="
+# 只在有未应用的迁移时才执行
+PENDING=$(npx prisma migrate status 2>&1 | grep -c "not applied" || true)
+if [ "$PENDING" -gt 0 ]; then
+  echo "  检测到 $PENDING 个未应用的迁移，执行 migrate deploy"
+  npx prisma migrate deploy
 else
-  echo "⚠ 师德墙种子图片不存在，跳过种子数据。请从本地上传 uploads/wall-seed/ 目录"
+  echo "  无待应用迁移，跳过"
 fi
 
-echo "=== 4/11 安装游戏服务器依赖 ==="
+echo "=== 4/9 安装游戏服务器依赖 ==="
 cd ../game-server
 npm install
 
-echo "=== 5/11 安装前端依赖 ==="
+echo "=== 5/9 安装前端依赖 ==="
 cd ..
 npm install --legacy-peer-deps
 
-echo "=== 6/11 构建前端 ==="
+echo "=== 6/9 构建前端 ==="
 NODE_OPTIONS=--max-old-space-size=512 npm run build
 
-echo "=== 7/11 重启后端 ==="
-pm2 delete nandexueyuan-api 2>/dev/null
-pm2 start src/index.js --name nandexueyuan-api --cwd server
-pm2 save
-
-echo "=== 8/11 重启游戏服务器 ==="
+echo "=== 7/9 重启服务 ==="
+pm2 restart nandexueyuan-api 2>/dev/null || pm2 start src/index.js --name nandexueyuan-api --cwd server
 pm2 restart nandexueyuan-game 2>/dev/null || pm2 start game-server/src/index.js --name nandexueyuan-game
 pm2 save
 
-echo "=== 9/11 写入版本公告 ==="
-# 写入版本公告（seedVersion.js 含 v1.1.0/v1.2.0/v2.0.0 三条，幂等：已存在则更新）
-# 版本号规则见 ADR-004，新增版本时在 seedVersion.js 顶部数组追加
+echo "=== 8/9 写入版本公告 ==="
 cd "$DEPLOY_DIR/server"
 node prisma/seedVersion.js
 
-echo "=== 10/11 验证 ==="
+echo "=== 9/9 验证 ==="
 sleep 2
 http_code() {
   curl -s -o /dev/null -w "%{http_code}" "$1"
@@ -100,13 +92,13 @@ fi
 if [ "$1" = "--data" ] && [ -n "$2" ]; then
   echo ""
   echo "=== 附加:重新导入群聊数据 ==="
-  cd server
+  cd "$DEPLOY_DIR/server"
   node scripts/importChat.js "$2" --clear
-  echo "=== 附加:重建 FTS5 索引 ==="
+  echo "=== 附加:重建 FTS5 紹索引 ==="
   node scripts/buildFtsIndex.js
   echo "✓ 数据导入 + 索引重建完成"
 fi
 
 echo ""
-echo "=== 11/11 部署完成 ==="
+echo "=== 部署完成 ==="
 echo "访问: https://www.nandexueyuan.top"
