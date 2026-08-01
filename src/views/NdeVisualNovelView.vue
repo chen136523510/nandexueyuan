@@ -145,7 +145,13 @@ onUnmounted(() => {
 
       <!-- 加载中遮罩 -->
       <div v-if="store.isLoading" class="loading-overlay">
-        <span class="loading-text">载入中…</span>
+        <div class="loading-content">
+          <span class="loading-text">载入中…</span>
+          <div v-if="store.preloadProgress > 0" class="loading-bar-wrap">
+            <div class="loading-bar" :style="{ width: store.preloadProgress + '%' }"></div>
+          </div>
+          <span v-if="store.preloadProgress > 0" class="loading-pct">{{ store.preloadProgress }}%</span>
+        </div>
       </div>
     </div>
   </div>
@@ -231,10 +237,17 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: 50;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .loading-text {
@@ -242,6 +255,26 @@ onUnmounted(() => {
   font-size: 18px;
   letter-spacing: 4px;
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-bar-wrap {
+  width: 240px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 100%;
+  background: rgba(201, 169, 110, 0.8);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.loading-pct {
+  color: rgba(201, 169, 110, 0.5);
+  font-size: 13px;
 }
 
 @keyframes pulse {

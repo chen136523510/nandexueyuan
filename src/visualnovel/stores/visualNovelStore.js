@@ -49,6 +49,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const hideUI = ref(false)             // 是否隐藏界面（按 H 键）
   const isEnded = ref(false)            // 当前章节是否结束
   const isLoading = ref(false)          // 加载状态
+  const preloadProgress = ref(0)        // 预加载进度 0~100
   const triggeredCG = ref(null)         // 当前触发的 CG（非 null 时全屏展示）
   const noticeMessage = ref(null)       // 轻提示弹窗消息（非 null 时显示弹窗）
 
@@ -154,6 +155,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       // 加载章节
       await loadChapter('prologue')
 
+      // 预加载所有图片资源（首次进入加载，浏览器缓存后秒出）
+      await preloadAssets([...currentIndex.value.values()])
+
       // 优先读自动存档（slot=0），恢复到上一次进度
       let autoLoaded = false
       try {
@@ -182,6 +186,50 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  /**
+   * 预加载章节所有图片资源
+   * 遍历节点收集 background + portrait，用 new Image() 预热到浏览器缓存
+   * 加载完成后浏览器 HTTP 缓存命中，后续场景切换瞬间显示
+   */
+  async function preloadAssets(nodes) {
+    // 背景图别名映射（与 BackgroundLayer.vue 的 REAL_BG_MAP 一致）
+    const BG_ALIAS = { 'bg/tower_lobby': 'bg/tower_interior_hall' }
+    const urls = new Set()
+    for (const node of nodes) {
+      // 收集背景图
+      if (node.background) {
+        const key = BG_ALIAS[node.background] || node.background
+        urls.add(`/visualnovel/${key}.png`)
+      }
+      // 收集立绘
+      if (node.enter && Array.isArray(node.enter)) {
+        for (const c of node.enter) {
+          const portrait = c.portrait || (c.id + '/normal')
+          urls.add(`/visualnovel/portraits/${portrait}.png`)
+        }
+      }
+    }
+    // 地图（固定资源）
+    urls.add('/visualnovel/map/world_map.png')
+
+    const total = urls.size
+    let loaded = 0
+    preloadProgress.value = 0
+
+    const loadOne = (url) => new Promise((resolve) => {
+      const img = new Image()
+      img.onload = img.onerror = () => {
+        loaded++
+        preloadProgress.value = Math.round((loaded / total) * 100)
+        resolve()
+      }
+      img.src = url
+    })
+
+    // 并发预加载（浏览器对同一域名并发限制会自动排队，无需手动分批）
+    await Promise.all([...urls].map(loadOne))
   }
 
   // ===== 节点导航 =====
@@ -655,7 +703,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     affinity, storyVariables, unlockedChapters, unlockedCGs,
     history, choicesMade, inventory, stage,
     isTyping, fullText, displayedText,
-    activePanel, hideUI, isEnded, isLoading, triggeredCG, noticeMessage,
+    activePanel, hideUI, isEnded, isLoading, preloadProgress, triggeredCG, noticeMessage,
     currentCharacters, currentSpeaker, currentBackground, currentBGM, currentHotspots,
     playerName,
     textSpeed, autoMode, autoDelay,
