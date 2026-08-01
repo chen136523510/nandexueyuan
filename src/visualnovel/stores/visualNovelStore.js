@@ -45,7 +45,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const isTyping = ref(false)           // 打字机是否正在播放
   const fullText = ref('')              // 当前节点的完整文本
   const displayedText = ref('')         // 已显示的文本（打字机效果）
-  const activePanel = ref(null)         // 当前打开的面板: null | 'save' | 'load' | 'settings' | 'history'
+  const activePanel = ref(null)         // 当前打开的面板: null | 'save' | 'load' | 'settings' | 'history' | 'map'
   const hideUI = ref(false)             // 是否隐藏界面（按 H 键）
   const isEnded = ref(false)            // 当前章节是否结束
   const isLoading = ref(false)          // 加载状态

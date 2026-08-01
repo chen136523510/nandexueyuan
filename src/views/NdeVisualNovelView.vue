@@ -12,6 +12,7 @@ import SaveLoadPanel from '../visualnovel/components/SaveLoadPanel.vue'
 import HistoryPanel from '../visualnovel/components/HistoryPanel.vue'
 import SettingsPanel from '../visualnovel/components/SettingsPanel.vue'
 import InventoryPanel from '../visualnovel/components/InventoryPanel.vue'
+import MapPanel from '../visualnovel/components/MapPanel.vue'
 import TopBar from '../components/TopBar.vue'
 
 const store = useVisualNovelStore()
@@ -137,6 +138,7 @@ onUnmounted(() => {
       <HistoryPanel />
       <SettingsPanel />
       <InventoryPanel />
+      <MapPanel />
 
       <!-- 轻提示弹窗（敬请期待等） -->
       <NoticePopup />

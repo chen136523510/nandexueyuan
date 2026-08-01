@@ -4,7 +4,25 @@
 
 ---
 
-### [fix] 热点场景添对话改为Q&A问答+主线流程隔离
+### [feat] 世界格局地图生成+地图面板交互
+
+- **时间**：2026-08-01
+- **变更人**：陈梓键（黑机）
+- **背景**：地图系统设计文档早已规划但无美术资产、无前端入口。院长提供世界格局简笔画草图，需用 Seedream 生成完整地图并接入热点交互
+- **产出**：
+  1. **美术资产**：Seedream Pro 2K 生成世界格局地图（2816×1584），以院长草图布局为准，包含帝国/睿河/云顶山脉/山河走廊/沙漠/共和国/大草原/海洋海盗国等区域。过程稿 v1_01→v1_02 两轮迭代（v2 修正睿河桥/沙漠南脉/草原城邦/塔楼形态）
+  2. **存储三处**：过程稿 `.ai/seedream-test/map/`、美术资产 `prd/.../美术资产/地图/`、运行时 `public/visualnovel/map/`
+  3. **MapPanel.vue**：新建地图展示面板（纯展示模式），套用 SettingsPanel 面板范式（v-if + activePanel='map' + closePanel）
+  4. **HotspotLayer 扩展**：action 新增 `'map'` 类型分支，`togglePanel('map')` 打开面板
+  5. **prologue.js**：`wall_map` 热点 action 从 `notice`（开发中提示）改为 `{type:'map'}`
+  6. **NdeVisualNovelView**：注册 MapPanel 组件（import + 模板挂载）
+  7. **store**：activePanel 注释补 `'map'` 类型
+- **验证**：build 通过 + Playwright 功能验证（DOM 渲染 + 图片加载 2816×1584 完整展示）
+- **遗留**：地图文字标注（睿河缺"河"字、冥道/原道）Seedream 生成有限制，后续按需 PS 修整。南部绿洲已纳入沙漠绿洲城剧情位置
+
+---
+
+
 
 - **时间**：2026-08-01
 - **变更人**：陈梓键（黑机）

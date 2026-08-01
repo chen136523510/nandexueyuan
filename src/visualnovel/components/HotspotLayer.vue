@@ -6,7 +6,7 @@
  * z-index: 5（立绘层之上、对话框之下）
  *
  * 热点数据结构（prologue.js 的 end 节点 hotspots 数组）：
- *   { id, x, y, label, icon, action: { type: 'goto'|'notice', target|message } }
+ *   { id, x, y, label, icon, action: { type: 'goto'|'notice'|'map', target|message } }
  *   x/y 为按钮中心点的百分比坐标
  */
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
@@ -20,6 +20,8 @@ function handleHotspot(hotspot) {
     store.goToNode(action.target)
   } else if (action.type === 'notice') {
     store.showNotice(action.message)
+  } else if (action.type === 'map') {
+    store.togglePanel('map')
   }
 }
 </script>

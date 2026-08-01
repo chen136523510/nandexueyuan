@@ -1160,7 +1160,7 @@ export default [
       { id: 'meet_tian', x: 72, y: 60, label: '添', icon: '🔧',
         action: { type: 'goto', target: 'pro_explore_tian_1' } },
       { id: 'wall_map', x: 46, y: 18, label: '地图', icon: '🗺️',
-        action: { type: 'notice', message: '地图系统开发中，敬请期待' } },
+        action: { type: 'map' } },
     ]
   },
 
