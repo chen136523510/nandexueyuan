@@ -948,7 +948,7 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_lobby',
     speaker: '添',
-    next: 'pro_qa_xing_2'
+    next: 'pro_qa_xing_3'
   },
   {
     id: 'pro_qa_xing_2',
