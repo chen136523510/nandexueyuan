@@ -4,6 +4,26 @@
 
 ---
 
+### [feat] 图片预加载机制+deploy.sh优化
+
+- **时间**：2026-08-02
+- **变更人**：陈梓键（黑机）
+- **背景**：院长反馈生产环境场景图/地图"从上到下慢慢加载"，本地无此问题
+- **根因**：图片未预加载（8MB地图+2MB背景图），浏览器每次进新场景现场下载+边下边渲染
+- **方案评估**：
+  - WebP 有损压缩：省92%但降画质 ❌（院长否决）
+  - WebP 无损压缩：只省18%，不够 ❌
+  - **预加载机制**：首次加载到浏览器缓存，后续场景秒出，画质不变 ✅
+- **产出**：
+  1. `visualNovelStore.initGame()` 新增 `preloadAssets()`：遍历所有节点收集 background+portrait 去重URL，`new Image()` 并发预热
+  2. 加载遮罩加进度条+百分比（`preloadProgress` 0~100）
+  3. deploy.sh 优化：migrate 改按需、seed/seedWall 移除、pm2 改 restart||start（11步→9步）
+  4. WebP 方案撤销（删 webp 文件，引用恢复 png）
+- **关键文件**：`stores/visualNovelStore.js`、`views/NdeVisualNovelView.vue`、`deploy.sh`
+- **commit**：`11a6d43`、`ecd3411`
+
+---
+
 ### [feat] 序章旁白优化+pro_302穿帮修正+v2.3.0发版
 
 - **时间**：2026-08-02
