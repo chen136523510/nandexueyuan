@@ -4,6 +4,22 @@
 
 ---
 
+### [fix] 热点场景添对话改为Q&A问答+主线流程隔离
+
+- **时间**：2026-08-01
+- **变更人**：陈梓键（黑机）
+- **背景**：热点场景点击添是线性闲聊（pro_explore_tian_1~5 打完即结束），无法问问题。用户要求复用序章第四幕的添对答内容，支持自由提问
+- **变更内容**：
+  1. **添入口改造**：tian_1（台词）→ event 设 `qa_explore=true` 标记 → tian_2（旁白）→ explore Q&A 菜单
+  2. **新建 `pro_explore_qa_choice`**：7 个 info 话题复用原节点（pro_qa_place_1 等），第 8 项"了解得差不多了"走独立结束链
+  3. **新增 `pro_qa_router` condition**：话题尾节点讲完后按 `qa_explore` 分流——true 回 explore 菜单，false/undefined 回主线菜单。7 个话题尾节点 next 从 `pro_qa_choice` 改为 `pro_qa_router`
+  4. **结束链隔离主线**：选结束 → event 清 `qa_explore=false` → farewell 对话 → 回 `pro_end` 热点。**不走 `pro_cond_qa_end`**（避免缓几天分支 met_tian=true 误入 pro_delay_back 主线）
+- **验证**（Playwright，met_tian=true 缓几天分支用户）：①点添→explore 菜单 ✓ ②选话题1→讲完回 explore 菜单 ✓ ③选话题5→讲完回 explore 菜单 ✓ ④选结束→回热点场景+qa_explore 清除 ✓；npm run build 通过
+- **状态**：已验证（commit `2f1c96b`）
+- **关键设计**：用 event 设标记变量 + condition 路由，实现"话题节点复用但结束走向隔离"，不破坏序章正常 Q&A 流程
+
+---
+
 ### [feat] 存档系统优化-自动存档恢复+新建存档从头开始
 
 - **时间**：2026-08-01
