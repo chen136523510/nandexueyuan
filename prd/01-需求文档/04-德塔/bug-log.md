@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-08-03（白机 班脸模生成）
+
+### BUG-52：Seedream API image 参数格式错误（invalid url）
+
+- **发现时间**：2026-08-03（班脸模生成时）
+- **环境**：`.ai/scripts/gen-ban-face.py`（Seedream API 调用层）
+- **现象**：传 base64 字符串到 `image` 参数，API 返回 400 `InvalidParameter: invalid url specified`
+- **根因**：Seedream API 的 `image` 参数只接受 **data URI 格式**（`data:image/jpeg;base64,...`）或 URL，不接受裸 base64 字符串。handoff 中记录的稳定配置实际应补全 data URI 前缀
+- **修复**：参照成功脚本 `gen_tian_base.py` 第 24 行，`image` 参数改为 `f'data:image/jpeg;base64,{b64}'` 格式
+- **教训**：调用 Seedream API 时：① `image` 必须用 data URI 前缀 ② `size` 用 `'1K'` 不是 `'1024x1024'` ③ `optimize_prompt_options: {'mode': 'fast'}` ④ 参考图压到 512px jpeg（约 50KB），data URI 约 68KB 不会超时。已同步到 image-gen SKILL.md
+- **文件**：`.ai/scripts/gen-ban-face.py`（参考 `.ai/scripts/gen_tian_base.py`）
+- **状态**：✅ 已修复
+
+---
+
 ## 2026-08-03（白机 社区站视觉统一）
 
 ### BUG-51：TopBar 导航项全部挤左，右侧大片空白
