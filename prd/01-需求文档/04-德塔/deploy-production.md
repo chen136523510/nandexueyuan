@@ -177,7 +177,7 @@ ssh root@47.96.158.104 "pm2 logs nandexueyuan-api --lines 5 --nostream"
 ### 第四阶段：端到端验证
 
 1. **浏览器访问**：`https://www.nandexueyuan.top`
-2. **登录后进入德塔**，找到男德通 NPC
+2. **登录后进入德塔**，找到添 NPC
 3. **提问**："如何评价丘序明？"
 4. **观察**：
    - 前端：AI 流式回复正常，内容包含丘序明的发言分析

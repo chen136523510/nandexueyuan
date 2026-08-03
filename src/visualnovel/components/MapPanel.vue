@@ -2,7 +2,7 @@
 /**
  * 世界地图面板
  * 点击地图热点后全屏展示世界格局大图（纯展示模式）。
- * 后续可扩展为可交互选点（出门移动 / 男德通 Q&A）。
+ * 后续可扩展为可交互选点（出门移动 / 添 Q&A）。
  * 套用 SettingsPanel 面板范式：v-if + store.activePanel + closePanel
  */
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'

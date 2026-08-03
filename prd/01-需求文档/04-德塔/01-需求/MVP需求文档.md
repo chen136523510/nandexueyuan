@@ -1,6 +1,8 @@
 # 德塔（NDO）MVP PRD
 
-> 状态：Accepted | 决策人：陈梓键 | 日期：2026-07-13
+> ⚠️ **已废弃**（2026-07-29 视觉小说重构）：本文档为 2D 侧视角像素风版本的 MVP 需求（含男德通 NPC 交互/多人同步）。方向已废弃，仅作历史记录。
+>
+> 状态：Accepted（历史） | 决策人：陈梓键 | 日期：2026-07-13
 > 关联调研：[nandexueyuan-terraria-like-module-research.md](../00-基础数据/nandexueyuan-terraria-like-module-research.md)
 
 ---
