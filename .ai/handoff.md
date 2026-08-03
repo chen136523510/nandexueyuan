@@ -1,8 +1,8 @@
 # AI 交接单
 
-> 最后更新：2026-08-03 12:04（白机：社区站视觉体系统一+根目录清理+部署上线）
+> 最后更新：2026-08-03 17:53（白机：社区站视觉体系统一+根目录清理+v2.4.0发版部署+文档同步，准备下机）
 > 所在设备：白机（荣耀便携本）
-> 稳定版本：v2.4.0 已部署上线（commit `fef6e7f`）
+> 稳定版本：v2.4.0 已部署上线（commit `811410d`，代码产出 commit `53ab43f`+`fef6e7f`）
 > **当前阶段**：M-G1 引擎核心 PoC ✅ + 序章四幕全量落地 ✅ + 存档系统 ✅ + Seedream调研 ✅ + 9角色脸模入库 ✅ + 序章6张背景图接入 ✅ + 见/幸/添立绘8张+表情差分 ✅ + 立绘舞台状态机制 ✅ + 立绘rembg重抠8/8 ✅ + 立绘位置规则(小腿中部对齐) ✅ + 序章结束场景热点交互 ✅ + 部署上线 ✅ + 存档系统优化(自动恢复+新建从头) ✅ + 热点添对话Q&A问答+主线隔离 ✅ + 世界格局地图生成+地图面板交互 ✅ + 序章旁白优化(四幕44->42句)+pro_302穿帮修正 ✅ + 图片预加载机制(首次加载+进度条) ✅ + 世界书评审+补充11条目 ✅ + 设定集v1.4过时内容修正 ✅ + 第一章大纲产出 ✅ + **社区站视觉体系统一(hallmark audit+霞鹜文楷+全站token化) ✅**
 
 ---
@@ -534,9 +534,17 @@ cd .. && bash deploy.sh                           # 构建前端+重启 PM2
 4. **M-G2 序章完整 + 手机/消息系统** - 手机消息系统可行性需调研（Eternum式）
 5. **滚轮回滚功能**（已移除，未来可复用）- 白机试做了状态快照回滚（advance/selectChoice前压栈+rollback/forward），Playwright验证逻辑正确，但用户反馈实际不可用已移除。根因是 `.dialogue-area` CSS只占底部区域导致鼠标不在对话框上时事件不触发。代码保留在git历史 commit `6a573f4`，未来若重做可考虑用快捷键（PageUp/PageDown）替代滚轮
 
-### ✅ 本轮已完成（白机 2026-07-31）
-- ~~prologue.js手写active清理~~ - 已在舞台状态机制改造中一并清理，store 早就不读 active 字段
-- ~~立绘演出「一个出现一个消失」~~ - 已通过舞台状态机制解决（stage 跨节点持久化）
+### ✅ 本轮已完成（白机 2026-08-03）
+- ~~社区站视觉体系统一~~ - Hallmark audit + 霞鹜文楷 display 字体 + 全站莫兰迪 token 化 + 首页重构（v2.4.0，commit `53ab43f`+`fef6e7f`）
+- ~~根目录清理~~ - 13 截图 + dist + 过程文件清理，.gitignore 增强
+- ~~美术设计文档体系建立~~ - `prd/05-美术设计/` design-system.md + changelog.md
+- ~~v2.4.0 发版+部署上线~~ - 公告栏独立版本记录，线上 v2.4.0
+
+### 黑机接手注意
+1. **先 `git pull origin master`** -- 白机本轮推了 4 个 commit（53ab43f / dabbff6 / fef6e7f / 811410d）
+2. **代码无遗留改动** -- 工作区干净，唯一未入库的是 `.zcode/skills/hallmark/`（设计审查工具技能，非项目产物）
+3. **社区站视觉改造已完成** -- 如需微调颜色/字体，改 `src/styles/variables.css` 里的 token 即可全站生效，不要再逐页改硬编码
+4. **TopBar 修复教训** -- 应用内导航栏用 `space-between` 是标准实践，别为了反 AI 模板再动它（BUG-51）
 
 ---
 
@@ -544,10 +552,12 @@ cd .. && bash deploy.sh                           # 构建前端+重启 PM2
 
 | 服务 | 地址 | 状态 |
 |------|------|:---:|
-| 前端 | localhost:4396 | ✅ 运行中 |
-| API后端 | localhost:3000 | ✅ 运行中 |
-| ComfyUI | localhost:8188 | ❌ 未运行（黑机未安装ComfyUI，handoff旧记录有误） |
+| 前端 | localhost:4396 | ❌ 未运行（`npm run dev` 启动） |
+| API后端 | localhost:3000 | ❌ 未运行（`cd server && npm run dev` 启动） |
+| 游戏服务器 | localhost:2567 | ❌ 未运行（`cd game-server && node src/index.js`） |
+| ComfyUI | localhost:8188 | ❌ 未运行（黑机专属，白机未安装） |
 | 豆包Seedream API | ark.cn-beijing.volces.com | ✅ 可用（复用ARK_API_KEY） |
+| 生产环境 | https://www.nandexueyuan.top | ✅ v2.4.0 已部署 |
 
 ### 豆包 Seedream API
 - 端点：`POST https://ark.cn-beijing.volces.com/api/v3/images/generations`
