@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-03
+- [修改] `TopBar.vue` - 标题 display 字体化、active 态圆角背景改下划线、token 化。初版误删 space-between 导致导航挤左，已即时修复（见 BUG-51）
+- [修改] `AppFooter.vue` - 新增 Ft5 宣言行「最尊重女性之人所建」，配色 token 化
+- commit: 53ab43f [refactor](德塔): 社区站视觉体系统一
+
+---
+
 ## 2026-06-29
 - [新增] `AppFooter.vue` - 通用页脚组件
 - commit: 未提交

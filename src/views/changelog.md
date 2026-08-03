@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-03
+- [重构] `HomeView.vue` - hero 居中三件套→左对齐 editorial，等高卡片网格→纵向非对称，icon 圆形→内联方形，全页 token 化
+- [修改] `MainView.vue` - 公告标题 display 字体化
+- [修改] `WallView.vue` - 标题 display 字体、卡片阴影 token 化、z-index 命名化、transition 指定属性、省略号 U+2026
+- [修改] `ChatView.vue` - 深色 header→浅色统一、全页 Ant Design 蓝（#1677ff）→莫兰迪 token、多 Agent 配色体系统一、字体配对
+- commit: 53ab43f [refactor](德塔): 社区站视觉体系统一
+
+---
+
 ## 2026-07-29
 - [新增] `NdeVisualNovelView.vue` - 视觉小说主视图（替换原 NdeRebuildingView 占位页）。挂载 8 组件 + InventoryPanel，快捷键 Space/Enter/H/S/L/Esc/B
 - [重命名] `NdeGalgameView.vue` -> `NdeVisualNovelView.vue`（Galgame 全局重命名）

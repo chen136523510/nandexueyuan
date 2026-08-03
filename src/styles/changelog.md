@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-03
+- [修改] `variables.css` - 扩充设计令牌：新增 display/body 双字体 token（霞鹜文楷+系统无衬线）、hero 字号、shadow-card/-hover、z-index 层级命名、ease-out 缓动；卡片底色从纯白微倾（`#FBFAF8`）消除合成感
+- commit: 53ab43f [refactor](德塔): 社区站视觉体系统一
+
+---
+
 ## 2026-06-29
 - [新增] `variables.css` - CSS 设计令牌（色彩/字体/间距变量）
 - [新增] `base.css` - 全局基础重置（替换原 styles.css）

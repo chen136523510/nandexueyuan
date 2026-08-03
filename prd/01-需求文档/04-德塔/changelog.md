@@ -4,6 +4,18 @@
 
 ---
 
+### [refactor] 社区站视觉体系统一（v2.4.0）
+
+- **时间**：2026-08-03
+- **变更人**：陈梓键（白机）
+- **背景**：基于 Hallmark 设计审查（anti-AI-slop），全站视觉体系统一。改动范围是社区站页面（HomeView/MainView/WallView/ChatView/TopBar/AppFooter），德塔游戏页不动
+- **变更内容**：引入霞鹜文楷 display 字体、首页 hero 重构、ChatView 深色 header 改浅色、全页 Ant 蓝硬编码 token 化
+- **踩坑**：TopBar 误删 space-between 导致导航挤左（BUG-51），已即时修复
+- **详细记录**：见 `prd/05-美术设计/changelog.md` + 各代码目录 changelog
+- **commit**：53ab43f（视觉改造）+ fef6e7f（发版 v2.4.0）
+
+---
+
 ### [fix] 序章文案设定一致性修正8处（BUG-50）
 
 - **时间**：2026-08-03

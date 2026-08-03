@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-08-03（白机 社区站视觉统一）
+
+### BUG-51：TopBar 导航项全部挤左，右侧大片空白
+
+- **发现时间**：2026-08-03（院长在线上验收时截图反馈）
+- **环境**：`src/components/TopBar.vue`（样式层）
+- **现象**：导航栏品牌居左、功能菜单紧跟品牌挤成一团，右侧（头像前）大片空白
+- **根因**：做 Hallmark anti-AI-slop 改造时，机械执行「打破 AI nav 三段式」规则，删除了 `.topbar` 的 `justify-content: space-between`，同时给 `.topbar-menu` 加了 `flex:1` 让菜单占满剩余空间，菜单项默认左对齐导致视觉失衡
+- **修复**：恢复 `justify-content: space-between`（品牌左/菜单中/头像右），移除 `.topbar-menu` 的 `flex:1` 和 `.topbar-brand` 的 `margin-right:32px`。保留 display 字体和 active 下划线改动
+- **教训**：Hallmark 的反模式规则要辩证应用，不能机械执行。应用内功能导航栏的 space-between 是标准实践，为反模式而牺牲可用性是本末倒置
+- **文件**：`src/components/TopBar.vue`
+- **状态**：✅ 已修复（commit 53ab43f，已上线）
+
+---
+
 ## 2026-08-03（白机 序章文案勘误）
 
 ---
