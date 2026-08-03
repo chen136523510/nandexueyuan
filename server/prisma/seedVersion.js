@@ -5,6 +5,22 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v2.4.0',
+    date: new Date('2026-08-03'),
+    summary: '社区站视觉体系统一：霞鹜文楷+莫兰迪token+首页重构',
+    updates: JSON.stringify([
+      '引入霞鹜文楷作为标题字体，标题与正文形成字体配对',
+      '首页重构：hero改为左对齐编辑式布局，卡片改为纵向非对称排列',
+      '男德通页面深色顶栏改为浅色，全页配色统一为莫兰迪体系',
+      '师德墙、主界面标题字体统一，硬编码颜色全部token化',
+      '清理根目录过程文件，保持仓库整洁',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章「三线剧变」主线剧情',
+      '手机/消息系统调研',
+    ], null, 0),
+  },
+  {
     version: 'v2.3.0',
     date: new Date('2026-08-01'),
     summary: '序章体验大升级：存档优化+热点Q&A+世界地图+旁白打磨',

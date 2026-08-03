@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-08-03 v2.4.0 社区站视觉体系统一：霞鹜文楷+莫兰迪token+首页重构
+
+### 概要
+
+本次发版聚焦社区站视觉体验：基于 Hallmark 设计审查（anti-AI-slop），建立霞鹜文楷 display + 系统无衬线 body 的字体配对体系，全站硬编码颜色统一为莫兰迪 token。首页从居中三件套重构为左对齐 editorial 布局，男德通页面深色顶栏改为浅色并全页配色统一。
+
+### 变更内容
+
+| 类别 | 变更 |
+|------|------|
+| feat | 引入霞鹜文楷（LXGW WenKai）作为 display 字体，建立 `--md-font-display`/`--md-font-body` 双 token 体系 |
+| feat | 首页 hero 从居中三件套改为左对齐 editorial，等高卡片网格改为纵向非对称 |
+| feat | 男德通页面深色顶栏改为浅色，全页 Ant Design 蓝硬编码统一为莫兰迪 token |
+| feat | 师德墙、主界面、导航、页脚标题字体统一为 display，硬编码颜色全部 token 化 |
+| feat | 新增 hero/阴影/z-index/缓动 token，卡片底色微倾消除纯白合成感 |
+| chore | 清理根目录 13 个测试截图 + dist + 过程文件，增强 .gitignore |
+| docs | 新增 `prd/05-美术设计/` design-system.md + changelog.md |
+
+### 影响评估
+
+- **影响范围**：社区站全部页面（HomeView/MainView/WallView/ChatView/TopBar/AppFooter）
+- **不影响**：德塔游戏页（GameView/视觉小说页，自有设计语言）、所有业务逻辑（`<script setup>` 零改动）
+- **字体加载**：霞鹜文楷通过 jsDelivr CDN 加载，不可达时 fallback 到系统无衬线，不影响功能
+- **回滚策略**：每个改动独立提交，可按文件 revert
+
+---
+
 ## 2026-08-01 v2.3.0 序章体验大升级：存档优化+热点Q&A+世界地图+旁白打磨
 
 ### 概要
