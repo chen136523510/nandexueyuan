@@ -36,7 +36,7 @@
 | `背景图/tower_day.png` | 塔楼外景·白天 |
 | `背景图/tower_interior_hall.png` | 塔楼大厅·室内 |
 | `背景图/tower_outdoor_mist.png` | 塔楼外景·晨雾（幸来访过场） |
-| `背景图/tower_interior.png` | 塔楼内景·储物发放 |
+| `背景图/tower_interior.png` | 塔楼内景·储物发放（一层大厅，见在墙角木箱取纳戒） |
 
 > 运行时目录：`public/visualnovel/bg/`。背景图为 16:9 宽屏，立绘为 832×1216 竖版。
 
