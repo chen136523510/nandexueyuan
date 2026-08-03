@@ -1,5 +1,13 @@
 /* 设计令牌：莫兰迪风格（低饱和、柔和、松弛） */
 :root {
+  /* ===== 字体系统：display + body 配对 ===== */
+  /* display: 霞鹜文楷（标题/展示），有古卷学院感 */
+  --md-font-display: "LXGW WenKai", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* body: 系统无衬线（正文），清晰易读 */
+  --md-font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  /* 向后兼容：原 --md-font 指向 body */
+  --md-font: var(--md-font-body);
+
   /* ===== 莫兰迪核心色板 ===== */
   --md-primary: #A8C5A0;           /* 主色:鼠尾草绿 */
   --md-primary-hover: #94B48C;     /* 主色 hover */
@@ -10,7 +18,7 @@
 
   /* 背景 */
   --md-bg: #F5F2EC;                /* 页面背景:温暖米白 */
-  --md-bg-card: #FFFFFF;           /* 卡片背景 */
+  --md-bg-card: #FDFBF7;           /* 卡片背景:莫兰迪米白(微倾,消除纯白合成感) */
   --md-bg-soft: #FAF8F3;           /* 次级背景(嵌套区域) */
 
   /* 文字(非纯黑,柔和深灰) */
@@ -32,8 +40,7 @@
   --md-link: #94B48C;              /* 链接(主色深) */
   --md-link-hover: #7A9E72;        /* 链接 hover */
 
-  /* 字体(无衬线,系统优先,零加载) */
-  --md-font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  /* 字号 */
   --md-fs-xs: 12px;
   --md-fs-sm: 13px;
   --md-fs-base: 14px;
@@ -61,6 +68,31 @@
   --md-shadow-sm: 0 1px 3px rgba(74, 74, 74, 0.04);
   --md-shadow: 0 2px 8px rgba(74, 74, 74, 0.06);
   --md-shadow-lg: 0 4px 16px rgba(74, 74, 74, 0.08);
+
+  /* ===== 视觉优化扩充 token（hallmark audit 修复） ===== */
+
+  /* 主色按钮上的文字色（替代纯白 #fff） */
+  --md-text-on-primary: #FDFBF7;
+
+  /* Hero 背景渐变 + 点状纹理（替代 HomeView 硬编码） */
+  --md-hero-bg: linear-gradient(135deg, var(--md-primary-bg) 0%, var(--md-bg-soft) 100%);
+  --md-hero-texture: radial-gradient(circle, rgba(168, 197, 160, 0.2) 1px, transparent 1px);
+
+  /* 卡片专用阴影（替代 WallView/HomeView 硬编码 rgba(0,0,0)） */
+  --md-shadow-card: 0 2px 12px rgba(74, 74, 74, 0.04);
+  --md-shadow-card-hover: 0 4px 20px rgba(74, 74, 74, 0.08);
+
+  /* 缓动函数（替代 transition: all + 浏览器默认 ease） */
+  --md-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --md-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --md-ease-in-out: cubic-bezier(0.65, 0.05, 0.36, 1);
+
+  /* z-index 命名层级（替代裸数值） */
+  --md-z-base: 1;
+  --md-z-elevated: 10;
+  --md-z-overlay: 50;
+  --md-z-modal: 100;
+  --md-z-toast: 200;
 
   /* ===== 向后兼容别名(旧 --qz- 指向新 --md-,平滑迁移) ===== */
   --qz-primary: var(--md-primary);

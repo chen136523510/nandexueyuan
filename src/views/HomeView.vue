@@ -22,28 +22,32 @@ const upcoming = [
     <!-- 彩蛋：右上角露一角 -->
     <div class="easter-egg" @click="showEgg = true" title="?"></div>
 
-    <!-- Hero -->
+    <!-- Hero：左对齐，打破居中三件套 -->
     <header class="hero">
-      <h1 class="hero-title">男 德 学 院</h1>
-      <p class="hero-subtitle">修身 齐家 摸鱼 开摆</p>
-      <div class="hero-actions">
-        <template v-if="auth.isLoggedIn">
-          <button class="hero-btn primary" @click="router.push('/home')">进入学院</button>
-        </template>
-        <template v-else>
-          <button class="hero-btn primary" @click="router.push('/login')">登录</button>
-          <button class="hero-btn" @click="router.push('/register')">注册</button>
-        </template>
+      <div class="hero-inner">
+        <h1 class="hero-title">男德学院</h1>
+        <p class="hero-subtitle">修身 · 齐家 · 摸鱼 · 开摆</p>
+        <div class="hero-actions">
+          <template v-if="auth.isLoggedIn">
+            <button class="hero-btn primary" @click="router.push('/home')">进入学院</button>
+          </template>
+          <template v-else>
+            <button class="hero-btn primary" @click="router.push('/login')">登录</button>
+            <button class="hero-btn" @click="router.push('/register')">注册</button>
+          </template>
+        </div>
       </div>
     </header>
 
-    <!-- 敬请期待 -->
+    <!-- 敬请期待：非对称 editorial 节奏，打破等高卡片网格 -->
     <section class="upcoming">
       <h2 class="section-title">即将上线</h2>
-      <div class="card-grid">
-        <article v-for="u in upcoming" :key="u.title" class="upcoming-card">
-          <span class="card-icon">{{ u.icon }}</span>
-          <h3 class="card-title">{{ u.title }}</h3>
+      <div class="card-list">
+        <article v-for="(u, i) in upcoming" :key="u.title" class="upcoming-card" :class="{ 'card-major': i === 0 }">
+          <div class="card-head">
+            <span class="card-icon">{{ u.icon }}</span>
+            <h3 class="card-title">{{ u.title }}</h3>
+          </div>
           <p class="card-desc">{{ u.desc }}</p>
           <span class="card-badge">敬请期待</span>
         </article>
@@ -85,55 +89,59 @@ const upcoming = [
   background-position: center;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 100;
+  z-index: var(--md-z-modal);
   opacity: 0.6;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s var(--md-ease-out);
 }
 
 .easter-egg:hover {
   opacity: 1;
 }
 
-/* Hero — 莫兰迪浅绿渐变 + 点状纹理 */
+/* Hero — 左对齐，打破居中三件套；莫兰迪渐变 token 化 */
 .hero {
   background:
-    radial-gradient(circle, rgba(168, 197, 160, 0.2) 1px, transparent 1px),
-    linear-gradient(135deg, #EEF3EC 0%, #FAF8F3 100%);
+    var(--md-hero-texture),
+    var(--md-hero-bg);
   background-size: 24px 24px, 100% 100%;
   color: var(--md-text);
-  text-align: center;
-  padding: 5rem 1.5rem 4rem;
+  padding: 5rem 2rem 4.5rem;
+}
+
+.hero-inner {
+  max-width: 640px;
+  margin: 0 auto;
 }
 
 .hero-title {
-  font-family: var(--md-font);
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-family: var(--md-font-display);
+  font-size: clamp(2.8rem, 8vw, 5rem);
   font-weight: 700;
-  letter-spacing: 0.25em;
-  margin: 0 0 1rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.75rem;
   color: var(--md-text);
+  line-height: 1.1;
 }
 
 .hero-subtitle {
-  font-family: var(--md-font);
-  font-size: 1.15rem;
-  letter-spacing: 0.4em;
+  font-family: var(--md-font-display);
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  letter-spacing: 0.18em;
   color: var(--md-primary-hover);
   margin: 0 0 2rem;
 }
 
-/* Hero 按钮区 */
+/* Hero 按钮区：左对齐 */
 .hero-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 1rem;
   margin-top: 0.5rem;
 }
 
 .hero-btn {
   padding: 0.6rem 1.75rem;
-  font-family: var(--md-font);
+  font-family: var(--md-font-body);
   font-size: 0.95rem;
   letter-spacing: 0.1em;
   color: var(--md-primary-hover);
@@ -141,7 +149,7 @@ const upcoming = [
   border: 1px solid var(--md-primary);
   border-radius: var(--md-radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s var(--md-ease-out), border-color 0.2s var(--md-ease-out), color 0.2s var(--md-ease-out);
 }
 
 .hero-btn:hover {
@@ -151,7 +159,7 @@ const upcoming = [
 .hero-btn.primary {
   background: var(--md-primary);
   border-color: var(--md-primary);
-  color: #fff;
+  color: var(--md-text-on-primary);
 }
 
 .hero-btn.primary:hover {
@@ -159,28 +167,31 @@ const upcoming = [
   border-color: var(--md-primary-hover);
 }
 
-/* 敬请期待 */
+/* 敬请期待：与 hero 拉开节奏差（一紧一松） */
 .upcoming {
   flex: 1;
-  padding: 4rem 1.5rem;
+  padding: 5rem 2rem 6rem;
   background: var(--md-bg);
 }
 
 .section-title {
-  text-align: center;
-  font-family: var(--md-font);
-  font-size: 1.5rem;
+  font-family: var(--md-font-display);
+  font-size: 1.6rem;
   color: var(--md-text);
-  margin: 0 0 3rem;
-  letter-spacing: 0.15em;
-  font-weight: 500;
+  margin: 0 0 2.5rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.card-grid {
-  max-width: 700px;
+/* 卡片列表：非对称 editorial 节奏，打破等高网格 */
+.card-list {
+  max-width: 640px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
 }
 
@@ -188,48 +199,68 @@ const upcoming = [
   background: var(--md-bg-card);
   border: 1px solid var(--md-border);
   border-radius: var(--md-radius-lg);
-  padding: 2rem 1.5rem;
-  text-align: center;
+  padding: 1.75rem 1.75rem;
+  text-align: left;
   position: relative;
-  box-shadow: var(--md-shadow-sm);
-  transition: box-shadow 0.2s ease;
+  box-shadow: var(--md-shadow-card);
+  transition: box-shadow 0.3s var(--md-ease-out), border-color 0.3s var(--md-ease-out);
+}
+
+/* 第一张卡稍大，制造非对称 */
+.upcoming-card.card-major {
+  padding: 2.25rem 2rem;
 }
 
 .upcoming-card:hover {
-  box-shadow: var(--md-shadow);
+  box-shadow: var(--md-shadow-card-hover);
   border-color: var(--md-primary);
+}
+
+/* icon 内联到标题旁，不再独占圆形 */
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
 }
 
 .card-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  font-family: var(--md-font);
-  font-size: 1.4rem;
+  width: 32px;
+  height: 32px;
+  font-family: var(--md-font-display);
+  font-size: 1.05rem;
   color: var(--md-primary);
-  border: 1px solid var(--md-primary);
-  border-radius: 50%;
-  margin-bottom: 1.2rem;
+  background: var(--md-primary-bg);
+  border-radius: var(--md-radius-sm);
+  flex-shrink: 0;
 }
 
 .card-title {
-  font-size: 1.1rem;
+  font-family: var(--md-font-display);
+  font-size: 1.15rem;
   color: var(--md-text);
-  margin: 0 0 0.6rem;
-  font-weight: 500;
+  margin: 0;
+  font-weight: 600;
+}
+
+.card-major .card-title {
+  font-size: 1.3rem;
 }
 
 .card-desc {
-  font-size: 0.88rem;
-  line-height: 1.75;
+  font-family: var(--md-font-body);
+  font-size: 0.9rem;
+  line-height: 1.8;
   color: var(--md-text-secondary);
-  margin: 0 0 1.2rem;
+  margin: 0 0 1rem;
 }
 
 .card-badge {
   display: inline-block;
+  font-family: var(--md-font-body);
   font-size: 0.75rem;
   color: var(--md-primary-hover);
   background: var(--md-primary-bg);
@@ -246,7 +277,7 @@ const upcoming = [
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: var(--md-z-toast);
 }
 
 .egg-modal {
@@ -262,8 +293,8 @@ const upcoming = [
 }
 
 .egg-text {
-  color: #fff;
-  font-family: var(--md-font);
+  color: var(--md-text-on-primary);
+  font-family: var(--md-font-display);
   font-size: 1.3rem;
   margin: 1.5rem 0 1rem;
   letter-spacing: 0.1em;
@@ -271,13 +302,13 @@ const upcoming = [
 
 .egg-close {
   background: transparent;
-  color: #fff;
+  color: var(--md-text-on-primary);
   border: 1px solid var(--md-primary);
   padding: 0.5rem 1.5rem;
   border-radius: var(--md-radius);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: background-color 0.2s var(--md-ease-out);
 }
 
 .egg-close:hover {

@@ -43,35 +43,48 @@ function handleLogout() {
   padding: 0 24px;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--md-z-modal);
 }
 .topbar-brand {
-  font-size: 17px;
+  font-family: var(--md-font-display);
+  font-size: 18px;
   font-weight: 700;
   color: var(--md-primary);
   cursor: pointer;
+  letter-spacing: 0.03em;
 }
 .topbar-menu {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   align-items: center;
 }
 .menu-item {
-  padding: 6px 14px;
+  padding: 6px 12px;
+  font-family: var(--md-font-body);
   font-size: 14px;
   color: var(--md-text-secondary);
   text-decoration: none;
-  border-radius: var(--md-radius);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.2s var(--md-ease-out);
+  position: relative;
 }
-.menu-item:hover,
+.menu-item:hover {
+  color: var(--md-primary);
+}
+/* active 态：下划线替代圆角背景，打破 AI nav 指纹 */
 .menu-item.router-link-active {
   color: var(--md-primary);
-  background: rgba(168, 197, 160, 0.12);
-}
-.menu-item.router-link-active {
   font-weight: 600;
+}
+.menu-item.router-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--md-primary);
+  border-radius: 1px;
 }
 .topbar-right {
   display: flex;

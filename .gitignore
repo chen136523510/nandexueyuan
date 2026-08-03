@@ -130,12 +130,17 @@ raw/
 
 # Playwright MCP 临时截图/快照
 .playwright-mcp/
+
 # 临时测试截图（根目录下的调试截图，不包含 public/ 目录下的游戏资源）
+# /*.png 通配已覆盖所有根目录 png（broadcast/char/deta/e2e/hud/nde 等），下方保留显式规则便于阅读
 /*.png
 /*-test-*.png
 deta-*.png
 broadcast-*.png
 e2e-test.png
+
+# 临时工作目录
+.tmp/
 
 # SQLite WAL 临时文件
 *.db-shm

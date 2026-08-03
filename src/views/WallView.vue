@@ -196,7 +196,7 @@ onMounted(() => {
           <textarea
             v-model="postContent"
             class="post-textarea"
-            placeholder="写点什么..."
+            placeholder="写点什么…"
             maxlength="500"
             rows="3"
           />
@@ -291,7 +291,7 @@ onMounted(() => {
                 <input
                   v-model="commentText[post.id]"
                   class="comment-input"
-                  placeholder="写评论..."
+                  placeholder="写评论…"
                   maxlength="500"
                   @keyup.enter="handleComment(post)"
                 />
@@ -334,7 +334,7 @@ onMounted(() => {
   left: 0;
   top: 52px;
   bottom: 0;
-  z-index: 10;
+  z-index: var(--md-z-elevated);
 }
 .sidebar-inner {
   text-align: center;
@@ -344,6 +344,7 @@ onMounted(() => {
   gap: 20px;
 }
 .wall-title {
+  font-family: var(--md-font-display);
   font-size: 28px;
   font-weight: 800;
   color: var(--md-text);
@@ -363,7 +364,7 @@ onMounted(() => {
   border-radius: 8px;
   border: none;
   background: var(--md-primary);
-  color: #fff;
+  color: var(--md-text-on-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -381,7 +382,7 @@ onMounted(() => {
   left: 160px;
   right: 0;
   z-index: 50;
-  background: rgba(245, 242, 236, 0.95);
+  background: rgba(245, 242, 236, 0.92);
   backdrop-filter: blur(8px);
   padding: 16px 24px;
   border-bottom: 1px solid var(--md-border);
@@ -436,7 +437,7 @@ onMounted(() => {
   border-radius: 8px;
   border: none;
   background: var(--md-primary);
-  color: #fff;
+  color: var(--md-text-on-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -470,7 +471,7 @@ onMounted(() => {
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  color: var(--md-text-on-primary);
   cursor: pointer;
   font-size: 14px;
   display: flex;
@@ -548,12 +549,12 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   scroll-snap-align: start;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.3s, transform 0.3s;
+  box-shadow: var(--md-shadow-card);
+  transition: box-shadow 0.3s var(--md-ease-out), transform 0.3s var(--md-ease-out);
   overflow-y: auto;
 }
 .post-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--md-shadow-card-hover);
   transform: translateY(-2px);
 }
 
@@ -750,7 +751,7 @@ onMounted(() => {
   border-radius: 8px;
   border: none;
   background: var(--md-primary);
-  color: #fff;
+  color: var(--md-text-on-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -772,7 +773,7 @@ onMounted(() => {
 /* 过渡动画 */
 .slide-down-enter-active,
 .slide-down-leave-active {
-  transition: all 0.25s ease;
+  transition: transform 0.25s var(--md-ease-out), opacity 0.25s var(--md-ease-out);
 }
 .slide-down-enter-from,
 .slide-down-leave-to {
@@ -781,7 +782,7 @@ onMounted(() => {
 }
 .expand-enter-active,
 .expand-leave-active {
-  transition: all 0.2s ease;
+  transition: max-height 0.2s var(--md-ease-out), opacity 0.2s var(--md-ease-out);
   overflow: hidden;
 }
 .expand-enter-from,

@@ -103,6 +103,7 @@ async function fetchAnnouncement() {
 }
 
 .ann-title {
+  font-family: var(--md-font-display);
   font-size: 15px;
   font-weight: 600;
   color: var(--md-text);
