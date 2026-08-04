@@ -56,7 +56,7 @@ watch(
   }
 )
 
-// 优先加载真实图片，未生成的回退 CSS 渐变占位
+// 优先加载真实图片，未生成的回退 CSS 渐变占位（HMR fix v2）
 function getBgStyle(bgKey) {
   if (bgKey in REAL_BG_MAP) {
     const fileKey = REAL_BG_MAP[bgKey] || bgKey
