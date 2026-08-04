@@ -67,8 +67,17 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+// 刷新后恢复用户数据：有 token 但还没从后端拉过 user 信息时，先 fetchMe
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
+
+  if (auth.isLoggedIn && !auth.loaded) {
+    await auth.fetchMe()
+    // fetchMe 失败会 logout 清 token，此时如果目标页需要登录就跳登录
+    if (!auth.isLoggedIn && to.meta.requiresAuth) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+  }
 
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
