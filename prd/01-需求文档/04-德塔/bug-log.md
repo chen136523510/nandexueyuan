@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-08-05（黑机 UI修复+背景图一致性重做）
+
+### BUG-56：新背景图未显示，回退 CSS 渐变占位（Vite HMR 缓存）
+
+- **发现时间**：2026-08-05（院长反馈房间场景看不到背景图）
+- **环境**：Vite dev server + Vue 3 SFC HMR
+- **现象**：BackgroundLayer.vue 新增 REAL_BG_MAP 映射后，`getBgStyle('bg/tower_room_night')` 仍走 BG_FALLBACK 分支返回 CSS 渐变，不加载真实图片。DOM 检查 `backgroundImage` 是 `radial-gradient(...)` 而非 `url(...)`
+- **根因**：Vite HMR 热更新了 BackgroundLayer.vue 的 `<template>` 和 `<style>` 但**未正确更新 `<script setup>` 中的 REAL_BG_MAP 常量**，运行时组件实例仍持有旧版闭包（不含新增的 3 个 key）
+- **修复**：修改 BackgroundLayer.vue 任意一行触发完整重编译（非 HMR 增量），HMR 恢复正常。后经多次验证确认稳定
+- **文件**：`src/visualnovel/components/BackgroundLayer.vue`
+- **状态**：✅ 已修复
+
+### BUG-55：刷新页面后用户信息丢失（头像显示?、个人中心无数据）
+
+- **发现时间**：2026-08-05（院长反馈右上角没有登录信息）
+- **环境**：Vue 3 + Pinia + vue-router，刷新任意页面后
+- **现象**：登录后刷新页面，右上角头像显示 `?`（而非用户名首字母），点开下拉菜单用户名/角色空白，"个人中心"弹窗无数据。部分场景因 `auth.role` 为空导致管理员菜单项消失
+- **根因**：`auth.user` 只在 `login()` / `register()` 时赋值。刷新后 token 从 localStorage 恢复了（`isLoggedIn = true`），但 `user` 对象永远是 `null`。路由守卫 `beforeEach` 没有调用 `fetchMe()` 从后端恢复用户信息
+- **修复**：路由守卫改为 `async`，检测 `isLoggedIn && !loaded` 时先 `await auth.fetchMe()` 从后端拉取 user。fetchMe 失败（token 无效）会 logout 清 token 再跳登录页
+- **文件**：`src/router/index.js`
+- **状态**：✅ 已修复
+
+---
+
 ## 2026-08-04（黑机 背景图生成）
 
 ### BUG-54：Node.js 调 Seedream API 返回 400 Bad Request（网关层拒绝）

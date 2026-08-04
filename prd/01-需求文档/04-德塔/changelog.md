@@ -4,6 +4,26 @@
 
 ---
 
+### [feat] 背景图场景一致性重做+班走廊月亮CG+UI改进+刷新失登录修复
+
+- **时间**：2026-08-04 ~ 2026-08-05
+- **变更人**：陈梓键（黑机）
+- **背景**：序章睡觉/第一章开场缺背景图；房间和走廊日夜场景不一致；刷新后用户信息丢失
+- **变更内容**：
+  1. **背景图生成入库**：生成 tower_room_night/room_morning/corridor_morning 3 张背景图入库 public/visualnovel/bg/
+  2. **场景一致性重做**：room_night v2 基于 room_morning 参考生成（同房间布局只变光线），corridor_night v2 基于 corridor_morning 参考生成，保证同一场景日/夜版布局一致
+  3. **班走廊看月亮 CG**：ban_corridor_moon（走廊夜景+班脸模双参考），作为带人物的特殊背景图。v1 需重做（班应坐走廊尽头床边，非站走廊中间，且楼梯丢失）
+  4. **UI 改进**：QuickMenu 从右上角横排移到左上角竖排（原神/永恒世界风格）；全窗口点击推进对话（game-stage 监听 click，菜单/面板/选项/热点/输入框用 data-no-advance 排除）
+  5. **帝桥地图坐标修正**：(42%,32%) → (25%,48%)，对应像素 (450,450)/底图 (1800,930)
+  6. **刷新失登录修复**（BUG）：路由守卫 beforeEach 中 isLoggedIn && !loaded 时先 await fetchMe()，从后端恢复 user 对象。根因：auth.user 只在 login 时赋值，刷新后 token 恢复但 user 永远 null
+  7. **背景图未显示修复**（BUG）：Vite HMR 缓存旧版 BackgroundLayer.vue，REAL_BG_MAP 新映射未生效回退 CSS 渐变。修改文件触发重编译修复
+  8. **美术资产归档**：7 张游戏在用背景图归档到美术资产/背景图/，班立绘抠图透明版同步，README 清单更新+场景一致性原则
+  9. **AGENTS.md 新增 AI 行为准则第 5 条**：先查文档再动手
+- **状态**：代码完成已验证，班走廊月亮 CG 待重做
+- **关联文档**：bug-log BUG-54/BUG-55、班-形象设计.md CG 场景需求
+
+---
+
 ### [feat] 饶负伤/汪神正太诅咒/学院深层动机补充
 
 - **时间**：2026-08-04
