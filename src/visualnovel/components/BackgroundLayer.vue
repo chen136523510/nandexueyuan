@@ -21,6 +21,11 @@ const REAL_BG_MAP = {
   'bg/tower_interior_hall_prologue': null, // 序章结束后场景（见+添画入场景）
   'bg/tower_outdoor_mist': null,
   'bg/tower_interior': null,
+  'bg/tower_workbench': null,      // 幕间场景A：工作台特写
+  'bg/tower_corridor_night': null,  // 第二幕衔接段：二楼走廊夜景
+  'bg/tower_room_night': null,      // 序章睡觉过渡：二楼房间·夜晚
+  'bg/tower_room_morning': null,    // 第一章开场：二楼房间·晨光
+  'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
@@ -31,6 +36,10 @@ const BG_FALLBACK = {
   'bg/grassland': 'linear-gradient(180deg, #3a3a2e 0%, #2a2a1e 100%)',
   'bg/empire_border': 'linear-gradient(180deg, #2e2a3a 0%, #1a1520 100%)',
   'bg/black': '#000000',
+  // 以下新背景图待生成，先用 CSS 渐变占位
+  'bg/tower_room_night': 'radial-gradient(ellipse at 60% 40%, #2a2018 0%, #15100a 100%)',       // 房间·夜晚：暗暖
+  'bg/tower_room_morning': 'linear-gradient(180deg, #3a3528 0%, #2a2418 60%, #1f1a10 100%)',   // 房间·晨光：暖亮
+  'bg/tower_corridor_morning': 'linear-gradient(180deg, #3a3a30 0%, #28281e 100%)',             // 走廊·晨光：中性暖
 }
 
 watch(

@@ -1161,7 +1161,42 @@ export default [
         action: { type: 'goto', target: 'pro_explore_tian_1' } },
       { id: 'wall_map', x: 46, y: 18, label: '地图', icon: '🗺️',
         action: { type: 'map' } },
+      // 进入第一章（序章自由探索后，上楼睡觉 → 房间场景 → 睡觉 → 黑屏过渡 → 次日醒来）
+      { id: 'go_chapter1', x: 50, y: 88, label: '上楼睡觉', icon: '🛏️',
+        action: { type: 'goto', target: 'pro_room_night_1' } },
     ]
+  },
+
+  // ===== 上楼睡觉过渡（房间·夜晚 → 睡觉 → 黑屏 → 第一章） =====
+  {
+    id: 'pro_room_night_1',
+    type: 'dialogue',
+    background: 'bg/tower_room_night',  // 需生成：二楼房间·夜晚
+    speaker: '旁白',
+    next: 'pro_sleep_choice'
+  },
+  {
+    id: 'pro_sleep_choice',
+    type: 'choice',
+    background: 'bg/tower_room_night',
+    choices: [
+      { impact: 'critical', next: 'pro_sleep_black' },  // 睡觉
+    ],
+  },
+  {
+    id: 'pro_sleep_black',
+    type: 'dialogue',
+    background: 'bg/black',  // 纯黑过渡
+    speaker: '旁白',
+    next: 'pro_to_chapter1'
+  },
+
+  // ===== 章节跳转：序章 → 第一章 =====
+  {
+    id: 'pro_to_chapter1',
+    type: 'event',
+    unlockChapter: 'chapter1',
+    // next 留空：store 拦截 unlockChapter 后自动加载新章节并跳转起始节点
   },
 
   // ================================================================

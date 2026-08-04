@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
+import { NodeType } from '../visualnovel/engine/types.js'
 import BackgroundLayer from '../visualnovel/components/BackgroundLayer.vue'
 import CharacterLayer from '../visualnovel/components/CharacterLayer.vue'
 import HotspotLayer from '../visualnovel/components/HotspotLayer.vue'
@@ -17,6 +18,27 @@ import TopBar from '../components/TopBar.vue'
 
 const store = useVisualNovelStore()
 const showStartScreen = ref(true)
+
+// 全窗口点击推进对话（原神/视觉小说标准交互）
+// 排除：菜单按钮、面板、选项、输入框、热点、CG、提示弹窗
+function handleStageClick(e) {
+  // 面板打开时不推进
+  if (store.activePanel) return
+  // CG 展示时不推进（由 closeCG 处理）
+  if (store.triggeredCG) return
+  // 提示弹窗时不推进
+  if (store.noticeMessage) return
+  // 点击了带 data-no-advance 标记的元素（菜单按钮等），不推进
+  if (e.target.closest('[data-no-advance]')) return
+  // choice 节点不推进（等用户选）
+  if (store.currentNode?.type === NodeType.CHOICE) return
+  // input 节点不推进（等用户输入）
+  if (store.currentNode?.type === NodeType.INPUT) return
+  // 自由探索模式（热点）不推进
+  if (store.isEnded) return
+
+  store.advance()
+}
 
 // 开始游戏
 function startGame() {
@@ -114,7 +136,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 游戏主界面 -->
-    <div v-else class="game-stage" :class="{ 'hide-ui': store.hideUI }">
+    <div v-else class="game-stage" :class="{ 'hide-ui': store.hideUI }" @click="handleStageClick">
       <!-- 背景层 -->
       <BackgroundLayer />
 

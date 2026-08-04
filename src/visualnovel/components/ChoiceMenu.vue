@@ -31,7 +31,7 @@ function handleSelect(index) {
 </script>
 
 <template>
-  <div v-if="choices.length > 0 && !store.hideUI" class="choice-overlay">
+  <div v-if="choices.length > 0 && !store.hideUI" class="choice-overlay" data-no-advance>
     <div class="choice-container">
       <div
         v-for="(choice, index) in choices"

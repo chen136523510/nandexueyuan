@@ -15,8 +15,8 @@ const buttons = computed(() => [
 </script>
 
 <template>
-  <!-- 正常状态：完整快捷栏 -->
-  <div v-if="!store.hideUI" class="quick-menu">
+  <!-- 正常状态：左上角竖排快捷栏（原神/永恒世界风格） -->
+  <div v-if="!store.hideUI" class="quick-menu" data-no-advance>
     <button
       v-for="btn in buttons"
       :key="btn.id"
@@ -35,6 +35,7 @@ const buttons = computed(() => [
     v-else
     class="qm-show-btn"
     title="显示菜单"
+    data-no-advance
     @click.stop="store.toggleHideUI()"
   >
     <span class="qm-icon">👁</span>
@@ -42,32 +43,33 @@ const buttons = computed(() => [
 </template>
 
 <style scoped>
+/* 原神/永恒世界风格：左上角竖排半透明图标列 */
 .quick-menu {
   position: absolute;
   top: 12px;
-  right: 12px;
+  left: 12px;
   z-index: 30;
   display: flex;
-  gap: 4px;
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(13, 17, 23, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
   padding: 4px;
   backdrop-filter: blur(8px);
 }
 
 .qm-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 6px 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 48px;
+  min-width: 40px;
 }
 
 .qm-btn:hover {
@@ -84,9 +86,10 @@ const buttons = computed(() => [
 }
 
 .qm-label {
-  font-size: 10px;
-  color: rgba(232, 224, 204, 0.6);
+  font-size: 11px;
+  color: rgba(232, 224, 204, 0.55);
   line-height: 1;
+  white-space: nowrap;
 }
 
 .qm-btn:hover .qm-label {
@@ -101,15 +104,15 @@ const buttons = computed(() => [
 .qm-show-btn {
   position: absolute;
   top: 12px;
-  right: 12px;
+  left: 12px;
   z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(13, 17, 23, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(13, 17, 23, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
   cursor: pointer;
   backdrop-filter: blur(8px);
@@ -126,26 +129,25 @@ const buttons = computed(() => [
   line-height: 1;
 }
 
-/* 移动端：只显示图标 */
+/* 移动端 */
 @media (max-width: 768px) {
   .quick-menu {
     top: 8px;
-    right: 8px;
+    left: 8px;
     padding: 2px;
   }
   .qm-btn {
     padding: 6px 8px;
-    min-width: 36px;
   }
   .qm-label {
-    display: none;
+    font-size: 10px;
   }
   .qm-icon {
     font-size: 18px;
   }
   .qm-show-btn {
     top: 8px;
-    right: 8px;
+    left: 8px;
     width: 36px;
     height: 36px;
   }

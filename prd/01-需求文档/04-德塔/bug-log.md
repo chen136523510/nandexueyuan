@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-08-04（黑机 背景图生成）
+
+### BUG-54：Node.js 调 Seedream API 返回 400 Bad Request（网关层拒绝）
+
+- **发现时间**：2026-08-04（第一章背景图生成）
+- **环境**：Node.js `fetch()` + `curl` 调用 Seedream API
+- **现象**：用 Node.js fetch 或 curl 调用 `POST /api/v3/images/generations`，无论参数怎么调整（`size: "1K"` / `"1664x928"` / `"2048x1024"` / 不传 size），均返回 `400 Bad Request`（body 只有一句 "Bad Request"，非标准 JSON 错误）
+- **根因**：**未阅读已有脚本管理文档（`.ai/scripts/README.md`）和公共模块（`lib/seedream_client.py`）就擅自用 Node 重写生图逻辑**。踩坑：
+  1. `size` 不能用显式像素（如 `"1664x928"`），必须用档位简写 `"1K"` / `"2K"`（文档踩坑速查 #3 明确记录）
+  2. 请求体格式与已有 Python 公共模块不一致（Python `requests` 库可正常调用，Node `fetch` 可能有 SSL/代理差异）
+  3. 响应解析路径错误：文档公共模块用 `data['data'][0]['url']`，Node 版错误使用了 `data.data.images[0].image_url`
+- **修复**：放弃 Node 重写，直接使用已有 Python 公共模块 `call_seedream()`（`.ai/scripts/lib/seedream_client.py`），该模块已收口所有稳定配置（fast 模式 + url 响应 + 负面词强制传 + 参考图压缩 + 下载重试）
+- **教训**：**执行不熟悉的操作前必须先读项目文档和已有脚本**（AGENTS.md AI 行为准则第 5 条）。项目已有 `.ai/scripts/README.md` 脚本索引 + `lib/seedream_client.py` 公共模块，新需求直接引用公共模块，禁止复制粘贴或重写
+- **文件**：新增 `.ai/scripts/gen_bg_chapter1.py`（引用公共模块）
+- **状态**：✅ 已修复
+
+---
+
 ## 2026-08-03（白机 班脸模生成）
 
 ### BUG-52：Seedream API image 参数格式错误（invalid url）

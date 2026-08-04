@@ -27,7 +27,7 @@ function handleHotspot(hotspot) {
 </script>
 
 <template>
-  <div v-if="store.isEnded && store.currentHotspots.length" class="hotspot-layer">
+  <div v-if="store.isEnded && store.currentHotspots.length" class="hotspot-layer" data-no-advance>
     <button
       v-for="spot in store.currentHotspots"
       :key="spot.id"

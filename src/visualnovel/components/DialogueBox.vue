@@ -55,6 +55,7 @@ const inputPlaceholder = computed(() => {
 })
 
 function handleClick() {
+  // 全窗口点击已在 game-stage 层处理，这里保留兼容但不再主动触发
   // input 节点不响应点击推进
   if (isChoice.value || showEnd.value || isInput.value) return
   store.advance()
@@ -89,7 +90,7 @@ function handleSubmit() {
       </p>
 
       <!-- 输入框（input 节点打字完成后显示） -->
-      <div v-if="isInput && !store.isTyping" class="input-area">
+      <div v-if="isInput && !store.isTyping" class="input-area" data-no-advance>
         <input
           ref="inputField"
           v-model="inputValue"
