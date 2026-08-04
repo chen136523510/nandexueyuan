@@ -23,9 +23,10 @@ const REAL_BG_MAP = {
   'bg/tower_interior': null,
   'bg/tower_workbench': null,      // 幕间场景A：工作台特写
   'bg/tower_corridor_night': null,  // 第二幕衔接段：二楼走廊夜景
-  'bg/tower_room_night': null,      // 序章睡觉过渡：二楼房间·夜晚
+  'bg/tower_room_night': null,      // 序章睡觉过渡：二楼房间·夜晚（v2 基于 morning 参考生成）
   'bg/tower_room_morning': null,    // 第一章开场：二楼房间·晨光
   'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
+  'bg/ban_corridor_moon': null,     // CG：班走廊看月亮（带人物的特殊背景图）
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
@@ -56,7 +57,7 @@ watch(
   }
 )
 
-// 优先加载真实图片，未生成的回退 CSS 渐变占位（HMR fix v2）
+// 优先加载真实图片，未生成的回退 CSS 渐变占位（HMR fix v3 - 新增ban CG）
 function getBgStyle(bgKey) {
   if (bgKey in REAL_BG_MAP) {
     const fileKey = REAL_BG_MAP[bgKey] || bgKey

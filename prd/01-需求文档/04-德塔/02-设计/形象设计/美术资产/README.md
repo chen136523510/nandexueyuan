@@ -41,8 +41,17 @@
 | `背景图/tower_interior_hall.png` | 塔楼大厅·室内 |
 | `背景图/tower_outdoor_mist.png` | 塔楼外景·晨雾（幸来访过场） |
 | `背景图/tower_interior.png` | 塔楼内景·储物发放（一层大厅，见在墙角木箱取纳戒） |
+| `背景图/tower_interior_hall_prologue.png` | 序章结束场景（见+添画入大厅） |
+| `背景图/tower_workbench.png` | 幕间场景A：工作台特写（见+添+班三人拌嘴） |
+| `背景图/tower_room_night.png` | 序章睡觉过渡：二楼房间·夜晚（v2 基于 morning 参考生成，布局一致） |
+| `背景图/tower_room_morning.png` | 第一章开场：二楼房间·晨光 |
+| `背景图/tower_corridor_morning.png` | 第一章开场：二楼走廊·晨光 |
+| `背景图/tower_corridor_night.png` | 第二幕衔接段：二楼走廊·夜景（v2 基于 morning 参考生成，布局一致） |
+| `背景图/ban_corridor_moon.png` | CG：班深夜走廊看月亮（带人物特殊背景图，走廊夜景+班脸模双参考生成） |
 
 > 运行时目录：`public/visualnovel/bg/`。背景图为 16:9 宽屏，立绘为 832×1216 竖版。
+>
+> **场景一致性原则**：同一地点的日/夜版本，以白天版为参考图生成夜晚版，保证布局结构完全一致，仅改变光线。`tower_room_night` 基于 `tower_room_morning` 生成，`tower_corridor_night` 基于 `tower_corridor_morning` 生成。
 
 ---
 
