@@ -1,9 +1,9 @@
 # 视频生成 API 调研
 
-> 版本：v1 | 日期：2026-08-04 | 调研人：陈梓键（院长）+ 白机落档
+> 版本：v2 | 日期：2026-08-04 初稿 / 2026-08-05 补充 H3 开源 | 调研人：陈梓键（院长）+ 白机落档
 > 状态：📝 调研完成，待决策（是否将视频纳入视觉小说路线图）
 > 关联：ADR-005（德塔世界观承载方式，2D 时期视频候选工具表，已随方向转换搁置）
-> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证
+> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证 + HuggingFace/ComfyUI/GitHub Issues 实测数据
 
 ---
 
@@ -251,6 +251,7 @@ content[] 可混合传入：
 - 6秒/10秒，768p/1080p
 - 转售价最低（512p 约 $0.017/次）
 - 适合：动漫风 + 低成本
+- **注**：MiniMax 于 2026-07-31 开源了新一代 H3 模型（本地部署），详见第六章
 
 **腾讯混元**
 - 完全开源（130 亿参数，开源最大），可本地免费部署
@@ -313,7 +314,140 @@ content[] 可混合传入：
 
 ---
 
-## 五、待确认事项
+## 六、MiniMax H3 开源模型（本地部署专题）
+
+> 来源：HuggingFace 模型卡 + ComfyUI 官方博客 + GitHub Issues 实测 + Wan2GP 低显存框架 + NGA 实测帖
+> 背景：MiniMax 于 2026-07-31 开源 H3，中文社区流传"8G 显存可跑"。院长黑机配置 RTX 4070 12G 显存 + 32G 内存，评估本地部署可行性。
+
+### 6.1 核心结论（先看这个）
+
+**"8G 显存可跑"是营销话术，严重省略前提。** 黑机（4070 12G + 32G）能勉强跑量化版 480p，但**体验差，32G 内存是硬瓶颈**。
+
+"8G 可跑"的出处是低显存优化项目 Wan2GP（`github.com/deepbeepmeep/Wan2GP`），前提是全部满足：用最激进量化 + 模型卸载到系统内存 + 只跑 480p 低分辨率短视频。原版 BF16 根本不可能（DiT 权重就 61GB）。
+
+### 6.2 模型基本信息
+
+| 项 | 值 |
+|---|---|
+| 准确命名 | **MiniMax H3**（HuggingFace: `MiniMaxAI/MiniMax-H3`）。"Hailuo H3" 是民间叫法。**不是** MiniMax-01 / H3-T2V |
+| 参数量 | **33B**（33,122,992,896），其中约 13B 在 AdaLN 分支（推理时可预计算缓存） |
+| 架构 | H3-Omni-Transformer：单流密集 DiT，packed-token 布局 `[text|cond/ref|audio|video]`；3D MM-RoPE。**当前开源版仅 full attention 推理**（训练时支持稀疏注意力） |
+| 文本/视觉编码器 | 内置 **Qwen3-VL-32B**（取前 50 层）-- 这是模型"大"的主因之一，低显存跑必须量化它 |
+| 开源时间 | 2026-07-31 官方博客发布 + 权重开放；HF 最后更新 2026-08-04（非常新） |
+| 技术报告 | **尚未发布**，官方称 "soon" |
+| 开源协议 | **MiniMax H3 Community License**：允许商用，但年收入超 2000 万美元需单独授权；商用 UI 必须标注 "MiniMax H3"。非 MIT/Apache，属受限商用许可 |
+
+### 6.3 能力
+
+| 能力 | 支持 | 细节 |
+|------|------|------|
+| 文生视频 | ✅ | FL2VA 模式零图输入 |
+| 图生视频 / 首尾帧 | ✅ | FL2VA，支持 0/1/2 张图；2张=首尾帧 |
+| 视频生视频 | ✅ | V2V 运动转换 |
+| **全模态参考生视频** | ✅（特色） | Ref2VA：≤9图 + ≤3视频(2-15s) + ≤3音频，总文件≤12 |
+| 分辨率 | 开源版**原生 768p**（短边768） | 2K 需闭源 H3-Regenerate-2K |
+| 时长 | 4-15 秒 | |
+| 帧率 | 24 FPS | |
+| **有声视频** | ✅（原生立体声 32kHz） | H3-AudioVAE 压缩为 40Hz latent，与多数开源视频模型的差异点 |
+| 宽高比 | 21:9 / 16:9 / 4:3 / 1:1 / 3:4 / 9:16 | |
+| 语言 | 11 种稳定（含**中文、日语、韩语**） | 对动漫/视觉小说项目重要 |
+| 动漫风格 | ⚠️ 官方未明确专门支持 | 支持日语，Ref2VA 可注入动漫参考图，但无 live2d/动漫专用模型的开源证据 |
+
+### 6.4 硬件需求真相（重点验证）
+
+**原版 BF16 显存需求**：完整模型总内存占用 **123.6 GB**；ComfyUI 官方优化后最小变体仍需 **42.5 GB**。
+
+**GitHub Issues 真实用户实测（铁证）**：
+- `deepbeepmeep/Wan2GP #2065`：**RTX 3090(24GB) + 96GB RAM**，跑最小量化版，5 秒 **480p** 用了 **18.7GB 显存 + 67GB 内存**。720p 直接 OOM
+- `griptape-ai/...diffusers #35`：开发者直言原版 BF16 全量推理需 **80GB+ VRAM**
+- `intel/llm-scaler #585`（中文 issue）：显存到 **30G 左右就 OOM**，要求支持 1080P
+- ComfyUI 官方 SGLang 部署示例用 **`--num-gpus 4`**（4 卡）
+
+**量化版本权重大小**（FL2VA 模式，仅 DiT，不含文本编码器/VAE）：
+
+| 版本 | DiT 大小 | 说明 |
+|------|----------|------|
+| BF16 原版 | 61.73 GB | 官方满血 |
+| pruned-FP8 | 19.52 GB | 剪枝（AdaLN 预计算）+ FP8 |
+| INT8-ConvRot | 31.70 GB | 完整版 INT8 |
+| pruned-INT8-ConvRot | 19.53 GB | 剪枝版 INT8 |
+| **GGUF Q3_K_M** | **14.50 GB** | 最低（黑机可选） |
+| GGUF Q4_K_M | 18.50 GB | 主流低显存选择 |
+| GGUF Q5_K_M | 22.25 GB | 质量较好 |
+| NVFP4-awq | ~17 GB | 仅 Blackwell/40系支持 |
+
+文本编码器 Qwen3-VL-32B 同样需要量化：BF16=47.97GB / INT8=25.28GB / GGUF Q4_K_M=13.58GB。
+
+### 6.5 黑机可行性评估（RTX 4070 12G + 32G 内存）
+
+| 维度 | 评估 | 说明 |
+|------|------|------|
+| **12G 显存** | 勉强够（量化版） | 必须用 GGUF Q3/Q4 或 pruned-FP8，且**必须开 CPU 卸载**（DiT 权重 14-18GB 本身超 12G） |
+| **32G 内存** | ❌ **不够（硬瓶颈）** | Wan2GP 实测 480p 就要 67GB 内存。32G 极可能 OOM 或频繁换页卡死。**强烈建议升级到 64GB** |
+| 跑哪个版本 | GGUF Q3_K_M(14.5GB) 或 pruned-FP8(19.5GB) | 走 Wan2GP LowVRAM 模式或 ComfyUI 动态卸载 |
+| 分辨率 | 只能 480p | 768p 大概率 OOM（官方原生 768p） |
+| 时长 | 建议 4-5秒 | 别碰 15秒 |
+| 推理时长 | 单条 5秒 480p 预计 **10-20 分钟以上** | 对比 NGA 实测 4070Ti 16G 纯显存模式 960x544/5秒 要 5 分钟，12G 靠卸载会慢数倍 |
+
+**NGA 真实实测**（`bbs.nga.cn` tid=47306216）：4070Ti(16GB) + 32GB RAM，960x544 的 5秒视频约 5 分钟，10秒约 15 分钟。这是 16G 显存的数据，12G 还要更慢。
+
+### 6.6 开源版 vs 闭源 API 的区别
+
+| 模块 | 开源？ | 能力 |
+|------|--------|------|
+| H3-Context-IR | ❌ 仅 API | 预处理与编排（多镜头编排、prompt 增强） |
+| **H3-Base** | ✅ **开源** | 768p 原生音视频生成（FL2VA / Ref2VA） |
+| H3-Regenerate-2K | ❌ 仅 API | 2K 重生成 |
+
+**开源版能力缩水点**：无 2K、无多镜头编排系统、原生 1080p 目前 OOM。但核心生成能力（768p + 原声 + 全模态参考）完整保留。API 版的 video-01-live2d 类动漫专用能力**未在开源权重中体现**。
+
+### 6.7 部署方式（黑机主力是 ComfyUI）
+
+- **ComfyUI 原生支持**：PR `Comfy-Org/ComfyUI#15224` 已合并，节点 `EmptyMiniMaxH3LatentAV` / `MiniMaxH3ImageToVideo` / `MiniMaxH3ReferenceToVideo` 等，需 2026-08-03 之后的 ComfyUI 版本
+- **官方 ComfyUI 量化版 + 工作流模板**：`huggingface.co/Comfy-Org/MiniMax-H3`
+- **GGUF（最热门，84k 下载）**：`huggingface.co/Abiray/MiniMax-H3-GGUF`
+- **低显存优化框架**：`github.com/deepbeepmeep/Wan2GP`（"8G可跑"说法出处）
+- 第三方加速节点：`lihaoyun6/ComfyUI-MiniMaxH3-Cache`、`xmarre/ComfyUI-Spectrum-MiniMax-H3`、`HELIMIADICE/TE-Speed-MiniMaxH3-OSS`
+- 其他部署框架：SGLang（官方推荐）、vLLM-omni、diffusers（PR 进行中）
+
+### 6.8 与竞品对比（开源视频模型）
+
+| 维度 | **MiniMax H3** | 腾讯 HunyuanVideo | 智谱 CogVideoX |
+|------|----------------|-------------------|----------------|
+| 参数量 | **33B**（开源最大之一） | 13B | 5B |
+| 显存（BF16原版） | ~80GB+ | 45-60GB（720p/129帧） | 较低 |
+| 单卡生成时间（720p） | 慢（33B最大） | 1卡 31.7分钟，8卡 5.6分钟 | 较快 |
+| 原生音频 | **✅ 立体声** | ❌ | ❌ |
+| 全模态参考 | **✅（图+视频+音频）** | ❌ | ❌ |
+| 时长 | 4-15s | 129帧 | 6s/10s |
+| 定位 | **开源能力最全（音视频+全参考），但最重** | 开源质量标杆 | 轻量入门 |
+
+### 6.9 给视觉小说项目的建议
+
+针对 RTX 4070 12G + 32G 黑机：
+
+1. **不建议本地跑 H3 做正式素材** -- 32G 内存是硬伤，480p 慢速生成对视觉小说质量不达标，升级到 64G 内存才现实
+2. **优先用 MiniMax 官方 API**（H3 已上线 `hub.minimax.io`，768p 价格据称"不到主流 720p 的一半"），省下的电费和时间远超 API 费用
+3. 若一定要本地试水：ComfyUI + Abiray GGUF Q3_K_M + 量化 Qwen3-VL(Q4_K_M) + 5秒480p 跑通验证，再决定是否升级内存
+4. 动漫风格：H3 模型才发布 4 天（截至 2026-08-04），无动漫/lora 生态，需观察社区；日语支持是加分项
+
+### 6.10 关键 URL
+
+| 资源 | 地址 |
+|------|------|
+| 官方模型卡 | `huggingface.co/MiniMaxAI/MiniMax-H3` |
+| 官方博客 | `minimax.io/blog/minimax-h3` |
+| ComfyUI 官方博客 | `blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui` |
+| ComfyUI 原生支持 PR | `github.com/Comfy-Org/ComfyUI/pull/15224` |
+| Comfy-Org 量化版+工作流 | `huggingface.co/Comfy-Org/MiniMax-H3` |
+| GGUF（最热门） | `huggingface.co/Abiray/MiniMax-H3-GGUF` |
+| 低显存框架（8G可跑出处） | `github.com/deepbeepmeep/Wan2GP` |
+| awesome 汇总 | `github.com/wildminder/awesome-minimax-H3` |
+| 真实显存反馈 issue | `github.com/deepbeepmeep/Wan2GP/issues/2065`（18.7GB VRAM+67GB RAM 跑 480p） |
+
+---
+
+## 七、待确认事项
 
 | 事项 | 说明 |
 |------|------|
@@ -322,3 +456,6 @@ content[] 可混合传入：
 | 动漫风效果验证 | Seedance 无 `style=anime`，需实际 PoC 验证 prompt 控制动漫风的效果 |
 | Seedance 2.5 上线时间 | PDF 标注"即将上线"，需关注官方动态 |
 | 视频是否纳入路线图 | 本次为纯调研，是否将视频作为视觉小说 P1 增强需院长决策 |
+| H3 黑机本地实测 | 32G 内存是硬瓶颈，若院长坚持本地试水，建议先用 GGUF Q3 + 480p/5秒 跑通验证再决定是否升级内存 |
+| H3 动漫/lora 生态 | 模型发布仅 5 天（截至 2026-08-05），无动漫专用模型/LoRA，需观察社区发展 |
+| MiniMax API 定价 | H3 已上线 `hub.minimax.io`，768p 价格据称"不到主流 720p 的一半"，需登录确认具体单价 |
