@@ -50,6 +50,7 @@
 | `背景图/tower_corridor_night.png` | 第二幕衔接段：二楼走廊·夜景（v2 基于 morning 参考生成，布局一致） |
 | `背景图/ban_corridor_moon.png` | CG：班深夜走廊看月亮（带人物特殊背景图，走廊夜景+班脸模双参考生成） |
 | `背景图/grassland_morning.png` | 幕间结尾：清晨草原无人版（tower_outdoor_mist 同构图去人物） |
+| `背景图/bridge_checkpoint.png` | 第一幕·帝桥哨卡：睿河魔法传送桥+桥头哨卡+魔法哨站（设定集§2.3.1） |
 
 > 运行时目录：`public/visualnovel/bg/`。背景图为 16:9 宽屏，立绘为 832×1216 竖版。
 >

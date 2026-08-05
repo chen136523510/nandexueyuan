@@ -28,6 +28,7 @@ const REAL_BG_MAP = {
   'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
   'bg/ban_corridor_moon': null,     // CG：班走廊看月亮（带人物的特殊背景图）
   'bg/grassland_morning': null,     // 幕间结尾：清晨草原（tower_outdoor_mist 无人版）
+  'bg/bridge_checkpoint': null,    // 第一幕·帝桥哨卡：睿河大桥+桥头哨卡+魔法哨站
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
