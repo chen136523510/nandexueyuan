@@ -20,6 +20,14 @@ const CHAPTER_LOADERS = {
     const allScripts = [s1.default, s2.default, s3.default, s4.default].flat()
     return { default: mergeScript(skeleton, allScripts) }
   },
+  chapter1: async () => {
+    const [{ default: skeleton }, s1] = await Promise.all([
+      import('../data/chapter1.js'),
+      import('../data/scripts/第一章-幕间-德塔日常.script.js'),
+    ])
+    const allScripts = [s1.default].flat()
+    return { default: mergeScript(skeleton, allScripts) }
+  },
 }
 
 export const useVisualNovelStore = defineStore('visualNovel', () => {
@@ -167,7 +175,14 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         affinity.value = data.affinity || {}
         storyVariables.value = data.variables || {}
         inventory.value = data.inventory || []
-        stage.value = [] // 后端不存 stage，由 goToNode 重新推导
+        // 恢复舞台状态（与 loadFromSlot 一致，旧存档无 stage 字段则置空）
+        stage.value = Array.isArray(data.stage)
+          ? data.stage.map(c => ({ ...c }))
+          : []
+        // 加载存档对应章节（旧存档无 chapter 字段则保持已加载的序章）
+        if (data.chapter && data.chapter !== 'prologue') {
+          await loadChapter(data.chapter)
+        }
         goToNode(data.node)
         autoLoaded = true
       } catch (e) {
@@ -289,7 +304,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
    * 跳转到指定节点（核心方法）
    * 处理 event/condition 的自动跳转链
    */
-  function goToNode(nodeId) {
+  async function goToNode(nodeId) {
     if (!nodeId || !currentIndex.value) return
     const node = getNode(currentIndex.value, nodeId)
     if (!node) {
@@ -311,6 +326,31 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       // 发放物品
       if (result.grantedItem && !inventory.value.includes(result.grantedItem)) {
         inventory.value = [...inventory.value, result.grantedItem]
+      }
+      // 解锁并跳转新章节（event 节点带 unlockChapter 且无 next）
+      if (result.unlockedChapter) {
+        const chapterId = result.unlockedChapter
+        if (!unlockedChapters.value.includes(chapterId)) {
+          unlockedChapters.value = [...unlockedChapters.value, chapterId]
+        }
+        // 同步进度
+        syncProgress()
+        // 加载新章节并跳转到起始节点
+        const loaded = await loadChapter(chapterId)
+        if (loaded) {
+          const startId = getStartNode([...currentIndex.value.values()])
+          stage.value = [] // 切章节清空舞台
+          if (startId) {
+            goToNode(startId)
+          } else {
+            console.error(`[VisualNovelStore] 章节 ${chapterId} 无起始节点`)
+            isEnded.value = true
+          }
+        } else {
+          console.error(`[VisualNovelStore] 章节 ${chapterId} 加载失败`)
+          isEnded.value = true
+        }
+        return
       }
       // 同步进度
       syncProgress()

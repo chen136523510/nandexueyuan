@@ -218,18 +218,24 @@ export function getNextNodeId(node, index, affinity, variables, maxDepth = 10) {
  * @param {object} node - event 节点
  * @param {object} variables - 当前剧情变量
  * @param {Array} unlockedCGs - 已解锁CG列表
- * @returns {object} { variables, unlockedCGs, cg, grantedItem } 更新后的状态
+ * @returns {object} { variables, unlockedCGs, cg, grantedItem, unlockedChapter } 更新后的状态
  */
 export function executeEvent(node, variables, unlockedCGs) {
   const newVars = { ...variables }
   const newCGs = [...unlockedCGs]
   let triggeredCG = null
   let grantedItem = null
+  let unlockedChapter = null
 
   // 解锁 CG
   if (node.unlockCG && !newCGs.includes(node.unlockCG)) {
     newCGs.push(node.unlockCG)
     triggeredCG = node.unlockCG
+  }
+
+  // 解锁章节
+  if (node.unlockChapter) {
+    unlockedChapter = node.unlockChapter
   }
 
   // 修改变量
@@ -242,7 +248,7 @@ export function executeEvent(node, variables, unlockedCGs) {
     grantedItem = node.grantItem
   }
 
-  return { variables: newVars, unlockedCGs: newCGs, cg: triggeredCG, grantedItem }
+  return { variables: newVars, unlockedCGs: newCGs, cg: triggeredCG, grantedItem, unlockedChapter }
 }
 
 /**

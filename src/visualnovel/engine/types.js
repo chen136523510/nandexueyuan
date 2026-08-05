@@ -64,6 +64,7 @@ export const CHAR_COLORS = {
   jie: '#D4A574',         // 杰：金沙
   wang: '#7EC8E3',        // 汪神：淡蓝
   rong: '#A04040',        // 荣：暗红
+  ban: '#8A9A5B',         // 班：苔绿（坚毅果敢/送葬人气质）
   muren: '#E8E8F0',       // 牧阳：纯白
   muyang: '#E8E8F0',      // 沐阳：纯白（别名）
   wangshen: '#7EC8E3',    // 汪神别名
@@ -81,6 +82,7 @@ export const SPEAKER_TO_ID = {
   '杰': 'jie',
   '汪神': 'wangshen',
   '荣': 'rong',
+  '班': 'ban',
   '沐阳': 'muyang',
 }
 

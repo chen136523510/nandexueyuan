@@ -29,13 +29,6 @@ export default [
     type: 'dialogue',
     background: 'bg/tower_room_morning',  // 需生成：二楼房间·晨光
     speaker: '旁白',
-    next: 'ch1_wake_2'
-  },
-  {
-    id: 'ch1_wake_2',
-    type: 'dialogue',
-    background: 'bg/tower_room_morning',
-    speaker: '旁白',
     next: 'ch1_wake_3'
   },
   {
@@ -321,7 +314,7 @@ export default [
   {
     id: 'ch1_hall_b14',
     type: 'dialogue',
-    background: 'bg/tower_interior_hall',
+    background: 'bg/grassland_morning',  // 清晨草原（tower_outdoor_mist 无人版，待黑机出图）
     speaker: '旁白',
     next: 'ch1_interlude_end'
   },

@@ -27,6 +27,7 @@ const REAL_BG_MAP = {
   'bg/tower_room_morning': null,    // 第一章开场：二楼房间·晨光
   'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
   'bg/ban_corridor_moon': null,     // CG：班走廊看月亮（带人物的特殊背景图）
+  'bg/grassland_morning': null,     // 幕间结尾：清晨草原（tower_outdoor_mist 无人版，待黑机出图）
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
@@ -41,6 +42,7 @@ const BG_FALLBACK = {
   'bg/tower_room_night': 'radial-gradient(ellipse at 60% 40%, #2a2018 0%, #15100a 100%)',       // 房间·夜晚：暗暖
   'bg/tower_room_morning': 'linear-gradient(180deg, #3a3528 0%, #2a2418 60%, #1f1a10 100%)',   // 房间·晨光：暖亮
   'bg/tower_corridor_morning': 'linear-gradient(180deg, #3a3a30 0%, #28281e 100%)',             // 走廊·晨光：中性暖
+  'bg/grassland_morning': 'linear-gradient(180deg, #8a8a6a 0%, #5a5a3a 100%)',                  // 清晨草原：亮绿暖（占位）
 }
 
 watch(
