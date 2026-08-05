@@ -57,6 +57,7 @@ export const CHAR_COLORS = {
   dean: '#C8B070',        // 见（院长）：暖金栗
   xing: '#7A9EC8',        // 幸：冷蓝
   tian: '#D4A574',        // 添：大地金
+  ban: '#8A9A5B',         // 班：苔绿（坚毅果敢/送葬人气质）
   narrator: '#B0B0C0',    // 旁白：灰
   // 其他角色（预留）
   rui: '#C0C0D0',         // 睿帝：银灰
@@ -64,7 +65,6 @@ export const CHAR_COLORS = {
   jie: '#D4A574',         // 杰：金沙
   wang: '#7EC8E3',        // 汪神：淡蓝
   rong: '#A04040',        // 荣：暗红
-  ban: '#8A9A5B',         // 班：苔绿（坚毅果敢/送葬人气质）
   muren: '#E8E8F0',       // 牧阳：纯白
   muyang: '#E8E8F0',      // 沐阳：纯白（别名）
   wangshen: '#7EC8E3',    // 汪神别名
@@ -102,3 +102,12 @@ export const ConditionOp = {
   EQ: '==',
   NEQ: '!=',
 }
+
+/**
+ * 地图演出（dialogue 节点可选字段）
+ *
+ *   mapHighlight: '帝桥'    在 dialogue 节点上声明，值为 locations.js 中 MAP_LOCATIONS 的 key。
+ *     - 有值时：MapPanel 自动弹出，在对应坐标渲染脉冲高亮标记，对话在地图上继续。
+ *     - null/undefined 时：地图自动收起，回到正常背景演出。
+ *     - 玩家不可手动关闭演出中的地图（由剧本控制开关）。
+ */

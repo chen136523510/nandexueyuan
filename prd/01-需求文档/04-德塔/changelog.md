@@ -4,6 +4,23 @@
 
 ---
 
+### [feat] 班立绘运行时入库+增量更新存档容错（mapHighlight 地图演出）
+
+- **时间**：2026-08-05
+- **变更人**：陈梓键（黑机）
+- **背景**：班基准立绘(normal)+严肃差分(serious)已在美术资产定稿入库，但运行时 `public/visualnovel/portraits/ban/` 缺失（第一章幕间剧本引用 ban/normal、ban/serious 会 404）；同时黑机上轮产出的增量更新容错与地图演出功能需合并入主干
+- **变更内容**：
+  1. **班立绘运行时入库**：`public/visualnovel/portraits/ban/normal.png` + `serious.png`，与美术资产成品 md5 一致（6680ef5a / 6f1367e8）。院长已确认「送葬人」服饰定版（黑夹克+工装裤+磨牙石吊坠），normal=玩世不恭嘴角上扬，serious=归途报信笑意收尽
+  2. **双机合并修复**：拉取白机 628e791（第一章引擎集成），与黑机未提交改动三方合并。`visualNovelStore.js` 两处冲突手动解决：initGame 取并集（白机"恢复stage+加载章节" + 黑机"resolveNodeSafe 增量更新容错"）；goToNode 的 unlockChapter 分支采纳白机版（result.unlockedChapter 与 engine.js executeEvent 返回值配套）；修复合并遗留的多余 `}`
+  3. **types.js 重复行清理**：自动合并导致 ban 颜色和 `'班':'ban'` 各重复两行，手动清理。ban 颜色采纳白机 `#8A9A5B` 苔绿（设定集明确"送葬人气质/坚毅果敢"，非本地片面"喜剧担当"）
+  4. **mapHighlight 地图演出**（新功能）：MapPanel 增加演出模式——dialogue 节点声明 mapHighlight 字段时自动弹出地图+脉冲高亮地点，对话在地图上继续，玩家不可手动关闭；store 新增 currentMapHighlight computed
+  5. **resolveNodeSafe 增量更新容错**（新功能）：存档节点在新版剧本被删/改名时，initGame/loadFromSlot 三层回退（节点存在→章节起始→最新已解锁章节），避免白屏卡死
+  6. **image-gen SKILL.md**：提示词改中文语义写法（Seedream 中文理解强于英文 tag）+ 新增纪律七脚本复用与配方库（公共模块 call_seedream/remove_bg_and_normalize）+ 10 条踩坑记录
+- **状态**：代码完成已验证（npm run build 通过）
+- **关联文档**：班-形象设计.md（送葬人套装）、美术资产 README（班行新增）
+
+---
+
 ### [feat] 第一章引擎集成打通+存档恢复修复+幕间台词定稿（院长逐句过）
 
 - **时间**：2026-08-05

@@ -20,42 +20,55 @@ description: 生图纪律。当用户说"生图"、"出图"、"生成图片"、"
 
 **禁止使用模糊、笼统的提示词。** 每次生图必须从形象设计文档中精确提取硬特征，逐项写入提示词。
 
-### 正面提示词必须包含
+### 提示词语言：中文语义（重要）
 
-| 维度 | 必须写明 | 示例 |
-|------|---------|------|
-| 人物基本 | 人数/性别/年龄/气质 | `1male, solo, 25 years old, calm reliable young leader` |
-| 发色发型 | 从文档提取，写英文 tag | `short black hair, slightly curly, messy bangs` |
-| 眼色 | 从文档提取（防撞脸） | `chestnut brown eyes, warm focused gaze` |
-| 肤色 | 从文档提取 | `light brown tanned skin, healthy outdoor complexion` |
-| 表情 | 与剧情情绪对应 | `calm composed expression, slight gentle mouth curve` |
-| 服装 | 从文档提取核心单品 | `grey-white round-neck cotton t-shirt, black cord necklace` |
-| 构图 | 视角/景别/背景 | `front view face portrait, head and shoulders, plain dark grey background` |
-| 画风锁 | 统一画风 tag | `thick oil painting, epic oil painting, impasto brushstrokes, western fantasy art` |
+Seedream 是字节自研模型，**中文语义理解远强于英文 tag 堆叠**。所有提示词必须用**中文自然语言**描述，而非传统英文 tag（如 `1male, solo, short black hair`）。
+
+**写法要点**：
+- 用完整句子描述人物特征，像在给画家口述一样
+- 按层次组织：先整体轮廓 → 再面部细节 → 再服装逐件 → 最后表情姿态
+- 画风锁仍用中文描述（如"西方奇幻油画厚涂风，笔触厚重有力"）
+- 负面提示词同样用中文语义描述
+
+### 正面提示词必须包含的维度
+
+| 维度 | 必须写明 | 中文示例 |
+|------|---------|---------|
+| 人物基本 | 人数/性别/年龄/体格/气质 | `一个25岁的年轻男性，身材匀称，气质沉稳可靠` |
+| 发色发型 | 从文档提取，中文描述 | `黑色短发，微卷，刘海略显凌乱` |
+| 眼色 | 从文档提取（防撞脸） | `栗棕色眼睛，目光温和而专注` |
+| 肤色 | 从文档提取 | `小麦色皮肤，健康的户外肤色` |
+| 表情 | 与剧情情绪对应 | `沉稳从容的表情，嘴角微微带着温和的弧度` |
+| 服装 | 从文档逐件提取 | `灰白色圆领棉质T恤，脖子上挂着黑色绳带项链` |
+| 构图 | 视角/景别/背景 | `正面面部肖像，头肩构图，纯深灰色背景` |
+| 画风锁 | 统一画风描述 | `西方奇幻油画厚涂风，笔触厚重有力，有着古典油画的质感` |
 
 ### 负面提示词必须包含
 
+负面提示词同样用中文语义，按类别排除：
+
 ```
-# 通用防偏
-lowres, bad anatomy, text, error, worst quality, low quality, blurry
-
-# 防画风偏（纯文生图倾向古风，必须加）
-anime flat shading, flat colors, neon, chinese style, hanfu, wuxia
-
-# 防构图偏
-profile view, side view, back view, looking away, closed eyes
-
-# 防撞脸：列出其他角色的发色/眼色，明确排除
-# 示例：见(栗色眼) 负面词要加 amber eyes, blue eyes（那是杰/幸的眼色）
+# 通用防偏：画面模糊、低分辨率、人体结构错误、手部畸形、文字水印签名
+# 防画风偏：动漫扁平上色、赛博朋克霓虹、中国古风、汉服、武侠风格
+# 防构图偏：侧面、背面、闭眼、视线偏离镜头
+# 防撞脸：列出其他角色的发色/眼色，用中文明确排除
+# 示例：见(栗色眼) 负面词要加"琥珀色眼睛、蓝色眼睛"（那是杰/幸的眼色）
 ```
 
 ### 踩坑记录（必须规避）
+
+> 完整脚本索引见 `.ai/scripts/README.md`，API 稳定配置封装在 `.ai/scripts/lib/seedream_client.py`。
 
 1. **纯文生图偏古风**：Seedream 无参考图时倾向中国古风。**必须上传同画风参考图**（如已定稿立绘）锁住西方奇幻油画厚涂风。参考图「仅锁画风，不锁人物」。
 2. **3 张参考图并发超时**：豆包并发多张 + 多参考图易超时。稳定配置 = `fast 模式 + 1K + 单参考图`。
 3. **同色系撞脸**：杰和见都是暖色系（金发琥珀眼 / 黑发栗色眼），脸模极容易撞。**出图前先查「发色/眼色矩阵」，用负面词排除近似色**。
 4. **带大参考图(>1MB) + b64_json 响应 → 超时**：参考图 base64 上传 + b64 响应回传双重慢，110s 内拿不到结果。**优化方案**：① 改用 `response_format: url`（响应只返回下载链接，体积小）② 参考图压到 512px jpeg ③ 复杂场景可先用纯文生图快速出图（14s），人物硬特征靠提示词写死。
 5. **背景图双 key 不统一**：prologue.js 存在 `bg/tower_interior_hall` 和 `bg/tower_lobby` 指同一大厅场景。BackgroundLayer 用 `REAL_BG_MAP` 映射，多 key 指向同一张图。**新增背景时先 grep 确认 key 是否唯一。**
+6. **`image` 参数传裸 base64 → 400 invalid url（BUG-52）**：Seedream 的 `image` 参数只接受 **data URI 格式**（`data:image/jpeg;base64,...`）或 URL，不接受裸 base64 字符串。公共模块 `img_to_data_uri()` 已自动处理。
+7. **负面词定义了但 body 漏字段**：旧 Python 脚本（gen_dean/tian/xing_base.py、gen_expressions.py）定义了 `negative` 变量，但构造的 body 里没有 `negative_prompt` 字段——**负面词从未发送给 API**。公共模块 `call_seedream()` 强制传 `negative_prompt`，已修复。新脚本禁用旧脚本模式。
+8. **`size` 参数用显式像素格式**：用 `'1K'`/`'2K'` 简写，不要用 `'1024x1024'`/`'832x1216'` 等显式像素（部分格式不被识别）。
+9. **TOS 下载域名偶发超时**：Seedream 响应成功但下载返回的 url 时偶发超时（网络波动）。下载环节必须加 3 次重试（公共模块 `download_image()` 已封装）。
+10. **Seedream 不支持透明背景**：实测四角 Alpha 全 255，无法通过提示词生成透明背景。必须出纯色背景图 → 用 rembg（u2net，CPU 0.2-0.3s/张）抠图 → 透明 PNG 入库。公共模块 `remove_bg_and_normalize()` 已封装抠图+缩放+居中。
 
 ---
 
@@ -230,6 +243,45 @@ const buf = await img.getBuffer('image/jpeg', { quality: 85 });  // jpeg q85
 
 ---
 
+## 纪律七：脚本复用与配方库（强制）
+
+> 禁止「复制上一个能跑的脚本改提示词」。所有生图/抠图脚本必须引用公共模块。
+
+### 公共模块
+
+| 模块 | 路径 | 核心函数 |
+|------|------|---------|
+| Seedream 生图 | `.ai/scripts/lib/seedream_client.py` | `call_seedream()` / `img_to_data_uri()` / `download_image()` |
+| rembg 抠图 | `.ai/scripts/lib/rembg_client.py` | `remove_bg_and_normalize()` / `remove_bg()` / `trim_to_canvas()` |
+
+公共模块内部已封装所有稳定配置（data URI 转换、负面词强制传、fast 模式、url 响应、下载重试、832×1216 缩放居中），**调用方不需要也不应该重复设置这些参数**。
+
+### 脚本索引
+
+完整脚本清单见 `.ai/scripts/README.md`，按用途分类：
+- **生图脚本**（gen_*.py）：脸模 / 基准立绘 / 表情差分 / 场景图 / 地图
+- **抠图脚本**（batch_rembg*、rembg-*）：rembg 抠图 + 入库
+- **入库脚本**（replace_portraits.py）：立绘替换 + 一张映射多目标
+
+### 新增脚本规则
+
+1. **必须引用公共模块**，顶部加：
+   ```python
+   import sys, os
+   sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lib'))
+   from seedream_client import call_seedream
+   ```
+2. **禁止复制粘贴** `img_to_b64`、`.env 读取`、`requests.post` 模板——这些已在公共模块收口
+3. **脚本只写三样东西**：提示词（prompt + negative）、参考图路径、调用 `call_seedream()` / `remove_bg_and_normalize()`
+4. 脚本放在 `.ai/scripts/` 下（已 gitignore，不入库），命名 `gen_<角色>_<用途>.py`
+5. 完成后在 `.ai/scripts/README.md` 索引表补一行
+
+### 旧脚本处理
+
+旧脚本（gen_dean/tian/xing_base.py 等）是历史产出，已成功生成入库图片，**不修改**。但存在已知 bug（负面词未传 API），**新脚本禁用旧模式**。
+
+---
+
 ## 强制工作流
 
 ### 阶段一：出脸模（形象设计 → face）
@@ -245,9 +297,11 @@ const buf = await img.getBuffer('image/jpeg', { quality: 85 });  // jpeg q85
 
 #### Step 4：选参考图（锁画风）
 上传已定稿立绘作画风参考（仅锁画风）。确认参考图与新角色发色差异大（防带偏）。
+> **对应脚本**：`lib/seedream_client.py` 的 `img_to_data_uri()` 自动压缩参考图
 
-#### Step 5：生图 → 存过程文件
+#### Step 5：生图 -> 存过程文件
 存到 `.ai/seedream-test/<角色>/`（不入库）。命名 `face_v1_01.png`。**带背景原图必须留存。**
+> **对应脚本**：新建 `gen_<角色>_face.py`，引用 `lib/seedream_client.call_seedream()`。参考 `gen-ban-face.py`
 
 #### Step 6：院长确认合格
 展示图片，逐项核对硬特征命中情况。**院长说"合格"才整理入库。**
@@ -255,26 +309,30 @@ const buf = await img.getBuffer('image/jpeg', { quality: 85 });  // jpeg q85
 #### Step 7：脸模入库
 复制到 `prd/.../美术资产/<角色>/face_v1_01.png`，同步更新 README 清单。
 
-### 阶段二：出立绘（脸模 → full + expr）
+### 阶段二：出立绘（脸模 -> full + expr）
 
 #### Step 8：以脸模为参考出基准立绘
 - 参考图：`face_v1_01.png`（锁面部）+ 画风参考图
 - 提示词：在面部特征基础上补全身服装 + 构图（832×1216 竖版全身）+ 默认表情
 - 产物：`full_v1_01.png`（= 默认表情）
+> **对应脚本**：新建 `gen_<角色>_base.py`，引用 `lib/seedream_client.call_seedream(image_refs=[脸模, 画风参考])`。参考 `gen_tian_base.py`（双参考图写法）
 
-#### Step 9：院长确认服饰 → 锁定
+#### Step 9：院长确认服饰 -> 锁定
 **服饰须经院长过目确认**（AGENTS.md 立绘纪律第 3 条）。确认后该服饰锁定，后续表情差分基于此。
 
 #### Step 10：以基准立绘为参考出表情差分
 - 参考图：`face_v1_01.png` + `full_v1_01.png`（脸模 + 服装双参考）
 - 提示词：仅改表情/动作描述，服装描述不变
 - 产物：`expr_<情绪>_v1_01.png`
+> **对应脚本**：新建 `gen_<角色>_expr.py`，引用 `lib/seedream_client.call_seedream(image_refs=[脸模, 基准立绘])`。参考 `gen_expressions.py`（注意旧脚本负面词未传，新脚本用公共模块已修复）
 
 #### Step 11：rembg 抠图
 Seedream 不支持透明背景，用 rembg 抠图（本地方案，CPU 0.2-0.3s/张）。带背景原图留存 `.ai/seedream-test/`。
+> **对应脚本**：`lib/rembg_client.py` 的 `remove_bg_and_normalize()`（一键抠图+缩放832×1216+居中）。参考 `batch_rembg_final.py`
 
 #### Step 12：立绘入库 + 同步运行时
 - 成品备份：`prd/.../美术资产/<角色>/full_v1_01.png` + `expr_*.png`
 - 运行时：`public/visualnovel/portraits/<角色>/<情绪>.png`（如 `dean/calm.png`）
 - **两边保持一致**（md5 校验）
 - 更新 README + 提交 git
+> **对应脚本**：`replace_portraits.py`（一张图映射多目标，如 normal==smile 副本）

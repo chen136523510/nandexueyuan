@@ -27,6 +27,7 @@
 | 见（院长） | `院长/full_v1_01.png`（calm 沉稳冷静） | gentle / serious / calm | `public/visualnovel/portraits/dean/` |
 | 幸 | `幸/full_v1_01.png`（smile 职业微笑，军装制服） | smile / observe / pleased / cold | `public/visualnovel/portraits/xing/` |
 | 添 | `添/full_v1_01.png`（normal） | — | `public/visualnovel/portraits/tian/` |
+| 班 | `班/full_normal_v1_01.png`（normal 玩世不恭） | serious（归途报信·笑意收尽） | `public/visualnovel/portraits/ban/` |
 
 > 表情差分命名：`expr_{情绪}_v1_01.png`。生成方式：Seedream 脸模 + 服装双参考图，仅改表情描述词。
 > 幸的军装穿搭以场景背景图 `tower_outdoor_mist` 为准（深蓝军装 + 金肩章 + 勋章 + 棕皮带）。

@@ -116,6 +116,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     return currentNode.value?.hotspots || []
   })
 
+  // 地图演出高亮（dialogue 节点的 mapHighlight 字段，值为 locations.js 的地点 key）
+  // 有值时 MapPanel 自动弹出并高亮该地点，null 时自动收起
+  const currentMapHighlight = computed(() => {
+    return currentNode.value?.mapHighlight || null
+  })
+
   // 玩家名称（从剧情变量取，默认"漂泊者"）
   const playerName = computed(() => {
     return storyVariables.value.playerName || '漂泊者'
@@ -179,12 +185,31 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         stage.value = Array.isArray(data.stage)
           ? data.stage.map(c => ({ ...c }))
           : []
-        // 加载存档对应章节（旧存档无 chapter 字段则保持已加载的序章）
+
+        // 容错：存档的章节可能跟当前加载的 prologue 不同（如上次玩到第一章）
+        let effectiveChapter = 'prologue' // 实际加载的章节（用于日志和提示）
         if (data.chapter && data.chapter !== 'prologue') {
-          await loadChapter(data.chapter)
+          const chapterLoaded = await loadChapter(data.chapter)
+          if (chapterLoaded) {
+            currentChapter.value = data.chapter
+            effectiveChapter = data.chapter
+          } else {
+            // 章节加载失败（被删/重命名），留在 prologue
+            console.warn(`[VisualNovelStore] 存档章节 ${data.chapter} 不存在，回退到 prologue`)
+          }
         }
-        goToNode(data.node)
-        autoLoaded = true
+
+        // 安全解析节点（存档节点可能在新版中被删/改名，增量更新容错）
+        if (currentIndex.value) {
+          const safeNode = resolveNodeSafe(currentIndex.value, data.node, effectiveChapter)
+          if (safeNode) {
+            goToNode(safeNode)
+            if (safeNode !== data.node) {
+              showNotice('剧本已更新，已从本章开头继续')
+            }
+            autoLoaded = true
+          }
+        }
       } catch (e) {
         // 404 无自动存档，走从头开始
       }
@@ -300,6 +325,25 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     // 三者都没有：stage 延续不变
   }
 
+  // ===== 节点安全解析（增量更新容错核心） =====
+
+  /**
+   * 安全解析存档节点：找不到时回退到章节起始节点
+   *
+   * 增量更新场景：用户存档里的 nodeId 在新版剧本中被删/改名，
+   * goToNode 直接跳会白屏卡死。此函数检测到节点不存在时回退到章节起始。
+   *
+   * @param {Map} index - 章节节点索引
+   * @param {string} nodeId - 存档里的节点 id
+   * @param {string} chapterId - 章节名（仅用于日志）
+   * @returns {string|null} 可用的节点 id，或 null（章节为空）
+   */
+  function resolveNodeSafe(index, nodeId, chapterId) {
+    if (nodeId && getNode(index, nodeId)) return nodeId
+    console.warn(`[VisualNovelStore] 存档节点 ${nodeId} 不存在于章节 ${chapterId}，回退到起始节点`)
+    return index.keys().next().value || null
+  }
+
   /**
    * 跳转到指定节点（核心方法）
    * 处理 event/condition 的自动跳转链
@@ -308,7 +352,10 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     if (!nodeId || !currentIndex.value) return
     const node = getNode(currentIndex.value, nodeId)
     if (!node) {
+      // 兜底：正常流程不应触发（resolveNodeSafe 已提前拦截），此处防数据异常
       console.error(`[VisualNovelStore] 节点不存在: ${nodeId}`)
+      isEnded.value = true
+      showNotice('剧本数据异常，请联系管理员')
       return
     }
 
@@ -328,6 +375,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         inventory.value = [...inventory.value, result.grantedItem]
       }
       // 解锁并跳转新章节（event 节点带 unlockChapter 且无 next）
+      // result.unlockedChapter 由 executeEvent 从 node.unlockChapter 提取（见 engine.js）
       if (result.unlockedChapter) {
         const chapterId = result.unlockedChapter
         if (!unlockedChapters.value.includes(chapterId)) {
@@ -628,7 +676,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   }
 
   /**
-   * 从指定槽位读档
+   * 从指定槽位读档（含增量更新容错）
+   *
+   * 容错策略（三层回退）：
+   *   1. 存档节点存在 -> 正常跳转
+   *   2. 存档节点不存在但章节存在 -> 回退到章节起始节点 + 轻提示
+   *   3. 章节也不存在（被删/重命名）-> 回退到最新已解锁章节起始 + 轻提示
    */
   async function loadFromSlot(slot) {
     try {
@@ -646,9 +699,43 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         : []
 
       // 重新加载章节
-      await loadChapter(data.chapter)
-      // 跳转到存档节点
-      goToNode(data.node)
+      const loaded = await loadChapter(data.chapter)
+      if (loaded && currentIndex.value) {
+        // 章节加载成功：安全解析节点（第一层容错）
+        const safeNode = resolveNodeSafe(currentIndex.value, data.node, data.chapter)
+        if (safeNode) {
+          stage.value = [] // 读档时由 goToNode 重新推导舞台
+          goToNode(safeNode)
+          if (safeNode !== data.node) {
+            showNotice('剧本已更新，已从本章开头继续')
+          }
+        } else {
+          isEnded.value = true
+        }
+      } else {
+        // 章节加载失败（被删/重命名）：回退到最新已解锁章节（第二层容错）
+        const fallbackChapter = [...unlockedChapters.value].reverse()
+          .find(id => CHAPTER_LOADERS[id])
+        if (fallbackChapter && fallbackChapter !== data.chapter) {
+          console.warn(`[VisualNovelStore] 章节 ${data.chapter} 不存在，回退到 ${fallbackChapter}`)
+          currentChapter.value = fallbackChapter
+          const fallbackLoaded = await loadChapter(fallbackChapter)
+          if (fallbackLoaded && currentIndex.value) {
+            stage.value = []
+            const startNode = currentIndex.value.keys().next().value
+            if (startNode) {
+              goToNode(startNode)
+              showNotice('剧本已更新，已从最近章节继续')
+            } else {
+              isEnded.value = true
+            }
+          } else {
+            isEnded.value = true
+          }
+        } else {
+          isEnded.value = true
+        }
+      }
       return true
     } catch (err) {
       console.error('[VisualNovelStore] 读档失败:', err)
@@ -745,6 +832,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     isTyping, fullText, displayedText,
     activePanel, hideUI, isEnded, isLoading, preloadProgress, triggeredCG, noticeMessage,
     currentCharacters, currentSpeaker, currentBackground, currentBGM, currentHotspots,
+    currentMapHighlight,
     playerName,
     textSpeed, autoMode, autoDelay,
     // 方法
