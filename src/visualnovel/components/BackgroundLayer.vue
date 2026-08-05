@@ -27,8 +27,7 @@ const REAL_BG_MAP = {
   'bg/tower_room_morning': null,    // 第一章开场：二楼房间·晨光
   'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
   'bg/ban_corridor_moon': null,     // CG：班走廊看月亮（带人物的特殊背景图）
-  // 注意：bg/grassland_morning 未列入 REAL_BG_MAP（文件待黑机出图）
-  // 走 BG_FALLBACK 的 CSS 渐变占位，出图后再加入此表
+  'bg/grassland_morning': null,     // 幕间结尾：清晨草原（tower_outdoor_mist 无人版）
 }
 
 // 背景资源映射（PoC 阶段用 CSS 渐变占位，后续替换为真实图片）
