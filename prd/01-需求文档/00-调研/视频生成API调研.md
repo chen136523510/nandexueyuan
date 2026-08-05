@@ -1,9 +1,9 @@
 # 视频生成 API 调研
 
-> 版本：v4 | 日期：2026-08-05 | 调研人：陈梓键（院长）+ 白机落档
+> 版本：v5 | 日期：2026-08-05 | 调研人：陈梓键（院长）+ 白机落档
 > 状态：📝 调研完成，待决策（是否将视频纳入视觉小说路线图）
 > 关联：ADR-005（德塔世界观承载方式，2D 时期视频候选工具表，已随方向转换搁置）
-> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证 + HuggingFace/ComfyUI/GitHub Issues 实测数据 + 项目美术设计规范（画风定义）+ MiniMax MCP 官方文档全文
+> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证 + HuggingFace/ComfyUI/GitHub Issues 实测数据 + 项目美术设计规范（画风定义）+ MiniMax MCP 官方文档全文 + MiniMax H3 V2 API OpenAPI 原文（6接口）
 
 ---
 
@@ -340,18 +340,18 @@ content[] 可混合传入：
 
 ---
 
-## 六、MiniMax H3 开源模型（本地部署专题）
+## 五、MiniMax H3 开源模型（本地部署专题）
 
 > 来源：HuggingFace 模型卡 + ComfyUI 官方博客 + GitHub Issues 实测 + Wan2GP 低显存框架 + NGA 实测帖
 > 背景：MiniMax 于 2026-07-31 开源 H3，中文社区流传"8G 显存可跑"。院长黑机配置 RTX 4070 12G 显存 + 32G 内存，评估本地部署可行性。
 
-### 6.1 核心结论（先看这个）
+### 5.1 核心结论（先看这个）
 
 **"8G 显存可跑"是营销话术，严重省略前提。** 黑机（4070 12G + 32G）能勉强跑量化版 480p，但**体验差，32G 内存是硬瓶颈**。
 
 "8G 可跑"的出处是低显存优化项目 Wan2GP（`github.com/deepbeepmeep/Wan2GP`），前提是全部满足：用最激进量化 + 模型卸载到系统内存 + 只跑 480p 低分辨率短视频。原版 BF16 根本不可能（DiT 权重就 61GB）。
 
-### 6.2 模型基本信息
+### 5.2 模型基本信息
 
 | 项 | 值 |
 |---|---|
@@ -363,7 +363,7 @@ content[] 可混合传入：
 | 技术报告 | **尚未发布**，官方称 "soon" |
 | 开源协议 | **MiniMax H3 Community License**：允许商用，但年收入超 2000 万美元需单独授权；商用 UI 必须标注 "MiniMax H3"。非 MIT/Apache，属受限商用许可 |
 
-### 6.3 能力
+### 5.3 能力
 
 | 能力 | 支持 | 细节 |
 |------|------|------|
@@ -379,7 +379,7 @@ content[] 可混合传入：
 | 语言 | 11 种稳定（含**中文、日语、韩语**） | 对动漫/视觉小说项目重要 |
 | 动漫风格 | ⚠️ 官方未明确专门支持 | 支持日语，Ref2VA 可注入动漫参考图，但无 live2d/动漫专用模型的开源证据 |
 
-### 6.4 硬件需求真相（重点验证）
+### 5.4 硬件需求真相（重点验证）
 
 **原版 BF16 显存需求**：完整模型总内存占用 **123.6 GB**；ComfyUI 官方优化后最小变体仍需 **42.5 GB**。
 
@@ -404,7 +404,7 @@ content[] 可混合传入：
 
 文本编码器 Qwen3-VL-32B 同样需要量化：BF16=47.97GB / INT8=25.28GB / GGUF Q4_K_M=13.58GB。
 
-### 6.5 黑机可行性评估（RTX 4070 12G + 32G 内存）
+### 5.5 黑机可行性评估（RTX 4070 12G + 32G 内存）
 
 | 维度 | 评估 | 说明 |
 |------|------|------|
@@ -417,7 +417,7 @@ content[] 可混合传入：
 
 **NGA 真实实测**（`bbs.nga.cn` tid=47306216）：4070Ti(16GB) + 32GB RAM，960x544 的 5秒视频约 5 分钟，10秒约 15 分钟。这是 16G 显存的数据，12G 还要更慢。
 
-#### 6.5.1 虚拟内存（页面文件）能补齐内存短板吗 -- 不能（纸上能跑，实际不能用）
+#### 5.5.1 虚拟内存（页面文件）能补齐内存短板吗 -- 不能（纸上能跑，实际不能用）
 
 **原理**：系统内存不够时，Windows 把不活跃内存页换到磁盘页面文件（pagefile）。理论上把虚拟内存设到 100GB+，32G 物理内存也能"不报 OOM"。
 
@@ -432,11 +432,11 @@ content[] 可混合传入：
 
 **结论**：虚拟内存 ≈ 纸上不报错，但无生产价值。验证"能不能跑通"可以设大 pagefile；做正式素材则不可行。
 
-#### 6.5.2 加物理内存的可行性
+#### 5.5.2 加物理内存的可行性
 
 升级到 64G 物理内存（DDR4 32G×2）能让 H3 在 480p 有可用的生产体验。但 **2026 年内存价格高涨，64G DDR4 套条约需近万元**，单为跑 H3 投入产出比极低。短期不值得为视频模型升级硬件。
 
-### 6.6 开源版 vs 闭源 API 的区别
+### 5.7 开源版 vs 闭源 API 的区别
 
 | 模块 | 开源？ | 能力 |
 |------|--------|------|
@@ -446,7 +446,7 @@ content[] 可混合传入：
 
 **开源版能力缩水点**：无 2K、无多镜头编排系统、原生 1080p 目前 OOM。但核心生成能力（768p + 原声 + 全模态参考）完整保留。API 版的 video-01-live2d 类动漫专用能力**未在开源权重中体现**。
 
-### 6.7 闭源 API 定价（2026-08-05 官方确认）
+### 5.6 闭源 API 定价（2026-08-05 官方确认）
 
 > 来源：院长从 MiniMax 官方定价页确认
 
@@ -497,7 +497,7 @@ content[] 可混合传入：
 
 > H3 768P 0.50 元/秒是已确认价格中最便宜的国内厂商，且无充值门槛。Seedance 2.0 具体单价待登录控制台确认，但有 200 元充值门槛。两者取舍：H3 价格透明无门槛，Seedance 复用现有 Key 集成成本更低。
 
-### 6.8 部署方式（黑机主力是 ComfyUI）
+### 5.8 部署方式（黑机主力是 ComfyUI）
 
 - **ComfyUI 原生支持**：PR `Comfy-Org/ComfyUI#15224` 已合并，节点 `EmptyMiniMaxH3LatentAV` / `MiniMaxH3ImageToVideo` / `MiniMaxH3ReferenceToVideo` 等，需 2026-08-03 之后的 ComfyUI 版本
 - **官方 ComfyUI 量化版 + 工作流模板**：`huggingface.co/Comfy-Org/MiniMax-H3`
@@ -506,7 +506,7 @@ content[] 可混合传入：
 - 第三方加速节点：`lihaoyun6/ComfyUI-MiniMaxH3-Cache`、`xmarre/ComfyUI-Spectrum-MiniMax-H3`、`HELIMIADICE/TE-Speed-MiniMaxH3-OSS`
 - 其他部署框架：SGLang（官方推荐）、vLLM-omni、diffusers（PR 进行中）
 
-### 6.9 与竞品对比（开源视频模型）
+### 5.9 与竞品对比（开源视频模型）
 
 | 维度 | **MiniMax H3** | 腾讯 HunyuanVideo | 智谱 CogVideoX |
 |------|----------------|-------------------|----------------|
@@ -518,7 +518,7 @@ content[] 可混合传入：
 | 时长 | 4-15s | 129帧 | 6s/10s |
 | 定位 | **开源能力最全（音视频+全参考），但最重** | 开源质量标杆 | 轻量入门 |
 
-### 6.10 给视觉小说项目的建议
+### 5.10 给视觉小说项目的建议
 
 针对 RTX 4070 12G + 32G 黑机：
 
@@ -527,7 +527,7 @@ content[] 可混合传入：
 3. 本地 ComfyUI 留给已有的生图工作流，不为视频模型分心
 4. 动漫/lora 生态：H3 模型才发布 5 天（截至 2026-08-05），无油画厚涂风相关生态，需长期观察社区；日语支持是加分项
 
-### 6.11 关键 URL
+### 5.11 关键 URL
 
 | 资源 | 地址 |
 |------|------|
@@ -543,17 +543,17 @@ content[] 可混合传入：
 
 ---
 
-## 七、MiniMax MCP（模型上下文协议接入）
+## 六、MiniMax MCP（模型上下文协议接入）
 
 > 来源：MiniMax 开放平台官方文档 `platform.minimaxi.com/docs/guides/mcp-guide`（2026-08-05 读取，28KB 全文）
 
-### 7.1 MCP 是什么
+### 6.1 MCP 是什么
 
 MiniMax 提供官方的 **MCP server**（Python 版 + JS 版），让 Claude Desktop / Cursor / Windsurf / Cherry Studio / OpenAI Agents 等 AI 客户端**直接调用 MiniMax 的多模态能力，无需自己写 API 调用代码**。MCP（Model Context Protocol）是标准化"AI 应用访问工具"的开放协议，类比"AI 领域的 USB-C 接口"。
 
 > ⚠️ 官方文档顶部 Tip：**「推荐使用 MiniMax CLI 替代 MCP，配置更简单、使用更高效」**。MiniMax 正在引导用户从 MCP 迁移到 CLI（`platform.minimaxi.com/docs/token-plan/minimax-cli`）。
 
-### 7.2 10 个工具清单
+### 6.2 10 个工具清单
 
 | 工具 | 能力 | 备注 |
 |------|------|------|
@@ -568,7 +568,7 @@ MiniMax 提供官方的 **MCP server**（Python 版 + JS 版），让 Claude Des
 | `query_video_generation` | 查询异步视频任务状态 | |
 | `text_to_image` | 文生图片 | image-01 / image-01-live |
 
-### 7.3 关键发现：MCP 不支持 H3 ⚠️
+### 6.3 关键发现：MCP 不支持 H3 ⚠️
 
 `generate_video` 工具的 `model` 参数可选值：
 
@@ -580,7 +580,7 @@ MiniMax-Hailuo-02, T2V-01-Director, I2V-01-Director, S2V-01, I2V-01-live, I2V-01
 
 **结论**：如果要用 H3 的多模态参考/2K/有声等核心能力，MCP 不是正确的接入路径，必须直接调 V2 REST API。
 
-### 7.4 MCP 视频工具参数（generate_video）
+### 6.4 MCP 视频工具参数（generate_video）
 
 虽不支持 H3，但旧模型仍可用，记录备用：
 
@@ -593,7 +593,7 @@ MiniMax-Hailuo-02, T2V-01-Director, I2V-01-Director, S2V-01, I2V-01-live, I2V-01
 | `resolution` | 分辨率 | 01 系列不支持设置；02 系列 6s 时 512P/768P/1080P，10s 时 512P/768P |
 | `async_mode` | 异步模式 | true 返回 task_id，配合 query_video_generation 查询 |
 
-### 7.5 接入方式
+### 6.5 接入方式
 
 **Python 版**（`github.com/MiniMax-AI/MiniMax-MCP`）：
 - 通过 `uvx minimax-mcp` 启动
@@ -622,7 +622,7 @@ MiniMax-Hailuo-02, T2V-01-Director, I2V-01-Director, S2V-01, I2V-01-live, I2V-01
 ```
 Cursor / Cherry Studio / Windsurf 配置结构相同。
 
-### 7.6 对项目的价值评估
+### 6.6 对项目的价值评估
 
 | 维度 | 评估 |
 |------|------|
@@ -635,6 +635,215 @@ Cursor / Cherry Studio / Windsurf 配置结构相同。
 | 官方趋势 | 正被 MiniMax CLI 替代 |
 
 **结论**：MCP 对视频生成（尤其 H3）无帮助；但其**语音和音乐工具**对项目 R-024（配音+配乐系统）可能有独立价值，值得在推进音频需求时单独评估。当前视频调研不依赖 MCP。
+
+---
+
+---
+
+## 七、MiniMax H3 V2 API 完整规格（OpenAPI 原文整理）
+
+> 来源：院长 2026-08-05 逐页复制官方 OpenAPI 规格（5 个文件、6 个接口），白机整理落档
+> Base URL：`https://api.minimaxi.com` | 鉴权：`Authorization: Bearer <API_key>`
+> 错误格式：OpenAI 风格（`type:error` + `error.type/message/http_code` + `request_id`）
+> 任务记录窗口：7 天（UTC `[T-7天, T)`），过期返回 `invalid task_id`，视频下载链接有时效需及时转存
+
+### 7.1 六个接口清单
+
+| # | 接口 | 方法 / 路径 | 作用 |
+|---|------|-------------|------|
+| 1 | 创建视频生成任务 | `POST /v2/video_generation` | H3 核心：t2va / i2va(首帧/尾帧/首尾帧) / r2va(多模态参考) |
+| 2 | 查询任务 | `GET /v2/query/video_generation/{task_id}` | 单任务状态与结果 |
+| 3 | 查询任务列表 | `GET /v2/query/video_generation` | 分页 + 过滤（状态/任务ID/模型/类型） |
+| 4 | 取消或删除任务 | `DELETE /v2/video_generation/{task_id}` | queued->取消(不扣费)；succeeded/failed->删记录；running/cancelled->不可操作 |
+| 5 | 创建 H3-Context-IR 任务 | `POST /v2/h3_context_ir` | **只增强 prompt，不生成视频** |
+| 6 | 创建视频再生成任务 | `POST /v2/video_regeneration` | 768P->2K 升级（两种模式） |
+
+### 7.2 核心工作流：Full 2K-Workflow（三段链式）
+
+H3 不是单接口，而是一条**导演级工作流**。完整链路：
+
+```
+H3-Context-IR（增强 prompt）  ->  视频生成（768P）  ->  视频再生成（768P->2K）
+   POST /v2/h3_context_ir       POST /v2/video_generation   POST /v2/video_regeneration
+```
+
+**第一段 · H3-Context-IR**（接口5）：输入简单描述，输出**结构化导演脚本**--带分镜（[Shot 1] [Shot 2]）、运镜（slow push in / medium close-up）、音效（overall_soundscape）、配乐（non_diegetic_music）。文档明确"复杂系统，暂不提供开源实现"。此接口**只返回增强 prompt，不创建视频任务**，需拿到 `content.prompt` 后手动传给视频生成接口。
+
+**第二段 · 视频生成**（接口1）：吃增强后的 prompt + 参考素材，产出 768P 视频（最便宜，0.50元/秒）。
+
+**第三段 · 视频再生成**（接口6）：把 768P 升级到 2K（+0.30元/秒）。
+
+> **对项目的意义**：H3-Context-IR 是被低估的利器。视觉小说的剧本片段（如"幸在塔顶对峙"）扔进去，出来的是带分镜+音效+配乐的完整视频脚本，对做剧情过场动画非常合适。
+
+### 7.3 创建视频生成任务参数（接口1）
+
+```jsonc
+{
+  "model": "MiniMax-H3",              // 必填，当前唯一值
+  "content": [                         // 必填，多模态输入数组
+    { "type": "text", "text": "..." },           // 必须有1个非空text(prompt)，≤7000字符
+    { "type": "image_url", "image_url": {"url": "..."}, "role": "first_frame" },
+    { "type": "image_url", "image_url": {"url": "..."}, "role": "last_frame" },
+    { "type": "image_url", "image_url": {"url": "..."}, "role": "reference_image" },
+    { "type": "video_url",  "video_url":  {"url": "..."}, "role": "reference_video" },
+    { "type": "audio_url",  "audio_url":  {"url": "..."}, "role": "reference_audio" }
+  ],
+  "resolution": "768P",    // 必填，枚举：768P / 2K（无1080P）
+  "duration": 5,           // 必填，枚举：4~15（每秒一档，共12档）
+  "ratio": "16:9",         // 可选，默认adaptive。t2va必填且不能adaptive；i2va恒adaptive
+  "callback_url": "https://...",   // 可选，回调(有challenge验证机制)
+  "aigc_watermark": false           // 可选，默认false
+}
+```
+
+**ratio 可选值**：`adaptive`(默认) / `21:9` / `16:9` / `4:3` / `1:1` / `3:4` / `9:16`
+
+**互斥规则**：图生视频（first_frame / last_frame）与多模态参考（reference_image / reference_video / reference_audio）**不能混用**。
+
+**五种生成场景**：
+
+| 场景 | content 组合 | ratio |
+|------|-------------|-------|
+| 文生视频 t2va | 仅1个 text | 必填具体值，不能 adaptive |
+| 图生-首帧 i2va | text + 1张图(first_frame或不填role) | 恒 adaptive |
+| 图生-尾帧 | text + 1张图(last_frame) | 恒 adaptive |
+| 图生-首尾帧 | text + 2张图(first_frame + last_frame) | 恒 adaptive |
+| 多模态参考 r2va | text + reference_image(≤9) + reference_video(≤3) + reference_audio(≤3) | 可选，默认 adaptive |
+
+**URL 资源引用 3 种方式**：
+- 公网 URL
+- `mm_file://{file_id}`（引用平台已有文件/历史产物）
+- `data:<类型>/<格式>;base64,<Base64>` data URI（注意请求体总大小 ≤64MB，Base64 放大约33%，大文件勿用）
+
+### 7.4 输入媒体限制
+
+| 类型 | 格式 | 单文件 | 尺寸/数量限制 |
+|------|------|--------|---------------|
+| 图片 | JPG/JPEG/PNG/WEBP/HEIC/HEIF | ≤30MB | 宽高[256,5760]px，长宽比[0.4,2.5]，首帧≤1/尾帧≤1/参考图≤9 |
+| 视频 | MP4/MOV（H.264/H.265+AAC/MP3） | ≤50MB | ≤3个，单段[2,15]s总≤15s，宽高[256,5760]px，帧率[23.976,60] |
+| 音频 | WAV/MP3 | ≤15MB | ≤3个，单段[2,15]s总≤15s |
+
+> 请求体总大小 ≤64MB，大文件用公网 URL 或 `mm_file://`，勿用 Base64。
+
+### 7.5 查询任务（接口2）
+
+`GET /v2/query/video_generation/{task_id}`
+
+**任务状态**：`queued`(排队) -> `running`(运行) -> `succeeded`(成功) / `failed`(失败) / `cancelled`(已取消)
+
+**成功响应**（视频生成）：
+```jsonc
+{
+  "task": {
+    "id": "424010985738629",
+    "model": "MiniMax-H3",
+    "status": "succeeded",
+    "created_at": 1785125529,       // Unix秒
+    "updated_at": 1785125946,
+    "content": { "url": "https://...mp4" },  // 限时下载URL，需及时转存
+    "resolution": "2K",
+    "duration": 5,
+    "ratio": "16:9",
+    "usage": { "total_seconds": 5, "input_seconds": 0, "output_seconds": 5, "input_image_count": 0 },
+    "task_type": "generation",      // generation / h3_context_ir / regeneration
+    "modality": "video"             // video / text
+  }
+}
+```
+
+**失败响应**含 `error: { code: "1026", message: "video description contains sensitive content" }`。
+
+**H3-Context-IR 成功响应**不同点：`content.prompt`（增强提示词文本）、`task_type: "h3_context_ir"`、`modality: "text"`、`usage` 为 token 计量（total_tokens/prompt_tokens/completion_tokens）。
+
+### 7.6 查询任务列表（接口3）
+
+`GET /v2/query/video_generation?page_num=1&page_size=20`
+
+**过滤参数**（均可选）：
+- `filter.status`：queued / running / succeeded / failed / cancelled
+- `filter.task_ids`：按任务ID过滤（可多个）
+- `filter.model`：如 `MiniMax-H3`
+- `filter.task_type`：generation / h3_context_ir / regeneration
+
+返回 `{ items: [...], total: 476 }`，items 中每个元素结构同查询任务接口。
+
+### 7.7 取消或删除任务（接口4）
+
+`DELETE /v2/video_generation/{task_id}`
+
+| 任务状态 | 执行操作 | 说明 |
+|----------|----------|------|
+| `queued` | `cancelled` | 取消，尚未处理，无扣费 |
+| `succeeded` / `failed` | `deleted` | 删除任务记录 |
+| `running` | - | 不可操作，返回错误 |
+| `cancelled` | - | 不可操作，返回错误 |
+
+### 7.8 H3-Context-IR（接口5，prompt 增强器）
+
+`POST /v2/h3_context_ir`
+
+**请求参数**：`model` + `content`（同视频生成，多模态输入）+ `duration`（必填）+ `ratio`（可选）+ `callback_url`（可选）。**无 resolution 参数**（不生成视频）。
+
+**输出**：`content.prompt`--一段结构化文本，包含：
+- `integrated_multimodal_description`：分镜描述（[Shot 1] [Shot 2]...，含运镜、角色动作、场景细节）
+- `overall_soundscape`：音效设计
+- `non_diegetic_music`：配乐设计
+
+**示例**（输入"史诗级太空歌剧院线预告：女舰长独自站在巨大观景窗前..."，输出节选）：
+```
+integrated_multimodal_description: [Shot 1] Cinematic, wide shot with a slow push in 
+on a female captain standing center frame with her back to the camera. She has a slender 
+build and short, swept-back silver hair, wearing a crisp, dark navy-blue futuristic 
+military uniform... [Shot 2] At 00:02.800, the camera cuts to a medium close-up...
+overall_soundscape: Deep, resonant low-frequency thrumming of ship engines, overlaid 
+with rhythmic, high-pitched electronic beeps...
+non_diegetic_music: Symphonic orchestral score, beginning with a slow, rising brass 
+and string crescendo that abruptly cuts off...
+```
+
+**计费**：按 token（示例：total_tokens=9090, prompt_tokens=5664, completion_tokens=3426）
+
+### 7.9 视频再生成（接口6，768P->2K）
+
+`POST /v2/video_regeneration`
+
+**两种模式（二选一）**：
+
+| 模式 | 参数 | 说明 |
+|------|------|------|
+| 按任务ID | `source_task_id` | 传已有成功任务的 task_id，需开通白名单，源任务须属于当前账号+succeeded+7天内 |
+| 按源视频 | `content` + `base_video` | content 中含1个 `role=base_video` 的视频项，**且必须原样附上生成768P时的最终prompt+所有素材** |
+
+**base_video 硬约束**：
+- 只能升级**自己生成的 H3 768P 视频**，不是任意视频通用处理
+- 必须含音轨、24fps、宽高能被32整除、面积≤768×1344=1,032,192像素
+- 总帧数 107-362 帧，每档递增 17 帧（约 4-15 秒）
+
+> **成本策略**：先 768P 生成（0.50元/秒）再升 2K（0.30元/秒），合计 0.80元/秒，与直接 2K 生成（0.80元/秒）持平。但两段式可以先在 768P 验收效果，不满意不升 2K，省成本。
+
+### 7.10 与 Seedance 的 V2 级对比
+
+| 维度 | MiniMax H3 V2 | 字节 Seedance 2.0 |
+|------|---------------|-------------------|
+| Base URL | `api.minimaxi.com` | `ark.cn-beijing.volces.com/api/v3` |
+| 鉴权 | Bearer API_key（MiniMax 平台） | API Key（火山引擎，项目已有） |
+| 分辨率 | 768P / 2K（无1080P） | 480p/720p/1080p/4k |
+| 时长 | 4-15秒（每秒一档） | 4-15秒（2.0）/ 4-12秒（1.5） |
+| 多模态参考 | 图≤9 + 视频≤3 + 音频≤3 | 图0-9 + 视频0-3 + 音频0-3（相同） |
+| **prompt 增强器** | ✅ H3-Context-IR（分镜+音效+配乐脚本） | ❌ 无 |
+| 有声视频 | ✅ 原生立体声 | ✅ generate_audio |
+| 尾帧链式 | ❌ 未提及 | ✅ return_last_frame |
+| 样片预览 | ❌ 无 | ✅ draft 模式（1.5 Pro） |
+| 价格 | 768P 0.50元/秒，2K 0.80元/秒 | 待确认（充值200元门槛） |
+| 开通门槛 | 无 | 充值200元 |
+| 联网搜索 | ❌ | ✅ web_search 工具（2.0） |
+| 项目集成成本 | 需新增 MiniMax 服务 + API Key | 复用现有 VOLC_API_KEY |
+
+**选型判断**：
+- **要 prompt 增强（AI导演）** -> H3（Context-IR 独有能力）
+- **要最低集成成本** -> Seedance（复用现有 Key）
+- **要最高分辨率** -> Seedance（4K）
+- **要最低价格+无门槛** -> H3（768P 0.50元/秒，无充值门槛）
 
 ---
 
