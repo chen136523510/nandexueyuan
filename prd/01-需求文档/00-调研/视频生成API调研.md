@@ -1,9 +1,9 @@
 # 视频生成 API 调研
 
-> 版本：v3 | 日期：2026-08-05 | 调研人：陈梓键（院长）+ 白机落档
+> 版本：v4 | 日期：2026-08-05 | 调研人：陈梓键（院长）+ 白机落档
 > 状态：📝 调研完成，待决策（是否将视频纳入视觉小说路线图）
 > 关联：ADR-005（德塔世界观承载方式，2D 时期视频候选工具表，已随方向转换搁置）
-> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证 + HuggingFace/ComfyUI/GitHub Issues 实测数据 + 项目美术设计规范（画风定义）
+> 信息来源：火山方舟《创建视频生成任务》PDF（17页）+ 各厂商官方文档/SDK/第三方聚合平台交叉验证 + HuggingFace/ComfyUI/GitHub Issues 实测数据 + 项目美术设计规范（画风定义）+ MiniMax MCP 官方文档全文
 
 ---
 
@@ -543,7 +543,102 @@ content[] 可混合传入：
 
 ---
 
-## 七、待确认事项
+## 七、MiniMax MCP（模型上下文协议接入）
+
+> 来源：MiniMax 开放平台官方文档 `platform.minimaxi.com/docs/guides/mcp-guide`（2026-08-05 读取，28KB 全文）
+
+### 7.1 MCP 是什么
+
+MiniMax 提供官方的 **MCP server**（Python 版 + JS 版），让 Claude Desktop / Cursor / Windsurf / Cherry Studio / OpenAI Agents 等 AI 客户端**直接调用 MiniMax 的多模态能力，无需自己写 API 调用代码**。MCP（Model Context Protocol）是标准化"AI 应用访问工具"的开放协议，类比"AI 领域的 USB-C 接口"。
+
+> ⚠️ 官方文档顶部 Tip：**「推荐使用 MiniMax CLI 替代 MCP，配置更简单、使用更高效」**。MiniMax 正在引导用户从 MCP 迁移到 CLI（`platform.minimaxi.com/docs/token-plan/minimax-cli`）。
+
+### 7.2 10 个工具清单
+
+| 工具 | 能力 | 备注 |
+|------|------|------|
+| `text_to_audio` | 文本合成语音（TTS） | speech-02-hd 等模型，支持情绪/语速/音调 |
+| `list_voices` | 查询可用音色 | 系统/克隆/生成/音乐 全类型 |
+| `voice_clone` | 克隆音色 | 传音频文件复刻声音 |
+| `voice_design` | 文生音色 | 传描述词生成新音色 |
+| `play_audio` | 播放音频文件 | |
+| `music_generation` | 生成音乐（含人声） | prompt 风格 + lyrics 歌词 |
+| **`generate_video`** | **文/图生视频** | ⚠️ 见 7.3，**不支持 H3** |
+| **`image_to_video`** | **首帧图生视频**（仅 JS 版） | ⚠️ 不支持 H3 |
+| `query_video_generation` | 查询异步视频任务状态 | |
+| `text_to_image` | 文生图片 | image-01 / image-01-live |
+
+### 7.3 关键发现：MCP 不支持 H3 ⚠️
+
+`generate_video` 工具的 `model` 参数可选值：
+
+```
+MiniMax-Hailuo-02, T2V-01-Director, I2V-01-Director, S2V-01, I2V-01-live, I2V-01, T2V-01
+```
+
+**没有 H3**。H3 走的是独立的 **V2 REST API**（`/api-reference/video-generation-v2-create`），支持多模态 content 数组（文本/图片/视频/音频）、2K 直出、多模态参考生视频。这些 V2 能力**不在 MCP 工具覆盖范围内**。
+
+**结论**：如果要用 H3 的多模态参考/2K/有声等核心能力，MCP 不是正确的接入路径，必须直接调 V2 REST API。
+
+### 7.4 MCP 视频工具参数（generate_video）
+
+虽不支持 H3，但旧模型仍可用，记录备用：
+
+| 参数 | 含义 | 说明 |
+|------|------|------|
+| `prompt` | 视频描述 | 最大 2000 字符，与 first_frame_image 至少有一个 |
+| `model` | 模型 | 默认 T2V-01，最强 MiniMax-Hailuo-02 |
+| `first_frame_image` | 首帧图 | Base64 或 URL |
+| `duration` | 时长（秒） | 01 系列固定 6；02 系列 512P/768P 可选 6/10，1080P 仅 6 |
+| `resolution` | 分辨率 | 01 系列不支持设置；02 系列 6s 时 512P/768P/1080P，10s 时 512P/768P |
+| `async_mode` | 异步模式 | true 返回 task_id，配合 query_video_generation 查询 |
+
+### 7.5 接入方式
+
+**Python 版**（`github.com/MiniMax-AI/MiniMax-MCP`）：
+- 通过 `uvx minimax-mcp` 启动
+- 传输方式：stdio（默认，本地）/ SSE（云端推送）
+
+**JS 版**（`github.com/MiniMax-AI/MiniMax-MCP-JS`）：
+- 通过 `npx minimax-mcp-js` 启动
+- 传输方式：stdio / REST / SSE
+
+**客户端配置**（以 Claude Desktop 为例）：
+```jsonc
+{
+  "mcpServers": {
+    "MiniMax": {
+      "command": "uvx",
+      "args": ["minimax-mcp"],
+      "env": {
+        "MINIMAX_API_KEY": "<你的 API Key>",
+        "MINIMAX_MCP_BASE_PATH": "<本地输出目录>",
+        "MINIMAX_API_HOST": "https://api.minimaxi.com",
+        "MINIMAX_API_RESOURCE_MODE": "url"  // url|local
+      }
+    }
+  }
+}
+```
+Cursor / Cherry Studio / Windsurf 配置结构相同。
+
+### 7.6 对项目的价值评估
+
+| 维度 | 评估 |
+|------|------|
+| **视频生成（H3）** | ❌ MCP 不支持 H3，必须用 V2 REST API |
+| **视频生成（旧模型）** | ⚠️ MCP 只支持到 Hailuo-02，能力弱于 H3 |
+| **语音合成 / 音色克隆** | ✅ MCP 覆盖完整，对项目 R-024 配音系统有潜在价值 |
+| **音乐生成** | ✅ 可为视觉小说生成 BGM |
+| **图片生成** | ⚠️ image-01，项目已有 Seedream/Gemini 更强方案 |
+| 接入成本 | 低（一套 API Key + 客户端配置，无代码） |
+| 官方趋势 | 正被 MiniMax CLI 替代 |
+
+**结论**：MCP 对视频生成（尤其 H3）无帮助；但其**语音和音乐工具**对项目 R-024（配音+配乐系统）可能有独立价值，值得在推进音频需求时单独评估。当前视频调研不依赖 MCP。
+
+---
+
+## 八、待确认事项
 
 | 事项 | 说明 |
 |------|------|
@@ -555,3 +650,5 @@ content[] 可混合传入：
 | H3 黑机本地实测 | 32G 内存硬瓶颈，虚拟内存方案不可用（见 6.5.1），64G 内存近万元不划算（见 6.5.2）。短期走闭源 API，本地实测暂搁置 |
 | H3 动漫/lora 生态 | 模型发布仅 5 天（截至 2026-08-05），无动漫专用模型/LoRA，需观察社区发展 |
 | MiniMax API 定价 | ✅ 已确认（6.7节）。768P 0.50元/秒，2K 0.80元/秒，图片5张内免费，无充值门槛 |
+| MiniMax MCP vs V2 API | MCP 不支持 H3（仅到 Hailuo-02），H3 必须走 V2 REST API。MCP 的语音/音乐工具对 R-024 配音系统有独立价值，待推进音频需求时评估 |
+| MiniMax CLI | 官方推荐用 CLI 替代 MCP（`platform.minimaxi.com/docs/token-plan/minimax-cli`），待评估 CLI 是否覆盖 H3 |
