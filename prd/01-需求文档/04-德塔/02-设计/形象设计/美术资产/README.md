@@ -48,7 +48,8 @@
 | `背景图/tower_room_morning.png` | 第一章开场：二楼房间·晨光 |
 | `背景图/tower_corridor_morning.png` | 第一章开场：二楼走廊·晨光 |
 | `背景图/tower_corridor_night.png` | 第二幕衔接段：二楼走廊·夜景（v2 基于 morning 参考生成，布局一致） |
-| `背景图/ban_corridor_moon.png` | CG：班深夜走廊看月亮（带人物特殊背景图，走廊夜景+班脸模双参考生成） |
+| `背景图/ban_corridor_moon.png` | CG-1：班走廊看月亮（v2 重做，坐窗边床沿，保留楼梯，走廊夜景+班脸模+服装三参考） |
+| `背景图/ban_closeup_moon.png` | CG-2：班近景特写（坐木椅靠床边，忧郁眼神，月光洒脸，竖图） |
 | `背景图/grassland_morning.png` | 幕间结尾：清晨草原无人版（tower_outdoor_mist 同构图去人物） |
 | `背景图/bridge_checkpoint.png` | 第一幕·帝桥哨卡（v2 阴天版，已被 wide/close 取代） |
 | `背景图/bridge_wide.png` | 第一幕·帝桥特写远景（晴天，宏大拱门全貌，海对岸不可见） |

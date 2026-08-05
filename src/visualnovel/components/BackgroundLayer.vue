@@ -26,7 +26,8 @@ const REAL_BG_MAP = {
   'bg/tower_room_night': null,      // 序章睡觉过渡：二楼房间·夜晚（v2 基于 morning 参考生成）
   'bg/tower_room_morning': null,    // 第一章开场：二楼房间·晨光
   'bg/tower_corridor_morning': null,// 第一章开场：二楼走廊·晨光
-  'bg/ban_corridor_moon': null,     // CG：班走廊看月亮（带人物的特殊背景图）
+  'bg/ban_corridor_moon': null,     // CG-1：班走廊看月亮（v2 重做，坐窗边床沿）
+  'bg/ban_closeup_moon': null,     // CG-2：班近景特写（坐椅靠床边，月光洒脸）
   'bg/grassland_morning': null,     // 幕间结尾：清晨草原（tower_outdoor_mist 无人版）
   'bg/bridge_checkpoint': null,    // 第一幕·帝桥哨卡（旧版，v2 阴天）
   'bg/bridge_wide': null,          // 第一幕·帝桥特写远景（晴天全貌）
