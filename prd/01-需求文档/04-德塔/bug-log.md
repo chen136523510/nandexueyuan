@@ -6,6 +6,18 @@
 
 ## 2026-08-05（黑机 UI修复+背景图一致性重做）
 
+### BUG-57：grassland_morning 误列 REAL_BG_MAP 导致幕间结尾背景空白
+
+- **发现时间**：2026-08-05（黑机实测第一章 b14 节点）
+- **环境**：Vite dev + 生产构建
+- **现象**：第一章幕间结尾节点 `ch1_hall_b14` 背景为空（broken url）。DOM 检查 `.bg-image.bg-current` 的 backgroundImage 指向 `url("/visualnovel/bg/grassland_morning.png")`，但该文件不存在（Image onerror），背景渲染为空白
+- **根因**：白机提交 628e791（BackgroundLayer 新增 grassland_morning 映射）将 `grassland_morning` 列入 `REAL_BG_MAP`（值为 null），但实际 png 文件未生成（待黑机出图）。`getBgStyle()` 逻辑：key 在 REAL_BG_MAP 中 → 走真实图片路径返回 `url(...)`，不会回退到 `BG_FALLBACK` 的 CSS 渐变。导致指向不存在的文件
+- **修复**：从 `REAL_BG_MAP` 删除 `grassland_morning` 条目。key 不在 REAL_BG_MAP 中时，`getBgStyle()` 自动走 `BG_FALLBACK['bg/grassland_morning']` 返回 CSS 渐变占位（亮绿暖色）。待黑机出图后再加入 REAL_BG_MAP
+- **验证**：浏览器实测 b14 节点 backgroundImage 从 `url(...)` 变为 `linear-gradient(rgb(138,138,106) → rgb(90,90,58))`
+- **文件**：`src/visualnovel/components/BackgroundLayer.vue`
+- **状态**：✅ 已修复（commit `e015fc8`），真实背景图待黑机出图
+- **教训**：待出图的 key 不要放进 REAL_BG_MAP（会被当成"有真实图"），只在 BG_FALLBACK 里做 CSS 渐变占位。出图后再从 BG_FALLBACK 移入 REAL_BG_MAP
+
 ### BUG-56：新背景图未显示，回退 CSS 渐变占位（Vite HMR 缓存）
 
 - **发现时间**：2026-08-05（院长反馈房间场景看不到背景图）
