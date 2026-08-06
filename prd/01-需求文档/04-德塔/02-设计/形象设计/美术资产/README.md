@@ -24,13 +24,15 @@
 
 | 角色 | 基准全身立绘 | 表情差分 | 运行时目录 |
 |------|-------------|---------|-----------|
-| 见（院长） | `院长/full_v1_01.png`（calm 沉稳冷静） | gentle / serious / calm | `public/visualnovel/portraits/dean/` |
+| 见（院长） | `院长/full_v1_01.png`（calm 沉稳冷静） | gentle / serious / calm / cup（场景B端杯姿态） | `public/visualnovel/portraits/dean/` |
 | 幸 | `幸/full_v1_01.png`（smile 职业微笑，军装制服） | smile / observe / pleased / cold | `public/visualnovel/portraits/xing/` |
-| 添 | `添/full_v1_01.png`（normal） | — | `public/visualnovel/portraits/tian/` |
+| 添 | `添/full_v1_01.png`（normal） | - | `public/visualnovel/portraits/tian/` |
 | 班 | `班/full_normal_v1_01.png`（normal 玩世不恭） | serious（归途报信·笑意收尽） | `public/visualnovel/portraits/ban/` |
+| 恪 | `恪/full_v1_01.png`（normal 无表情·帝国军装） | - | `public/visualnovel/portraits/ke/` |
 
 > 表情差分命名：`expr_{情绪}_v1_01.png`。生成方式：Seedream 脸模 + 服装双参考图，仅改表情描述词。
 > 幸的军装穿搭以场景背景图 `tower_outdoor_mist` 为准（深蓝军装 + 金肩章 + 勋章 + 棕皮带）。
+> 恪的军装以 `帝国军装/imperial_uniform_v1_01.png` 设计稿为准（深灰蓝双排扣 + 金色肩章/袖口/腰带扣 + 白皮带 + 大檐帽 + 黑长靴）。
 
 ### 背景图
 
@@ -54,6 +56,11 @@
 | `背景图/bridge_checkpoint.png` | 第一幕·帝桥哨卡（v2 阴天版，已被 wide/close 取代） |
 | `背景图/bridge_wide.png` | 第一幕·帝桥特写远景（晴天，宏大拱门全貌，海对岸不可见） |
 | `背景图/bridge_close.png` | 第一幕·哨卡近景（晴天，石砌哨卡+帝国旗帜，远景见拱门，摆立绘用） |
+| `背景图/village_entrance.png` | 第一幕场景B·草原村口（土路+发文书台+排队村民剪影+官员身后魔法师，灰白阴天） |
+| `背景图/grassland_road.png` | 第一幕·回程草原路（无人物，枯黄草原+远处帝桥轮廓，萧瑟灰白，摆立绘用） |
+| `背景图/negotiation_standoff.png` | 第二幕·谈判全景·对峙（四角色入画，班靠墙闭目） |
+| `背景图/negotiation_xing_look.png` | 第二幕·谈判全景·幸看玩家 |
+| `背景图/negotiation_dean_look.png` | 第二幕·谈判全景·见看玩家 |
 
 > 运行时目录：`public/visualnovel/bg/`。背景图为 16:9 宽屏，立绘为 832×1216 竖版。
 >
@@ -75,14 +82,15 @@
 | 添 | `添/face_v1_01.png` | 黑色短发 | — | 接地气大哥、络腮胡 | Seedream Pro |
 | 丘 | `丘/face_v1_01.png`（初版锁定）/ `丘/face_v2_01.png`（✅定版，换五官+更坚毅） | 黑发 | — | 嫉恶如仇、游侠、坚毅 | Seedream Pro |
 | 班 | `班/face_v1_01.png` | 黑发中分 | 黑瞳 | 坚毅果敢、对内调皮对外狠辣 | Seedream Pro |
+| 恪 | -（无独立脸模，以 `恪/full_v1_01.png` 立绘为基准） | 深棕色板寸 | 深灰 | 35岁、身形挺直、面无表情、秩序执行者 | Seedream Pro |
 
-> 10 角色脸模图全部入库。各角色文件夹内附对应 `形象设计.md`，作为后续立绘/表情差分的硬特征来源。
+> 10 角色脸模图全部入库 + 恪以立绘为基准（暂无独立脸模，后续表情差分时从立绘提取）。各角色文件夹内附对应 `形象设计.md`，作为后续立绘/表情差分的硬特征来源。
 
 ## 辨识度设计
 
-8 个角色的发色/眼色/气质经过专门区分，避免脸模撞脸：
+角色的发色/眼色/气质经过专门区分，避免脸模撞脸：
 
-- **发色矩阵**：金（杰）/ 纯黑（幸）/ 深蓝（荣·汪神，用发型与性别区分）/ 黑微卷（见）/ 银灰（睿）/ 白（沐阳）/ 黑短发（添）
+- **发色矩阵**：金（杰）/ 纯黑（幸）/ 深蓝（荣·汪神，用发型与性别区分）/ 黑微卷（见）/ 银灰（睿）/ 白（沐阳）/ 黑短发（添）/ 深棕板寸（恪）
 - **眼色矩阵**：琥珀（杰）/ 深灰蓝（幸）/ 红（荣）/ 栗（见）/ 灰（睿）
 - **气质反差**：杰狂傲 vs 见沉稳；睿帝王 vs 添接地气；荣冷厉 vs 幸精致
 
