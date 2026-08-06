@@ -47,6 +47,7 @@ const BG_FALLBACK = {
   'bg/tower_room_morning': 'linear-gradient(180deg, #3a3528 0%, #2a2418 60%, #1f1a10 100%)',   // 房间·晨光：暖亮
   'bg/tower_corridor_morning': 'linear-gradient(180deg, #3a3a30 0%, #28281e 100%)',             // 走廊·晨光：中性暖
   'bg/grassland_morning': 'linear-gradient(180deg, #8a8a6a 0%, #5a5a3a 100%)',                  // 清晨草原：亮绿暖（占位）
+  'bg/village_gate': 'linear-gradient(180deg, #7a6a55 0%, #4a3f30 100%)',                       // 草原村口：土路灰白天色（占位，第一幕场景B，待黑机出图）
 }
 
 watch(

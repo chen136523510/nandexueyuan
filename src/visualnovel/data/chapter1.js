@@ -8,7 +8,8 @@
  * 当前已实现：
  *   - 开场·醒来（二楼房间 -> 走廊 -> 下楼选择 -> 幕间）
  *   - 幕间·德塔日常（工作台起哄 -> 轻选项 -> 见下楼 -> 帝桥情报+地图演出 -> 见拍板 -> 幕间结束）
- * 后续待开发：第一幕·帝桥 / 第二幕·风从北方来 / 第三幕·东来的信 / 第四幕·东边的刀
+ *   - 第一幕·帝桥（出发过渡 -> 帝桥哨卡盘查 -> 核心选择①三分支 -> 草原村口 -> 回程）
+ * 后续待开发：第二幕·风从北方来 / 第三幕·东来的信 / 第四幕·东边的刀
  *
  * 节点 id 前缀：ch1_
  * 剧本来源：prd/01-需求文档/04-德塔/02-设计/剧情设计/第一章-三线剧变.md
@@ -314,15 +315,433 @@ export default [
   {
     id: 'ch1_hall_b14',
     type: 'dialogue',
-    background: 'bg/grassland_morning',  // 清晨草原（tower_outdoor_mist 无人版，待黑机出图）
+    background: 'bg/grassland_morning',  // 清晨草原（tower_outdoor_mist 无人版，黑机已出图）
     speaker: '旁白',
-    next: 'ch1_interlude_end'
+    next: 'ch1_bridge_out_1'  // 无缝衔接第一幕·帝桥
   },
 
-  // ===== 幕间结束（衔接第一幕·帝桥） =====
+  // ================================================================
+  // 第一幕·帝桥（剧本第240-419行）
+  // ================================================================
+  //
+  // 舞台调度（剧本第245-259行）：
+  //   场景A·帝桥边境：添(左·玩家同行)  老人·孙子(中·被拦)  恪(右·哨卡前)，玩家视角(中)
+  //   场景B·草原村口：添·玩家(左·旁观位)  老妇人(中·接文书)  帝国官员(右·文书台)
+  //   恪/商贩/老人/老妇人/帝国官员 全部无立绘（对话框+角色名），恪立绘 P1 待黑机出图
+  //   添全程同行（第一幕唯一在场立绘角色）
+
+  // ===== 出发过渡（清晨草原，正式背景「出发·草原路」P2 待出图，暂用 grassland_morning） =====
   {
-    id: 'ch1_interlude_end',
+    id: 'ch1_bridge_out_1',
+    type: 'dialogue',
+    background: 'bg/grassland_morning',
+    // 跨场景：绝对声明重置舞台（幕间班/见留在塔楼，第一幕只有添同行）
+    characters: [{ id: 'tian', portrait: 'tian/normal', position: 'left' }],
+    speaker: '旁白',
+    next: 'ch1_bridge_out_2'
+  },
+  {
+    id: 'ch1_bridge_out_2',
+    type: 'dialogue',
+    background: 'bg/grassland_morning',
+    speaker: '添',
+    next: 'ch1_bridge_out_3'
+  },
+  {
+    id: 'ch1_bridge_out_3',
+    type: 'dialogue',
+    background: 'bg/grassland_morning',
+    speaker: '旁白',
+    next: 'ch1_bridge_a1'
+  },
+
+  // ===== 场景A·帝桥边境（远景：bridge_wide，介绍大桥） =====
+  {
+    id: 'ch1_bridge_a1',
+    type: 'dialogue',
+    background: 'bg/bridge_wide',  // 帝桥远景特写（晴天全貌）
+    speaker: '旁白',
+    next: 'ch1_bridge_a2'
+  },
+  {
+    id: 'ch1_bridge_a2',
+    type: 'dialogue',
+    background: 'bg/bridge_wide',
+    speaker: '添',
+    next: 'ch1_bridge_a3'
+  },
+  {
+    id: 'ch1_bridge_a3',
+    type: 'dialogue',
+    background: 'bg/bridge_wide',
+    speaker: '添',
+    next: 'ch1_bridge_a4'
+  },
+
+  // ===== 场景A·帝桥哨卡（近景：bridge_checkpoint，盘查开始） =====
+  {
+    id: 'ch1_bridge_a4',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',  // 帝桥哨卡：哨卡+大河+大桥
+    speaker: '旁白',
+    next: 'ch1_bridge_a5'
+  },
+  {
+    id: 'ch1_bridge_a5',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_a6'
+  },
+  {
+    id: 'ch1_bridge_a6',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '商贩',
+    next: 'ch1_bridge_a7'
+  },
+  {
+    id: 'ch1_bridge_a7',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_a8'
+  },
+  {
+    id: 'ch1_bridge_a8',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_bridge_a9'
+  },
+  {
+    id: 'ch1_bridge_a9',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_a10'
+  },
+  {
+    id: 'ch1_bridge_a10',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_a11'
+  },
+  {
+    id: 'ch1_bridge_a11',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '老人',
+    next: 'ch1_bridge_a12'
+  },
+  {
+    id: 'ch1_bridge_a12',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_a13'
+  },
+  {
+    id: 'ch1_bridge_a13',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_a14'
+  },
+  {
+    id: 'ch1_bridge_a14',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_bridge_choice'
+  },
+
+  // ===== 核心选择①（三分支，先记录选择再走分支） =====
+  // 变量 bridge_choice: 'guarantee'|'help'|'watch'，第二幕幸来访按此回响（剧本第557行）
+  {
+    id: 'ch1_bridge_choice',
+    type: 'choice',
+    background: 'bg/bridge_checkpoint',
+    choices: [
+      { impact: 'critical', next: 'ch1_bridge_g_set' },  // A. 我担保他，出了事算学院的！
+      { impact: 'critical', next: 'ch1_bridge_h_set' },  // B. 军爷，孩子病着，通融通融呗
+      { impact: 'critical', next: 'ch1_bridge_w_set' },  // C. （站着不动，看事态）
+    ],
+  },
+  // -- 分支入口：记录选择变量 --
+  {
+    id: 'ch1_bridge_g_set',
+    type: 'event',
+    background: 'bg/bridge_checkpoint',
+    setVariables: { bridge_choice: 'guarantee' },
+    next: 'ch1_bridge_g_cond'
+  },
+  {
+    id: 'ch1_bridge_h_set',
+    type: 'event',
+    background: 'bg/bridge_checkpoint',
+    setVariables: { bridge_choice: 'help' },
+    next: 'ch1_bridge_h1'
+  },
+  {
+    id: 'ch1_bridge_w_set',
+    type: 'event',
+    background: 'bg/bridge_checkpoint',
+    setVariables: { bridge_choice: 'watch' },
+    next: 'ch1_bridge_w1'
+  },
+
+  // ----- 分支A：担保（按是否持有睿帝令走 condition） -----
+  {
+    id: 'ch1_bridge_g_cond',
+    type: 'condition',
+    background: 'bg/bridge_checkpoint',
+    branches: [
+      { if: { variables: { agreed_to_rui: true } }, next: 'ch1_bridge_g_yes_1' },  // 有令牌：亮令牌放行
+      { else: true, next: 'ch1_bridge_g_no_1' },  // 无令牌：被拒但被记住
+    ],
+  },
+  // -- 有令牌（台词18-24） --
+  {
+    id: 'ch1_bridge_g_yes_1',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '玩家',
+    next: 'ch1_bridge_g_yes_2'
+  },
+  {
+    id: 'ch1_bridge_g_yes_2',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_g_yes_3'
+  },
+  {
+    id: 'ch1_bridge_g_yes_3',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_g_yes_4'
+  },
+  {
+    id: 'ch1_bridge_g_yes_4',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_g_yes_5'
+  },
+  {
+    id: 'ch1_bridge_g_yes_5',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_g_yes_6'
+  },
+  {
+    id: 'ch1_bridge_g_yes_6',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_bridge_g_yes_7'
+  },
+  {
+    id: 'ch1_bridge_g_yes_7',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_village_b1'
+  },
+  // -- 无令牌（台词25-31） --
+  {
+    id: 'ch1_bridge_g_no_1',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '玩家',
+    next: 'ch1_bridge_g_no_2'
+  },
+  {
+    id: 'ch1_bridge_g_no_2',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_g_no_3'
+  },
+  {
+    id: 'ch1_bridge_g_no_3',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_g_no_4'
+  },
+  {
+    id: 'ch1_bridge_g_no_4',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_bridge_g_no_5'
+  },
+  {
+    id: 'ch1_bridge_g_no_5',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_g_no_6'
+  },
+  {
+    id: 'ch1_bridge_g_no_6',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_g_no_7'
+  },
+  {
+    id: 'ch1_bridge_g_no_7',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_village_b1'
+  },
+
+  // ----- 分支B：帮说话（台词32-36） -----
+  {
+    id: 'ch1_bridge_h1',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '玩家',
+    next: 'ch1_bridge_h2'
+  },
+  {
+    id: 'ch1_bridge_h2',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_h3'
+  },
+  {
+    id: 'ch1_bridge_h3',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_bridge_h4'
+  },
+  {
+    id: 'ch1_bridge_h4',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_h5'
+  },
+  {
+    id: 'ch1_bridge_h5',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_village_b1'
+  },
+
+  // ----- 分支C：不动（台词37-40） -----
+  {
+    id: 'ch1_bridge_w1',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_w2'
+  },
+  {
+    id: 'ch1_bridge_w2',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '恪',
+    next: 'ch1_bridge_w3'
+  },
+  {
+    id: 'ch1_bridge_w3',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '旁白',
+    next: 'ch1_bridge_w4'
+  },
+  {
+    id: 'ch1_bridge_w4',
+    type: 'dialogue',
+    background: 'bg/bridge_checkpoint',
+    speaker: '添',
+    next: 'ch1_village_b1'
+  },
+
+  // ===== 三路汇合 → 场景B·草原村口 =====
+  // 草原村口（正式背景「草原村口」P2 待出图，当前 BG_FALLBACK CSS 渐变占位，勿列 REAL_BG_MAP）
+  {
+    id: 'ch1_village_b1',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '旁白',
+    next: 'ch1_village_b2'
+  },
+  {
+    id: 'ch1_village_b2',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '老妇人',
+    next: 'ch1_village_b3'
+  },
+  {
+    id: 'ch1_village_b3',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '帝国官员',
+    next: 'ch1_village_b4'
+  },
+  {
+    id: 'ch1_village_b4',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '老妇人',
+    next: 'ch1_village_b5'
+  },
+  {
+    id: 'ch1_village_b5',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '添',
+    next: 'ch1_village_b6'
+  },
+  {
+    id: 'ch1_village_b6',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '旁白',
+    next: 'ch1_village_b7'
+  },
+  {
+    id: 'ch1_village_b7',
+    type: 'dialogue',
+    background: 'bg/village_gate',
+    speaker: '添',
+    next: 'ch1_village_b8'
+  },
+
+  // ===== 回程（清晨草原） =====
+  {
+    id: 'ch1_village_b8',
+    type: 'dialogue',
+    background: 'bg/grassland_morning',
+    speaker: '旁白',
+    next: 'ch1_village_b9'
+  },
+  {
+    id: 'ch1_village_b9',
+    type: 'dialogue',
+    background: 'bg/grassland_morning',
+    speaker: '添',
+    next: 'ch1_act1_end'
+  },
+
+  // ===== 第一幕结束（衔接第二幕·风从北方来，待开发） =====
+  {
+    id: 'ch1_act1_end',
     type: 'end',
-    background: 'bg/tower_interior_hall',
+    background: 'bg/grassland_morning',
   },
 ]
