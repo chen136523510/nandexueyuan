@@ -735,13 +735,1073 @@ export default [
     type: 'dialogue',
     background: 'bg/grassland_morning',
     speaker: '添',
-    next: 'ch1_act1_end'
+    next: 'ch2_r1'  // 无缝衔接第二幕·风从北方来（回塔楼当晚）
   },
 
-  // ===== 第一幕结束（衔接第二幕·风从北方来，待开发） =====
+  // ================================================================
+  // 第二幕·风从北方来（剧本第421-838行，台词2026-08-06全部定稿）
+  // ================================================================
+  //
+  // 演出（演出设计-第一章-第二幕.md，方案乙）：
+  //   复盘段：大厅+立绘（见右 serious/calm + 添左 normal）
+  //   谈判段（幸来访→选择②→收尾前）：三张谈判全景图（对峙/幸看玩家/见看玩家），立绘层关闭（characters 清空）
+  //   收尾：幸离去后恢复立绘层（见+添）
+  //   衔接段：自由活动热点（见/添/上二楼）→ 走廊班看月亮（CG-1）→ 房间
+
+  // ===== 复盘段（一层大厅·夜） =====
   {
-    id: 'ch1_act1_end',
+    id: 'ch2_r1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    characters: [
+      { id: 'dean', portrait: 'dean/serious', position: 'right' },
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+    ],
+    speaker: '旁白',
+    next: 'ch2_r2'
+  },
+  {
+    id: 'ch2_r2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_r3'
+  },
+  {
+    id: 'ch2_r3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch2_r4'
+  },
+  {
+    id: 'ch2_r4',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch2_r5'
+  },
+  {
+    id: 'ch2_r5',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch2_r6'
+  },
+  {
+    id: 'ch2_r6',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_r7'
+  },
+  {
+    id: 'ch2_r7',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch2_r8'
+  },
+  {
+    id: 'ch2_r8',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_review_choice'
+  },
+
+  // ===== 判断选择（无推进后果，仅记录 review_choice，见微调后续信息释放） =====
+  {
+    id: 'ch2_review_choice',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch2_review_a_set' },  // A. 没准是用来卡脖子的
+      { impact: 'critical', next: 'ch2_review_b_set' },  // B. 像在分化城邦
+      { impact: 'critical', next: 'ch2_review_c_set' },  // C. 我不好说
+    ],
+  },
+  {
+    id: 'ch2_review_a_set',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { review_choice: 'a' },
+    next: 'ch2_review_a'
+  },
+  {
+    id: 'ch2_review_a',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_v1'
+  },
+  {
+    id: 'ch2_review_b_set',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { review_choice: 'b' },
+    next: 'ch2_review_b'
+  },
+  {
+    id: 'ch2_review_b',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_v1'
+  },
+  {
+    id: 'ch2_review_c_set',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { review_choice: 'c' },
+    next: 'ch2_review_c'
+  },
+  {
+    id: 'ch2_review_c',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_v1'
+  },
+
+  // ===== 幸来访段（谈判全景图模式，立绘层关闭） =====
+  {
+    id: 'ch2_v1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',  // 谈判全景·对峙（待黑机出图，当前占位）
+    characters: [],  // 立绘层关闭：幸/见/添/班全部画入全景图
+    speaker: '旁白',
+    next: 'ch2_v2'
+  },
+  {
+    id: 'ch2_v2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v3'
+  },
+  {
+    id: 'ch2_v3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_v4'
+  },
+  {
+    id: 'ch2_v4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v5'
+  },
+  {
+    id: 'ch2_v5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v6'
+  },
+  {
+    id: 'ch2_v6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_v7'
+  },
+  {
+    id: 'ch2_v7',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v8'
+  },
+  {
+    id: 'ch2_v8',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_echo_cond'
+  },
+  // 帝桥回响：幸看向玩家（四分支节点均切「幸看玩家」全景）
+  {
+    id: 'ch2_echo_cond',
+    type: 'condition',
+    background: 'bg/negotiation_xing_look',  // 谈判全景·幸看玩家
+    branches: [
+      { if: { variables: { bridge_choice: 'guarantee', agreed_to_rui: true } }, next: 'ch2_echo_emblem' },   // ①A-令牌
+      { if: { variables: { bridge_choice: 'guarantee', agreed_to_rui: false } }, next: 'ch2_echo_noemblem' }, // ①A-无令牌
+      { if: { variables: { bridge_choice: 'help' } }, next: 'ch2_echo_help' },                                 // ①B
+      { else: true, next: 'ch2_echo_watch' },                                                                 // ①C（含未走过帝桥分支的兜底）
+    ],
+  },
+  {
+    id: 'ch2_echo_emblem',
+    type: 'dialogue',
+    background: 'bg/negotiation_xing_look',
+    speaker: '幸',
+    next: 'ch2_v10'
+  },
+  {
+    id: 'ch2_echo_noemblem',
+    type: 'dialogue',
+    background: 'bg/negotiation_xing_look',
+    speaker: '幸',
+    next: 'ch2_v10'
+  },
+  {
+    id: 'ch2_echo_help',
+    type: 'dialogue',
+    background: 'bg/negotiation_xing_look',
+    speaker: '幸',
+    next: 'ch2_v10'
+  },
+  {
+    id: 'ch2_echo_watch',
+    type: 'dialogue',
+    background: 'bg/negotiation_xing_look',
+    speaker: '幸',
+    next: 'ch2_v10'
+  },
+  {
+    id: 'ch2_v10',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v11'
+  },
+  {
+    id: 'ch2_v11',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_v12'
+  },
+  {
+    id: 'ch2_v12',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_v13'
+  },
+  {
+    id: 'ch2_v13',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_v14'
+  },
+  // 见看向玩家 → 切「见看玩家」全景（把选择权交给玩家）
+  {
+    id: 'ch2_v14',
+    type: 'dialogue',
+    background: 'bg/negotiation_dean_look',  // 谈判全景·见看玩家
+    speaker: '见',
+    next: 'ch2_choice'
+  },
+
+  // ===== 核心选择②（契约变量 contract: full|conditional|none|delay） =====
+  {
+    id: 'ch2_choice',
+    type: 'choice',
+    background: 'bg/negotiation_standoff',
+    choices: [
+      { impact: 'critical', next: 'ch2_choice_a_set' },  // A. 接！给帝国当狗是我的荣幸。
+      { impact: 'critical', next: 'ch2_choice_b_set' },  // B. 我有条件。学院可不当帝国的走狗。
+      { impact: 'critical', next: 'ch2_choice_c_set' },  // C. 不接，学院不掺和世俗。让上帝的归上帝，让凯撒的归凯撒。
+      { impact: 'critical', next: 'ch2_choice_d_set' },  // D. 先不急，我们这边考虑几天。
+    ],
+  },
+
+  // ----- 分支A：接（帝国合同工） -----
+  {
+    id: 'ch2_choice_a_set',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    setVariables: { contract: 'full' },
+    next: 'ch2_a1'
+  },
+  {
+    id: 'ch2_a1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_a2'
+  },
+  {
+    id: 'ch2_a2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_a3'
+  },
+  {
+    id: 'ch2_a3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_a4'
+  },
+  {
+    id: 'ch2_a4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_a5'
+  },
+  {
+    id: 'ch2_a5',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    grantItem: 'grassland_deed',  // 草原治属文书
+    setVariables: { contract_deal: 'full' },
+    next: 'ch2_a6'
+  },
+  {
+    id: 'ch2_a6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+
+  // ----- 分支B：有条件（谈判树） -----
+  {
+    id: 'ch2_choice_b_set',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    setVariables: { contract: 'conditional' },
+    next: 'ch2_b0'
+  },
+  {
+    id: 'ch2_b0',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_b_choice'
+  },
+  {
+    id: 'ch2_b_choice',
+    type: 'choice',
+    background: 'bg/negotiation_standoff',
+    choices: [
+      { impact: 'critical', next: 'ch2_ba0' },  // B-A. 学院可以为和平做出努力，但我需要帝国的承诺。
+      { impact: 'critical', next: 'ch2_bb1' },  // B-B. 我想知道帝国具体想要什么？权力、地位、还是财富？
+      { impact: 'critical', next: 'ch2_bc1' },  // B-C. 帝国是打算拿什么谈？
+    ],
+  },
+  // -- B-A：要承诺 --
+  {
+    id: 'ch2_ba0',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_b_cond_choice'
+  },
+  // -- B-B：问帝国要什么（摸底后汇合条件选项） --
+  {
+    id: 'ch2_bb1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bb2'
+  },
+  {
+    id: 'ch2_bb2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bb3'
+  },
+  {
+    id: 'ch2_bb3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bb4'
+  },
+  {
+    id: 'ch2_bb4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bb5'
+  },
+  {
+    id: 'ch2_bb5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bb6'
+  },
+  {
+    id: 'ch2_bb6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_b_cond_choice'
+  },
+  // -- B-C：拿什么谈（摸底后汇合条件选项） --
+  {
+    id: 'ch2_bc1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bc2'
+  },
+  {
+    id: 'ch2_bc2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bc3'
+  },
+  {
+    id: 'ch2_bc3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bc4'
+  },
+  {
+    id: 'ch2_bc4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bc5'
+  },
+  {
+    id: 'ch2_bc5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bc6'
+  },
+  {
+    id: 'ch2_bc6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bc7'
+  },
+  {
+    id: 'ch2_bc7',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_b_cond_choice'
+  },
+  // -- 条件选项（B-A 直接进 / B-B、B-C 汇合进） --
+  {
+    id: 'ch2_b_cond_choice',
+    type: 'choice',
+    background: 'bg/negotiation_standoff',
+    choices: [
+      { impact: 'critical', next: 'ch2_baaa1' },  // B-A-A. 帝国不能武装进入城邦，不干涉城邦的内政。
+      { impact: 'critical', next: 'ch2_bab1' },   // B-A-B. 帝国需要为草原人民的生存负责。
+      { impact: 'critical', next: 'ch2_bac1' },   // B-A-C. 帝国需要为草原上的虚空裂隙负责。
+    ],
+  },
+  // ---- B-A-A：不武装入城邦（教团城邦线） ----
+  {
+    id: 'ch2_baaa1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaa2'
+  },
+  {
+    id: 'ch2_baaa2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaa3'
+  },
+  {
+    id: 'ch2_baaa3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaa3_ask'
+  },
+  {
+    id: 'ch2_baaa3_ask',  // 玩家追问
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '玩家',
+    next: 'ch2_baaa4'
+  },
+  {
+    id: 'ch2_baaa4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaa5'
+  },
+  {
+    id: 'ch2_baaa5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '班',
+    next: 'ch2_baaa6'
+  },
+  {
+    id: 'ch2_baaa6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaa_choice'
+  },
+  {
+    id: 'ch2_baaa_choice',
+    type: 'choice',
+    background: 'bg/negotiation_standoff',
+    choices: [
+      { impact: 'critical', next: 'ch2_baaaa1' },  // B-A-A-A. 接了，我们尽快清除。
+      { impact: 'critical', next: 'ch2_baaab1' },  // B-A-A-B. 我们讨论别的条件吧。
+    ],
+  },
+  // B-A-A-A：接清除（防卫协约）
+  {
+    id: 'ch2_baaaa1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaaa2'
+  },
+  {
+    id: 'ch2_baaaa2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaaa3'
+  },
+  {
+    id: 'ch2_baaaa3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaaa4'
+  },
+  {
+    id: 'ch2_baaaa4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_baaaa5'
+  },
+  {
+    id: 'ch2_baaaa5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaaa6'
+  },
+  {
+    id: 'ch2_baaaa6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_baaaa7'
+  },
+  {
+    id: 'ch2_baaaa7',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_baaaa8'
+  },
+  {
+    id: 'ch2_baaaa8',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_baaaa9'
+  },
+  {
+    id: 'ch2_baaaa9',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    grantItem: 'grassland_deed',
+    setVariables: { contract_deal: 'defense' },
+    next: 'ch2_baaaa10'
+  },
+  {
+    id: 'ch2_baaaa10',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+  // B-A-A-B：换条件（底线试探）
+  {
+    id: 'ch2_baaab1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaab2'
+  },
+  {
+    id: 'ch2_baaab2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaab3'
+  },
+  {
+    id: 'ch2_baaab3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaab4'
+  },
+  {
+    id: 'ch2_baaab4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaab5'
+  },
+  {
+    id: 'ch2_baaab5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaab6'
+  },
+  {
+    id: 'ch2_baaab6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_baaab7'
+  },
+  {
+    id: 'ch2_baaab7',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_baaab8'
+  },
+  {
+    id: 'ch2_baaab8',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    grantItem: 'grassland_deed',
+    setVariables: { contract_deal: 'baseline' },
+    next: 'ch2_baaab9'
+  },
+  {
+    id: 'ch2_baaab9',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+  // ---- B-A-B：生存负责（庇护协约） ----
+  {
+    id: 'ch2_bab1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab2'
+  },
+  {
+    id: 'ch2_bab2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab3'
+  },
+  {
+    id: 'ch2_bab3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab4'
+  },
+  {
+    id: 'ch2_bab4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bab5'
+  },
+  {
+    id: 'ch2_bab5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab6'
+  },
+  {
+    id: 'ch2_bab6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bab7'
+  },
+  {
+    id: 'ch2_bab7',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab8'
+  },
+  {
+    id: 'ch2_bab8',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bab9'
+  },
+  {
+    id: 'ch2_bab9',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bab10'
+  },
+  {
+    id: 'ch2_bab10',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    grantItem: 'grassland_deed',
+    setVariables: { contract_deal: 'asylum' },
+    next: 'ch2_bab11'
+  },
+  {
+    id: 'ch2_bab11',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+  // ---- B-A-C：虚空裂隙负责（技术协约） ----
+  {
+    id: 'ch2_bac1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bac2'
+  },
+  {
+    id: 'ch2_bac2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bac3'
+  },
+  {
+    id: 'ch2_bac3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bac4'
+  },
+  {
+    id: 'ch2_bac4',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bac5'
+  },
+  {
+    id: 'ch2_bac5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_bac6'
+  },
+  {
+    id: 'ch2_bac6',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_bac7'
+  },
+  {
+    id: 'ch2_bac7',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    grantItem: 'grassland_deed',
+    setVariables: { contract_deal: 'tech' },
+    next: 'ch2_bac8'
+  },
+  {
+    id: 'ch2_bac8',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+
+  // ----- 分支C：不接（保持独立） -----
+  {
+    id: 'ch2_choice_c_set',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    setVariables: { contract: 'none' },
+    next: 'ch2_c1'
+  },
+  {
+    id: 'ch2_c1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_c2'
+  },
+  {
+    id: 'ch2_c2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_c3'
+  },
+  {
+    id: 'ch2_c3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '见',
+    next: 'ch2_end1'
+  },
+
+  // ----- 分支D：拖（暧昧） -----
+  {
+    id: 'ch2_choice_d_set',
+    type: 'event',
+    background: 'bg/negotiation_standoff',
+    setVariables: { contract: 'delay' },
+    next: 'ch2_d1'
+  },
+  {
+    id: 'ch2_d1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_d2'
+  },
+  {
+    id: 'ch2_d2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end1'
+  },
+
+  // ===== 收尾（幸离去，恢复立绘层） =====
+  {
+    id: 'ch2_end1',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    characters: [
+      { id: 'dean', portrait: 'dean/calm', position: 'right' },
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+    ],  // 幸已入画全景图，见/添恢复立绘（幸离场后回到大厅实景）
+    speaker: '幸',
+    next: 'ch2_end2'
+  },
+  {
+    id: 'ch2_end2',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '幸',
+    next: 'ch2_end3'
+  },
+  {
+    id: 'ch2_end3',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_end4_cond'
+  },
+  // 添收尾按选择②分支四选一
+  {
+    id: 'ch2_end4_cond',
+    type: 'condition',
+    background: 'bg/negotiation_standoff',
+    branches: [
+      { if: { variables: { contract: 'full' } }, next: 'ch2_end4_full' },
+      { if: { variables: { contract: 'conditional' } }, next: 'ch2_end4_conditional' },
+      { if: { variables: { contract: 'none' } }, next: 'ch2_end4_none' },
+      { else: true, next: 'ch2_end4_delay' },  // delay 及兜底
+    ],
+  },
+  {
+    id: 'ch2_end4_full',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_end5'
+  },
+  {
+    id: 'ch2_end4_conditional',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_end5'
+  },
+  {
+    id: 'ch2_end4_none',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_end5'
+  },
+  {
+    id: 'ch2_end4_delay',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '添',
+    next: 'ch2_end5'
+  },
+  {
+    id: 'ch2_end5',
+    type: 'dialogue',
+    background: 'bg/negotiation_standoff',
+    speaker: '旁白',
+    next: 'ch2_free1'
+  },
+
+  // ===== 衔接段·自由活动（热点） =====
+  {
+    id: 'ch2_free1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch2_free_end'
+  },
+  {
+    id: 'ch2_free_end',
     type: 'end',
-    background: 'bg/grassland_morning',
+    background: 'bg/tower_interior_hall',
+    hotspots: [
+      { id: 'free_dean', x: 22, y: 68, label: '见', icon: '📖',
+        action: { type: 'goto', target: 'ch2_free_dean1' } },
+      { id: 'free_tian', x: 72, y: 60, label: '添', icon: '🔧',
+        action: { type: 'goto', target: 'ch2_free_tian1' } },
+      { id: 'go_upstairs', x: 50, y: 20, label: '上二楼', icon: '🪜',
+        action: { type: 'goto', target: 'ch2_moon1' } },
+    ]
+  },
+  // -- 见热点：为什么让我做这么大的选择（学院立场） --
+  {
+    id: 'ch2_free_dean1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_free_dean_choice'
+  },
+  {
+    id: 'ch2_free_dean_choice',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch2_free_dean_qa1' },  // 为什么让我来做这么大的选择？
+      { impact: 'critical', next: 'ch2_free_end' },       // （不再追问）
+    ],
+  },
+  {
+    id: 'ch2_free_dean_qa1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_free_dean_qa2'
+  },
+  {
+    id: 'ch2_free_dean_qa2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch2_free_end'
+  },
+  // -- 添热点 --
+  {
+    id: 'ch2_free_tian1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch2_free_end'
+  },
+
+  // ===== 衔接段·二楼走廊·夜（班看月亮，CG-1 复用） =====
+  {
+    id: 'ch2_moon1',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',  // CG-1 定稿：走廊尽头拱窗+班窗边（已出图）
+    characters: [],  // 班画入背景，无立绘
+    speaker: '旁白',
+    next: 'ch2_moon2'
+  },
+  {
+    id: 'ch2_moon2',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon3'
+  },
+  {
+    id: 'ch2_moon3',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon4'
+  },
+  {
+    id: 'ch2_moon4',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon5'
+  },
+  {
+    id: 'ch2_moon5',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon6'
+  },
+  {
+    id: 'ch2_moon6',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon_choice'
+  },
+  {
+    id: 'ch2_moon_choice',
+    type: 'choice',
+    background: 'bg/ban_corridor_moon',
+    choices: [
+      { impact: 'critical', next: 'ch2_room1' },   // 回房间休息（进入第三幕过渡）
+      { impact: 'critical', next: 'ch2_moon_talk1' },  // 再聊两句（班多回一两句，仍回到选择）
+    ],
+  },
+  {
+    id: 'ch2_moon_talk1',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon_talk2'
+  },
+  {
+    id: 'ch2_moon_talk2',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch2_moon_choice'
+  },
+
+  // ===== 衔接段·房间·夜 =====
+  {
+    id: 'ch2_room1',
+    type: 'dialogue',
+    background: 'bg/tower_room_night',
+    speaker: '旁白',
+    next: 'ch2_act2_end'
+  },
+  {
+    id: 'ch2_act2_end',
+    type: 'end',
+    background: 'bg/tower_room_night',
   },
 ]

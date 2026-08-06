@@ -48,6 +48,9 @@ const BG_FALLBACK = {
   'bg/tower_corridor_morning': 'linear-gradient(180deg, #3a3a30 0%, #28281e 100%)',             // 走廊·晨光：中性暖
   'bg/grassland_morning': 'linear-gradient(180deg, #8a8a6a 0%, #5a5a3a 100%)',                  // 清晨草原：亮绿暖（占位）
   'bg/village_gate': 'linear-gradient(180deg, #7a6a55 0%, #4a3f30 100%)',                       // 草原村口：土路灰白天色（占位，第一幕场景B，待黑机出图）
+  'bg/negotiation_standoff': 'linear-gradient(180deg, #3a342c 0%, #1c1812 100%)',               // 谈判全景·对峙：大厅暖暗（占位，第二幕谈判段，待黑机出图）
+  'bg/negotiation_xing_look': 'linear-gradient(180deg, #3a342c 0%, #1c1812 100%)',              // 谈判全景·幸看玩家（占位，同上）
+  'bg/negotiation_dean_look': 'linear-gradient(180deg, #3a342c 0%, #1c1812 100%)',              // 谈判全景·见看玩家（占位，同上）
 }
 
 watch(

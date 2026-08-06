@@ -21,12 +21,13 @@ const CHAPTER_LOADERS = {
     return { default: mergeScript(skeleton, allScripts) }
   },
   chapter1: async () => {
-    const [{ default: skeleton }, s1, s2] = await Promise.all([
+    const [{ default: skeleton }, s1, s2, s3] = await Promise.all([
       import('../data/chapter1.js'),
       import('../data/scripts/第一章-幕间-德塔日常.script.js'),
       import('../data/scripts/第一章-第一幕-帝桥.script.js'),
+      import('../data/scripts/第一章-第二幕-风从北方来.script.js'),
     ])
-    const allScripts = [s1.default, s2.default].flat()
+    const allScripts = [s1.default, s2.default, s3.default].flat()
     return { default: mergeScript(skeleton, allScripts) }
   },
 }
