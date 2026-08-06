@@ -13,7 +13,7 @@ export const ITEMS = {
   rui_emblem: {
     id: 'rui_emblem',
     name: '睿帝令',
-    icon: '🔶',
+    icon: '/visualnovel/items/rui_emblem.png',
     description: '帝国皇帝睿赐予的信物令牌。持此令者，帝国视为友邦。令牌正面刻有帝国徽记，背面铭文"睿之信"。',
     type: 'key_item',
   },
