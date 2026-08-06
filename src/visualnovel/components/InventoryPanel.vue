@@ -8,6 +8,11 @@ const store = useVisualNovelStore()
 // 选中的物品详情
 const selectedItem = ref(null)
 
+// 判断 icon 是否为图片路径（以 / 开头）
+function isImageIcon(icon) {
+  return icon && icon.startsWith('/')
+}
+
 // 背包物品列表（从 store.inventory 的 id 解析为物品数据）
 const items = computed(() => {
   return store.inventory.map((id) => getItem(id)).filter(Boolean)
@@ -49,7 +54,8 @@ function close() {
             @click="items[n - 1] && selectItem(items[n - 1])"
           >
             <template v-if="items[n - 1]">
-              <span class="slot-icon">{{ items[n - 1].icon }}</span>
+              <img v-if="isImageIcon(items[n - 1].icon)" class="slot-icon slot-icon-img" :src="items[n - 1].icon" :alt="items[n - 1].name" />
+              <span v-else class="slot-icon">{{ items[n - 1].icon }}</span>
               <span class="slot-name">{{ items[n - 1].name }}</span>
             </template>
           </div>
@@ -63,7 +69,8 @@ function close() {
     <!-- 物品详情弹窗 -->
     <div v-if="selectedItem" class="detail-overlay" @click.self="closeDetail">
       <div class="detail-panel">
-        <div class="detail-icon">{{ selectedItem.icon }}</div>
+        <img v-if="isImageIcon(selectedItem.icon)" class="detail-icon detail-icon-img" :src="selectedItem.icon" :alt="selectedItem.name" />
+        <div v-else class="detail-icon">{{ selectedItem.icon }}</div>
         <h3 class="detail-name">{{ selectedItem.name }}</h3>
         <p class="detail-type">{{ selectedItem.type === 'key_item' ? '关键道具' : selectedItem.type === 'consumable' ? '消耗品' : '材料' }}</p>
         <p class="detail-desc">{{ selectedItem.description }}</p>
@@ -162,6 +169,12 @@ function close() {
   line-height: 1;
 }
 
+.slot-icon-img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+
 .slot-name {
   font-size: 10px;
   color: rgba(232, 224, 204, 0.7);
@@ -204,6 +217,13 @@ function close() {
 .detail-icon {
   font-size: 48px;
   margin-bottom: 12px;
+}
+
+.detail-icon-img {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 12px;
+  object-fit: contain;
 }
 
 .detail-name {

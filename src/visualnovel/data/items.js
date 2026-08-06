@@ -2,7 +2,8 @@
  * 德塔视觉小说 物品数据
  *
  * 物品定义存放在此处，剧本 event 节点通过 grantItem: '物品id' 发放。
- * PoC 阶段 icon 用 emoji 占位，后续黑机提供图片后替换为 <img :src="...">。
+ * icon 字段：emoji 字符串（占位）或以 '/' 开头的图片路径（正式道具图）。
+ * InventoryPanel 自动判断：以 '/' 开头用 <img> 渲染，否则当 emoji 文本渲染。
  *
  * 注意：纳戒是储物空间（背包）本身，不是背包里的物品。
  * 玩家获得纳戒后解锁背包功能，纳戒不作为物品出现在物品列表中。
@@ -19,7 +20,7 @@ export const ITEMS = {
   grassland_deed: {
     id: 'grassland_deed',
     name: '草原治属文书',
-    icon: '📜',
+    icon: '/visualnovel/items/grassland_deed.png',
     description: '由睿帝亲自颁布的文书，上面纹满了复杂的魔法回路。学院与帝国契约的凭据——具体条款因谈判内容而异。',
     type: 'key_item',
   },
