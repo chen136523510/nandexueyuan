@@ -749,9 +749,10 @@ export default [
   // 第二幕·风从北方来（剧本第421-838行，台词2026-08-06全部定稿）
   // ================================================================
   //
-  // 演出（演出设计-第一章-第二幕.md，方案乙）：
+  // 演出（演出设计-第一章-第二幕.md，方案乙 修订版）：
   //   复盘段：大厅+立绘（见右 serious/calm + 添左 normal）
-  //   谈判段（幸来访→选择②→收尾前）：三张谈判全景图（对峙/幸看玩家/见看玩家），立绘层关闭（characters 清空）
+  //   幸来访段前半（v1~v6 门口寒暄）：大厅+立绘（见左 serious + 幸右 smile）
+  //   谈判段（v7 正式落谈→选择②→收尾前）：三张谈判全景图（对峙/幸看玩家/见看玩家），立绘层关闭
   //   收尾：幸离去后恢复立绘层（见+添）
   //   衔接段：自由活动热点（见/添/上二楼）→ 走廊班看月亮（CG-1）→ 房间
 
@@ -871,54 +872,62 @@ export default [
     next: 'ch2_v1'
   },
 
-  // ===== 幸来访段（谈判全景图模式，立绘层关闭） =====
+  // ===== 幸来访段前半（大厅·门口寒暄，v1~v6） =====
+  // v1：旁白通报 + 幸到场。v7 起正式坐谈，切谈判全景（立绘关闭）
   {
     id: 'ch2_v1',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',  // 谈判全景·对峙（待黑机出图，当前占位）
-    characters: [],  // 立绘层关闭：幸/见/添/班全部画入全景图
+    background: 'bg/tower_interior_hall',  // 大厅（复盘段同场景）
+    // 舞台切换：见挪 left，幸 right 到场（门口寒暄）
+    characters: [
+      { id: 'dean', portrait: 'dean/serious', position: 'left' },
+      { id: 'xing', portrait: 'xing/smile', position: 'right' },
+    ],
     speaker: '旁白',
     next: 'ch2_v2'
   },
   {
     id: 'ch2_v2',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '幸',
     next: 'ch2_v3'
   },
   {
     id: 'ch2_v3',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '见',
     next: 'ch2_v4'
   },
   {
     id: 'ch2_v4',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '幸',
     next: 'ch2_v5'
   },
   {
     id: 'ch2_v5',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '幸',
     next: 'ch2_v6'
   },
   {
     id: 'ch2_v6',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '见',
     next: 'ch2_v7'
   },
+
+  // ===== v7 起：正式落座谈判（切谈判全景图，立绘层关闭） =====
   {
     id: 'ch2_v7',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/negotiation_standoff',  // 谈判全景·对峙（幸/见/添/班全部画入全景图）
+    characters: [],  // 立绘层关闭
     speaker: '幸',
     next: 'ch2_v8'
   },
