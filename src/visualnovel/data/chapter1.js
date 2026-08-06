@@ -383,6 +383,11 @@ export default [
     id: 'ch1_bridge_a4',
     type: 'dialogue',
     background: 'bg/bridge_checkpoint',  // 帝桥哨卡：哨卡+大河+大桥
+    // 哨卡段舞台：添(左·同行) + 恪(右·哨卡对立位)
+    characters: [
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+      { id: 'ke', portrait: 'ke/normal', position: 'right' },
+    ],
     speaker: '旁白',
     next: 'ch1_bridge_a5'
   },
@@ -671,69 +676,71 @@ export default [
   },
 
   // ===== 三路汇合 → 场景B·草原村口 =====
-  // 草原村口（正式背景「草原村口」P2 待出图，当前 BG_FALLBACK CSS 渐变占位，勿列 REAL_BG_MAP）
+  // 草原村口（正式背景 village_entrance 已出图入库）
   {
     id: 'ch1_village_b1',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
+    // 场景切换：恪退场，只留添（草原村口段无立绘角色）
+    characters: [{ id: 'tian', portrait: 'tian/normal', position: 'left' }],
     speaker: '旁白',
     next: 'ch1_village_b2'
   },
   {
     id: 'ch1_village_b2',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '老妇人',
     next: 'ch1_village_b3'
   },
   {
     id: 'ch1_village_b3',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '帝国官员',
     next: 'ch1_village_b4'
   },
   {
     id: 'ch1_village_b4',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '老妇人',
     next: 'ch1_village_b5'
   },
   {
     id: 'ch1_village_b5',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '添',
     next: 'ch1_village_b6'
   },
   {
     id: 'ch1_village_b6',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '旁白',
     next: 'ch1_village_b7'
   },
   {
     id: 'ch1_village_b7',
     type: 'dialogue',
-    background: 'bg/village_gate',
+    background: 'bg/village_entrance',
     speaker: '添',
     next: 'ch1_village_b8'
   },
 
-  // ===== 回程（清晨草原） =====
+  // ===== 回程（草原路） =====
   {
     id: 'ch1_village_b8',
     type: 'dialogue',
-    background: 'bg/grassland_morning',
+    background: 'bg/grassland_road',
     speaker: '旁白',
     next: 'ch1_village_b9'
   },
   {
     id: 'ch1_village_b9',
     type: 'dialogue',
-    background: 'bg/grassland_morning',
+    background: 'bg/grassland_road',
     speaker: '添',
     next: 'ch2_r1'  // 无缝衔接第二幕·风从北方来（回塔楼当晚）
   },
