@@ -4,6 +4,27 @@
 
 ---
 
+### [feat] 黑机美术批量产出+第二幕叙事流程修正（恪立绘/军装/村口/回程/幸造访）
+
+- **时间**：2026-08-06
+- **变更人**：陈梓键（黑机）
+- **背景**：白机落地第一/二幕代码后留下多项 P1 美术缺口（恪立绘/草原村口/回程/见端杯/第二幕演出修正），黑机逐一补齐
+- **变更内容**：
+  1. **见·场景B端杯立绘**（`public/visualnovel/portraits/dean/cup.png`）：左手托杯垫右手捏杯耳+整体左转昂首挺胸，serious 定版差分
+  2. **帝国军装设计稿**（`美术资产/帝国军装/imperial_uniform_v1_01.png`）：参照二战德国军装提炼（深灰蓝双排扣+金色肩章/袖口/腰带扣+白皮带+大檐帽+黑长靴），正面+背面双视图，无人物纯服装稿，作为帝国制服审美体系基准
+  3. **恪·基准立绘**（`public/visualnovel/portraits/ke/normal.png`）：35岁/板寸/深灰眼/面无表情，基于军装设计稿生成，rembg 抠图入库。chapter1.js 哨卡段（ch1_bridge_a4）接入恪立绘（right 位），草原村口段（ch1_village_b1）恪退场
+  4. **草原村口背景**（`public/visualnovel/bg/village_entrance.png`）：土路+发文书台+排队村民剪影+官员身后魔法师，灰白阴天。替换原 `bg/village_gate` CSS 渐变占位（7 处）
+  5. **回程草原路背景**（`public/visualnovel/bg/grassland_road.png`）：无人物，枯黄草原+远处帝桥轮廓，萧瑟灰白。替换原 `bg/grassland_morning` 复用（2 处）
+  6. **幸二次造访场景图**（`public/visualnovel/bg/ch2_xing_arrival.png`）：基于大厅背景生成，幸从大门迈步入厅+门外两名禁卫剪影。用于第二幕 v1（旁白通报"帝国使节，到"）
+  7. **第二幕叙事流程修正**（院长反馈）：原 v1 起即切谈判全景图过早——改为 v1 用造访图（立绘关闭）→ v2~v6 大厅立绘演出（见左 serious + 幸右 smile）→ v7 见说"坐坐吧"后才切谈判全景。三段式节奏：造访进门→大厅寒暄→坐下谈
+  8. **BackgroundLayer.vue**：REAL_BG_MAP 新增 `village_entrance` / `grassland_road` / `ch2_xing_arrival`
+- **文档同步**：美术资产 README 更新（恪立绘/军装/村口/回程/造访/谈判全景图清单）；世界书 5.11 恪条目回填形象设计（35岁/板寸/深灰眼/帝国军装）
+- **验证**：`npm run build` 通过 ×3 次
+- **commit**：84abb23 / a275b78 / 616f1ca / c0a2001 / f919fc9
+- **关联文档**：美术资产/README.md、世界观/德塔编剧世界书.md、剧情设计/第一章-三线剧变.md
+
+---
+
 ### [文档] 演出设计输出规范 v1.1 + 第二幕演出设计（规范→实践→校验闭环）
 
 - **时间**：2026-08-06
