@@ -34,6 +34,7 @@ const REAL_BG_MAP = {
   'bg/bridge_close': null,         // 第一幕·哨卡近景（摆立绘用）
   'bg/village_entrance': null,     // 第一幕场景B·草原村口（土路+文书台+排队村民）
   'bg/grassland_road': null,       // 第一幕·回程草原路（无人物，摆立绘用）
+  'bg/ch2_xing_arrival': null,     // 第二幕·幸二次造访（进门镜头，幸已画入背景）
   'bg/negotiation_standoff': null,  // 第二幕·谈判全景·对峙（四角色入画，班靠墙闭目）
   'bg/negotiation_xing_look': null, // 第二幕·谈判全景·幸看玩家
   'bg/negotiation_dean_look': null, // 第二幕·谈判全景·见看玩家

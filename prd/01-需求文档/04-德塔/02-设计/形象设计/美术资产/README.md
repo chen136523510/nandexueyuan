@@ -58,6 +58,7 @@
 | `背景图/bridge_close.png` | 第一幕·哨卡近景（晴天，石砌哨卡+帝国旗帜，远景见拱门，摆立绘用） |
 | `背景图/village_entrance.png` | 第一幕场景B·草原村口（土路+发文书台+排队村民剪影+官员身后魔法师，灰白阴天） |
 | `背景图/grassland_road.png` | 第一幕·回程草原路（无人物，枯黄草原+远处帝桥轮廓，萧瑟灰白，摆立绘用） |
+| `背景图/ch2_xing_arrival.png` | 第二幕·幸二次造访（幸从大门迈步入厅，门外两名禁卫剪影，基于大厅背景生成） |
 | `背景图/negotiation_standoff.png` | 第二幕·谈判全景·对峙（四角色入画，班靠墙闭目） |
 | `背景图/negotiation_xing_look.png` | 第二幕·谈判全景·幸看玩家 |
 | `背景图/negotiation_dean_look.png` | 第二幕·谈判全景·见看玩家 |

@@ -872,24 +872,26 @@ export default [
     next: 'ch2_v1'
   },
 
-  // ===== 幸来访段前半（大厅·门口寒暄，v1~v6） =====
-  // v1：旁白通报 + 幸到场。v7 起正式坐谈，切谈判全景（立绘关闭）
+  // ===== 幸来访段前半（v1 门口造访 → v2~v6 大厅寒暄） =====
+  // v1：旁白通报 + 幸进门（造访图）。v7 起正式坐谈，切谈判全景（立绘关闭）
   {
     id: 'ch2_v1',
     type: 'dialogue',
-    background: 'bg/tower_interior_hall',  // 大厅（复盘段同场景）
-    // 舞台切换：见挪 left，幸 right 到场（门口寒暄）
-    characters: [
-      { id: 'dean', portrait: 'dean/serious', position: 'left' },
-      { id: 'xing', portrait: 'xing/smile', position: 'right' },
-    ],
+    background: 'bg/ch2_xing_arrival',  // 幸二次造访·进门镜头
+    // v1 用造访图（幸已画入背景），暂不开立绘层
+    characters: [],
     speaker: '旁白',
     next: 'ch2_v2'
   },
   {
     id: 'ch2_v2',
     type: 'dialogue',
-    background: 'bg/tower_interior_hall',
+    background: 'bg/tower_interior_hall',  // 切回大厅，立绘演出
+    // 舞台切换：见 left serious，幸 right smile（门口寒暄）
+    characters: [
+      { id: 'dean', portrait: 'dean/serious', position: 'left' },
+      { id: 'xing', portrait: 'xing/smile', position: 'right' },
+    ],
     speaker: '幸',
     next: 'ch2_v3'
   },
