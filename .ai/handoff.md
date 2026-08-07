@@ -32,9 +32,10 @@
 - **线上完整剧情验证**（院长账号真实点击）：序章全流程 → 第一章全程（幕间/帝桥/选择①/第二幕）→ 第二幕自由活动探索态（hall_free 见 Q&A/走廊班对话/room 睡觉）→ 第三幕（商队/段六/过渡段探索态）→ 信使段（台词逐句正确 + 17 分支 C/D）→ 章节结束——全通过
 - **预加载优化**（上线生效）：首页（MainView）后台静默预加载 + 按存档章节预加载 + 切章增量预加载——进德塔缓存命中秒进
 
-### 4. 预加载优化 + 部署修复（2026-08-07 傍晚）
+### 4. 预加载优化 + 部署修复（2026-08-07 傍晚，方案迭代）
 
-- **预加载优化**：首页（MainView /home，非 landing）后台静默预加载（`preloadChapterImages`）；initGame 按存档章节预加载（修复有存档玩家预热错位）；切章增量预加载；抽取 `collectAssetUrls`
+- **预加载优化（最终方案）**：initGame 按存档章节预加载（有存档→接着玩的章节；无→序章）+ 进度条；切章增量预加载；抽取 `collectAssetUrls`
+- ⚠️ **首页静默预加载已撤回**（commit `a663113`）：曾在 MainView 后台预加载，但几十 MB 在首页下载**拖卡网站**（院长反馈"网站卡的要死"）——回到"进德塔时按进度加载+进度条"，首页零游戏图片下载（线上验证 0 图片请求）
 - **BUG-58（部署静默失败）**：deploy.sh 迁移检测 grep `"not applied"` 不匹配实际输出 `"not yet been applied"` → migrate deploy 被跳过（部署"成功"但库没变）→ 已修（`grep -cE "not (yet been )?applied"`）+ 手动补应用迁移 + 登记 bug-log
 - **预加载 404**：bg/black 等 CSS 占位 key 被 collectAssetUrls 预加载 → 404 → 已修（只收集 REAL_BG_MAP 真实图，抽公共模块 `data/bgMaps.js`，BackgroundLayer + store 共用）
 
