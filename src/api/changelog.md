@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-07
+- [修改] `visualNovel.js` — 存档快照新增 spaceState 字段（空间状态：currentLocation/currentExploreLocation/visitedLocations/unlockedLocations），R-035 探索态存档恢复
+- commit: `b4c9e68`
+
+---
+
 ## 2026-07-01
 - [修改] `index.js` — 请求拦截器注入 JWT，响应拦截器统一处理业务错误码与 401 跳转
 - [新增] `auth.js` — 认证 API（login/register/logout/getMe）

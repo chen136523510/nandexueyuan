@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-07
+- [修改] `visualNovelController.js` — writeSave/getSave 增删 spaceState JSON 字段（R-035 空间状态快照），GameSave 表新增列（迁移 `20260807120000_add_game_save_space_state`）
+- commit: `b4c9e68`
+
+---
+
 ## 2026-07-01
 - [修改] `api.js` — 注册认证/用户/邀请码/成员管理全部路由，接入 auth 中间件与角色守卫
 - commit: 未提交
