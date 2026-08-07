@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
 import { getAnnouncement } from '../api/announcement'
 import TopBar from '../components/TopBar.vue'
 import VersionHistoryDialog from '../components/VersionHistoryDialog.vue'
@@ -10,7 +9,6 @@ import WordCloud from '../components/WordCloud.vue'
 import { Bell } from 'lucide-vue-next'
 
 const auth = useAuthStore()
-const vnStore = useVisualNovelStore()
 
 const announcement = ref('')
 const annVersion = ref('')
@@ -21,14 +19,6 @@ const showVersionHistory = ref(false)
 onMounted(async () => {
   await auth.fetchMe()
   await fetchAnnouncement()
-})
-
-// 首页后台静默预加载德塔图片（登录用户浏览首页时提前下载，进德塔秒开）
-// 登录后主页面是 MainView（/home），landing（/）是 HomeView 公开页
-onMounted(() => {
-  if (!vnStore.preloaded) {
-    vnStore.preloadChapterImages()
-  }
 })
 
 async function fetchAnnouncement() {

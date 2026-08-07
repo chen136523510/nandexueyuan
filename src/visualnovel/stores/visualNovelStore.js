@@ -74,7 +74,6 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const isEnded = ref(false)            // 当前章节是否结束
   const isLoading = ref(false)          // 加载状态
   const preloadProgress = ref(0)        // 预加载进度 0~100
-  const preloaded = ref(false)         // 首页静默预加载是否已触发（防重复）
   const triggeredCG = ref(null)         // 当前触发的 CG（非 null 时全屏展示）
   const noticeMessage = ref(null)       // 轻提示弹窗消息（非 null 时显示弹窗）
 
@@ -361,42 +360,6 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
     // 并发预加载（浏览器对同一域名并发限制会自动排队，无需手动分批）
     await Promise.all([...urls].map(loadOne))
-  }
-
-  /**
-   * 静默预加载游戏图片（无进度条、不阻塞）——首页后台预热用
-   *
-   * 场景：用户在网站首页浏览时，后台悄悄下载玩家接下来要玩的章节图片，
-   * 进入德塔时 initGame 的 preloadAssets 命中 HTTP 缓存，加载瞬间完成。
-   * 按存档章节加载（有存档→该章节；无→序章），与 initGame 保持一致。
-   */
-  async function preloadChapterImages() {
-    if (preloaded.value) return
-    preloaded.value = true
-    try {
-      let chapter = 'prologue'
-      try {
-        const saveRes = await getSave(0)
-        if (saveRes.data?.chapter && CHAPTER_LOADERS[saveRes.data.chapter]) {
-          chapter = saveRes.data.chapter
-        }
-      } catch (e) {
-        // 无自动存档，预加载序章
-      }
-      const loader = CHAPTER_LOADERS[chapter]
-      if (!loader) return
-      const module = await loader()
-      const nodes = module.default || module.nodes
-      const urls = collectAssetUrls(nodes)
-      // 静默加载（fire-and-forget，不 await、无进度条）
-      urls.forEach((url) => {
-        const img = new Image()
-        img.src = url
-      })
-      console.log(`[VisualNovelStore] 静默预加载完成：${chapter}（${urls.size} 张图）`)
-    } catch (err) {
-      console.warn('[VisualNovelStore] 静默预加载失败:', err)
-    }
   }
 
   // ===== 节点导航 =====
@@ -1094,7 +1057,5 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     showNotice, closeNotice,
     // 空间导航（R-035）
     enterExplore, travelTo,
-    // 首页静默预加载
-    preloadChapterImages, preloaded,
   }
 })
