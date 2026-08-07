@@ -1,20 +1,11 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
 import AppFooter from '../components/AppFooter.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
-const vnStore = useVisualNovelStore()
-
-// 首页后台静默预加载德塔图片（登录用户浏览首页时提前下载，进德塔秒开）
-onMounted(() => {
-  if (auth.isLoggedIn && !vnStore.preloaded) {
-    vnStore.preloadChapterImages()
-  }
-})
 
 // 彩蛋
 const showEgg = ref(false)
