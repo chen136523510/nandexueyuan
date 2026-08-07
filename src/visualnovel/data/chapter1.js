@@ -1820,7 +1820,504 @@ export default [
   },
   {
     id: 'ch2_act2_end',
-    type: 'end',
+    type: 'dialogue',  // 无文本过渡节点：第二幕收尾 → 第三幕开场（点击即推进）
     background: 'bg/tower_room_night',
+    next: 'ch3_v_cond',  // 无缝衔接第三幕·东来的信（时间跳跃由第三幕开场旁白承接）
+  },
+
+  // ================================================================
+  // 第三幕·东来的信（共和国事变·传闻）—— 段七前（R-035 空间机制实验段）
+  // ================================================================
+  //
+  // 演出（演出设计-第一章-第三幕.md）：
+  //   商队段/段六：大厅立绘演出（见右 serious→calm + 添左 normal），商人无立绘
+  //   过渡段：进入大厅探索态（角色入画背景图，立绘层关闭）——见/添 Q&A + 上二楼（班）+ 回房睡觉
+  //   段七起：信使段（台词未定稿，ch3_morning1 占位结束）
+  //
+  // 舞台位置全幕统一"见右添左"（院长 2026-08-07 定）。
+  // 空间机制：explore 节点属性（end/dialogue 均可带）→ 探索态；LOCATIONS 地点图驱动。
+
+  // ===== 开场（contract 双版本旁白：选择② 选 D 拖三天 → 回响） =====
+  {
+    id: 'ch3_v_cond',
+    type: 'condition',
+    background: 'bg/tower_interior_hall',
+    branches: [
+      { if: { variables: { contract: 'delay' } }, next: 'ch3_v_delay' },   // 选 D：没等到幸的造访
+      { else: true, next: 'ch3_v_nodelay' },                               // 未选 D：帝桥的风声
+    ],
+  },
+  {
+    id: 'ch3_v_nodelay',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_m1',
+  },
+  {
+    id: 'ch3_v_delay',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_m1',
+  },
+
+  // ===== 商队段（商人甲乙丙无立绘，见/添立绘演出） =====
+  {
+    id: 'ch3_m1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    location: 'hall',  // 信息性：剧情发生地（空间状态同步）
+    characters: [
+      { id: 'dean', portrait: 'dean/serious', position: 'right' },
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+    ],
+    speaker: '商人甲',
+    next: 'ch3_m2',
+  },
+  {
+    id: 'ch3_m2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_m3',
+  },
+  {
+    id: 'ch3_m3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '商人甲',
+    next: 'ch3_m4',
+  },
+  {
+    id: 'ch3_m4',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_m5',
+  },
+  {
+    id: 'ch3_m5',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '商人乙',
+    next: 'ch3_m6',
+  },
+  {
+    id: 'ch3_m6',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_m7',
+  },
+  {
+    id: 'ch3_m7',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '商人丙',
+    next: 'ch3_m8',
+  },
+  {
+    id: 'ch3_m8',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_m9',
+  },
+  {
+    id: 'ch3_m9',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_m10',
+  },
+  {
+    id: 'ch3_m10',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_m11',
+  },
+  {
+    id: 'ch3_m11',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '商人乙',
+    next: 'ch3_m12',
+  },
+  {
+    id: 'ch3_m12',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_m13',
+  },
+  {
+    id: 'ch3_m13',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_m14',
+  },
+  {
+    id: 'ch3_m14',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_d1',
+  },
+
+  // ===== 段六·见与添定调对话 + 判断选择（benefit_choice） =====
+  {
+    id: 'ch3_d1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d2',
+  },
+  {
+    id: 'ch3_d2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_d3',
+  },
+  {
+    id: 'ch3_d3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d4',
+  },
+  {
+    id: 'ch3_d4',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d5',
+  },
+  {
+    id: 'ch3_d5',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_d6',
+  },
+  {
+    id: 'ch3_d6',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d7',
+  },
+  {
+    id: 'ch3_d7',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_d8',
+  },
+  {
+    id: 'ch3_d8',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_d9',
+  },
+  {
+    id: 'ch3_d9',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d10',
+  },
+  {
+    id: 'ch3_d10',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_d11',
+  },
+  {
+    id: 'ch3_d11',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_benefit_choice',
+  },
+  // 判断选择（记录 benefit_choice，同 review_choice 模式，无推进后果）
+  {
+    id: 'ch3_benefit_choice',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_benefit_set_a' },  // A. 帝国，timing 抓太准了吧
+      { impact: 'critical', next: 'ch3_benefit_set_b' },  // B. 丘，他成总统了
+      { impact: 'critical', next: 'ch3_benefit_set_c' },  // C. 杰，他打算为沙漠报仇
+      { impact: 'critical', next: 'ch3_benefit_set_d' },  // D. 虚空教团，格局更混乱了
+    ],
+  },
+  {
+    id: 'ch3_benefit_set_a',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { benefit_choice: 'empire' },
+    next: 'ch3_d12',
+  },
+  {
+    id: 'ch3_benefit_set_b',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { benefit_choice: 'qiu' },
+    next: 'ch3_d12',
+  },
+  {
+    id: 'ch3_benefit_set_c',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { benefit_choice: 'jie' },
+    next: 'ch3_d12',
+  },
+  {
+    id: 'ch3_benefit_set_d',
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    setVariables: { benefit_choice: 'cult' },
+    next: 'ch3_d12',
+  },
+  {
+    id: 'ch3_d12',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_d13',
+  },
+  {
+    id: 'ch3_d13',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_free1',
+  },
+
+  // ===== 过渡段：进入大厅探索态（R-035 空间机制实验） =====
+  // end 节点带 explore → 段落终结进入探索态（不结束章节）
+  {
+    id: 'ch3_free1',
+    type: 'end',
+    background: 'bg/tower_interior_hall',
+    explore: true,
+    location: 'hall',
+  },
+
+  // ===== 见 Q&A（循环，选 D 回探索态） =====
+  {
+    id: 'ch3_free_dean',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_fd_a1' },  // A. 丘是什么人？
+      { impact: 'critical', next: 'ch3_fd_b1' },  // B. 沙漠那帮人跟共和国具体啥关系？
+      { impact: 'critical', next: 'ch3_fd_c1' },  // C. 虚空教团也能搞出飞机吗？
+      { impact: 'critical', next: 'ch3_free1' },  // D. 没事了（回探索态）
+    ],
+  },
+  {
+    id: 'ch3_fd_a1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_fd_a2',
+  },
+  {
+    id: 'ch3_fd_a2',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_fd_a3' },   // 追问：那他怎么还能当总统的？
+      { impact: 'critical', next: 'ch3_free_dean' },  // 回菜单
+    ],
+  },
+  {
+    id: 'ch3_fd_a3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_free_dean',
+  },
+  {
+    id: 'ch3_fd_b1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_fd_b2',
+  },
+  {
+    id: 'ch3_fd_b2',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_fd_b3' },   // B+. 杰是什么人？
+      { impact: 'critical', next: 'ch3_free_dean' },  // 回菜单
+    ],
+  },
+  {
+    id: 'ch3_fd_b3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_free_dean',
+  },
+  {
+    id: 'ch3_fd_c1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_free_dean',
+  },
+
+  // ===== 添 Q&A（循环，选 D 回探索态；B 照片查看占位） =====
+  {
+    id: 'ch3_free_tian',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_ft_a1' },  // A. 丘是什么人？
+      { impact: 'critical', next: 'ch3_ft_b1' },  // B. 让我也看看照片
+      { impact: 'critical', next: 'ch3_ft_c1' },  // C. 照片谁拍的？
+      { impact: 'critical', next: 'ch3_free1' },  // D. 没事了（回探索态）
+    ],
+  },
+  {
+    id: 'ch3_ft_a1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_ft_a2',
+  },
+  {
+    id: 'ch3_ft_a2',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_ft_a3' },   // 追问：那他怎么还能当总统的？
+      { impact: 'critical', next: 'ch3_free_tian' },  // 回菜单
+    ],
+  },
+  {
+    id: 'ch3_ft_a3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_free_tian',
+  },
+  {
+    id: 'ch3_ft_b1',  // TODO: 照片查看演出（圆桌桌面场景图 P1 未出，先文字占位）
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_ft_b2',
+  },
+  {
+    id: 'ch3_ft_b2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_free_tian',
+  },
+  {
+    id: 'ch3_ft_c1',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_ft_c2',
+  },
+  {
+    id: 'ch3_ft_c2',
+    type: 'choice',
+    background: 'bg/tower_interior_hall',
+    choices: [
+      { impact: 'critical', next: 'ch3_ft_c3' },   // 追问：我们的人？
+      { impact: 'critical', next: 'ch3_free_tian' },  // 回菜单
+    ],
+  },
+  {
+    id: 'ch3_ft_c3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_free_tian',
+  },
+
+  // ===== 二楼走廊·班（corridor 探索态：onEnter 演出 → 探索） =====
+  {
+    id: 'ch3_corridor_enter',  // 地点 onEnter 演出链起始（travelTo 触发）
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '旁白',
+    next: 'ch3_corridor_enter2',
+  },
+  {
+    id: 'ch3_corridor_enter2',  // 链尾：回到走廊探索态
+    type: 'end',
+    background: 'bg/ban_corridor_moon',
+    explore: true,
+    location: 'corridor',
+  },
+  {
+    id: 'ch3_free_ban1',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch3_free_ban2',
+  },
+  {
+    id: 'ch3_free_ban2',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch3_free_ban3',
+  },
+  {
+    id: 'ch3_free_ban3',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch3_free_ban4',
+  },
+  {
+    id: 'ch3_free_ban4',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '班',
+    next: 'ch3_free_ban_end',
+  },
+  {
+    id: 'ch3_free_ban_end',  // 对话结束回走廊探索态
+    type: 'end',
+    background: 'bg/ban_corridor_moon',
+    explore: true,
+    location: 'corridor',
+  },
+
+  // ===== 回房睡觉 → 段七衔接（信使段台词未定稿，占位） =====
+  {
+    id: 'ch3_sleep1',
+    type: 'dialogue',
+    background: 'bg/tower_room_night',
+    speaker: '旁白',
+    next: 'ch3_morning1',
+  },
+  {
+    id: 'ch3_morning1',  // 段七占位：清早下楼撞见信使（台词定稿后接线）
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_act3_end',
+  },
+  {
+    id: 'ch3_act3_end',
+    type: 'end',
+    background: 'bg/tower_interior_hall',
   },
 ]
