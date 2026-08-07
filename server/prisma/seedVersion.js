@@ -5,6 +5,22 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.0.1',
+    date: new Date('2026-08-08'),
+    summary: '修复塔楼自由探索的跳转问题',
+    updates: JSON.stringify([
+      '修复在塔楼里走动时，部分楼层之间没法来回的问题',
+      '修复在房间里休息时，会被莫名带出门的问题',
+      '修复上楼后找不到回房间入口的问题',
+      '修复进入房间后无法离开的问题',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      '第二章自由探索展开',
+      '手机/消息系统（规划中）',
+    ], null, 0),
+  },
+  {
     version: 'v3.0.0',
     date: new Date('2026-08-07'),
     summary: '第一章新增第二幕、第三幕剧情 + 塔楼自由探索',
