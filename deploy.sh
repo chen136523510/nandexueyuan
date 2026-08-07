@@ -26,7 +26,8 @@ npx prisma generate
 
 echo "=== 3/9 数据库迁移（按需）==="
 # 只在有未应用的迁移时才执行
-PENDING=$(npx prisma migrate status 2>&1 | grep -c "not applied" || true)
+# ⚠️ grep 模式必须匹配实际输出 "not yet been applied"（曾用 "not applied" 漏检导致迁移被跳过，BUG-58）
+PENDING=$(npx prisma migrate status 2>&1 | grep -cE "not (yet been )?applied" || true)
 if [ "$PENDING" -gt 0 ]; then
   echo "  检测到 $PENDING 个未应用的迁移，执行 migrate deploy"
   npx prisma migrate deploy

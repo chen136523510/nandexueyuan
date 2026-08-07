@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-08-07（白机 v3.0.0 发版部署）
+
+### BUG-58：deploy.sh 迁移漏检——grep "not applied" 不匹配 "not yet been applied"，线上迁移被跳过
+
+- **发现时间**：2026-08-07（v3.0.0 部署后验证 game_saves 表）
+- **环境**：生产服务器（www.nandexueyuan.top）bash deploy.sh
+- **现象**：部署后验证 `PRAGMA table_info(game_saves)` 无 `spaceState` 列——spaceState 迁移未应用。部署流程 9 步全"通过"但数据库结构未变
+- **根因**：deploy.sh 的迁移检测 `grep -c "not applied"` 匹配 prisma migrate status 输出，但实际输出为 `Following migration have not yet been applied:`——**"not yet been applied" 不含连续子串 "not applied"**，grep 返回 0 → `PENDING=0` → 跳过 `migrate deploy`。set -e 不报错（grep 用 `|| true` 兜底），部署流程照常走完
+- **修复**：deploy.sh grep 改为 `grep -cE "not (yet been )?applied"`（兼容两种输出）。服务器手动 `npx prisma migrate deploy` 补应用迁移（已验证 spaceState 列 OK）
+- **验证**：服务器手动 migrate deploy 后 `PRAGMA table_info(game_saves)` 含 spaceState ✅；API/前端 200 ✅
+- **文件**：`deploy.sh`
+- **状态**：✅ 已修复
+- **教训**：部署脚本的关键正则必须用**实际输出**验证（不是想当然）。此 bug 会导致"部署成功但数据库没变"的静默失败——**每次发版部署后必须验证数据库结构**（本次靠验证 spaceState 列抓出）
+
+---
+
 ## 2026-08-05（黑机 UI修复+背景图一致性重做）
 
 ### BUG-57：grassland_morning 误列 REAL_BG_MAP 导致幕间结尾背景空白
