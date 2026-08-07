@@ -27,13 +27,12 @@ export const LOCATIONS = {
     ],
     hotspots: [
       // 互动点：goto 剧情节点（Q&A 等）
-      // 坐标按演出设计站位：见(右·地图前) / 添(左·沙发)——角色入画图出图时按此构图
+      // 坐标按演出设计站位：见(右·地图前) / 添(左·沙发)--角色入画图出图时按此构图
+      // 注：睡觉入口不在大厅（房间在二楼），统一走 大厅->上二楼->走廊->回房间->睡觉
       { id: 'hall_dean', x: 74, y: 66, label: '见', icon: '📖',
         action: { type: 'goto', target: 'ch3_free_dean' } },
       { id: 'hall_tian', x: 24, y: 58, label: '添', icon: '🔧',
         action: { type: 'goto', target: 'ch3_free_tian' } },
-      { id: 'hall_sleep', x: 84, y: 82, label: '回房睡觉', icon: '🛏️',
-        action: { type: 'goto', target: 'ch3_sleep1' } },
     ],
     onEnter: null,       // 可选：进入演出链起始节点 id（链尾带 explore 回探索）
     unlockedBy: null,    // 解锁条件（null=初始解锁），语法同 condition 节点
@@ -45,7 +44,8 @@ export const LOCATIONS = {
     bg: 'bg/ban_corridor_moon',
     desc: '走廊尽头的窗开着，月光洒了一地。',
     exits: [
-      { to: 'hall', label: '下一楼', icon: '🪜', x: 50, y: 88, cond: null },
+      { to: 'hall', label: '下一楼', icon: '🪜', x: 40, y: 88, cond: null },
+      { to: 'room', label: '回房间', icon: '🛏️', x: 60, y: 88, cond: null },
     ],
     hotspots: [
       { id: 'cor_ban', x: 46, y: 62, label: '班', icon: '🌙',
@@ -60,11 +60,17 @@ export const LOCATIONS = {
     level: 'room',
     bg: 'bg/tower_room_night',
     desc: '窗外的风声一阵一阵。',
-    exits: [],
+    exits: [
+      // 出房间：第二幕/第三幕走廊地点 id 不同，用 goto 路由节点分流（见 ch_room_exit_router）
+      // 不配 travelTo exit（exits 渲染时不过滤 cond 会显示重复按钮），改用 hotspot goto
+    ],
     hotspots: [
-      // 睡觉：按进度分流（ch2_done 变量——第二幕睡觉→第三幕开场；第三幕睡觉→次早出门）
-      { id: 'room_sleep', x: 50, y: 80, label: '睡觉', icon: '🛏️',
+      // 睡觉：按进度分流（ch2_done 变量--第二幕睡觉->第三幕开场；第三幕睡觉->睡觉旁白->回房间探索态）
+      { id: 'room_sleep', x: 40, y: 80, label: '睡觉', icon: '🛏️',
         action: { type: 'goto', target: 'ch_room_sleep_router' } },
+      // 出房间：路由到当前阶段的走廊（第二幕 corridor_free / 第三幕 corridor），走 onEnter 演出
+      { id: 'room_exit', x: 60, y: 80, label: '出房间', icon: '🚪',
+        action: { type: 'goto', target: 'ch_room_exit_router' } },
     ],
     onEnter: null,
     unlockedBy: null,

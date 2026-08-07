@@ -1827,14 +1827,39 @@ export default [
     explore: true,
     location: 'room',
   },
-  // 房间探索态"睡觉"热点路由：第二幕睡觉 → 第三幕开场；第三幕睡觉 → 次早出门
+  // 房间探索态"睡觉"热点路由：第二幕睡觉 → 第三幕开场；第三幕睡觉 → 睡觉旁白 → 回房间探索态
   {
     id: 'ch_room_sleep_router',
     type: 'condition',
     background: 'bg/tower_room_night',
     branches: [
-      { if: { variables: { ch2_done: true } }, next: 'ch3_leave1' },  // 第三幕：次早出门（马蹄声）
+      { if: { variables: { ch2_done: true } }, next: 'ch3_room_sleep' },  // 第三幕：睡觉旁白 → 回房间探索态
       { else: true, next: 'ch2_room1' },                               // 第二幕：草原的夜很静 → 第三幕开场
+    ],
+  },
+  // 第三幕房间"睡觉"：旁白 → 回房间探索态（玩家可再点"出门"主动触发信使段）
+  {
+    id: 'ch3_room_sleep',
+    type: 'dialogue',
+    background: 'bg/tower_room_night',
+    speaker: '旁白',
+    next: 'ch3_room_morning',
+  },
+  {
+    id: 'ch3_room_morning',  // 睡醒 → 回房间探索态
+    type: 'end',
+    background: 'bg/tower_room_night',
+    explore: true,
+    location: 'room',
+  },
+  // 房间探索态"出房间"热点路由：第二幕 → corridor_free；第三幕 → corridor（走对应走廊 onEnter 演出）
+  {
+    id: 'ch_room_exit_router',
+    type: 'condition',
+    background: 'bg/tower_room_night',
+    branches: [
+      { if: { variables: { ch2_done: true } }, next: 'ch3_corridor_enter' },  // 第三幕走廊 onEnter
+      { else: true, next: 'ch2_corridor_enter' },                             // 第二幕走廊 onEnter
     ],
   },
   {
