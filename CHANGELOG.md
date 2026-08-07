@@ -4,6 +4,35 @@
 
 ---
 
+## 2026-08-07 v3.0.0 德塔空间探索机制上线：第一章第三幕「东来的信」落地
+
+### 概要
+
+本次发版核心是**空间探索机制（R-035）**：视觉小说引擎从"纯节点驱动"升级为"剧情（时间线）+ 空间（地点图）解耦"的双层模型——`explore` 成为节点属性（dialogue/end 均可带），进入探索态时由地点数据（LOCATIONS）生成合成节点驱动渲染。第二幕结尾（自由活动/走廊看月亮/回房间）与第一章第三幕全程迁移为探索态，玩家可在塔楼大厅/走廊/房间走动、与角色互动，存档保留空间位置。第一章第三幕「东来的信」台词全量定稿落地（含信使段：神秘信使=饶死灵傀儡，见察觉死灵气息的疑点暗线）。
+
+### 变更内容
+
+| 类别 | 变更 |
+|------|------|
+| feat(major) | 空间机制引擎（R-035）：locations.js 升级为地点图（bg/hotspots/exits/onEnter/unlockedBy）；store 新增 currentLocation/currentExploreLocation/unlockedLocations/visitedLocations + enterExplore/travelTo；explore 节点属性（dialogue/end 均可带，剧情内部可随时进出探索态）；合成节点渲染（渲染层与剧情模式共用）；HotspotLayer 支持出口（travel action）；NdeVisualNovelView 探索态 desc 横幅 |
+| feat | 存档接口扩展：GameSave 新增 spaceState JSON 字段（前后端 + 正式迁移文件，旧存档向后兼容：无字段自动进探索态） |
+| feat | 第一章第三幕「东来的信」全量落地：商队段（三张事变照片）/段六讨论+判断选择（benefit_choice）/过渡段探索态（见/添 Q&A+班+回房）/信使段（下楼选择+死灵气息讨论+17 按 contract 分支+丘的信道具） |
+| feat | 道具：丘的信（qiu_letter，伏笔道具） |
+| refactor | 第二幕结尾迁移探索态：hall_free/corridor_free/room 三地点 + 班/睡觉路由分流（ch2_done 变量），旧存档节点 id 保留兼容 |
+| fix | 第二幕收尾场景切换时机修正：幸起身说话保持谈判全景，离场后才恢复立绘层与大厅实景 |
+| docs | 世界观双向同步：记忆碎片（帝国传讯）、共和国照片科技、沙漠附庸史、饶死灵傀儡信使（世界书+设定集） |
+| docs | AGENTS 新增美术资产 README 纪律（入库即登记，视觉模型描述不可靠） |
+
+### 影响评估
+
+- **影响范围**：德塔视觉小说引擎（store/渲染层/存档）+ 第一章全章节数据
+- **架构决策**：空间与剧情解耦（explore 节点属性 + 合成节点），替代"每处自由活动写死一组节点"——为第二章自由探索提供数据驱动底座
+- **兼容性**：旧存档（无 spaceState）读档自动恢复剧情模式/探索态（explore 节点自带 location）；序章旧模式（end+hotspots）继续兼容运行
+- **数据库**：game_saves 新增 spaceState 列（迁移文件 `20260807120000_add_game_save_space_state`），deploy.sh 的 migrate deploy 自动应用
+- **回滚策略**：各改动独立提交可 revert；空间机制未启用时（无 explore 节点）行为与旧版一致
+
+---
+
 ## 2026-08-03 v2.4.0 社区站视觉体系统一：霞鹜文楷+莫兰迪token+首页重构
 
 ### 概要
