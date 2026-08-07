@@ -62,11 +62,49 @@ export const LOCATIONS = {
     desc: '窗外的风声一阵一阵。',
     exits: [],
     hotspots: [
-      // 出门：goto 剧情节点（楼下马蹄声 → 选择下楼 → 信使段）
-      { id: 'room_leave', x: 50, y: 80, label: '出门', icon: '🚪',
-        action: { type: 'goto', target: 'ch3_leave1' } },
+      // 睡觉：按进度分流（ch2_done 变量——第二幕睡觉→第三幕开场；第三幕睡觉→次早出门）
+      { id: 'room_sleep', x: 50, y: 80, label: '睡觉', icon: '🛏️',
+        action: { type: 'goto', target: 'ch_room_sleep_router' } },
     ],
     onEnter: null,
+    unlockedBy: null,
+  },
+
+  // ===== 第二幕衔接段专属地点（与第三幕同空间、不同演出状态） =====
+  hall_free: {
+    id: 'hall_free',
+    name: '一层大厅',
+    level: 'room',
+    bg: 'bg/tower_interior_hall',  // 角色入画版 P1 出图后改（见端详羊皮卷+添靠沙发若有所思）
+    desc: '幸走后，大厅安静下来。',
+    exits: [
+      { to: 'corridor_free', label: '上二楼', icon: '🪜', x: 50, y: 16, cond: null },
+    ],
+    hotspots: [
+      // 坐标按演出设计：见(右·端详羊皮卷) / 添(左)
+      { id: 'hall_free_dean', x: 74, y: 66, label: '见', icon: '📖',
+        action: { type: 'goto', target: 'ch2_free_dean1' } },
+      { id: 'hall_free_tian', x: 24, y: 58, label: '添', icon: '🔧',
+        action: { type: 'goto', target: 'ch2_free_tian1' } },
+    ],
+    onEnter: 'ch2_free1',  // 进入演出：旁白"幸走后，大厅安静下来。"（链尾 explore 回探索态）
+    unlockedBy: null,
+  },
+  corridor_free: {
+    id: 'corridor_free',
+    name: '二楼走廊',
+    level: 'room',
+    bg: 'bg/ban_corridor_moon',
+    desc: '走廊尽头的窗开着，月光洒了一地。',
+    exits: [
+      { to: 'hall_free', label: '下一楼', icon: '🪜', x: 40, y: 88, cond: null },
+      { to: 'room', label: '回房间', icon: '🛏️', x: 60, y: 88, cond: null },
+    ],
+    hotspots: [
+      { id: 'cor_free_ban', x: 46, y: 62, label: '班', icon: '🌙',
+        action: { type: 'goto', target: 'ch2_moon2' } },
+    ],
+    onEnter: 'ch2_corridor_enter',  // 进入演出（月光旁白，链尾 explore corridor_free）
     unlockedBy: null,
   },
 }

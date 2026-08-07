@@ -1681,7 +1681,7 @@ export default [
     next: 'ch2_free1'
   },
 
-  // ===== 衔接段·自由活动（热点） =====
+  // ===== 衔接段·自由活动（大厅探索态 hall_free，R-035 迁移） =====
   {
     id: 'ch2_free1',
     type: 'dialogue',
@@ -1690,17 +1690,11 @@ export default [
     next: 'ch2_free_end'
   },
   {
-    id: 'ch2_free_end',
+    id: 'ch2_free_end',  // 进入大厅探索态（热点数据在 LOCATIONS.hall_free；保留 id 兼容旧存档）
     type: 'end',
     background: 'bg/tower_interior_hall',
-    hotspots: [
-      { id: 'free_dean', x: 22, y: 68, label: '见', icon: '📖',
-        action: { type: 'goto', target: 'ch2_free_dean1' } },
-      { id: 'free_tian', x: 72, y: 60, label: '添', icon: '🔧',
-        action: { type: 'goto', target: 'ch2_free_tian1' } },
-      { id: 'go_upstairs', x: 50, y: 20, label: '上二楼', icon: '🪜',
-        action: { type: 'goto', target: 'ch2_moon1' } },
-    ]
+    explore: true,
+    location: 'hall_free',
   },
   // -- 见热点：为什么让我做这么大的选择（学院立场） --
   {
@@ -1742,7 +1736,22 @@ export default [
     next: 'ch2_free_end'
   },
 
-  // ===== 衔接段·二楼走廊·夜（班看月亮，CG-1 复用） =====
+  // ===== 二楼走廊·夜（班看月亮，CG-1 复用） =====
+  // 第二幕走廊进入演出（corridor_free onEnter；链尾 explore corridor_free）
+  {
+    id: 'ch2_corridor_enter',
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '旁白',
+    next: 'ch2_corridor_enter2'
+  },
+  {
+    id: 'ch2_corridor_enter2',
+    type: 'end',
+    background: 'bg/ban_corridor_moon',
+    explore: true,
+    location: 'corridor_free',
+  },
   {
     id: 'ch2_moon1',
     type: 'dialogue',
@@ -1791,7 +1800,7 @@ export default [
     type: 'choice',
     background: 'bg/ban_corridor_moon',
     choices: [
-      { impact: 'critical', next: 'ch2_room1' },   // 回房间休息（进入第三幕过渡）
+      { impact: 'critical', next: 'ch2_room_enter' },  // 回房间休息（进入房间探索态）
       { impact: 'critical', next: 'ch2_moon_talk1' },  // 再聊两句（班多回一两句，仍回到选择）
     ],
   },
@@ -1810,7 +1819,24 @@ export default [
     next: 'ch2_moon_choice'
   },
 
-  // ===== 衔接段·房间·夜 =====
+  // ===== 衔接段·房间·夜（房间探索态 room，R-035 迁移） =====
+  {
+    id: 'ch2_room_enter',  // 回房间 → 进入房间探索态
+    type: 'end',
+    background: 'bg/tower_room_night',
+    explore: true,
+    location: 'room',
+  },
+  // 房间探索态"睡觉"热点路由：第二幕睡觉 → 第三幕开场；第三幕睡觉 → 次早出门
+  {
+    id: 'ch_room_sleep_router',
+    type: 'condition',
+    background: 'bg/tower_room_night',
+    branches: [
+      { if: { variables: { ch2_done: true } }, next: 'ch3_leave1' },  // 第三幕：次早出门（马蹄声）
+      { else: true, next: 'ch2_room1' },                               // 第二幕：草原的夜很静 → 第三幕开场
+    ],
+  },
   {
     id: 'ch2_room1',
     type: 'dialogue',
@@ -1819,9 +1845,10 @@ export default [
     next: 'ch2_act2_end'
   },
   {
-    id: 'ch2_act2_end',
-    type: 'dialogue',  // 无文本过渡节点：第二幕收尾 → 第三幕开场（点击即推进）
+    id: 'ch2_act2_end',  // 第二幕完成标记（供 room/班路由分流）
+    type: 'event',
     background: 'bg/tower_room_night',
+    setVariables: { ch2_done: true },
     next: 'ch3_v_cond',  // 无缝衔接第三幕·东来的信（时间跳跃由第三幕开场旁白承接）
   },
 

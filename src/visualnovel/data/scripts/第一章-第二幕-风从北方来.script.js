@@ -518,6 +518,10 @@ export default [
 
   // ===== 衔接段·走廊·夜（班看月亮） =====
   {
+    id: 'ch2_corridor_enter',  // 旁白（corridor_free onEnter：月光）
+    text: '你上了二楼。走廊尽头的窗开着，月光洒了一地。'
+  },
+  {
     id: 'ch2_moon1',  // 旁白
     text: '你上了二楼。走廊尽头的窗开着，月光洒了一地。'
   },
