@@ -1611,10 +1611,7 @@ export default [
     id: 'ch2_end1',
     type: 'dialogue',
     background: 'bg/negotiation_standoff',
-    characters: [
-      { id: 'dean', portrait: 'dean/calm', position: 'right' },
-      { id: 'tian', portrait: 'tian/normal', position: 'left' },
-    ],  // 幸已入画全景图，见/添恢复立绘（幸离场后回到大厅实景）
+    characters: [],  // 幸起身说话，仍画在全景图中，立绘层保持关闭
     speaker: '幸',
     next: 'ch2_end2'
   },
@@ -1628,15 +1625,19 @@ export default [
   {
     id: 'ch2_end3',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',  // 幸离去，切回大厅实景
+    characters: [
+      { id: 'dean', portrait: 'dean/calm', position: 'right' },
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+    ],  // 幸离场后恢复立绘层（见+添回到大厅）
     speaker: '旁白',
     next: 'ch2_end4_cond'
   },
-  // 添收尾按选择②分支四选一
+  // 添收尾按选择②分支四选一（幸已离去，大厅实景+见/添立绘）
   {
     id: 'ch2_end4_cond',
     type: 'condition',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     branches: [
       { if: { variables: { contract: 'full' } }, next: 'ch2_end4_full' },
       { if: { variables: { contract: 'conditional' } }, next: 'ch2_end4_conditional' },
@@ -1647,35 +1648,35 @@ export default [
   {
     id: 'ch2_end4_full',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '添',
     next: 'ch2_end5'
   },
   {
     id: 'ch2_end4_conditional',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '添',
     next: 'ch2_end5'
   },
   {
     id: 'ch2_end4_none',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '添',
     next: 'ch2_end5'
   },
   {
     id: 'ch2_end4_delay',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '添',
     next: 'ch2_end5'
   },
   {
     id: 'ch2_end5',
     type: 'dialogue',
-    background: 'bg/negotiation_standoff',
+    background: 'bg/tower_interior_hall',
     speaker: '旁白',
     next: 'ch2_free1'
   },
