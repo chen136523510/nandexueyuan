@@ -115,6 +115,7 @@ export async function getSave(req, res) {
       variables: JSON.parse(save.variables),
       inventory: JSON.parse(save.inventory),
       thumbnail: save.thumbnail,
+      spaceState: JSON.parse(save.spaceState || '{}'), // 空间状态快照（R-035）
       createdAt: save.createdAt,
       updatedAt: save.updatedAt,
     })
@@ -131,7 +132,7 @@ export async function writeSave(req, res) {
     if (isNaN(slot) || slot < 0 || slot > 10) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '槽位号无效（0-10）', ErrorCode.PARAM_ERROR.httpStatus)
     }
-    const { node, chapter, affinity, variables, inventory, thumbnail } = req.body
+    const { node, chapter, affinity, variables, inventory, thumbnail, spaceState } = req.body
     if (!node || !chapter) {
       return fail(res, ErrorCode.PARAM_ERROR.code, '缺少 node 或 chapter', ErrorCode.PARAM_ERROR.httpStatus)
     }
@@ -145,6 +146,7 @@ export async function writeSave(req, res) {
         variables: JSON.stringify(variables || {}),
         inventory: JSON.stringify(inventory || []),
         thumbnail: thumbnail || null,
+        spaceState: JSON.stringify(spaceState || {}), // 空间状态快照（R-035）
       },
       create: {
         userId: req.user.id,
@@ -155,6 +157,7 @@ export async function writeSave(req, res) {
         variables: JSON.stringify(variables || {}),
         inventory: JSON.stringify(inventory || []),
         thumbnail: thumbnail || null,
+        spaceState: JSON.stringify(spaceState || {}), // 空间状态快照（R-035）
       },
     })
     success(res, {

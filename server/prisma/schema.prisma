@@ -206,6 +206,7 @@ model GameSave {
   variables String   // JSON: 剧情变量快照
   inventory String   @default("[]") // JSON: 背包物品 id 快照
   thumbnail String?  // 存档缩略图（base64）
+  spaceState String? @default("{}") // JSON: 空间状态快照（R-035：currentLocation/currentExploreLocation/visitedLocations/unlockedLocations）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
