@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
-import { CHAR_COLORS, NodeType } from '../engine/types.js'
+import { CHAR_COLORS, SPEAKER_TO_ID, NodeType } from '../engine/types.js'
 
 const store = useVisualNovelStore()
 
@@ -16,6 +16,11 @@ const speakerColor = computed(() => {
   const char = store.currentCharacters.find((c) => c.active)
   if (char && CHAR_COLORS[char.id]) {
     return CHAR_COLORS[char.id]
+  }
+  // 立绘层关闭时（探索态 Q&A：角色画入背景图无立绘），按角色映射直接取色
+  const speakerId = SPEAKER_TO_ID[speaker]
+  if (speakerId && CHAR_COLORS[speakerId]) {
+    return CHAR_COLORS[speakerId]
   }
   // 旁白等特殊说话者
   return CHAR_COLORS.narrator

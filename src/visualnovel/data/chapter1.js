@@ -2086,9 +2086,10 @@ export default [
     next: 'ch3_d12',
   },
   {
-    id: 'ch3_d12',
+    id: 'ch3_d12',  // 见收束（表情 serious→calm，演出设计时序表）
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
+    enter: [{ id: 'dean', portrait: 'dean/calm', position: 'right' }],
     speaker: '见',
     next: 'ch3_d13',
   },

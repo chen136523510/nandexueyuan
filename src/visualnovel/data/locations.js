@@ -27,9 +27,10 @@ export const LOCATIONS = {
     ],
     hotspots: [
       // 互动点：goto 剧情节点（Q&A 等）
-      { id: 'hall_dean', x: 24, y: 66, label: '见', icon: '📖',
+      // 坐标按演出设计站位：见(右·地图前) / 添(左·沙发)——角色入画图出图时按此构图
+      { id: 'hall_dean', x: 74, y: 66, label: '见', icon: '📖',
         action: { type: 'goto', target: 'ch3_free_dean' } },
-      { id: 'hall_tian', x: 74, y: 58, label: '添', icon: '🔧',
+      { id: 'hall_tian', x: 24, y: 58, label: '添', icon: '🔧',
         action: { type: 'goto', target: 'ch3_free_tian' } },
       { id: 'hall_sleep', x: 84, y: 82, label: '回房睡觉', icon: '🛏️',
         action: { type: 'goto', target: 'ch3_sleep1' } },
