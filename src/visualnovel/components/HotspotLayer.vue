@@ -1,13 +1,14 @@
 <script setup>
 /**
  * 热点交互层
- * 序章结束后的自由探索场景，在背景图上渲染可交互的按钮标识。
- * 仅在 isEnded 且当前节点有 hotspots 时显示。
+ * 序章结束后/探索态（R-035）的自由探索场景，在背景图上渲染可交互的按钮标识。
+ * 显示条件：剧情 end 节点带 hotspots（isEnded）或探索态合成节点（isExploring）。
  * z-index: 5（立绘层之上、对话框之下）
  *
- * 热点数据结构（prologue.js 的 end 节点 hotspots 数组）：
- *   { id, x, y, label, icon, action: { type: 'goto'|'notice'|'map', target|message } }
+ * 热点数据结构：
+ *   { id, x, y, label, icon, action: { type: 'goto'|'notice'|'map'|'travel', target|message|to } }
  *   x/y 为按钮中心点的百分比坐标
+ *   kind: 'exit' 为地点出口（travel 动作，样式微区分）
  */
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
 
@@ -22,16 +23,23 @@ function handleHotspot(hotspot) {
     store.showNotice(action.message)
   } else if (action.type === 'map') {
     store.togglePanel('map')
+  } else if (action.type === 'travel') {
+    store.travelTo(action.to)
   }
 }
 </script>
 
 <template>
-  <div v-if="store.isEnded && store.currentHotspots.length" class="hotspot-layer" data-no-advance>
+  <div
+    v-if="(store.isEnded || store.isExploring) && store.currentHotspots.length"
+    class="hotspot-layer"
+    data-no-advance
+  >
     <button
       v-for="spot in store.currentHotspots"
       :key="spot.id"
       class="hotspot-btn"
+      :class="{ 'hotspot-btn-exit': spot.kind === 'exit' }"
       :style="{ left: spot.x + '%', top: spot.y + '%' }"
       @click.stop="handleHotspot(spot)"
     >
@@ -131,5 +139,19 @@ function handleHotspot(hotspot) {
 .hotspot-btn:hover .hotspot-label {
   color: rgba(232, 224, 204, 1);
   border-color: rgba(201, 169, 110, 0.6);
+}
+
+/* 出口按钮（地点转移）：冷色调区分，偏"通道"感 */
+.hotspot-btn-exit .hotspot-icon {
+  border-color: rgba(139, 149, 168, 0.6);
+}
+
+.hotspot-btn-exit .hotspot-label {
+  border-color: rgba(139, 149, 168, 0.3);
+}
+
+.hotspot-btn-exit:hover .hotspot-icon {
+  background: rgba(139, 149, 168, 0.25);
+  border-color: rgba(139, 149, 168, 0.9);
 }
 </style>

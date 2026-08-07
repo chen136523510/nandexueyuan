@@ -36,6 +36,8 @@ function handleStageClick(e) {
   if (store.currentNode?.type === NodeType.INPUT) return
   // 自由探索模式（热点）不推进
   if (store.isEnded) return
+  // 探索态（R-035 空间机制）不推进（等热点/出口交互）
+  if (store.isExploring) return
 
   store.advance()
 }
@@ -143,8 +145,13 @@ onUnmounted(() => {
       <!-- 立绘层 -->
       <CharacterLayer />
 
-      <!-- 热点交互层（序章结束后自由探索） -->
+      <!-- 热点交互层（序章结束后/探索态自由探索） -->
       <HotspotLayer />
+
+      <!-- 探索态地点描述横幅（R-035：有对话时对话框正常显示，探索态空闲显示地点描述） -->
+      <div v-if="store.isExploring && store.currentNode?.desc" class="explore-desc" data-no-advance>
+        {{ store.currentNode.desc }}
+      </div>
 
       <!-- 对话框 -->
       <DialogueBox />
@@ -252,6 +259,26 @@ onUnmounted(() => {
   overflow: hidden;
   background: #0d1117;
   user-select: none;
+}
+
+/* 探索态地点描述横幅（顶部，半透明） */
+.explore-desc {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  max-width: 70%;
+  padding: 8px 20px;
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(201, 169, 110, 0.2);
+  border-radius: 20px;
+  color: rgba(232, 224, 204, 0.85);
+  font-size: 14px;
+  letter-spacing: 1px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  text-align: center;
 }
 
 /* 加载遮罩 */

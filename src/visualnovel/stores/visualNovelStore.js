@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent, mergeScript, interpolate } from '../engine/engine.js'
+import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent, mergeScript, interpolate, evalConditionNode } from '../engine/engine.js'
 import { NodeType, ChoiceImpact, SPEAKER_TO_ID } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
+import { LOCATIONS } from '../data/locations.js'
 
 // 章节注册表（章节 id -> 剧本数据加载器）
 // 用动态 import 避免一次性加载所有章节。
@@ -21,13 +22,14 @@ const CHAPTER_LOADERS = {
     return { default: mergeScript(skeleton, allScripts) }
   },
   chapter1: async () => {
-    const [{ default: skeleton }, s1, s2, s3] = await Promise.all([
+    const [{ default: skeleton }, s1, s2, s3, s4] = await Promise.all([
       import('../data/chapter1.js'),
       import('../data/scripts/第一章-幕间-德塔日常.script.js'),
       import('../data/scripts/第一章-第一幕-帝桥.script.js'),
       import('../data/scripts/第一章-第二幕-风从北方来.script.js'),
+      import('../data/scripts/第一章-第三幕-东来的信.script.js'),
     ])
-    const allScripts = [s1.default, s2.default, s3.default].flat()
+    const allScripts = [s1.default, s2.default, s3.default, s4.default].flat()
     return { default: mergeScript(skeleton, allScripts) }
   },
 }
@@ -51,6 +53,17 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   // 现在规则：角色登场后持续在场（dim/narrator），直到显式 exit 退场。
   const stage = ref([])                 // [{ id, portrait, position }]，当前在场的角色
 
+  // ===== 空间状态（R-035：地点 = 带状态的舞台坐标） =====
+  // 剧情（节点图=时间线）与空间（地点图=坐标）解耦：
+  //   - currentLocation：玩家所在地点 id（剧情/探索都更新，信息性）
+  //   - currentExploreLocation：非 null = 探索模式（值=地点 id），null = 剧情模式
+  //   - 节点带 explore: true + location → 进入探索态（dialogue/end 均可，剧情内部可随时进出）
+  //   - 探索态渲染合成节点 {type:'explore'}，渲染层照旧读 currentNode
+  const currentLocation = ref(null)
+  const currentExploreLocation = ref(null)
+  const unlockedLocations = ref([])     // 已解锁地点（cond 通过后记录）
+  const visitedLocations = ref([])      // 已访问地点（进入即记录）
+
   // ===== UI 状态 =====
   const isTyping = ref(false)           // 打字机是否正在播放
   const fullText = ref('')              // 当前节点的完整文本
@@ -69,15 +82,46 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const autoDelay = ref(2000)           // 自动播放延迟（ms）
 
   // ===== 计算属性 =====
+  // 合成节点：探索态时生成 {type:'explore'}，渲染层照旧读 currentNode
+  // （背景=location.bg、热点=地点热点+出口转 travel、无文本→对话框自动隐藏）
   const currentNode = computed(() => {
+    if (currentExploreLocation.value) {
+      const loc = LOCATIONS[currentExploreLocation.value]
+      if (!loc) return null
+      return {
+        id: `@explore:${loc.id}`,
+        type: 'explore',
+        location: loc.id,
+        background: loc.bg,
+        desc: loc.desc,
+        hotspots: [
+          ...(loc.hotspots || []),
+          // 出口转热点：action travel，kind:'exit' 供样式区分
+          ...(loc.exits || []).map((e) => ({
+            id: `exit_${e.to}`,
+            x: e.x ?? 50,
+            y: e.y ?? 88,
+            label: e.label || e.to,
+            icon: e.icon || '➡️',
+            kind: 'exit',
+            action: { type: 'travel', to: e.to },
+          })),
+        ],
+      }
+    }
     if (!currentIndex.value || !currentNodeId.value) return null
     return getNode(currentIndex.value, currentNodeId.value)
   })
+
+  // 是否探索模式（探索态不响应推进/不显示对话框）
+  const isExploring = computed(() => !!currentExploreLocation.value)
 
   // 立绘三态推导（narrator/active/dim），由 speaker 驱动，不依赖数据手写 active
   // 关键：基于「舞台状态」stage（跨节点持久化），而非逐节点 node.characters。
   // 角色一旦登场就持续在场，说话人切换只影响 active/dim，不再一个出现一个消失。
   const currentCharacters = computed(() => {
+    // 探索态无立绘（人物画入地点背景图）
+    if (isExploring.value) return []
     const chars = stage.value
     if (chars.length === 0) return []
 
@@ -167,6 +211,11 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       unlockedCGs.value = progress.unlockedCGs || []
       inventory.value = progress.inventory || []
       stage.value = [] // 重置舞台状态（新开游戏）
+      // 重置空间状态（新开游戏；若有自动存档，下方快照会覆盖）
+      currentLocation.value = null
+      currentExploreLocation.value = null
+      visitedLocations.value = []
+      unlockedLocations.value = []
 
       // 加载章节
       await loadChapter('prologue')
@@ -183,10 +232,16 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         affinity.value = data.affinity || {}
         storyVariables.value = data.variables || {}
         inventory.value = data.inventory || []
-        // 恢复舞台状态（与 loadFromSlot 一致，旧存档无 stage 字段则置空）
-        stage.value = Array.isArray(data.stage)
-          ? data.stage.map(c => ({ ...c }))
-          : []
+      // 恢复舞台状态（与 loadFromSlot 一致，旧存档无 stage 字段则置空）
+      stage.value = Array.isArray(data.stage)
+        ? data.stage.map(c => ({ ...c }))
+        : []
+      // 恢复空间状态（R-035：server 存 spaceState JSON；旧存档无字段 → 剧情模式）
+      const space = data.spaceState || null
+      currentLocation.value = space?.currentLocation || null
+      currentExploreLocation.value = space?.currentExploreLocation || null
+      visitedLocations.value = Array.isArray(space?.visitedLocations) ? [...space.visitedLocations] : []
+      unlockedLocations.value = Array.isArray(space?.unlockedLocations) ? [...space.unlockedLocations] : []
 
         // 容错：存档的章节可能跟当前加载的 prologue 不同（如上次玩到第一章）
         let effectiveChapter = 'prologue' // 实际加载的章节（用于日志和提示）
@@ -205,7 +260,13 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         if (currentIndex.value) {
           const safeNode = resolveNodeSafe(currentIndex.value, data.node, effectiveChapter)
           if (safeNode) {
-            goToNode(safeNode)
+            if (space?.currentExploreLocation && LOCATIONS[space.currentExploreLocation]) {
+              // 探索态存档：空间状态已恢复，直接设置节点 id（goToNode 会退出探索态）
+              currentNodeId.value = safeNode
+              isEnded.value = false
+            } else {
+              goToNode(safeNode)
+            }
             if (safeNode !== data.node) {
               showNotice('剧本已更新，已从本章开头继续')
             }
@@ -255,6 +316,10 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     }
     // 地图（固定资源）
     urls.add('/visualnovel/map/world_map.png')
+    // 空间地点背景（探索态背景在 LOCATIONS 数据里，不在节点中）
+    for (const loc of Object.values(LOCATIONS)) {
+      urls.add(`/visualnovel/${loc.bg}.png`)
+    }
 
     const total = urls.size
     let loaded = 0
@@ -364,6 +429,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     isEnded.value = false
     triggeredCG.value = null
 
+    // 退出探索态：任何剧情节点（event/condition/dialogue/choice/end）都会离开探索态，
+    // 渲染真实节点而非合成节点（explore 分支稍后重新进入）
+    if (currentExploreLocation.value) {
+      currentExploreLocation.value = null
+    }
+
     // 处理 event 节点：执行副作用后自动跳转
     if (node.type === NodeType.EVENT) {
       const result = executeEvent(node, storyVariables.value, unlockedCGs.value)
@@ -428,12 +499,29 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
     // 处理 end 节点
     if (node.type === NodeType.END) {
+      // end 节点带 explore → 进入探索态而非结束章节（剧情段落终结 → 自由活动）
+      if (node.explore) {
+        enterExplore(node.location)
+        return
+      }
       currentNodeId.value = nodeId
       isEnded.value = true
       stage.value = [] // 章节结束，舞台清空
       // 同步最终进度
       syncProgress()
       return
+    }
+
+    // 处理 explore 属性（dialogue 节点带 explore → 剧情内部随时进入探索态）
+    // 探索节点无文本，直接进入探索态（不渲染节点本身）
+    if (node.explore) {
+      enterExplore(node.location)
+      return
+    }
+
+    // 同步空间位置（信息性：剧情节点声明 location 字段 → 更新当前位置）
+    if (node.location) {
+      currentLocation.value = node.location
     }
 
     // dialogue / choice / input 节点：正常设置当前节点
@@ -473,10 +561,84 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     syncProgress()
   }
 
+  // ===== 空间导航（R-035） =====
+
+  /**
+   * 评估出口/地点的解锁条件（语法同 condition 节点 branches 的 if 对象）
+   * @param {object} cond - { variables: {...} } 或好感度条件
+   * @returns {boolean}
+   */
+  function evalLocationCond(cond) {
+    if (!cond) return true
+    const result = evalConditionNode(
+      { id: '@exit_cond', branches: [{ if: cond, next: '__ok__' }, { else: true, next: '__no__' }] },
+      affinity.value,
+      storyVariables.value,
+    )
+    return result === '__ok__'
+  }
+
+  /**
+   * 进入探索态（渲染合成节点，地点背景+热点+出口）
+   * @param {string} locId - 地点 id
+   */
+  function enterExplore(locId) {
+    if (!LOCATIONS[locId]) {
+      console.warn(`[VisualNovelStore] 未知地点: ${locId}`)
+      return
+    }
+    currentLocation.value = locId
+    currentExploreLocation.value = locId
+    if (!visitedLocations.value.includes(locId)) {
+      visitedLocations.value = [...visitedLocations.value, locId]
+    }
+    if (!unlockedLocations.value.includes(locId)) {
+      unlockedLocations.value = [...unlockedLocations.value, locId]
+    }
+    isEnded.value = false
+    stage.value = [] // 探索态立绘清空（人物画入地点背景图）
+    syncProgress()
+  }
+
+  /**
+   * 地图转移：从当前地点出口前往另一地点（校验出口条件，可选进入演出）
+   * @param {string} locId - 目标地点 id
+   */
+  function travelTo(locId) {
+    if (isExploring.value) {
+      // 探索态：从当前地点的出口列表校验
+      const loc = LOCATIONS[currentExploreLocation.value]
+      const exit = loc?.exits?.find((e) => e.to === locId)
+      if (!exit) {
+        console.warn(`[VisualNovelStore] 无出口: ${currentExploreLocation.value} -> ${locId}`)
+        return
+      }
+      if (!evalLocationCond(exit.cond)) {
+        showNotice('这条路暂时走不通。')
+        return
+      }
+    } else if (!unlockedLocations.value.includes(locId) && !evalLocationCond(LOCATIONS[locId]?.unlockedBy)) {
+      showNotice('这条路暂时走不通。')
+      return
+    }
+
+    // 进入演出：地点配 onEnter → 先播演出链（链尾节点带 explore 回到探索态）
+    const target = LOCATIONS[locId]
+    if (target?.onEnter) {
+      currentLocation.value = locId
+      goToNode(target.onEnter)
+    } else {
+      enterExplore(locId)
+    }
+  }
+
   /**
    * 推进到下一节点（用户点击/空格/回车时调用）
    */
   function advance() {
+    // 探索态不推进（等热点/出口交互）
+    if (isExploring.value) return
+
     // 如果打字机还在播放，先完成显示
     if (isTyping.value) {
       completeTypewriter()
@@ -632,6 +794,13 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       variables: { ...storyVariables.value },
       inventory: [...inventory.value],
       stage: stage.value.map(c => ({ ...c })), // 舞台状态（立绘演出）
+      // 空间状态（R-035：server 以 spaceState JSON 存储，探索态/当前位置可存档恢复）
+      spaceState: {
+        currentLocation: currentLocation.value,
+        currentExploreLocation: currentExploreLocation.value,
+        visitedLocations: [...visitedLocations.value],
+        unlockedLocations: [...unlockedLocations.value],
+      },
     }
   }
 
@@ -699,6 +868,12 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       stage.value = Array.isArray(data.stage)
         ? data.stage.map(c => ({ ...c }))
         : []
+      // 恢复空间状态（R-035：server 存 spaceState JSON；旧存档无字段 → 剧情模式）
+      const space = data.spaceState || null
+      currentLocation.value = space?.currentLocation || null
+      currentExploreLocation.value = space?.currentExploreLocation || null
+      visitedLocations.value = Array.isArray(space?.visitedLocations) ? [...space.visitedLocations] : []
+      unlockedLocations.value = Array.isArray(space?.unlockedLocations) ? [...space.unlockedLocations] : []
 
       // 重新加载章节
       const loaded = await loadChapter(data.chapter)
@@ -707,7 +882,15 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
         const safeNode = resolveNodeSafe(currentIndex.value, data.node, data.chapter)
         if (safeNode) {
           stage.value = [] // 读档时由 goToNode 重新推导舞台
-          goToNode(safeNode)
+          if (space?.currentExploreLocation && LOCATIONS[space.currentExploreLocation]) {
+            // 探索态存档：空间状态已恢复，直接设置节点 id 不调 goToNode
+            // （goToNode 开头会退出探索态，导致恢复失效）
+            currentNodeId.value = safeNode
+            isEnded.value = false
+            syncProgress()
+          } else {
+            goToNode(safeNode)
+          }
           if (safeNode !== data.node) {
             showNotice('剧本已更新，已从本章开头继续')
           }
@@ -835,6 +1018,8 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     activePanel, hideUI, isEnded, isLoading, preloadProgress, triggeredCG, noticeMessage,
     currentCharacters, currentSpeaker, currentBackground, currentBGM, currentHotspots,
     currentMapHighlight,
+    // 空间状态（R-035）
+    currentLocation, currentExploreLocation, unlockedLocations, visitedLocations, isExploring,
     playerName,
     textSpeed, autoMode, autoDelay,
     // 方法
@@ -845,5 +1030,7 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,
     showNotice, closeNotice,
+    // 空间导航（R-035）
+    enterExplore, travelTo,
   }
 })
