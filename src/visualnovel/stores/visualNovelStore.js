@@ -4,6 +4,7 @@ import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, execute
 import { NodeType, ChoiceImpact, SPEAKER_TO_ID } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
 import { LOCATIONS } from '../data/locations.js'
+import { REAL_BG_MAP } from '../data/bgMaps.js'
 
 // 章节注册表（章节 id -> 剧本数据加载器）
 // 用动态 import 避免一次性加载所有章节。
@@ -304,18 +305,18 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
   /**
    * 收集章节涉及的所有图片 URL（背景/立绘/地图/空间地点背景）
+   * ⚠️ 背景只收集 REAL_BG_MAP 中的真实图——CSS 占位 key（bg/black 等）无真实文件，
+   *    预加载会发起 404 请求（2026-08-07 踩坑）。渲染仍由 BackgroundLayer 的 BG_FALLBACK 兜底。
    * @param {Array} nodes - 章节节点数组
    * @returns {Set<string>} 去重后的 URL 集合
    */
   function collectAssetUrls(nodes) {
-    // 背景图别名映射（与 BackgroundLayer.vue 的 REAL_BG_MAP 一致）
-    const BG_ALIAS = { 'bg/tower_lobby': 'bg/tower_interior_hall' }
     const urls = new Set()
     for (const node of nodes) {
-      // 收集背景图
-      if (node.background) {
-        const key = BG_ALIAS[node.background] || node.background
-        urls.add(`/visualnovel/${key}.png`)
+      // 收集背景图（仅真实图）
+      if (node.background && node.background in REAL_BG_MAP) {
+        const fileKey = REAL_BG_MAP[node.background] || node.background
+        urls.add(`/visualnovel/${fileKey}.png`)
       }
       // 收集立绘
       if (node.enter && Array.isArray(node.enter)) {
@@ -329,7 +330,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     urls.add('/visualnovel/map/world_map.png')
     // 空间地点背景（探索态背景在 LOCATIONS 数据里，不在节点中）
     for (const loc of Object.values(LOCATIONS)) {
-      urls.add(`/visualnovel/${loc.bg}.png`)
+      if (loc.bg in REAL_BG_MAP) {
+        urls.add(`/visualnovel/${REAL_BG_MAP[loc.bg] || loc.bg}.png`)
+      }
     }
     return urls
   }
