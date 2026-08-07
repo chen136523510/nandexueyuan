@@ -4,6 +4,23 @@
 
 ---
 
+### [fix] 第三幕空间跳转逻辑修复-走廊补回房间出口/房间补出房间/睡觉回探索态/大厅删睡觉热点
+
+- **时间**：2026-08-08
+- **变更人**：陈梓键（黑机）
+- **背景**：院长线上实测 v3.0.0 反馈"地图跳转逻辑有问题，上了楼没有下楼选项，点了睡觉还出去了"。黑机通读空间机制代码 + 线上实测复现，定位 4 个空间跳转缺陷
+- **变更内容**：
+  1. **缺陷1（P0，睡觉出门）**：第三幕房间点"睡觉"触发出门剧情（`ch_room_sleep_router` 在 `ch2_done=true` 时直接跳 `ch3_leave1` 走廊马蹄声，跳过睡觉动作）-> 改为睡觉旁白（新节点 `ch3_room_sleep`"你躺下，沉沉睡去了。"）-> 回房间探索态（`ch3_room_morning`，end+explore room），玩家主动点"出门"热点触发信使段
+  2. **缺陷2（P0，走廊无回房间）**：第三幕走廊 `corridor.exits` 只有"下一楼"无"回房间"（第二幕 `corridor_free` 有两个出口，第三幕漏配）-> 补"回房间"出口（x 错开 40/60，与 corridor_free 一致）
+  3. **缺陷3（P1，大厅有睡觉）**：第三幕大厅 `hall.hotspots` 有"回房睡觉"热点，但房间在二楼，从一楼大厅直接睡觉空间逻辑错乱 -> 删除 `hall_sleep` 热点，睡觉入口统一走 大厅->上二楼->走廊->回房间->睡觉（与第二幕 hall_free 一致）
+  4. **缺陷4（P1，房间无出口）**：房间 `room.exits` 为空数组，进房间后只能睡觉无法离开 -> 新增"出房间"热点（goto `ch_room_exit_router` 路由节点，按 `ch2_done` 分流：第二幕->`ch2_corridor_enter`，第三幕->`ch3_corridor_enter`，走对应走廊 onEnter 演出）
+- **文件**：`src/visualnovel/data/locations.js`（hall/corridor/room 三地点）、`src/visualnovel/data/chapter1.js`（ch_room_sleep_router 改 + 新增 ch3_room_sleep/ch3_room_morning/ch_room_exit_router）、`scripts/第一章-第三幕-东来的信.script.js`（补 ch3_room_sleep 旁白文本）
+- **验证**：build 通过；本地 dev server + 后端实测全链路：大厅(3按钮无睡觉)->上二楼->走廊(3按钮含回房间)->回房间->睡觉(旁白->回房间探索态)->出房间(路由到走廊onEnter)。出房间路由双向验证（第二幕 ch2_done=false->ch2_corridor_enter ✅ / 第三幕 ch2_done=true->ch3_corridor_enter ✅）
+- **状态**：已 commit（`4f48477`），未部署
+- **关联**：BUG-59（bug-log）
+
+---
+
 ### [feat] 空间机制 R-035 引擎落地 + 第二幕迁移探索态 + 第三幕信使段定稿落地
 
 - **时间**：2026-08-07

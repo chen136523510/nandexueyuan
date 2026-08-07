@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-08-08（黑机 空间跳转逻辑修复）
+
+### BUG-59：第三幕空间跳转逻辑多处缺陷-睡觉出门/走廊无回房间/大厅有睡觉/房间无出口
+
+- **发现时间**：2026-08-08（院长线上实测 v3.0.0 反馈"地图跳转逻辑有问题，上了楼没有下楼选项，点了睡觉还出去了"）
+- **环境**：生产环境 v3.0.0（master `af65726`）+ 本地 dev 复现
+- **现象**（4 处）：
+  1. 第三幕房间点"睡觉"-> 触发"你出了房间，走到走廊。楼下传来一阵急促的马蹄声。"出门剧情，而非睡觉
+  2. 第三幕二楼走廊只有"下一楼"出口，没有"回房间"出口（上了楼没法去房间睡觉）
+  3. 第三幕大厅有"回房睡觉"热点，但房间在二楼，从一楼直接睡觉空间错乱
+  4. 房间探索态只有"睡觉"热点无出口，进房间后被困住（只能睡觉，不能出去）
+- **根因**：
+  1. `ch_room_sleep_router` 在 `ch2_done=true`（第三幕）时直接跳 `ch3_leave1`（出门马蹄声），设计意图是"睡觉=次早出门推进剧情"，但跳过了睡觉动作本身，玩家点"睡觉"看到"出了房间"完全反直觉
+  2. `locations.js` `corridor.exits` 只配了 `{ to: 'hall' }`，漏配 `{ to: 'room' }`（对比第二幕 `corridor_free` 有两个出口，第三幕迁移时遗漏）
+  3. `locations.js` `hall.hotspots` 配了 `hall_sleep`（回房睡觉），这是从旧"end节点+hotspots"模式迁移时遗留--旧模式大厅是唯一自由活动点，所有功能堆在大厅；迁移到空间机制后房间是独立地点，应从走廊进
+  4. `locations.js` `room.exits` 为空数组 `[]`，只配了"睡觉"热点，没考虑"玩家进房间又想出去"
+- **修复**（commit `4f48477`）：
+  1. `ch_room_sleep_router` 第三幕分支：`next: 'ch3_leave1'` -> `next: 'ch3_room_sleep'`（新节点：旁白"你躺下，沉沉睡去了。"-> `ch3_room_morning` end+explore room 回房间探索态）；room 新增"出门"热点 goto `ch3_leave1`，玩家主动出门触发信使段
+  2. `corridor.exits` 补 `{ to: 'room', label: '回房间' }`，x 错开（下一楼 40 / 回房间 60）
+  3. `hall.hotspots` 删除 `hall_sleep`（回房睡觉），睡觉入口统一走 大厅->上二楼->走廊->回房间
+  4. room 新增"出房间"热点 goto `ch_room_exit_router`（新路由节点：按 `ch2_done` 分流 `ch2_corridor_enter`/`ch3_corridor_enter`，走对应走廊 onEnter 演出）；room.exits 保持空（exits 渲染时不过滤 cond 会显示重复按钮，改用 hotspot goto 路由）
+- **验证**：build 通过；本地 dev+后端实测全链路：大厅(3按钮无睡觉)->上二楼->走廊(3按钮含回房间)->回房间->睡觉(旁白->回探索态)->出房间(路由走廊onEnter)。出房间路由双向验证（第二幕/第三幕）。旁白文本 mergeScript 加载正确
+- **文件**：`src/visualnovel/data/locations.js`、`src/visualnovel/data/chapter1.js`、`scripts/第一章-第三幕-东来的信.script.js`
+- **状态**：✅ 已修复（commit `4f48477`），未部署
+- **教训**：空间机制从旧"end+hotspots"模式迁移时，需逐一核对每个地点的出口完整性（exits 互通性）+ 热点合理性（功能不应堆在错误地点）；"睡觉"等推进剧情的动作不能跳过动作本身直接到结果，玩家点"睡觉"应先看到睡觉，再由玩家主动推进下一步
+
+---
+
 ## 2026-08-07（白机 v3.0.0 发版部署）
 
 ### BUG-58：deploy.sh 迁移漏检——grep "not applied" 不匹配 "not yet been applied"，线上迁移被跳过
