@@ -24,6 +24,13 @@ export const ITEMS = {
     description: '由睿帝亲自颁布的文书，上面纹满了复杂的魔法回路。学院与帝国契约的凭据——具体条款因谈判内容而异。',
     type: 'key_item',
   },
+  qiu_letter: {
+    id: 'qiu_letter',
+    name: '丘的信',
+    icon: '📜',
+    description: '信使扔下的一封信。封口处没有印信，纸面干净得像刚从案头取来。信的内容——见说，等到了共和国，再验证真伪。',
+    type: 'key_item',
+  },
 }
 
 /**

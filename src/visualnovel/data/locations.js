@@ -54,6 +54,21 @@ export const LOCATIONS = {
     onEnter: 'ch3_corridor_enter',  // 进入演出：旁白（月光）+ 回到探索态
     unlockedBy: null,
   },
+  room: {
+    id: 'room',
+    name: '房间',
+    level: 'room',
+    bg: 'bg/tower_room_night',
+    desc: '窗外的风声一阵一阵。',
+    exits: [],
+    hotspots: [
+      // 出门：goto 剧情节点（楼下马蹄声 → 选择下楼 → 信使段）
+      { id: 'room_leave', x: 50, y: 80, label: '出门', icon: '🚪',
+        action: { type: 'goto', target: 'ch3_leave1' } },
+    ],
+    onEnter: null,
+    unlockedBy: null,
+  },
 }
 
 // ===== 世界地图坐标（MapPanel 高亮用，与空间地点是两层数据） =====

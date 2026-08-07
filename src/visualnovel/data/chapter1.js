@@ -2301,19 +2301,179 @@ export default [
     location: 'corridor',
   },
 
-  // ===== 回房睡觉 → 段七衔接（信使段台词未定稿，占位） =====
+  // ===== 回房睡觉 → 房间探索态（R-035） =====
   {
     id: 'ch3_sleep1',
     type: 'dialogue',
     background: 'bg/tower_room_night',
     speaker: '旁白',
-    next: 'ch3_morning1',
+    next: 'ch3_sleep2',
   },
   {
-    id: 'ch3_morning1',  // 段七占位：清早下楼撞见信使（台词定稿后接线）
+    id: 'ch3_sleep2',  // 进入房间探索态（end 节点带 explore）
+    type: 'end',
+    background: 'bg/tower_room_night',
+    explore: true,
+    location: 'room',
+  },
+
+  // ===== 次早：出门 → 走廊马蹄声 → 选择下楼 → 信使段 =====
+  {
+    id: 'ch3_leave1',  // 房间探索态"出门"热点进入
+    type: 'dialogue',
+    background: 'bg/ban_corridor_moon',
+    speaker: '旁白',
+    next: 'ch3_leave_choice',
+  },
+  {
+    id: 'ch3_leave_choice',
+    type: 'choice',
+    background: 'bg/ban_corridor_moon',
+    choices: [
+      { impact: 'critical', next: 'ch3_msg1' },   // 下楼
+      { impact: 'critical', next: 'ch3_sleep2' },  // 再等等（回房间探索态）
+    ],
+  },
+  {
+    id: 'ch3_msg1',  // 下楼过渡（白机补句，待院长确认）
     type: 'dialogue',
     background: 'bg/tower_interior_hall',
     speaker: '旁白',
+    next: 'ch3_msg2',
+  },
+  // ===== 信使段（信使无立绘，见/添在场；信使=饶死灵傀儡，死灵气息疑点） =====
+  {
+    id: 'ch3_msg2',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    characters: [
+      { id: 'dean', portrait: 'dean/calm', position: 'right' },
+      { id: 'tian', portrait: 'tian/normal', position: 'left' },
+    ],
+    speaker: '信使',
+    next: 'ch3_msg3',
+  },
+  {
+    id: 'ch3_msg3',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg4',
+  },
+  {
+    id: 'ch3_msg4',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '信使',
+    next: 'ch3_msg5',
+  },
+  {
+    id: 'ch3_msg5',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_msg6',
+  },
+  {
+    id: 'ch3_msg6',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '信使',
+    next: 'ch3_msg7',
+  },
+  {
+    id: 'ch3_msg7',  // 发放伏笔道具（丘的信）
+    type: 'event',
+    background: 'bg/tower_interior_hall',
+    grantItem: 'qiu_letter',
+    next: 'ch3_msg7b',
+  },
+  {
+    id: 'ch3_msg7b',  // 旁白：信使扔信离去
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '旁白',
+    next: 'ch3_msg8',
+  },
+  {
+    id: 'ch3_msg8',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_msg9',
+  },
+  {
+    id: 'ch3_msg9',  // 见：死灵气息（疑点非揭穿）
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg10',
+  },
+  {
+    id: 'ch3_msg10',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_msg11',
+  },
+  {
+    id: 'ch3_msg11',  // 见：牧羊人流言（沐阳线伏笔）
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg12',
+  },
+  {
+    id: 'ch3_msg12',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg13',
+  },
+  {
+    id: 'ch3_msg13',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg14',
+  },
+  {
+    id: 'ch3_msg14',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '添',
+    next: 'ch3_msg15',
+  },
+  {
+    id: 'ch3_msg15',
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_msg16_cond',
+  },
+  // 17 分支：按选择② contract 决定对帝国姿态
+  {
+    id: 'ch3_msg16_cond',
+    type: 'condition',
+    background: 'bg/tower_interior_hall',
+    branches: [
+      { if: { variables: { contract: 'full' } }, next: 'ch3_msg16_a' },          // A 接
+      { if: { variables: { contract: 'conditional' } }, next: 'ch3_msg16_a' },    // B 有条件
+      { else: true, next: 'ch3_msg16_b' },                                        // C/D 及兜底
+    ],
+  },
+  {
+    id: 'ch3_msg16_a',  // 签约合作：跟幸合作调查
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
+    next: 'ch3_act3_end',
+  },
+  {
+    id: 'ch3_msg16_b',  // 未签约：防备法刺
+    type: 'dialogue',
+    background: 'bg/tower_interior_hall',
+    speaker: '见',
     next: 'ch3_act3_end',
   },
   {
