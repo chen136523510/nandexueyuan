@@ -5,6 +5,20 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.0.2',
+    date: new Date('2026-08-09'),
+    summary: '全站图片压缩优化，加载更快',
+    updates: JSON.stringify([
+      '德塔全部场景图、立绘、地图、道具图压缩优化，画质不变体积减少80%',
+      '进入德塔和场景切换的加载速度大幅提升',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      '菜单与地图界面美化（调研中）',
+      '手机/消息系统（规划中）',
+    ], null, 0),
+  },
+  {
     version: 'v3.0.1',
     date: new Date('2026-08-08'),
     summary: '修复塔楼自由探索的跳转问题',
