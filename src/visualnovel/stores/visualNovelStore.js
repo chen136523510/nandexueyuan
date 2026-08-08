@@ -315,22 +315,22 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
       // 收集背景图（仅真实图）
       if (node.background && node.background in REAL_BG_MAP) {
         const fileKey = REAL_BG_MAP[node.background] || node.background
-        urls.add(`/visualnovel/${fileKey}.png`)
+        urls.add(`/visualnovel/${fileKey}.webp`)
       }
       // 收集立绘
       if (node.enter && Array.isArray(node.enter)) {
         for (const c of node.enter) {
           const portrait = c.portrait || (c.id + '/normal')
-          urls.add(`/visualnovel/portraits/${portrait}.png`)
+          urls.add(`/visualnovel/portraits/${portrait}.webp`)
         }
       }
     }
     // 地图（固定资源）
-    urls.add('/visualnovel/map/world_map.png')
+    urls.add('/visualnovel/map/world_map.webp')
     // 空间地点背景（探索态背景在 LOCATIONS 数据里，不在节点中）
     for (const loc of Object.values(LOCATIONS)) {
       if (loc.bg in REAL_BG_MAP) {
-        urls.add(`/visualnovel/${REAL_BG_MAP[loc.bg] || loc.bg}.png`)
+        urls.add(`/visualnovel/${REAL_BG_MAP[loc.bg] || loc.bg}.webp`)
       }
     }
     return urls

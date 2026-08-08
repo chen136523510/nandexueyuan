@@ -2,7 +2,7 @@
  * 背景图映射（BackgroundLayer 渲染 + store 预加载共用）
  *
  * REAL_BG_MAP：有真实图片文件的背景 key → 渲染走 url()、预加载会下载
- *   - 值 null：key 即文件名（/visualnovel/{key}.png）
+ *   - 值 null：key 即文件名（/visualnovel/{key}.webp）
  *   - 值 string：别名映射（如 bg/tower_lobby → bg/tower_interior_hall）
  *
  * 不在 REAL_BG_MAP 的 key 视为 CSS 渐变占位（BG_FALLBACK），

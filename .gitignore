@@ -83,6 +83,7 @@ pnpm.tgz
 .ai/_rembg_batch/
 .ai/_rembg_test/
 .ai/_volc_test/
+.ai/compress-test/
 
 # Trae IDE 内置技能/工具（非项目共享，不跟踪）
 .trae/tool-WeChatMsg-master/
@@ -117,10 +118,16 @@ tmp/*
 # 游戏资源（保留目录结构，忽略大文件）
 public/game/audio/**/*
 !public/game/audio/**/.gitkeep
-# 游戏美术资源（PNG/JPG）直接入库，走 GitHub 部署链路
-# 原因：黑机无法直连服务器，PNG 必须随代码一起 push 才能部署到服务器
-# 总量约 1-2MB，不会导致仓库膨胀
+# 游戏运行时美术资源（WebP 压缩后入库，走 GitHub 部署链路）
+# 原因：黑机无法直连服务器，图片必须随代码一起 push 才能部署到服务器
+# VN 资产已全量 WebP q95 压缩（146MB->28MB，省80%），见 R-036 / .ai/scripts/convert-to-webp.cjs
+# 美术资产原始大图（原体积 PNG）不入库，仅保留 WebP 压缩后的游戏资产
 askpass.bat
+
+# 美术资产原始大图（原体积保存，不入库；白机只用压缩后 WebP 游戏资产）
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.png
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.jpg
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.jpeg
 
 # CC0 素材包原始下载（解压后的源文件，不入库，只保留切片）
 .ai/asset-staging/

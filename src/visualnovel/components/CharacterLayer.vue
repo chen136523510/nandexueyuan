@@ -13,7 +13,7 @@ const characters = computed(() => {
       ...char,
       color: CHAR_COLORS[char.id] || '#B0B0C0',
       // 立绘图路径：portrait 字段格式为 "{id}/{表情}"，直接拼
-      imgSrc: `/visualnovel/portraits/${char.portrait || (char.id + '/normal')}.png`,
+      imgSrc: `/visualnovel/portraits/${char.portrait || (char.id + '/normal')}.webp`,
     }
   })
 })

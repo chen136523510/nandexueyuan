@@ -4,6 +4,24 @@
 
 ---
 
+### [refactor] 图片全量 WebP q95 压缩替换 + 美术资产 gitignore（R-036）
+
+- **时间**：2026-08-09
+- **变更人**：陈梓键（白机）
+- **背景**：线上预加载慢（背景图 2-8MB/张+地图 8.4MB），院长要求压缩但不降画质。压缩对比验收（5图×5方案）后院长定 WebP q95（省约 80%，肉眼几乎无差）
+- **变更内容**：
+  1. **41 张 PNG -> WebP q95**（`public/visualnovel/` 全量）：bg/ 24 + portraits/ 13 + items/ 2 + map/ 1 = 41 张，总体积 146.65MB -> 28.19MB（省 80.8%）。转换脚本 `.ai/scripts/convert-to-webp.cjs`（已 gitignore）
+  2. **代码引用 5 文件 9 处 `.png` -> `.webp`**：BackgroundLayer.vue（背景图渲染 url）、CharacterLayer.vue（立绘 imgSrc）、MapPanel.vue（地图 img src）、visualNovelStore.js（预加载 collectAssetUrls 4 处：节点背景/立绘/地图/空间地点背景）、items.js（道具图 2 处）
+  3. **注释同步**：bgMaps.js / locations.js 注释中 `.png` -> `.webp`
+  4. **美术资产 gitignore**：`prd/.../美术资产/` 下 45 个图片（png/jpg）`git rm --cached`（文件保留磁盘），新增 `.gitignore` 规则忽略该目录下所有图片。11 个 .md 文件继续入库
+  5. **.gitignore 注释更新**：游戏美术资源说明从"PNG/JPG 直接入库"改为"WebP 压缩后入库"
+- **文件**：`public/visualnovel/`（41 图替换）、`src/visualnovel/components/BackgroundLayer.vue`、`src/visualnovel/components/CharacterLayer.vue`、`src/visualnovel/components/MapPanel.vue`、`src/visualnovel/stores/visualNovelStore.js`、`src/visualnovel/data/items.js`、`src/visualnovel/data/bgMaps.js`（注释）、`src/visualnovel/data/locations.js`（注释）、`.gitignore`
+- **验证**：`npm run build` 通过；dev + 后端实测 Playwright：41 张 WebP 全部 200 OK 零 404（背景图/立绘/道具图/地图），视觉正常无画质损失
+- **状态**：代码完成，未部署
+- **关联文档**：需求池 R-036
+
+---
+
 ### [fix] 第三幕空间跳转逻辑修复-走廊补回房间出口/房间补出房间/睡觉回探索态/大厅删睡觉热点
 
 - **时间**：2026-08-08

@@ -44,7 +44,7 @@ function close() {
       </div>
       <div class="mp-body" :class="{ 'mp-body-story': isStoryMode }">
         <img
-          src="/visualnovel/map/world_map.png"
+          src="/visualnovel/map/world_map.webp"
           alt="世界地图"
           class="mp-map-img"
           @click.self="close"

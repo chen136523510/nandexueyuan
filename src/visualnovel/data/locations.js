@@ -116,7 +116,7 @@ export const LOCATIONS = {
 }
 
 // ===== 世界地图坐标（MapPanel 高亮用，与空间地点是两层数据） =====
-// 坐标为百分比（x/y 相对于 world_map.png 图片的宽/高）。
+// 坐标为百分比（x/y 相对于 world_map.webp 图片的宽/高）。
 // 底图尺寸：1800x930，帝桥在像素坐标(450,450) → 百分比(25%, 48.4%)。
 // 后续 region/world 级地点可通过 mapPos 关联此处。
 export const MAP_LOCATIONS = {

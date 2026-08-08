@@ -13,14 +13,14 @@ export const ITEMS = {
   rui_emblem: {
     id: 'rui_emblem',
     name: '睿帝令',
-    icon: '/visualnovel/items/rui_emblem.png',
+    icon: '/visualnovel/items/rui_emblem.webp',
     description: '帝国皇帝睿赐予的信物令牌。持此令者，帝国视为友邦。令牌正面刻有帝国徽记，背面铭文"睿之信"。',
     type: 'key_item',
   },
   grassland_deed: {
     id: 'grassland_deed',
     name: '草原治属文书',
-    icon: '/visualnovel/items/grassland_deed.png',
+    icon: '/visualnovel/items/grassland_deed.webp',
     description: '由睿帝亲自颁布的文书，上面纹满了复杂的魔法回路。学院与帝国契约的凭据——具体条款因谈判内容而异。',
     type: 'key_item',
   },

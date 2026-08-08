@@ -48,7 +48,7 @@ watch(
 function getBgStyle(bgKey) {
   if (bgKey in REAL_BG_MAP) {
     const fileKey = REAL_BG_MAP[bgKey] || bgKey
-    return `url(/visualnovel/${fileKey}.png)`
+    return `url(/visualnovel/${fileKey}.webp)`
   }
   return BG_FALLBACK[bgKey] || 'radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%)'
 }
