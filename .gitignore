@@ -155,3 +155,4 @@ e2e-test.png
 dist.tar.gz
 __pycache__/
 *.pyc
+.sentry-native/
