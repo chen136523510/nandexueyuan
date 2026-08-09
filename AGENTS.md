@@ -130,6 +130,7 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 2. **禁止提交敏感文件** — `.env`、`askass.bat` 等已在 `.gitignore`，不得 `git add` 强制入库。
 3. 自行部署、跳过文档更新 — 见上文「部署纪律」和「文档与 Changelog 纪律」。
 4. **禁止美工图片入库** — 白机不处理任何美工相关工作，图片不得进入白机。美工图片（ComfyUI/Seedream 出图等）属于黑机本地资产，已纳入 `.gitignore`（`.ai/seedream-test/`、`.ai/comfyui-output/`、`.ai/comfyui-workflows/`、`raw/`）。**严禁** `git add` 这些目录下的任何图片。最终入库的只能是 `public/` 下经抠图处理的正式游戏资产。
+5. **禁止未经确认擅自调用 AI 生成 API（红线）** — 任何图片生成（Seedream）或视频生成（Seedance/MiniMax）的 API 调用，**必须先将最终提示词和参数完整展示给院长，经院长明确确认后才能执行**。遇到报错（参数错误、内容审核、连接失败等）**第一时间停止并向院长汇报**，禁止擅自换方案重试，禁止以"试一下"为由消耗 tokens。
 
 ## 立绘制作纪律（红线，强制）
 
