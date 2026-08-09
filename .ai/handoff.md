@@ -1,11 +1,185 @@
 # AI 交接单
 
-> 最后更新：2026-08-09 16:10（白机：美术设计规范V2.1中文语义化+国会事变剧本初稿+CG视频提示词精写+v3.0.2公告）
+> 最后更新：2026-08-09 21:30（白机：视频导演技能体系搭建+Seedance API接入+多轮动作设计调研+调研方法论技能）
 > 所在设备：白机
 > 稳定版本：**v3.0.1 线上**（本轮 v3.0.2 图片压缩+公告待部署）
-> **当前阶段**：M-G1 引擎核心 PoC ✅ + 序章四幕全量落地 ✅ + 存档系统 ✅ + Seedream调研 ✅ + 10角色脸模入库 ✅ + 序章6张背景图接入 ✅ + 见/幸/添立绘8张+表情差分 ✅ + 立绘舞台状态机制 ✅ + 立绘rembg重抠8/8 ✅ + 立绘位置规则(小腿中部对齐) ✅ + 序章结束场景热点交互 ✅ + 部署上线 ✅ + 存档系统优化(自动恢复+新建从头) ✅ + 热点添对话Q&A问答+主线隔离 ✅ + 世界格局地图生成+地图面板交互 ✅ + 序章旁白优化(四幕44->42句)+pro_302穿帮修正 ✅ + 图片预加载机制(首次加载+进度条) ✅ + 世界书评审+补充11条目 ✅ + 设定集v1.4过时内容修正 ✅ + 第一章大纲产出 ✅ + 社区站视觉体系统一 ✅ + 第一章编剧评审(5条改进建议待裁决) ✅ + 美术资产清理(旧版归档+rembg同步) ✅ + 班形象设计定稿+脸模入库 ✅ + image-gen SKILL生成分层流程补充 ✅ + NPC命名调子规范(六大势力+禁音译名) ✅ + 第一章编剧5条建议院长裁决落地 ✅ + 新角色宁(学院潜伏者)+饶(虚空教团二号) ✅ + 饶暗线设定(国会事变操盘/阿瓦隆交手汪神/汪神正太诅咒) ✅ + 班设定回填(世界书5.10定稿) ✅ + hallmark设计技能入库 ✅ + 第一章背景图3张生成入库 ✅ + 场景一致性重做 ✅ + 班走廊月亮CG v1(待重做) ✅ + 美术资产归档 ✅ + QuickMenu左上角竖排 ✅ + 全窗口点击推进对话 ✅ + 帝桥地图坐标修正 ✅ + 刷新失登录修复 ✅ + 背景图HMR缓存修复 ✅ + AGENTS先查文档原则 ✅ + **第一章引擎集成打通(序章→第一章跳转) ✅ + 存档恢复修复(场景/立绘跟随) ✅ + 幕间台词定稿(院长逐句过) ✅ + 帝桥设定落档(设定集§2.3.1+大纲节) ✅ + 第一幕台词定稿49句(院长逐句过) ✅ + 通行证新政设定(一人一证/基层发放/分批) ✅ + **班走廊月亮CG定稿(CG-1纵深+CG-2中景) ✅ + 丘脸模重做换五官(真人照片锁五官+气质更坚毅) ✅ + 丘游侠/总统双形态立绘入库 ✅ + 第一幕·帝桥台词代码落地(49句+核心选择①三分支+草原村口占位) ✅ + 第二幕代码落地(全章229节点) ✅ + 谈判全景×3+合同羊皮卷+睿帝令道具图入库 ✅ + **见端杯立绘+恪立绘+帝国军装设计稿入库 ✅ + 草原村口/回程/幸造访背景图入库 ✅ + 第二幕叙事流程修正(造访->寒暄->谈判三段式) ✅ + **第三幕全量定稿落地(商队段/段六判断选择/过渡段探索态/信使段死灵气息暗线) ✅ + 空间机制R-035引擎(explore节点属性+合成节点+地点图+travelTo) ✅ + 第二幕结尾迁移探索态(hall_free/corridor_free/room) ✅ + 存档spaceState扩展+迁移文件 ✅ + v3.0.0发版 ✅ + v3.0.0部署上线 ✅ + 线上完整剧情验证(序章→第一章→第二幕探索态→第三幕信使段) ✅ + 预加载优化(首页静默+按存档章节+切章增量) ✅ + BUG-58(迁移漏检)/预加载404修复 ✅ + **BUG-59空间跳转四处缺陷修复(睡觉出门/走廊无回房间/大厅有睡觉/房间无出口) ✅ + v3.0.1发版 ✅ + v3.0.1部署上线 ✅ + 线上全量验证通过(空间跳转闭环+全流程节点连通+信使段结束链路) ✅ + **R-036图片全量WebP q95压缩(41张146MB->28MB省80%)+美术资产gitignore ✅ + R-037菜单UI调研报告 ✅ + R-038地图UI调研报告 ✅ + proxy-access代理推送技能(黑机专用) ✅ + v3.0.2公告+版本号 ✅ + 美术设计规范V2.1(画风改中文语义) ✅ + 国会事变剧本初稿(完整版8场+精简版) ✅ + CG视频提示词精写(15秒事无巨细版) ✅**
+> **当前阶段**：M-G1 引擎核心 PoC ✅ + 序章四幕全量落地 ✅ + 存档系统 ✅ + Seedream调研 ✅ + 10角色脸模入库 ✅ + 序章6张背景图接入 ✅ + 见/幸/添立绘8张+表情差分 ✅ + 立绘舞台状态机制 ✅ + 立绘rembg重抠8/8 ✅ + 立绘位置规则(小腿中部对齐) ✅ + 序章结束场景热点交互 ✅ + 部署上线 ✅ + 存档系统优化(自动恢复+新建从头) ✅ + 热点添对话Q&A问答+主线隔离 ✅ + 世界格局地图生成+地图面板交互 ✅ + 序章旁白优化(四幕44->42句)+pro_302穿帮修正 ✅ + 图片预加载机制(首次加载+进度条) ✅ + 世界书评审+补充11条目 ✅ + 设定集v1.4过时内容修正 ✅ + 第一章大纲产出 ✅ + 社区站视觉体系统一 ✅ + 第一章编剧评审(5条改进建议待裁决) ✅ + 美术资产清理(旧版归档+rembg同步) ✅ + 班形象设计定稿+脸模入库 ✅ + image-gen SKILL生成分层流程补充 ✅ + NPC命名调子规范(六大势力+禁音译名) ✅ + 第一章编剧5条建议院长裁决落地 ✅ + 新角色宁(学院潜伏者)+饶(虚空教团二号) ✅ + 饶暗线设定(国会事变操盘/阿瓦隆交手汪神/汪神正太诅咒) ✅ + 班设定回填(世界书5.10定稿) ✅ + hallmark设计技能入库 ✅ + 第一章背景图3张生成入库 ✅ + 场景一致性重做 ✅ + 班走廊月亮CG v1(待重做) ✅ + 美术资产归档 ✅ + QuickMenu左上角竖排 ✅ + 全窗口点击推进对话 ✅ + 帝桥地图坐标修正 ✅ + 刷新失登录修复 ✅ + 背景图HMR缓存修复 ✅ + AGENTS先查文档原则 ✅ + **第一章引擎集成打通(序章→第一章跳转) ✅ + 存档恢复修复(场景/立绘跟随) ✅ + 幕间台词定稿(院长逐句过) ✅ + 帝桥设定落档(设定集§2.3.1+大纲节) ✅ + 第一幕台词定稿49句(院长逐句过) ✅ + 通行证新政设定(一人一证/基层发放/分批) ✅ + **班走廊月亮CG定稿(CG-1纵深+CG-2中景) ✅ + 丘脸模重做换五官(真人照片锁五官+气质更坚毅) ✅ + 丘游侠/总统双形态立绘入库 ✅ + 第一幕·帝桥台词代码落地(49句+核心选择①三分支+草原村口占位) ✅ + 第二幕代码落地(全章229节点) ✅ + 谈判全景×3+合同羊皮卷+睿帝令道具图入库 ✅ + **见端杯立绘+恪立绘+帝国军装设计稿入库 ✅ + 草原村口/回程/幸造访背景图入库 ✅ + 第二幕叙事流程修正(造访->寒暄->谈判三段式) ✅ + **第三幕全量定稿落地(商队段/段六判断选择/过渡段探索态/信使段死灵气息暗线) ✅ + 空间机制R-035引擎(explore节点属性+合成节点+地点图+travelTo) ✅ + 第二幕结尾迁移探索态(hall_free/corridor_free/room) ✅ + 存档spaceState扩展+迁移文件 ✅ + v3.0.0发版 ✅ + v3.0.0部署上线 ✅ + 线上完整剧情验证(序章→第一章→第二幕探索态→第三幕信使段) ✅ + 预加载优化(首页静默+按存档章节+切章增量) ✅ + BUG-58(迁移漏检)/预加载404修复 ✅ + **BUG-59空间跳转四处缺陷修复(睡觉出门/走廊无回房间/大厅有睡觉/房间无出口) ✅ + v3.0.1发版 ✅ + v3.0.1部署上线 ✅ + 线上全量验证通过(空间跳转闭环+全流程节点连通+信使段结束链路) ✅ + **R-036图片全量WebP q95压缩(41张146MB->28MB省80%)+美术资产gitignore ✅ + R-037菜单UI调研报告 ✅ + R-038地图UI调研报告 ✅ + proxy-access代理推送技能(黑机专用) ✅ + v3.0.2公告+版本号 ✅ + 美术设计规范V2.1(画风改中文语义) ✅ + 国会事变剧本初稿(完整版8场+精简版) ✅ + CG视频提示词精写(15秒事无巨细版) ✅ + 线上SSL证书配置落地(Let's Encrypt+443+强制HTTPS) ✅ + GUI测试工具集+a11y/测试钩子规范调研落档(方案待院长拍板,⛰️uphill) ✅ + 睿脸模v2(真人陈睿锁五官)+立绘入库 ✅ + 提示词工程调研(图片+视频语义提示词) ✅ + MiniMax H3 API使用指南 ✅ + image-gen SKILL更新(画风改中文语义/负面词可选/视频提示词指导) ✅ + 视频分镜与导演艺术调研(分镜格式/运镜/30秒叙事/AI视频分镜实践) ✅ + video-director AI视频导演技能(分镜/运镜/语义提示词/角色一致性/Seedance API/强制工作流) ✅ + seedance_client.py视频生成公共模块(Seedance 2.5) ✅ + AGENTS禁止事项第5条(AI生成API必须院长确认铁律) ✅ + Seedance踩坑4条(r2v限720p/真人检测/代理误判/禁止测试任务) ✅ + 丘vs睿30秒对战视频首版生成(720p/双参考图/53元) ✅ + 动作设计与武术指导调研(弓箭手7层/魔法师6层/三幕结构/施法三段式/AI动作描述6规则) ✅ + 凡人修仙传战斗设计调研(四段式层次/心理博弈/藏底牌/韩立谨慎战术流) ✅ + video-director技能更新(角色动作签名/战斗层次四段式/藏底牌/心理博弈/30秒节拍分配) ✅ + research系统化调研方法论技能(6步流程/信息源优先级/登录墙红线/交叉验证/统一落档模板/并行分治) ✅**
 
 > ⚠️ **网络环境**：GitHub SSH 偶发超时（8/4 晚 22:00 左右 push 超时一次，稍后恢复）。已配置 `~/.ssh/config` 让 `github.com` 自动走 `ssh.github.com:443` 备用通道。若 push 超时重试即可。
+
+---
+
+## 白机本轮产出（2026-08-09 21:30）
+
+### 视频导演技能体系搭建 + Seedance API 接入 + 多轮动作设计调研
+
+> 背景：项目计划用 AI 视频生成角色对战 CG（丘 vs 睿）。本窗口从零搭建了视频导演技能体系，接入 Seedance 2.5 API，完成多轮动作设计调研，并创建了调研方法论技能。
+
+#### 1. 睿脸模 v2 + 基准立绘入库
+- 睿脸模 v2（真人陈睿锁五官）+ 基准立绘（normal.webp 832×1216）入库 `public/visualnovel/portraits/rui/`
+- 美术资产 README 登记 + 德塔 changelog 记录
+
+#### 2. 提示词工程调研 + MiniMax API 指南
+- `prd/01-需求文档/00-调研/提示词工程调研-图片与视频生成.md`（tag堆叠已过时/语义模型提示词最佳实践/各模型要点/Seedream专项/视频提示词要素清单）
+- `prd/01-需求文档/00-调研/MiniMax视频生成API使用指南.md`（官方txt去重整理为md，9章节）
+- image-gen SKILL 更新：画风描述改中文语义、负面词改可选、补视频提示词指导
+
+#### 3. 视频分镜与导演艺术调研
+- `prd/01-需求文档/00-调研/视频分镜与导演艺术调研.md`（分镜格式/运镜技术/动作场景设计/30秒叙事节奏/AI视频分镜实践/各模型对比）
+
+#### 4. video-director AI 视频导演技能
+- `.zcode/skills/video-director/SKILL.md`（7条纪律+7步强制工作流：分镜设计/运镜工具箱/语义提示词/角色一致性/Seedance API规范/调用脚本/存储纪律）
+- 触发词：生成视频/出视频/CG视频/视频分镜/对战视频/video-director
+
+#### 5. Seedance API 接入
+- `.ai/scripts/lib/seedance_client.py`（视频生成公共模块：create_task/query_task/wait_for_task/download_video/call_seedance一键生成/连接错误保护逻辑）
+- `.ai/scripts/README.md` 更新视频生成章节（能力/价格/模板/踩坑速查）
+- 模型：doubao-seedance-2-5-260628 / 密钥复用 VOLC_API_KEY
+
+#### 6. AGENTS 禁止事项第5条（铁律）
+- **AI生成API调用必须院长确认**：图片/视频生成的API调用前必须展示提示词和参数，院长确认后才能执行。遇报错第一时间停止汇报，禁止擅自换方案重试
+
+#### 7. Seedance 踩坑4条（花钱买的教训）
+1. 多模态参考(r2v)模式分辨率上限720p（1080p/4k报参数错误）
+2. 真人隐私检测拦截AI生成的逼真立绘（丘立绘被拦，提示词声明无效，可提工单申诉）
+3. 代理ConnectionResetError不代表请求失败（服务器可能已收到请求，必须先查任务列表再决定重试）
+4. 禁止为测试参数创建真实任务（查文档确认，不要花钱试）
+
+#### 8. 丘vs睿30秒对战视频首版生成
+- 首版生成成功（720p/30秒/有声/双参考图），task_id: cgt-20260809190504-27zgw
+- 费用：648,900 tokens ≈ 45.4元 + 测试任务7.6元 = ≈53元
+- **问题**：①丘立绘被真人检测拦截（后续重试时触发，首版走代理通过）②视频只有对视对轰，缺乏动作设计
+- 视频文件：`.ai/seedream-test/video/qiu_vs_rui.mp4`（36.9MB）
+
+#### 9. 动作设计与武术指导调研
+- `prd/01-需求文档/00-调研/动作设计与武术指导调研.md`（漫威动作方法论/弓箭手近战弓术7层/魔法师施法三段式/打斗三幕结构/动作经济原则/喘息空间/AI视频动作描述六大规则）
+- video-director 技能更新：角色动作签名（弓箭手7层+魔法师6层）、打斗三幕、30秒节拍分配
+
+#### 10. 凡人修仙传战斗设计调研
+- `prd/01-需求文档/00-调研/凡人修仙传战斗设计调研.md`（四段式层次：试探->升级->转折->决胜/心理博弈/藏底牌/韩立谨慎战术流/修仙元素转译表）
+- video-director 技能更新：战斗层次四段式、藏底牌节奏、跑路战术、心理博弈原则
+
+#### 11. research 系统化调研方法论技能
+- `.zcode/skills/research/SKILL.md`（8条纪律：6步调研流程/信息源优先级/登录墙红线/交叉验证/统一落档模板/平台策略/并行分治/落档铁律）
+- 定位为方法论层，调用 web-access/WebSearch/WebFetch 执行实际联网
+
+#### 待办（交接后续）
+
+1. **丘vs睿视频重跑**：等 Seedance 真人检测申诉结果（Request ID: 0217862740302538e51dc06ab515804a61f8066ae6218c1d62c84），通过后用双参考图+新版快节奏提示词重跑
+2. **新版提示词已产出**：快节奏猛烈对战版（四段式：试探->升级->转折->决胜，含移动射击/翻滚闪避/光盾格挡/高处滑射），院长已确认可执行，待真人检测解决后跑
+3. **调研文档体系**：00-调研目录已有6份视频相关调研文档，可复用
+
+---
+
+## 白机本轮产出（2026-08-09 20:09）
+
+### 线上 SSL 证书配置落地（HTTPS 全站生效，不安全标识已消除）
+
+> 背景：院长反馈网站地址栏显示"不安全"。排查发现：ICP 备案 ≠ SSL 证书，项目此前从未配置 HTTPS（代码层全 HTTP/WS，部署文档仅规划过 443+Let's Encrypt 未落地，交接单历史记录"443 不通"）。本次在服务器纯命令行配置完成。
+
+#### 1. 环境确认（服务器 Ubuntu 22.04 / nginx 1.18.0）
+- nginx 已正确配置：server_name 双域名（nandexueyuan.top + www.nandexueyuan.top）、root 指向 dist、/api/ 反代 3000、/ws 反代 2567、SPA fallback
+- ufw 已放行 443（系统层防火墙 OK）
+- certbot 未安装（本次安装）
+
+#### 2. 操作步骤（服务器 root 执行）
+1. `apt update && apt install -y certbot python3-certbot-nginx`（安装 certbot + nginx 插件）
+2. `cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.bak.manual`（备份配置）
+3. `certbot --nginx -d nandexueyuan.top -d www.nandexueyuan.top --redirect`（申请证书 + 自动配 nginx + 强制跳转）
+
+#### 3. 配置结果（certbot 自动完成）
+- 证书位置：`/etc/letsencrypt/live/nandexueyuan.top/`（fullchain.pem + privkey.pem）
+- nginx 配置：certbot 自动在 `/etc/nginx/sites-available/default` 追加 443 ssl server block（`listen 443 ssl` + ssl_certificate + ssl_dhparam，均标 `# managed by Certbot`）
+- 强制跳转：80 端口 server block 内 certbot 自动加 `return 301 https://$host$request_uri`
+- ⚠️ certbot 把 443 server block 追加在同文件，`cat default` 只看到 80 block 是正常的，用 `nginx -T` 才能看到完整生效配置
+
+#### 4. 验证（全部通过）
+| 验证项 | 结果 |
+|---|---|
+| 443 监听 | ✅ `ss -tlnp` nginx 监听 0.0.0.0:443 |
+| HTTPS 访问 | ✅ `curl -I https://www.nandexueyuan.top` -> 200 OK |
+| 80->443 跳转 | ✅ `curl -I http://...` -> 301 Moved Permanently -> https:// |
+| 自动续签定时任务 | ✅ `systemctl list-timers` -> certbot.timer 每日触发 |
+| 续签模拟测试 | ✅ `certbot renew --dry-run` -> all simulated renewals succeeded |
+
+#### 5. 历史问题关闭
+- 交接单黑机 2026-08-01 记录的"443 不通（安全组/防火墙问题）"现已解决。实际 ufw 已放行 443，此前不通是**从未配置过 443 的 nginx server**（certbot 本次才创建），并非安全组问题。
+
+#### 6. 后续注意
+- Let's Encrypt 证书 90 天到期，certbot.timer 自动续签（已验证 dry-run 通过），**不要禁用该定时任务**
+- 德塔多人功能上线时，Colyseus 的 `ws://` 需改 `wss://`（走 443 复用），前端 `NetworkSystem.js` 连接 URL 届时同步改。当前视觉小说单机模式不受影响
+- 阿里云 ECS 安全组入方向需有 443/TCP 规则（本次 ufw 已放，如后续发现外部仍访问不了 443，检查阿里云控制台安全组）
+
+---
+
+## 白机本轮产出（2026-08-09 19:06）
+
+### GUI 测试工具集 + 前端 a11y/测试钩子规范调研落档（⛰️ uphill，方案待院长拍板）
+
+> 背景：GUI 自动化测试频繁处理 HTTPS 自签名证书、原生弹窗、图标按钮定位，测试代码高度冗余且易错。本轮做完整调研并产出成型方案，**未写任何代码**，落档供后续拍板执行。
+>
+> 📄 完整调研文档：`prd/01-需求文档/00-调研/GUI自动化测试与前端可访问性调研.md`（按知识库调研归档规范五段式结构：背景/重点调研对象/横向对比/总结与建议/待确认事项）
+
+#### 三个事实校正（避免后续会话误判场景）
+
+| 用户原始描述 | 实际现状 | 影响 |
+|---|---|---|
+| "复杂的 SVG 图标按钮" | src 零 `<svg>`，图标全是 emoji/符号字符（🎒💾⚙✕▶） | 规范需覆盖未来 SVG 场景；当前痛点是 emoji 按钮无语义 |
+| "频繁处理 HTTPS 自签名证书" | 本地全链路纯 HTTP（vite:4396/express:3000/colyseus:2567，无证书），痛点应是测线上/staging 时遇到 | 工具集需同时覆盖 HTTP(本地)+HTTPS(线上) |
+| "测试代码高度冗余" | 现有 GUI 测试技能链(node_repl+browser-client)不支持 `ignoreHTTPSErrors`（插件全代码零命中） | 根因是技能链能力缺口，需引入原生 @playwright/test 才能用原生 API 一行解决 |
+
+#### 现状数据（实证）
+
+- 图标按钮：`aria-label`/`data-testid`/`role` 全 src **0 个**；visualnovel 模块 16 个 button、全 src 76 个 button 全靠 CSS class 定位；15 处纯 `✕` 关闭按钮会被屏幕阅读器误读为"乘号"
+- 原生弹窗：views 层（WallView/AdminView/ChatView/VersionHistoryDialog）**13 处** 原生 alert/confirm，未迁移到已有的自定义 overlay 弹窗体系
+- 测试基建：**零**——无 playwright/vitest/jest 依赖、无 `playwright.config`、无测试目录、无 helper/fixture；devDeps 仅 `@vitejs/plugin-vue`+`vite`，scripts 仅 dev/build/preview；无 eslint
+- 依赖已装 `lucide-vue-next`（SVG 图标库）但未启用——未来引入 SVG 时规范更要提前就位
+
+#### 成型方案（两条线，待院长拍板后执行）
+
+**线1：Playwright E2E 基建 + 工具集**
+- `playwright.config.js`：`use.ignoreHTTPSErrors=true` 全局忽略证书 + `baseURL` 环境变量切换本地/线上 + webServer 自动起 vite
+- `tests/e2e/fixtures.js`：`autoAcceptDialogs` fixture（自动接受 alert/confirm/prompt）+ `secureContext`（隔离 context）
+- `tests/e2e/utils.js`：`uploadFiles`（多类型文件上传，处理 hidden input）+ `clickIconBtn`（优先 getByTestId > getByRole({name}) > getByLabel）+ `dismissNativeDialog`
+- `tests/e2e/example.spec.js`：演示三类工具用法
+- `package.json`：devDeps 加 `@playwright/test`，scripts 加 `test:e2e`
+
+**线2：前端可访问性 + 测试钩子规范**
+- 规范文档 `prd/.../技术设计/前端可访问性与测试钩子规范.md`：图标按钮强制 aria-label 或 data-testid + 定位优先级 + 各场景细则（纯图标/toggle/弹窗/上传/SVG）+ data-testid 命名约定
+- 轻量扫描脚本 `scripts/check-a11y.mjs`（零依赖，非 eslint 全家桶）：扫描 src/**/*.vue，缺 aria-label/data-testid 的图标按钮报错，`npm run lint:a11y`
+- 德塔 visualnovel 模块示范改造：16 个 button 补属性（QuickMenu 5 个 emoji + 各 Panel 关闭按钮 + HotspotLayer + SaveLoadPanel + SettingsPanel toggle）
+- CONTRIBUTING.md 新增 a11y 章节
+
+#### 待院长拍板的决策点（3 个）
+
+1. **工具集形态**：建 e2e 基建+工具集（引入 @playwright/test，原生 API 一行解决证书/弹窗，长期价值高）vs 仅写测试模板文档（轻量无依赖，但现有技能链不支持忽略证书）
+2. **规范强制手段**：轻量 check-a11y.mjs 脚本（零依赖，聚焦单一规则）vs eslint+vuejs/accessibility 全家桶（约束力强但膨胀 devDeps 且报既有噪音）
+3. **改造范围**：德塔 visualnovel 模块示范（16 个 button）vs 全项目（76 个 button，含 views 层 13 处原生弹窗替换，工作量大）
+
+> 默认推荐：线1建 e2e 基建 + 线2轻量脚本+德塔示范。院长拍板后可进入实现。
+
+### 待办（交接后续）
+
+**待部署**：
+- [ ] v3.0.2（图片压缩+公告）待部署上线。服务器执行：`git stash && git pull origin master && bash deploy.sh`
+
+**待院长裁决**：
+- [ ] ⛰️ uphill **GUI 测试工具集方案**（见上「线1」决策点1：建 e2e 基建 vs 仅模板文档）
+- [ ] ⛰️ uphill **前端 a11y/测试钩子规范方案**（见上「线2」决策点2/3：强制手段 + 改造范围）
+- [ ] R-037 菜单 UI 方案（①暗色精修/②羊皮纸/③极简文字）
+- [ ] R-038 地图 UI 方案 + 字体选择
+- [ ] 国会事变剧本逐句审（完整版8场+精简版）
+- [ ] CG 视频 PoC 验收（海螺生成版画质/画风是否达标）
+- [ ] ⛰️ uphill CG 视频**嵌入方案**（院长指示先保留后续再做）。首个 PoC 视频已在：`美术资产/丘/Hailuo_Video_...mp4`（15.87MB，国会大厅场景，已 gitignore）。引擎现状无视频能力（BackgroundLayer 仅渲染静态 webp）。后续嵌入时需先决策：①呈现方式（全屏CG播放器/视频作背景层/照片查看器内嵌）②对应剧本哪几场 ③播放控制（自动/可跳过）
+
+**剧情（白机继续）**：
+- [ ] 第四幕「东边的刀」（海盗线）过稿
+- [ ] 选择③ C 选项=最优解分支情节
+
+**美术（黑机）**：
+- [ ] 第三幕过渡段大厅角色入画图 P1 / 第二幕自由活动大厅图 P1
+- [ ] 圆桌桌面特写 P1 / 三张共和国事变照片 P2
+- [ ] 信使立绘 P2（与饶形象设计同批）
 
 ---
 
@@ -1214,7 +1388,7 @@ cd .. && bash deploy.sh                           # 构建前端+重启 PM2
 | 游戏服务器 | localhost:2567 | ❌ 未运行（`cd game-server && node src/index.js`） |
 | ComfyUI | localhost:8188 | ❌ 未运行（黑机专属，白机未安装） |
 | 豆包Seedream API | ark.cn-beijing.volces.com | ✅ 可用（复用ARK_API_KEY） |
-| 生产环境 | https://www.nandexueyuan.top | ✅ v2.4.0 已部署 |
+| 生产环境 | https://www.nandexueyuan.top | ✅ v3.0.2 待部署 + HTTPS 已生效（Let's Encrypt 证书+强制跳转） |
 
 ### 豆包 Seedream API
 - 端点：`POST https://ark.cn-beijing.volces.com/api/v3/images/generations`
@@ -1235,6 +1409,7 @@ cd .. && bash deploy.sh                           # 构建前端+重启 PM2
 |---|---|---|
 | Colyseus 0.16.0 锁定 | ✅ 已知 | 0.15不兼容schema3.x，0.17下载超时 |
 | Nginx proxy_pass 尾部斜杠 | ✅ 已知 | `proxy_pass http://127.0.0.1:2567/;` 必须有斜杠 |
+| 线上 HTTPS/443 未配置 | ✅ 已解决(2026-08-09) | 此前从未配 SSL（部署文档仅规划）。certbot --nginx 一键申请 Let's Encrypt 证书+自动配 443 server block+强制跳转。证书 90 天自动续签(certbot.timer)。详见本轮产出节 |
 | JWT密钥运行时读取 | ✅ 已知 | 用 `function getSecret()` 不用ESM import |
 | Phaser场景切换onUnmounted | ✅ 已知 | 用 `onUnmounted -> destroyGame()` |
 | Prisma db push失败不建表 | ✅ 已知 | BUG-43：FTS表报错导致push失败，新表不会创建。换机后必须检查 |

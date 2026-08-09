@@ -4,6 +4,60 @@
 
 ---
 
+### [feat] 视频导演技能体系 + Seedance API 接入 + 多轮动作设计调研
+
+- **时间**：2026-08-09
+- **变更人**：陈梓键（白机）
+- **背景**：项目计划用 AI 视频生成角色对战 CG（丘 vs 睿），从零搭建视频导演技能体系
+- **变更内容**：
+  1. **睿脸模v2+立绘入库**：真人陈睿锁五官，normal.webp 832×1216 入库 `public/visualnovel/portraits/rui/`
+  2. **调研文档（6份）**：提示词工程调研、MiniMax API指南、视频分镜与导演艺术、动作设计与武术指导、凡人修仙传战斗设计、（均入 `prd/01-需求文档/00-调研/`）
+  3. **video-director技能**：`.zcode/skills/video-director/SKILL.md`，7纪律+7步工作流（分镜/运镜/语义提示词/角色一致性/Seedance API/动作签名/战斗层次四段式）
+  4. **research技能**：`.zcode/skills/research/SKILL.md`，系统化调研方法论（6步流程/信息源优先级/登录墙红线/交叉验证/统一落档模板/并行分治）
+  5. **seedance_client.py**：`.ai/scripts/lib/seedance_client.py`，视频生成公共模块（create/query/wait/download/call_seedance一键生成+连接错误保护）
+  6. **AGENTS铁律**：禁止事项第5条--AI生成API调用必须院长确认，遇报错停止汇报禁止擅自换方案
+  7. **Seedance踩坑4条**：r2v限720p/真人检测/代理误判/禁止测试任务
+  8. **image-gen SKILL更新**：画风改中文语义、负面词改可选、补视频提示词指导
+  9. **丘vs睿30秒对战视频首版**：720p/30秒/有声/双参考图，task_id: cgt-20260809190504-27zgw（≈53元）
+- **文件**：见上述各文件路径
+- **状态**：✅ 调研+技能+工具链完成；⚠️ 丘vs睿视频待真人检测申诉后重跑
+- **关联文档**：handoff 2026-08-09 21:30 节
+
+---
+
+### [chore] 线上 SSL 证书配置落地（HTTPS 全站生效）
+
+- **时间**：2026-08-09
+- **变更人**：陈梓键（白机）
+- **背景**：院长反馈网站地址栏显示"不安全"。排查发现 ICP 备案 ≠ SSL 证书，项目此前从未配置 HTTPS（代码层全 HTTP/WS，部署文档仅规划过 443+Let's Encrypt 未落地，交接单历史记录"443 不通"）
+- **变更内容**：
+  1. 服务器（Ubuntu 22.04 / nginx 1.18.0）安装 certbot + python3-certbot-nginx
+  2. `certbot --nginx -d nandexueyuan.top -d www.nandexueyuan.top --redirect` 一键申请 Let's Encrypt 证书 + 自动配 nginx 443 server block + 80->443 强制跳转
+  3. 证书位置 `/etc/letsencrypt/live/nandexueyuan.top/`（fullchain.pem + privkey.pem），90 天自动续签（certbot.timer，dry-run 验证通过）
+- **验证**：`curl -I https://www.nandexueyuan.top` -> 200 OK；`curl -I http://...` -> 301 -> https://；`ss -tlnp` nginx 监听 443；`certbot renew --dry-run` 模拟续签成功
+- **文件**：无代码改动（纯服务器运维操作，nginx 配置由 certbot 自动管理）
+- **状态**：已生效（线上 HTTPS 全站可用）
+- **关联文档**：handoff 2026-08-09 20:09 节
+
+---
+
+### [文档] GUI 自动化测试工具集 + 前端 a11y/测试钩子规范调研落档
+
+- **时间**：2026-08-09
+- **变更人**：陈梓键（白机）
+- **背景**：GUI 自动化测试频繁处理 HTTPS 自签名证书、原生弹窗、图标按钮定位，测试代码高度冗余且易错。本轮做完整调研并产出成型方案，未写任何代码
+- **变更内容**：
+  1. **调研文档**：`prd/01-需求文档/00-调研/GUI自动化测试与前端可访问性调研.md`（五段式结构：背景/重点调研对象/横向对比/总结与建议/待确认事项）
+  2. **三个事实校正**：①"SVG 图标按钮"实际 src 零 `<svg>`，图标全是 emoji/符号字符；②"频繁处理 HTTPS 证书"本地全链路纯 HTTP，痛点是测线上时遇到；③"测试代码冗余"根因是现有 GUI 测试技能链不支持 `ignoreHTTPSErrors`（插件零命中）
+  3. **现状数据**：图标按钮 0 个 aria-label/data-testid/role；76 个 button 全靠 CSS class 定位；views 层 13 处原生 alert/confirm；项目零测试基建（无 playwright/vitest/eslint）
+  4. **成型方案两条线**：线1 Playwright e2e 基建+工具集（config 全局 ignoreHTTPSErrors + autoAcceptDialogs fixture + uploadFiles/clickIconBtn utils）；线2 前端 a11y/测试钩子规范（规范文档 + 轻量 check-a11y.mjs 扫描脚本 + 德塔 visualnovel 模块示范改造）
+  5. **3 个决策点待院长拍板**：工具集形态(建 e2e 基建 vs 仅模板文档) / 规范强制手段(轻量脚本 vs eslint) / 改造范围(德塔示范 vs 全项目)
+- **文件**：`prd/01-需求文档/00-调研/GUI自动化测试与前端可访问性调研.md`（新增）、`.ai/handoff.md`（更新）
+- **状态**：⛰️ uphill，方案待院长拍板后执行
+- **关联文档**：handoff 2026-08-09 19:06 节
+
+---
+
 ### [feat] 睿脸模v2(真人锁五官) + 基准立绘入库
 
 - **时间**：2026-08-09
