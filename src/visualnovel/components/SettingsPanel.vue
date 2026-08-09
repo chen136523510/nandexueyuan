@@ -9,11 +9,11 @@ function close() {
 </script>
 
 <template>
-  <div v-if="store.activePanel === 'settings'" class="sp-overlay" @click.self="close">
+  <div v-if="store.activePanel === 'settings'" class="sp-overlay" role="dialog" aria-modal="true" aria-label="设置面板" @click.self="close">
     <div class="sp-panel">
       <div class="sp-header">
         <h2 class="sp-title">设置</h2>
-        <button class="sp-close" @click="close">✕</button>
+        <button class="sp-close" aria-label="关闭" data-testid="vn-settings-close-btn" @click="close">✕</button>
       </div>
 
       <div class="sp-body">
@@ -56,6 +56,10 @@ function close() {
           <label class="sp-label">自动播放</label>
           <button
             class="sp-toggle"
+            role="switch"
+            :aria-pressed="store.autoMode"
+            :aria-label="`自动播放${store.autoMode ? '已开启' : '已关闭'}`"
+            :data-testid="`vn-auto-toggle`"
             :class="{ on: store.autoMode }"
             @click="store.toggleAutoMode()"
           >

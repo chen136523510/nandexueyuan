@@ -36,11 +36,11 @@ function close() {
 </script>
 
 <template>
-  <div v-if="store.activePanel === 'inventory'" class="inv-overlay" @click.self="close">
+  <div v-if="store.activePanel === 'inventory'" class="inv-overlay" role="dialog" aria-modal="true" aria-label="储物空间面板" @click.self="close">
     <div class="inv-panel">
       <div class="inv-header">
         <h2 class="inv-title">🎒 储物空间</h2>
-        <button class="inv-close" @click="close">✕</button>
+        <button class="inv-close" aria-label="关闭" data-testid="vn-inventory-close-btn" @click="close">✕</button>
       </div>
 
       <div class="inv-body">
@@ -67,14 +67,14 @@ function close() {
     </div>
 
     <!-- 物品详情弹窗 -->
-    <div v-if="selectedItem" class="detail-overlay" @click.self="closeDetail">
+    <div v-if="selectedItem" class="detail-overlay" role="dialog" aria-modal="true" :aria-label="`${selectedItem.name}详情`" @click.self="closeDetail">
       <div class="detail-panel">
         <img v-if="isImageIcon(selectedItem.icon)" class="detail-icon detail-icon-img" :src="selectedItem.icon" :alt="selectedItem.name" />
         <div v-else class="detail-icon">{{ selectedItem.icon }}</div>
         <h3 class="detail-name">{{ selectedItem.name }}</h3>
         <p class="detail-type">{{ selectedItem.type === 'key_item' ? '关键道具' : selectedItem.type === 'consumable' ? '消耗品' : '材料' }}</p>
         <p class="detail-desc">{{ selectedItem.description }}</p>
-        <button class="detail-close" @click="closeDetail">关闭</button>
+        <button class="detail-close" data-testid="vn-item-detail-close-btn" @click="closeDetail">关闭</button>
       </div>
     </div>
   </div>

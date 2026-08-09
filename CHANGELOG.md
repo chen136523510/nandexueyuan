@@ -4,6 +4,44 @@
 
 ---
 
+## 2026-08-10 新增 E2E 测试基建 + 前端可访问性规范
+
+### 概要
+
+引入 Playwright E2E 测试基础设施 + 前端可访问性/测试钩子规范，解决 GUI 自动化测试三大痛点（HTTPS 证书、原生弹窗、图标按钮定位）。项目从零测试基建升级为具备 e2e 能力 + a11y 强制扫描。德塔 visualnovel 模块完成示范改造，其余页面渐进迁移。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `playwright.config.js`（新增） | E2E 配置：`ignoreHTTPSErrors=true` 全局忽略证书 + baseURL 环境变量切换本地/线上 + webServer 自动起 vite |
+| `tests/e2e/fixtures.js`（新增） | `autoAcceptDialogs` fixture：自动接受 alert/confirm/prompt，解决原生弹窗阻塞测试 |
+| `tests/e2e/utils.js`（新增） | `clickIconBtn`（图标按钮定位：getByTestId > getByRole > getByText）+ `uploadFiles`（多类型文件上传）+ `dismissNativeDialog` + `waitForVNScene` |
+| `tests/e2e/example.spec.js`（新增） | 4 个示例测试，演示三类工具用法 |
+| `scripts/check-a11y.mjs`（新增） | 零依赖 a11y 扫描脚本：检查图标按钮是否带 aria-label 或 data-testid，支持 `.a11y-ignore` 白名单 |
+| `.a11y-ignore`（新增） | 白名单：9 个 views/components 层待迁移项 |
+| `package.json` | devDeps 加 `@playwright/test`；scripts 加 `lint:a11y`/`test:e2e`/`test:e2e:ui` |
+| `prd/.../技术设计/前端可访问性与测试钩子规范.md`（新增） | 规范文档：核心规则 + 各场景细则 + data-testid 命名约定 + 定位优先级 |
+| `CONTRIBUTING.md` | 新增「八、前端可访问性与测试钩子」章节 |
+| `src/visualnovel/components/*.vue`（8 文件） | 德塔模块示范改造：QuickMenu/SettingsPanel/HistoryPanel/InventoryPanel/MapPanel/SaveLoadPanel/HotspotLayer/DialogueBox 补 aria-label/data-testid/role |
+
+### 决策依据
+
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| 工具集形态 | 建 e2e 基建（非仅模板文档） | 三痛点均可用 Playwright 原生 API 一行解决；现有 AI 测试技能链不支持 ignoreHTTPSErrors；项目零测试基建，引入有长期价值 |
+| 规范强制手段 | 轻量 check-a11y.mjs（非 eslint 全家桶） | 项目 devDeps 极简，eslint 膨胀过重且报既有噪音；自制脚本零依赖、聚焦单一规则 |
+| 改造范围 | 德塔示范（非全项目） | 全项目 76 个 button 一次改造量大；views 层 13 处原生弹窗替换属另一条改造线 |
+
+### 影响评估
+
+- **影响范围**：新增 `tests/`/`scripts/` 目录层；德塔 visualnovel 模块 8 个组件加属性（不改逻辑）
+- **不影响**：现有功能行为（仅加 HTML 属性）；后端/游戏服务器代码
+- **兼容性**：build 通过；a11y 扫描 0 违规（9 个待迁移项在白名单）；4 个 e2e 测试全绿
+- **后续**：views/components 层待渐进迁移（每迁移完一个文件删 .a11y-ignore 对应行）
+
+---
+
 ## 2026-08-08 v3.0.1 修复塔楼自由探索空间跳转逻辑（BUG-59）
 
 ### 概要

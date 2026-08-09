@@ -22,11 +22,11 @@ function close() {
 </script>
 
 <template>
-  <div v-if="store.activePanel === 'history'" class="hp-overlay" @click.self="close">
+  <div v-if="store.activePanel === 'history'" class="hp-overlay" role="dialog" aria-modal="true" aria-label="对话回看面板" @click.self="close">
     <div class="hp-panel">
       <div class="hp-header">
         <h2 class="hp-title">对话回看</h2>
-        <button class="hp-close" @click="close">✕</button>
+        <button class="hp-close" aria-label="关闭" data-testid="vn-history-close-btn" @click="close">✕</button>
       </div>
 
       <div class="hp-list">

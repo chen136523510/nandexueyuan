@@ -41,6 +41,8 @@ function handleHotspot(hotspot) {
       class="hotspot-btn"
       :class="{ 'hotspot-btn-exit': spot.kind === 'exit' }"
       :style="{ left: spot.x + '%', top: spot.y + '%' }"
+      :aria-label="spot.label"
+      :data-testid="`vn-hotspot-${spot.id}`"
       @click.stop="handleHotspot(spot)"
     >
       <span class="hotspot-icon">{{ spot.icon || '💬' }}</span>

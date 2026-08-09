@@ -1,0 +1,17 @@
+# a11y 白名单：已知的待渐进迁移项（views/components 层）
+# 格式：相对路径:行号
+# 德塔 visualnovel 模块已完成改造，以下为后续迁移范围
+# 每迁移完一个文件后，删除对应行，最终清空此文件
+
+# components 层
+src/components/NdeSettingsDialog.vue:56
+src/components/ProfileDialog.vue:76
+src/components/VersionHistoryDialog.vue:149
+
+# views 层
+src/views/ChatView.vue:236
+src/views/ChatView.vue:255
+src/views/GameView.vue:616
+src/views/GameView.vue:657
+src/views/GameView.vue:687
+src/views/WallView.vue:217

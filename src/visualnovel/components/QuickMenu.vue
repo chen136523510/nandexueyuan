@@ -22,6 +22,8 @@ const buttons = computed(() => [
       :key="btn.id"
       class="qm-btn"
       :class="{ active: btn.active }"
+      :aria-label="btn.label"
+      :data-testid="`vn-${btn.id}-btn`"
       :title="btn.label"
       @click.stop="btn.action"
     >
@@ -34,6 +36,8 @@ const buttons = computed(() => [
   <button
     v-else
     class="qm-show-btn"
+    aria-label="显示菜单"
+    data-testid="vn-show-menu-btn"
     title="显示菜单"
     data-no-advance
     @click.stop="store.toggleHideUI()"

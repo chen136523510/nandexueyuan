@@ -300,7 +300,42 @@ git push origin --delete feature/your-feature  # 删远程
 
 ---
 
-## 八、常见问题
+## 八、前端可访问性与测试钩子
+
+### 规范要求
+
+所有**图标按钮**（无可见文字或仅含 emoji/符号/SVG 的 `<button>`）**必须**带 `aria-label`（首选）或 `data-testid`（补充）。两者可并存。
+
+- `aria-label="中文描述"`：屏幕阅读器朗读 + 测试 `getByRole('button', { name })` 定位
+- `data-testid="kebab-case-id"`：测试 `getByTestId` 精准定位，不受文案改动影响
+
+禁止用 `✕`/`×`/`▶` 等符号作为按钮唯一内容而不加 aria-label。
+
+完整规范见：`prd/01-需求文档/04-德塔/02-设计/技术设计/前端可访问性与测试钩子规范.md`
+
+### 强制检查
+
+```bash
+npm run lint:a11y
+```
+
+扫描 `src/**/*.vue`，缺 aria-label 且缺 data-testid 的图标按钮会报错。已知待迁移项登记在 `.a11y-ignore` 白名单（格式：`相对路径:行号`），迁移完成后逐行删除。
+
+### E2E 测试
+
+```bash
+npm run test:e2e        # 本地模式（自动起 vite dev）
+npm run test:e2e:ui     # 交互式 UI 模式
+E2E_BASE_URL=https://www.nandexueyuan.top npm run test:e2e  # 测线上
+```
+
+测试工具集位于 `tests/e2e/`：
+- `fixtures.js`：`autoAcceptDialogs` fixture（自动接受 alert/confirm/prompt）
+- `utils.js`：`clickIconBtn`（图标按钮定位）/ `uploadFiles`（文件上传）/ `dismissNativeDialog`
+
+---
+
+## 九、常见问题
 
 | 问题 | 解决 |
 |------|------|

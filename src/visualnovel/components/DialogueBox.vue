@@ -106,7 +106,7 @@ function handleSubmit() {
           @keydown.enter.prevent="handleSubmit"
           @click.stop
         />
-        <button class="input-btn" @click.stop="handleSubmit">确认</button>
+        <button class="input-btn" data-testid="vn-input-submit-btn" @click.stop="handleSubmit">确认</button>
       </div>
     </div>
 

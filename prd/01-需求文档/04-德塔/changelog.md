@@ -4,6 +4,25 @@
 
 ---
 
+### [feat] GUI 测试工具集 + 前端 a11y/测试钩子规范实现（架构级）
+
+- **时间**：2026-08-10
+- **变更人**：陈梓键（白机）
+- **背景**：GUI 自动化测试三痛点（HTTPS 证书/原生弹窗/图标按钮定位）导致测试代码冗余易错。经调研产出成型方案（见 `00-调研/GUI自动化测试与前端可访问性调研.md`），院长拍板后执行
+- **变更内容**：
+  1. **Playwright E2E 基建**：`playwright.config.js`（全局 ignoreHTTPSErrors + baseURL 环境变量切换 + webServer 自动起 vite）；`tests/e2e/fixtures.js`（autoAcceptDialogs fixture 自动接受弹窗）；`tests/e2e/utils.js`（clickIconBtn 定位封装 + uploadFiles + dismissNativeDialog）；`tests/e2e/example.spec.js`（4 示例测试）
+  2. **a11y 强制扫描脚本**：`scripts/check-a11y.mjs`（零依赖，扫描 src/**/*.vue 图标按钮缺 aria-label/data-testid）；`.a11y-ignore` 白名单（9 个 views/components 待迁移项）
+  3. **德塔 visualnovel 模块示范改造**（8 组件）：QuickMenu（6 按钮 aria-label+testid + 浮动恢复按钮）/ SettingsPanel（关闭按钮+toggle role=switch+overlay role=dialog）/ HistoryPanel / InventoryPanel（关闭+详情关闭+overlay）/ MapPanel / SaveLoadPanel（关闭+存档/读档/删除/新建 testid + overlay）/ HotspotLayer（热点 aria-label）/ DialogueBox（确认 testid）
+  4. **规范文档**：`02-设计/技术设计/前端可访问性与测试钩子规范.md`（核心规则+各场景细则+命名约定+定位优先级）
+  5. **CONTRIBUTING.md** 新增「八、前端可访问性与测试钩子」章节
+  6. **package.json**：devDeps 加 `@playwright/test`；scripts 加 `lint:a11y`/`test:e2e`/`test:e2e:ui`
+- **验证**：`npm run build` 通过；`npm run lint:a11y` 退出码 0（76 button 检查，9 白名单豁免）；`npx playwright test` 4 passed（12.8s）
+- **文件**：`playwright.config.js`、`tests/e2e/*.js`（4 新增）、`scripts/check-a11y.mjs`、`.a11y-ignore`、`src/visualnovel/components/*.vue`（8 改）、`prd/.../技术设计/前端可访问性与测试钩子规范.md`、`CONTRIBUTING.md`、`package.json`
+- **状态**：代码完成，已验证
+- **关联文档**：根 CHANGELOG.md（架构级记录）、`00-调研/GUI自动化测试与前端可访问性调研.md`
+
+---
+
 ### [feat] 视频导演技能体系 + Seedance API 接入 + 多轮动作设计调研
 
 - **时间**：2026-08-09

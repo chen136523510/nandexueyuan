@@ -139,6 +139,10 @@ raw/
 # Playwright MCP 临时截图/快照
 .playwright-mcp/
 
+# Playwright E2E 测试产物（HTML报告 + 临时结果，不入库）
+playwright-report/
+test-results/
+
 # 临时测试截图（根目录下的调试截图，不包含 public/ 目录下的游戏资源）
 # /*.png 通配已覆盖所有根目录 png（broadcast/char/deta/e2e/hud/nde 等），下方保留显式规则便于阅读
 /*.png

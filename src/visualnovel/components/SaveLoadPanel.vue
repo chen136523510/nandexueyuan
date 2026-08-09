@@ -128,11 +128,11 @@ function formatDate(dateStr) {
 </script>
 
 <template>
-  <div v-if="store.activePanel === 'save'" class="sl-overlay" @click.self="close">
+  <div v-if="store.activePanel === 'save'" class="sl-overlay" role="dialog" aria-modal="true" aria-label="存档管理面板" @click.self="close">
     <div class="sl-panel">
       <div class="sl-header">
         <h2 class="sl-title">存档管理</h2>
-        <button class="sl-close" @click="close">✕</button>
+        <button class="sl-close" aria-label="关闭" data-testid="vn-saveload-close-btn" @click="close">✕</button>
       </div>
 
       <div v-if="msg" class="sl-msg">{{ msg }}</div>
@@ -173,6 +173,7 @@ function formatDate(dateStr) {
               v-if="!item.isAuto"
               class="sl-btn primary"
               :disabled="loading"
+              :data-testid="`vn-save-slot-${item.slot}-btn`"
               @click="handleSave(item.slot)"
             >
               {{ item.isEmpty ? '存档' : '覆盖' }}
@@ -184,6 +185,7 @@ function formatDate(dateStr) {
             <button
               class="sl-btn load"
               :disabled="loading || !item.save"
+              :data-testid="`vn-load-slot-${item.slot}-btn`"
               @click="handleLoad(item.slot)"
             >
               读档
@@ -194,6 +196,7 @@ function formatDate(dateStr) {
               v-if="item.save && !item.isAuto"
               class="sl-btn danger"
               :disabled="loading"
+              :data-testid="`vn-delete-slot-${item.slot}-btn`"
               @click="handleDelete(item.slot)"
             >
               删除
@@ -207,6 +210,7 @@ function formatDate(dateStr) {
         <button
           class="sl-new-btn"
           :disabled="loading || !firstEmptySlot"
+          data-testid="vn-new-save-btn"
           @click="handleNewSave"
         >
           {{ firstEmptySlot ? `新建存档（槽位 ${firstEmptySlot}）` : '所有槽位已满' }}

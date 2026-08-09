@@ -35,12 +35,15 @@ function close() {
     v-if="store.activePanel === 'map' || isStoryMode"
     class="mp-overlay"
     :class="{ 'mp-story-mode': isStoryMode }"
+    role="dialog"
+    aria-modal="true"
+    aria-label="世界地图面板"
     @click.self="close"
   >
     <div class="mp-panel">
       <div class="mp-header" v-if="!isStoryMode">
         <h2 class="mp-title">世界格局</h2>
-        <button class="mp-close" @click="close">✕</button>
+        <button class="mp-close" aria-label="关闭" data-testid="vn-map-close-btn" @click="close">✕</button>
       </div>
       <div class="mp-body" :class="{ 'mp-body-story': isStoryMode }">
         <img
