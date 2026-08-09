@@ -29,6 +29,7 @@
 | 添 | `添/full_v1_01.png`（normal） | - | `public/visualnovel/portraits/tian/` |
 | 班 | `班/full_normal_v1_01.png`（normal 玩世不恭） | serious（归途报信·笑意收尽） | `public/visualnovel/portraits/ban/` |
 | 恪 | `恪/full_v1_01.png`（normal 无表情·帝国军装） | - | `public/visualnovel/portraits/ke/` |
+| 睿 | `睿/full_v1_01.png`（normal 执政者态·象牙白白袍+银灰后梳+细框圆眼镜） | - | `public/visualnovel/portraits/rui/` |
 
 > 表情差分命名：`expr_{情绪}_v1_01.png`。生成方式：Seedream 脸模 + 服装双参考图，仅改表情描述词。
 > 幸的军装穿搭以场景背景图 `tower_outdoor_mist` 为准（深蓝军装 + 金肩章 + 勋章 + 棕皮带）。
@@ -77,7 +78,7 @@
 | 幸 | `幸/face_v1_01.png` | 纯黑（jet black） | 深灰蓝 | 女强人、沉稳精致 | Seedream Pro |
 | 荣 | `荣/face_v1_01.png` | 深蓝短发 | 红色 | 冷厉寡言、军事统帅 | Seedream Pro |
 | 见（院长） | `院长/face_v1_01.png` | 黑色微卷 | 栗色 | 沉稳得体、少年老成 | Seedream Pro |
-| 睿 | `睿/face_v1_01.png` | 银灰后梳 | 灰色 | 帝王威仪、内里狠辣 | Seedream Pro |
+| 睿 | `睿/face_v1_01.png`（初版）/ `睿/face_v2_01.png`（✅定版，真人照片陈睿锁五官） | 银灰后梳 | 灰色 | 帝王威仪、内里狠辣、戴细金属框圆形眼镜 | Seedream Pro |
 | 汪神 | `汪神/face_v1_01.png` | 深蓝短发 | — | 航海王者、肌肉张扬 | Seedream Pro |
 | 沐阳 | `沐阳/face_v1_01.png` | 白发 | — | 帅爷爷、牧羊学者、温和清亮（v2 帅气版） | Seedream Pro |
 | 添 | `添/face_v1_01.png` | 黑色短发 | — | 接地气大哥、络腮胡 | Seedream Pro |
