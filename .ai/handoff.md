@@ -46,8 +46,8 @@
 - [ ] 2.4 网站知识库（knowledgeAgent 读取词云/版本/世界观/角色设计/美术资产文档）
 - [ ] 2.5 向量语义检索（doubao-embedding-text-240715，1024维，51万条约¥7，黑机批量向量化）
 
-**待部署**：
-- [ ] `cd server && npx prisma db push` -- Feedback 表需同步到生产数据库
+**待部署（院长/白机操作，黑机无法操作服务器）**：
+- [ ] `cd server && npx prisma db push` -- Feedback 表（含 action 字段）同步到生产数据库
 - [ ] `cd server && node scripts/rebuildFts.js` -- FTS5 索引重建（Phase1 summary 纳入索引）
 
 **待院长裁决（⛰️ uphill）**：
@@ -61,7 +61,8 @@
 - [ ] 男德通 Phase 2 第二批（网站知识库+向量检索）
 
 **备注**：
-- 黑机未开机，FTS5 索引重建 + Feedback 表生产同步 + 线上实测需晚上黑机开机后进行
+- 黑机无法直接操作服务器，部署相关操作（prisma db push / rebuildFts / deploy.sh）只能白机或院长执行
+- FTS5 索引重建 + Feedback 表生产同步 + 线上实测待部署时一并执行
 - 火山引擎 embedding API 调研完成：doubao-embedding-text-240715，OpenAI 兼容，¥0.7/百万token，51万条约¥7
 
 ---

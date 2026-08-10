@@ -296,8 +296,9 @@ function matchFeedbackIntent(question) {
 }
 
 /**
- * 反馈流程：LLM 生成结构化反馈 -> 返回给调用方提交 -> 回答用户
- * @returns {{ answer, feedback: {type, title, content} | null }}
+ * 反馈流程：LLM 生成结构化反馈 -> SSE 推给前端让用户确认 -> 回答用户
+ * 注意：本函数不自动入库，由前端用户确认后调 API 提交
+ * @returns {{ answer, feedback: {type, title, action, content} | null }}
  */
 async function runFeedbackFlow(question, history, send, persona) {
   send('agent_thinking', {
@@ -316,7 +317,13 @@ async function runFeedbackFlow(question, history, send, persona) {
 用户输入：${question}
 
 如果是反馈/需求/bug，输出 JSON（不要 markdown）：
-{"is_feedback": true, "type": "bug|feature|other", "title": "简短标题（15字以内）", "content": "详细描述（包含用户原话关键信息）"}
+{"is_feedback": true, "type": "bug|optimization|new_feature|story", "title": "简短标题（15字以内）", "action": "用户具体的操作步骤，如无则填'无'", "content": "详细描述（包含用户原话关键信息）"}
+
+类型说明：
+- bug: BUG反馈（闪退/黑屏/报错等）
+- optimization: 功能优化（体验不好/加载慢等）
+- new_feature: 功能新增（新开模块/加功能等）
+- story: 剧情设计（角色剧情/结局安排等）
 
 如果不是反馈（比如只是随口提到），输出：
 {"is_feedback": false}
@@ -333,9 +340,11 @@ async function runFeedbackFlow(question, history, send, persona) {
     if (match) {
       const parsed = JSON.parse(match[0])
       if (parsed.is_feedback) {
+        const validTypes = ['bug', 'optimization', 'new_feature', 'story']
         feedback = {
-          type: ['bug', 'feature', 'other'].includes(parsed.type) ? parsed.type : 'other',
+          type: validTypes.includes(parsed.type) ? parsed.type : 'other',
           title: (parsed.title || question.slice(0, 20)).trim(),
+          action: (parsed.action || '无').trim(),
           content: (parsed.content || question).trim(),
         }
         send('agent_thinking', {

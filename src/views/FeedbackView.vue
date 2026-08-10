@@ -13,15 +13,16 @@ const showForm = ref(false)
 const filterStatus = ref('')
 
 const formData = ref({
-  type: 'feature',
+  type: 'bug',
   title: '',
+  action: '',
   content: '',
 })
 
 const isAdmin = computed(() => auth.role === 'admin' || auth.role === 'super_admin')
 
-const typeLabels = { bug: '🐛 Bug', feature: '✨ 需求', other: '📝 其他' }
-const typeColors = { bug: 'var(--md-danger)', feature: 'var(--md-primary)', other: 'var(--md-secondary)' }
+const typeLabels = { bug: '🐛 BUG反馈', optimization: '🔧 功能优化', new_feature: '✨ 功能新增', story: '📖 剧情设计', other: '📝 其他' }
+const typeColors = { bug: 'var(--md-danger)', optimization: 'var(--md-accent)', new_feature: 'var(--md-primary)', story: '#8b6bb5', other: 'var(--md-secondary)' }
 const statusLabels = { open: '待处理', in_progress: '处理中', resolved: '已解决' }
 const statusColors = { open: 'var(--md-danger)', in_progress: 'var(--md-accent)', resolved: 'var(--md-secondary)' }
 
@@ -51,10 +52,11 @@ async function submit() {
     const res = await createFeedback({
       type: formData.value.type,
       title: formData.value.title.trim(),
+      action: formData.value.action.trim() || '无',
       content: formData.value.content.trim(),
     })
     feedbacks.value.unshift(res.data)
-    formData.value = { type: 'feature', title: '', content: '' }
+    formData.value = { type: 'bug', title: '', action: '', content: '' }
     showForm.value = false
   } catch (err) {
     // 提交失败
@@ -109,14 +111,20 @@ function formatDate(date) {
         <div class="form-row">
           <label>类型</label>
           <select v-model="formData.type">
-            <option value="bug">🐛 Bug</option>
-            <option value="feature">✨ 需求</option>
+            <option value="bug">🐛 BUG反馈</option>
+            <option value="optimization">🔧 功能优化</option>
+            <option value="new_feature">✨ 功能新增</option>
+            <option value="story">📖 剧情设计</option>
             <option value="other">📝 其他</option>
           </select>
         </div>
         <div class="form-row">
           <label>标题</label>
           <input v-model="formData.title" placeholder="一句话描述问题或需求" maxlength="100" />
+        </div>
+        <div class="form-row">
+          <label>操作（可选）</label>
+          <input v-model="formData.action" placeholder="你具体的操作步骤，如：点击师德墙进入页面后点击评论" maxlength="200" />
         </div>
         <div class="form-row">
           <label>详细描述</label>
@@ -151,6 +159,7 @@ function formatDate(date) {
             <button v-if="canDelete(f)" class="delete-btn" aria-label="删除反馈" @click="remove(f.id)">×</button>
           </div>
           <div class="feedback-title">{{ f.title }}</div>
+          <div v-if="f.action && f.action !== '无'" class="feedback-action">操作：{{ f.action }}</div>
           <div v-if="f.content" class="feedback-content">{{ f.content }}</div>
           <div class="feedback-bottom">
             <span class="author">{{ f.author?.nickname || f.author?.username || '匿名' }}</span>
@@ -342,6 +351,12 @@ function formatDate(date) {
   font-weight: 600;
   color: var(--md-text);
   margin-bottom: 4px;
+}
+.feedback-action {
+  font-size: 12px;
+  color: var(--md-accent);
+  margin-bottom: 4px;
+  line-height: 1.4;
 }
 .feedback-content {
   font-size: 13px;

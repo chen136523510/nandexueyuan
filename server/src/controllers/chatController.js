@@ -156,22 +156,9 @@ export async function askChat(req, res, next) {
     // 多 Agent 协调器（并行检索 + 主 Agent 综合回答）
     const result = await orchestrate(question, history, send, personaId, customDesc)
 
-    // AI 自动提交反馈（用户说"xx有bug"等场景）
+    // AI 生成的反馈草稿（不自动入库，推给前端让用户确认后提交）
     if (result.feedback) {
-      try {
-        const fb = await prisma.feedback.create({
-          data: {
-            authorId: req.user.id,
-            type: result.feedback.type,
-            title: result.feedback.title,
-            content: result.feedback.content,
-            source: 'ai',
-          },
-        })
-        send('feedback_created', { id: fb.id, ...result.feedback })
-      } catch (err) {
-        console.error('[Chat] AI 反馈提交失败:', err.message)
-      }
+      send('feedback_created', result.feedback)
     }
 
     // 发送引用来源

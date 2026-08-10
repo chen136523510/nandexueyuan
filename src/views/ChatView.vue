@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { listSessions, getSession, deleteSession } from '../api/chat'
+import { createFeedback } from '../api/feedback'
 import { useDialogStore } from '../stores/dialog'
 import { renderMarkdown } from '../utils/markdown'
 
@@ -150,6 +151,35 @@ function copyMessage(msg) {
     msg._copied = true
     setTimeout(() => { msg._copied = false }, 2000)
   })
+}
+
+const feedbackTypeLabels = {
+  bug: '🐛 BUG反馈',
+  optimization: '🔧 功能优化',
+  new_feature: '✨ 功能新增',
+  story: '📖 剧情设计',
+  other: '📝 其他',
+}
+
+async function confirmSubmitFeedback(msg) {
+  const fb = msg.feedback
+  try {
+    const res = await createFeedback({
+      type: fb.type,
+      title: fb.title,
+      action: fb.action || '无',
+      content: fb.content,
+      source: 'ai',
+    })
+    msg.feedback._submitted = true
+    msg.feedback._error = false
+  } catch {
+    msg.feedback._error = true
+  }
+}
+
+function dismissFeedback(msg) {
+  msg.feedback = null
 }
 
 async function ask(q) {
@@ -417,10 +447,23 @@ function formatDate(date) {
               {{ msg._copied ? '✓ 已复制' : '⎘ 复制' }}
             </button>
 
-            <!-- AI 自动提交反馈提示 -->
-            <div v-if="msg.feedback" class="msg-feedback">
-              ✅ 已自动提交反馈：[{{ msg.feedback.type }}] {{ msg.feedback.title }}
-              <router-link to="/feedback" class="feedback-link">查看</router-link>
+            <!-- AI 生成的反馈确认卡片（用户确认后才提交） -->
+            <div v-if="msg.feedback" class="msg-feedback-card">
+              <div v-if="!msg.feedback._submitted" class="feedback-confirm">
+                <div class="feedback-card-title">📋 男德通帮你生成了一条反馈，确认提交吗？</div>
+                <div class="feedback-card-row"><span class="row-label">类型</span>{{ feedbackTypeLabels[msg.feedback.type] || msg.feedback.type }}</div>
+                <div class="feedback-card-row"><span class="row-label">标题</span>{{ msg.feedback.title }}</div>
+                <div class="feedback-card-row"><span class="row-label">操作</span>{{ msg.feedback.action || '无' }}</div>
+                <div class="feedback-card-row"><span class="row-label">描述</span>{{ msg.feedback.content }}</div>
+                <div class="feedback-card-actions">
+                  <button class="feedback-confirm-btn" @click="confirmSubmitFeedback(msg)">✓ 确认提交</button>
+                  <button class="feedback-dismiss-btn" @click="dismissFeedback(msg)">取消</button>
+                </div>
+                <div v-if="msg.feedback._error" class="feedback-error">提交失败，请稍后重试</div>
+              </div>
+              <div v-else class="feedback-submitted">
+                ✅ 反馈已提交！<router-link to="/feedback" class="feedback-link">查看</router-link>
+              </div>
             </div>
 
             <div v-if="msg.intent" class="msg-meta">
@@ -1043,11 +1086,69 @@ function formatDate(date) {
   border-color: var(--md-text-disabled);
 }
 
-/* AI 反馈提交提示 */
-.msg-feedback {
+/* AI 反馈确认卡片 */
+.msg-feedback-card {
   align-self: flex-start;
   margin-top: 4px;
-  padding: 6px 12px;
+  max-width: 75%;
+  width: 100%;
+}
+.feedback-confirm {
+  background: var(--md-bg-soft);
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-lg);
+  padding: 12px 14px;
+}
+.feedback-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-text);
+  margin-bottom: 8px;
+}
+.feedback-card-row {
+  font-size: 12px;
+  color: var(--md-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 2px;
+}
+.feedback-card-row .row-label {
+  display: inline-block;
+  width: 36px;
+  color: var(--md-text-disabled);
+  font-weight: 600;
+}
+.feedback-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.feedback-confirm-btn {
+  padding: 5px 14px;
+  background: var(--md-primary);
+  color: var(--md-text-on-primary);
+  border: none;
+  border-radius: var(--md-radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+.feedback-confirm-btn:hover { background: var(--md-primary-hover); }
+.feedback-dismiss-btn {
+  padding: 5px 14px;
+  background: none;
+  color: var(--md-text-secondary);
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+.feedback-dismiss-btn:hover { color: var(--md-text); border-color: var(--md-text-disabled); }
+.feedback-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--md-danger);
+}
+.feedback-submitted {
+  padding: 8px 12px;
   background: rgba(138, 154, 91, 0.12);
   border: 1px solid rgba(138, 154, 91, 0.3);
   border-radius: var(--md-radius);

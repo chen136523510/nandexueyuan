@@ -28,18 +28,19 @@ export async function listFeedback(req, res, next) {
 // ========== POST /api/feedback - 创建反馈 ==========
 export async function createFeedback(req, res, next) {
   try {
-    const { type, title, content, source } = req.body
+    const { type, title, action, content, source } = req.body
 
     if (!title || !title.trim()) {
       return fail(res, ErrorCode.VALIDATION_ERROR.code, '标题不能为空', ErrorCode.VALIDATION_ERROR.httpStatus)
     }
 
-    const validTypes = ['bug', 'feature', 'other']
+    const validTypes = ['optimization', 'new_feature', 'story', 'bug']
     const feedback = await prisma.feedback.create({
       data: {
         authorId: req.user.id,
         type: validTypes.includes(type) ? type : 'other',
         title: title.trim(),
+        action: (action || '无').trim(),
         content: (content || '').trim(),
         source: source === 'ai' ? 'ai' : 'manual',
       },

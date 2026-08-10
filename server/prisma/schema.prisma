@@ -232,16 +232,17 @@ model GameProgress {
   @@map("game_progress")
 }
 
-// 需求反馈（用户提交 bug/feature/other，男德通 AI 也可自动提交）
+// 需求反馈（用户提交，男德通 AI 也可生成后经用户确认提交）
 model Feedback {
   id        Int      @id @default(autoincrement())
   authorId  Int
-  type      String   @default("other")    // bug | feature | other
+  type      String   @default("other")    // optimization（功能优化） | new_feature（功能新增） | story（剧情设计） | bug（BUG反馈）
   title     String                          // 反馈标题
+  action    String   @default("无")         // 用户具体的操作（如"点击师德墙进入页面后点击评论"）
   content   String   @default("")           // 详细描述
   status    String   @default("open")       // open | in_progress | resolved
   priority  String   @default("medium")     // low | medium | high
-  source    String   @default("manual")     // manual（用户手动提交） | ai（男德通 AI 提交）
+  source    String   @default("manual")     // manual（用户手动提交） | ai（男德通 AI 生成用户确认提交）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
