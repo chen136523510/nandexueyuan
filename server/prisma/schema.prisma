@@ -28,6 +28,7 @@ model User {
   likes          Like[]        @relation("PostLiker")
   gameSaves      GameSave[]
   gameProgress   GameProgress?
+  feedbacks      Feedback[]    @relation("FeedbackAuthor")
 
   @@map("users")
 }
@@ -229,4 +230,24 @@ model GameProgress {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("game_progress")
+}
+
+// 需求反馈（用户提交 bug/feature/other，男德通 AI 也可自动提交）
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  authorId  Int
+  type      String   @default("other")    // bug | feature | other
+  title     String                          // 反馈标题
+  content   String   @default("")           // 详细描述
+  status    String   @default("open")       // open | in_progress | resolved
+  priority  String   @default("medium")     // low | medium | high
+  source    String   @default("manual")     // manual（用户手动提交） | ai（男德通 AI 提交）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation("FeedbackAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([type])
+  @@map("feedbacks")
 }

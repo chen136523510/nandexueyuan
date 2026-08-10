@@ -117,7 +117,7 @@ export async function askChat(req, res, next) {
   }
 
   try {
-    const { question, sessionId } = req.body
+    const { question, sessionId, personaId, customDesc } = req.body
 
     if (!question || !question.trim()) {
       send('error', { message: '问题不能为空' })
@@ -154,7 +154,25 @@ export async function askChat(req, res, next) {
       .slice(-19)
 
     // 多 Agent 协调器（并行检索 + 主 Agent 综合回答）
-    const result = await orchestrate(question, history, send)
+    const result = await orchestrate(question, history, send, personaId, customDesc)
+
+    // AI 自动提交反馈（用户说"xx有bug"等场景）
+    if (result.feedback) {
+      try {
+        const fb = await prisma.feedback.create({
+          data: {
+            authorId: req.user.id,
+            type: result.feedback.type,
+            title: result.feedback.title,
+            content: result.feedback.content,
+            source: 'ai',
+          },
+        })
+        send('feedback_created', { id: fb.id, ...result.feedback })
+      } catch (err) {
+        console.error('[Chat] AI 反馈提交失败:', err.message)
+      }
+    }
 
     // 发送引用来源
     if (result.sources?.length) {

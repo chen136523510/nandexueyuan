@@ -16,6 +16,9 @@ import {
   getProgress, updateProgress,
   listSaves, getSave, writeSave, deleteSave,
 } from '../controllers/visualNovelController.js'
+import {
+  listFeedback, createFeedback, deleteFeedback, updateStatus as updateFeedbackStatus,
+} from '../controllers/feedbackController.js'
 import { auth, requireRole } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
 
@@ -81,5 +84,11 @@ router.get('/visualnovel/saves', auth, listSaves)
 router.get('/visualnovel/saves/:slot', auth, getSave)
 router.post('/visualnovel/saves/:slot', auth, writeSave)
 router.delete('/visualnovel/saves/:slot', auth, deleteSave)
+
+// 需求反馈（已登录可提交/查看，admin 可改状态）
+router.get('/feedback', auth, listFeedback)
+router.post('/feedback', auth, createFeedback)
+router.delete('/feedback/:id', auth, deleteFeedback)
+router.patch('/feedback/:id/status', auth, requireRole('admin', 'super_admin'), updateFeedbackStatus)
 
 export default router

@@ -38,6 +38,26 @@ const phaseLabels = {
   reasoning: '推理',
   analysis: '综合分析',
   done: '完成',
+  warning: '⚠️ 提示',
+}
+
+// ========== 人设选择 ==========
+const personaOptions = [
+  { id: 'tiwei', name: '体委' },
+  { id: 'qiubi', name: '丘比' },
+  { id: 'kaikai', name: '开开' },
+  { id: 'normal', name: '正常人' },
+  { id: 'custom', name: '自定义' },
+]
+const currentPersona = ref(localStorage.getItem('chat_persona') || 'tiwei')
+const customPersonaDesc = ref(localStorage.getItem('chat_persona_custom') || '')
+
+function onPersonaChange() {
+  localStorage.setItem('chat_persona', currentPersona.value)
+}
+
+function onCustomDescChange() {
+  localStorage.setItem('chat_persona_custom', customPersonaDesc.value)
 }
 const sidebarOpen = ref(window.innerWidth > 768)
 const windowWidth = ref(window.innerWidth)
@@ -162,7 +182,12 @@ async function ask(q) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ question: text, sessionId: currentSessionId.value }),
+      body: JSON.stringify({
+        question: text,
+        sessionId: currentSessionId.value,
+        personaId: currentPersona.value,
+        customDesc: currentPersona.value === 'custom' ? customPersonaDesc.value : undefined,
+      }),
       signal: abortController.value.signal,
     })
 
@@ -219,6 +244,8 @@ async function ask(q) {
             botMsg.showThinking = false
           } else if (eventType === 'sources') {
             botMsg.sources = data
+          } else if (eventType === 'feedback_created') {
+            botMsg.feedback = data
           } else if (eventType === 'done') {
             currentSessionId.value = data.sessionId
             botMsg.intent = data.intent
@@ -282,6 +309,20 @@ function formatDate(date) {
       <!-- 移动端遮罩（窄屏时 sidebar 以 overlay 形式出现） -->
       <div v-if="sidebarOpen && isMobile" class="sidebar-overlay" @click="sidebarOpen = false"></div>
       <div v-if="sidebarOpen" class="sidebar">
+        <div class="persona-selector">
+          <label class="persona-label">🎭 人设</label>
+          <select v-model="currentPersona" @change="onPersonaChange" class="persona-select">
+            <option v-for="p in personaOptions" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <textarea
+            v-if="currentPersona === 'custom'"
+            v-model="customPersonaDesc"
+            @input="onCustomDescChange"
+            class="persona-custom-input"
+            placeholder="描述你想要的人设风格，如：你是一个古代军师，说话文绉绉的"
+            rows="2"
+          ></textarea>
+        </div>
         <button class="new-chat-btn" @click="newChat">+ 新建对话</button>
         <div class="session-list">
           <div
@@ -330,8 +371,8 @@ function formatDate(date) {
                       </span>
                     </div>
                     <div v-for="(step, si) in steps" :key="si" class="agent-step">
-                      <span v-if="step.phase" class="step-phase">{{ phaseLabels[step.phase] || step.phase }}</span>
-                      <span v-if="step.content" class="step-content">{{ step.content }}</span>
+                      <span v-if="step.phase" :class="['step-phase', { warning: step.phase === 'warning' }]">{{ phaseLabels[step.phase] || step.phase }}</span>
+                      <span v-if="step.content" :class="['step-content', { warning: step.phase === 'warning' }]">{{ step.content }}</span>
                       <div v-if="step.data && Array.isArray(step.data)" class="step-data">
                         <div v-for="(row, ri) in step.data.slice(0, 5)" :key="ri" class="data-row">
                           {{ typeof row === 'string' ? row : JSON.stringify(row) }}
@@ -375,6 +416,12 @@ function formatDate(date) {
             >
               {{ msg._copied ? '✓ 已复制' : '⎘ 复制' }}
             </button>
+
+            <!-- AI 自动提交反馈提示 -->
+            <div v-if="msg.feedback" class="msg-feedback">
+              ✅ 已自动提交反馈：[{{ msg.feedback.type }}] {{ msg.feedback.title }}
+              <router-link to="/feedback" class="feedback-link">查看</router-link>
+            </div>
 
             <div v-if="msg.intent" class="msg-meta">
               <span class="intent-tag">{{ msg.intent }}</span>
@@ -467,6 +514,46 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
 }
+.persona-selector {
+  padding: 12px;
+  border-bottom: 1px solid var(--md-border);
+}
+.persona-label {
+  display: block;
+  font-size: 12px;
+  color: var(--md-text-secondary);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.persona-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-sm);
+  background: var(--md-bg-soft);
+  color: var(--md-text);
+  font-size: 13px;
+  font-family: var(--md-font-body);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s var(--md-ease-out);
+}
+.persona-select:focus { border-color: var(--md-primary); }
+.persona-custom-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--md-border);
+  border-radius: var(--md-radius-sm);
+  background: var(--md-bg-soft);
+  color: var(--md-text);
+  font-size: 12px;
+  font-family: var(--md-font-body);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s var(--md-ease-out);
+}
+.persona-custom-input:focus { border-color: var(--md-primary); }
 .new-chat-btn {
   margin: 12px;
   padding: 10px;
@@ -672,6 +759,14 @@ function formatDate(date) {
   padding: 1px 4px;
   border-radius: 3px;
   margin-right: 4px;
+}
+.step-phase.warning {
+  color: #b8860b;
+  background: rgba(212, 165, 116, 0.15);
+}
+.step-content.warning {
+  color: var(--md-accent);
+  font-weight: 500;
 }
 .agent-count {
   font-size: 11px;
@@ -947,6 +1042,27 @@ function formatDate(date) {
   color: var(--md-text-secondary);
   border-color: var(--md-text-disabled);
 }
+
+/* AI 反馈提交提示 */
+.msg-feedback {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: rgba(138, 154, 91, 0.12);
+  border: 1px solid rgba(138, 154, 91, 0.3);
+  border-radius: var(--md-radius);
+  font-size: 12px;
+  color: #5a6b3d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.feedback-link {
+  color: var(--md-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.feedback-link:hover { text-decoration: underline; }
 
 /* 移动端遮罩 */
 .sidebar-overlay {

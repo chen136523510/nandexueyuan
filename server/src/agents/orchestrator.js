@@ -10,7 +10,7 @@
  */
 
 import { chatCompletion, chatCompletionStream } from '../utils/llm.js'
-import { CHAT_PERSONA } from '../utils/persona.js'
+import { getPersona, CHAT_PERSONA } from '../utils/persona.js'
 import { members } from '../utils/knowledge.js'
 import { runPersonStatAgent } from './personStatAgent.js'
 import { runPersonMessagesAgent } from './personMessagesAgent.js'
@@ -18,12 +18,9 @@ import { runMentionedAgent } from './mentionedAgent.js'
 import { runTopicSearchAgent } from './topicSearchAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
-// ========== 大 Agent 系统人设（统一引用 persona.js）==========
-const MAIN_PERSONA = CHAT_PERSONA
-
 // ========== 规划阶段 prompt ==========
-function buildPlannerPrompt(question, history) {
-  const messages = [{ role: 'system', content: MAIN_PERSONA }]
+function buildPlannerPrompt(question, history, persona) {
+  const messages = [{ role: 'system', content: persona || CHAT_PERSONA }]
 
   // 注入对话历史（大 Agent 持有上下文）
   for (const turn of history) {
@@ -69,8 +66,8 @@ function buildPlannerPrompt(question, history) {
 }
 
 // ========== 分析阶段 prompt ==========
-function buildAnalysisPrompt(question, history, agentResults) {
-  const messages = [{ role: 'system', content: MAIN_PERSONA }]
+function buildAnalysisPrompt(question, history, agentResults, persona) {
+  const messages = [{ role: 'system', content: persona || CHAT_PERSONA }]
 
   // 注入对话历史
   for (const turn of history) {
@@ -136,13 +133,14 @@ const HEAVY_TASKS = ['person_messages', 'mentioned']
 
 async function dispatchAgent(task, emit) {
   const { type } = task
+  const isHeavy = HEAVY_TASKS.includes(type)
 
   // 黑机在线 + 重度任务 -> 外包给黑机全量检索
-  if (isBlackOnline() && HEAVY_TASKS.includes(type)) {
+  if (isBlackOnline() && isHeavy) {
     try {
       const result = await sendSearchTask(task, emit)
       console.log(`[Orchestrator] 黑机执行 ${type} 成功`)
-      return result
+      return { ...result, _wasHeavy: true, _degraded: false }
     } catch (err) {
       console.log(`[Orchestrator] 黑机失败，降级本地: ${err.message}`)
       emit(type, 'warning', `黑机离线/超时，使用本地检索（数据量受限）`)
@@ -151,20 +149,27 @@ async function dispatchAgent(task, emit) {
 
   // 降级 / 轻量任务 -> 本地执行
   try {
+    let result
     switch (type) {
       case 'person_stat':
-        return { agentType: '人物统计', ...await runPersonStatAgent(task, emit) }
+        result = { agentType: '人物统计', ...await runPersonStatAgent(task, emit) }
+        break
       case 'person_messages':
-        return { agentType: '人物发言', ...await runPersonMessagesAgent(task, emit) }
+        result = { agentType: '人物发言', ...await runPersonMessagesAgent(task, emit) }
+        break
       case 'mentioned':
-        return { agentType: '被提及', ...await runMentionedAgent(task, emit) }
+        result = { agentType: '被提及', ...await runMentionedAgent(task, emit) }
+        break
       case 'topic_search':
-        return { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
+        result = { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
+        break
       default:
         return { ok: false, error: `未知 Agent 类型: ${type}`, agentType: type }
     }
+    // 标记降级状态（黑机离线时重度任务走本地=降级）
+    return { ...result, _wasHeavy: isHeavy, _degraded: isHeavy && !isBlackOnline() }
   } catch (err) {
-    return { ok: false, error: err.message, agentType: type }
+    return { ok: false, error: err.message, agentType: type, _wasHeavy: isHeavy, _degraded: isHeavy }
   }
 }
 
@@ -278,6 +283,103 @@ function parseTasks(raw) {
   }
 }
 
+// ========== 反馈意图检测（用户说"xx有bug""xx太慢""建议加xx"时自动提交反馈）==========
+function matchFeedbackIntent(question) {
+  const q = question.trim()
+  const feedbackPatterns = [
+    /(.{2,10})(有bug|黑屏|闪退|崩溃|报错|白屏|卡死|不能用|用不了|坏了|出问题)/,
+    /(.{2,10})(太慢|加载慢|卡|延迟高|响应慢|性能差|很卡)/,
+    /(建议|希望|能不能|可以不可以|为什么不|为啥不|应该)(.{2,30})/,
+    /(新开|新增|加一个|来一个)(.{2,20})(模块|功能|页面|按钮)/,
+  ]
+  return feedbackPatterns.some((p) => p.test(q))
+}
+
+/**
+ * 反馈流程：LLM 生成结构化反馈 -> 返回给调用方提交 -> 回答用户
+ * @returns {{ answer, feedback: {type, title, content} | null }}
+ */
+async function runFeedbackFlow(question, history, send, persona) {
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'planning',
+    content: '检测到反馈意图，正在生成结构化反馈...',
+  })
+
+  // LLM 生成结构化反馈
+  const feedbackMessages = [
+    { role: 'system', content: persona || CHAT_PERSONA },
+    {
+      role: 'user',
+      content: `用户说了以下话，请判断是否是在反馈 bug 或需求，并生成结构化反馈。
+
+用户输入：${question}
+
+如果是反馈/需求/bug，输出 JSON（不要 markdown）：
+{"is_feedback": true, "type": "bug|feature|other", "title": "简短标题（15字以内）", "content": "详细描述（包含用户原话关键信息）"}
+
+如果不是反馈（比如只是随口提到），输出：
+{"is_feedback": false}
+
+只输出 JSON，不要其他内容。`,
+    },
+  ]
+
+  let feedback = null
+  try {
+    const raw = await chatCompletion(feedbackMessages, { temperature: 0, maxTokens: 200 })
+    const cleaned = raw.replace(/```json|```/g, '').trim()
+    const match = cleaned.match(/\{[\s\S]*\}/)
+    if (match) {
+      const parsed = JSON.parse(match[0])
+      if (parsed.is_feedback) {
+        feedback = {
+          type: ['bug', 'feature', 'other'].includes(parsed.type) ? parsed.type : 'other',
+          title: (parsed.title || question.slice(0, 20)).trim(),
+          content: (parsed.content || question).trim(),
+        }
+        send('agent_thinking', {
+          agent: 'main',
+          phase: 'planning',
+          content: `已生成反馈：[${feedback.type}] ${feedback.title}`,
+          data: feedback,
+        })
+      }
+    }
+  } catch (err) {
+    console.log('[Orchestrator] 反馈意图分析失败:', err.message)
+  }
+
+  // 流式回答用户（告知已提交反馈 + 正常回复）
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'reasoning',
+    content: '回答中...',
+  })
+
+  const answerMessages = [{ role: 'system', content: persona || CHAT_PERSONA }]
+  for (const turn of history) {
+    answerMessages.push({ role: turn.role, content: turn.content })
+  }
+  const prefix = feedback
+    ? `用户刚才反馈了一个问题，你已经帮他生成了结构化反馈（类型：${feedback.type}，标题：${feedback.title}），系统会自动提交。请用你的人设风格简短回复用户，告知已帮他提交反馈，后续院长会处理。回复要自然，不要提"JSON"等技术细节。\n\n用户原话：${question}\n`
+    : question
+  answerMessages.push({ role: 'user', content: prefix })
+
+  let answer = ''
+  try {
+    for await (const chunk of chatCompletionStream(answerMessages, { temperature: 0.7, maxTokens: 500 })) {
+      send('token', { content: chunk })
+      answer += chunk
+    }
+  } catch (err) {
+    console.error('[Orchestrator] 反馈流式输出异常:', err.message)
+    if (!answer) answer = '回答时出错了，请稍后再试~'
+  }
+
+  return { answer, sources: [], intent: 'feedback', feedback }
+}
+
 // ========== 主入口 ==========
 /**
  * @param {string} question 用户问题
@@ -285,7 +387,9 @@ function parseTasks(raw) {
  * @param {function} send SSE 发送函数
  * @returns {{ answer: string, sources: array, intent: string }}
  */
-export async function orchestrate(question, history, send) {
+export async function orchestrate(question, history, send, personaId, customDesc) {
+  // 解析人设（默认 tiwei）
+  const persona = getPersona(personaId, customDesc)
   const emit = (agent, phase, content, data) => {
     send('agent_thinking', { agent, phase, content, data: data || null })
   }
@@ -297,7 +401,7 @@ export async function orchestrate(question, history, send) {
       phase: 'planning',
       content: '这个问题不需要检索数据，直接回答',
     })
-    return await runDirectChat(question, history, send)
+    return await runDirectChat(question, history, send, persona)
   }
 
   // ========== 快速路由（模板化问题跳过规划 LLM，省一次调用 + 响应快 2-3 秒）==========
@@ -313,7 +417,17 @@ export async function orchestrate(question, history, send) {
     const taskPromises = quickTasks.map((task) => dispatchAgent(task, emit))
     const results = await Promise.all(taskPromises)
 
-    return await runAnalysisAndAnswer(question, history, results, send)
+    return await runAnalysisAndAnswer(question, history, results, send, persona)
+  }
+
+  // ========== 反馈意图检测（用户说"xx有bug""xx太慢"时自动提交反馈）==========
+  if (matchFeedbackIntent(question)) {
+    const result = await runFeedbackFlow(question, history, send, persona)
+    // 如果 LLM 确认是反馈，通过 SSE 通知前端
+    if (result.feedback) {
+      send('feedback_created', result.feedback)
+    }
+    return result
   }
 
   // ========== 阶段 1：规划 ==========
@@ -323,7 +437,7 @@ export async function orchestrate(question, history, send) {
     content: '正在分析问题，规划检索任务...',
   })
 
-  const plannerMessages = buildPlannerPrompt(question, history)
+  const plannerMessages = buildPlannerPrompt(question, history, persona)
   let rawTasks = ''
   try {
     rawTasks = await chatCompletion(plannerMessages, { temperature: 0, maxTokens: 500 })
@@ -344,7 +458,7 @@ export async function orchestrate(question, history, send) {
 
   // 无任务 -> 纯闲聊
   if (tasks.length === 0) {
-    return await runDirectChat(question, history, send)
+    return await runDirectChat(question, history, send, persona)
   }
 
   // ========== 阶段 2：并行检索 ==========
@@ -352,18 +466,18 @@ export async function orchestrate(question, history, send) {
   const results = await Promise.all(taskPromises)
 
   // ========== 阶段 3：分析 + 回答 ==========
-  return await runAnalysisAndAnswer(question, history, results, send)
+  return await runAnalysisAndAnswer(question, history, results, send, persona)
 }
 
 // ========== 纯闲聊 ==========
-async function runDirectChat(question, history, send) {
+async function runDirectChat(question, history, send, persona) {
   send('agent_thinking', {
     agent: 'main',
     phase: 'reasoning',
     content: '直接回答中...',
   })
 
-  const messages = [{ role: 'system', content: MAIN_PERSONA }]
+  const messages = [{ role: 'system', content: persona || CHAT_PERSONA }]
   for (const turn of history) {
     messages.push({ role: turn.role, content: turn.content })
   }
@@ -386,7 +500,18 @@ async function runDirectChat(question, history, send) {
 }
 
 // ========== 分析 + 回答 ==========
-async function runAnalysisAndAnswer(question, history, agentResults, send) {
+async function runAnalysisAndAnswer(question, history, agentResults, send, persona) {
+  // 黑机离线降级检测：重度任务全部降级时给用户提示
+  const heavyResults = agentResults.filter((r) => r._wasHeavy)
+  const heavyDegraded = heavyResults.filter((r) => r._degraded)
+  if (heavyResults.length > 0 && heavyDegraded.length === heavyResults.length) {
+    send('agent_thinking', {
+      agent: 'main',
+      phase: 'warning',
+      content: '⚠️ 当前高性能计算节点（黑机）离线，本次查询使用降级模式（数据量受限）。如需完整查询请联系院长开启黑机。',
+    })
+  }
+
   // 分析阶段：大 Agent 先做分析推理
   send('agent_thinking', {
     agent: 'main',
@@ -400,7 +525,7 @@ async function runAnalysisAndAnswer(question, history, agentResults, send) {
     })),
   })
 
-  const analysisMessages = buildAnalysisPrompt(question, history, agentResults)
+  const analysisMessages = buildAnalysisPrompt(question, history, agentResults, persona)
 
   // 流式输出最终回答（加 try-catch 捕获网络中断/超时/LLM 异常）
   let answer = ''
