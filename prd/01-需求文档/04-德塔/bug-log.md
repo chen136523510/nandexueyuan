@@ -4,7 +4,23 @@
 
 ---
 
-## 2026-08-10（白机 部署脚本验证误报）
+## 2026-08-10（白机 部署 prisma db push 数据丢失）
+
+### BUG-61：prisma db push --accept-data-loss 误删全部数据表（FTS5 虚拟表附属表触发连锁删除）
+
+- **发现时间**：2026-08-10 17:10（白机部署 v3.2.0 时触发）
+- **环境**：生产环境（服务器 SQLite dev.db，原 131MB 含 51 万条群聊数据）
+- **现象**：执行 `npx prisma db push --accept-data-loss` 后，dev.db 从 131MB 缩至 36KB，仅剩 `_prisma_migrations`/`announcements`/`invite_codes`/`users` 四张表，group_messages/message_chunks/chat_sessions/chat_turns/posts/comments/likes/game_saves/game_progress/feedbacks/import_batches/versions 全部丢失
+- **根因**：Prisma schema 不包含 FTS5 虚拟表（message_chunks_fts/group_messages_fts 是手动 CREATE VIRTUAL TABLE 创建的）。Prisma 检测到这些表不在 schema 中，尝试 DROP。FTS5 虚拟表有附属表（_config/_data/_docsize/_idx），Prisma 先 DROP 了 `_config` 等附属表导致 FTS5 虚拟表损坏，DROP 失败报 `no such table: message_chunks_fts_config`。加 `--accept-data-loss` 重试时，Prisma 在删除 FTS 表过程中触发了连锁 schema 重建，将所有非 schema 定义的表全部删除
+- **修复**：服务器上幸存 `prod.db`（131MB 完整备份，含 51 万条群聊数据 + 所有表），执行 `cp prod.db dev.db` 恢复。恢复后重建 FTS5 索引（`node scripts/rebuildFts.js`，5101 条，双列 keywords+summary）
+- **文件**：无代码文件修改（操作层面事故）
+- **状态**：已修复（数据完整恢复）
+- **教训**：
+  1. **禁止在生产环境使用 `prisma db push --accept-data-loss`**，FTS5 虚拟表不在 schema 中会触发连锁删除
+  2. 部署涉及 schema 变更时，必须先 `cp dev.db dev.db.bak` 备份
+  3. FTS5 虚拟表变更（如重建索引）应在 db push **之后**手动执行 `DROP TABLE IF EXISTS` + `CREATE VIRTUAL TABLE`，不依赖 Prisma
+  4. 服务器保留 prod.db 作为定期备份，本次正是靠它恢复
+  5. 后续应将 FTS5 虚拟表声明为 Prisma 的 `@@map` 或用 migration 体系管理，避免 Prisma 误判
 
 ### BUG-60：deploy.sh 前端验证误报"前端异常"（HTTPS 配置后 localhost 不匹配）
 
