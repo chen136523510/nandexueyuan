@@ -1,11 +1,39 @@
 import prisma from '../lib/prisma.js'
 import { comparePassword, hashPassword } from '../utils/password.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
 
-// PUT /api/user/profile — 修改个人信息
+// ===== 头像上传配置（磁盘存储）=====
+const avatarDir = path.resolve('uploads/avatars')
+if (!fs.existsSync(avatarDir)) {
+  fs.mkdirSync(avatarDir, { recursive: true })
+}
+
+export const avatarUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, avatarDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+      cb(null, `avatar_${req.user.id}_${Date.now()}${ext}`)
+    },
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|webp|gif)$/
+    if (allowed.test(path.extname(file.originalname).toLowerCase())) {
+      cb(null, true)
+    } else {
+      cb(new Error('仅支持 jpg/png/webp/gif 格式'))
+    }
+  },
+})
+
+// PUT /api/user/profile - 修改个人信息（multipart/form-data，支持头像文件上传）
 export async function updateProfile(req, res, next) {
   try {
-    const { nickname, avatar } = req.body
+    const { nickname } = req.body
 
     const data = {}
     if (nickname !== undefined) {
@@ -14,8 +42,15 @@ export async function updateProfile(req, res, next) {
       }
       data.nickname = nickname
     }
-    if (avatar !== undefined) {
-      data.avatar = avatar
+    // 头像文件上传
+    if (req.file) {
+      // 删除旧头像文件（如果是本地上传的）
+      const oldUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { avatar: true } })
+      if (oldUser?.avatar?.startsWith('/uploads/avatars/')) {
+        const oldPath = path.resolve('.' + oldUser.avatar)
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
+      }
+      data.avatar = `/uploads/avatars/${req.file.filename}`
     }
 
     const user = await prisma.user.update({

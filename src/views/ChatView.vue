@@ -450,19 +450,19 @@ function formatDate(date) {
             <!-- AI 生成的反馈确认卡片（用户确认后才提交） -->
             <div v-if="msg.feedback" class="msg-feedback-card">
               <div v-if="!msg.feedback._submitted" class="feedback-confirm">
-                <div class="feedback-card-title">📋 男德通帮你生成了一条反馈，确认提交吗？</div>
+                <div class="feedback-card-title">📋 男德通帮你起草了一封院长信箱，确认投递吗？</div>
                 <div class="feedback-card-row"><span class="row-label">类型</span>{{ feedbackTypeLabels[msg.feedback.type] || msg.feedback.type }}</div>
                 <div class="feedback-card-row"><span class="row-label">标题</span>{{ msg.feedback.title }}</div>
                 <div class="feedback-card-row"><span class="row-label">操作</span>{{ msg.feedback.action || '无' }}</div>
                 <div class="feedback-card-row"><span class="row-label">描述</span>{{ msg.feedback.content }}</div>
                 <div class="feedback-card-actions">
-                  <button class="feedback-confirm-btn" @click="confirmSubmitFeedback(msg)">✓ 确认提交</button>
+                  <button class="feedback-confirm-btn" @click="confirmSubmitFeedback(msg)">✓ 确认投递</button>
                   <button class="feedback-dismiss-btn" @click="dismissFeedback(msg)">取消</button>
                 </div>
                 <div v-if="msg.feedback._error" class="feedback-error">提交失败，请稍后重试</div>
               </div>
               <div v-else class="feedback-submitted">
-                ✅ 反馈已提交！<router-link to="/feedback" class="feedback-link">查看</router-link>
+                ✅ 信件已投递！<router-link to="/mailbox" class="feedback-link">查看</router-link>
               </div>
             </div>
 

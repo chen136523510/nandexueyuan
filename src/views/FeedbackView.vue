@@ -64,7 +64,7 @@ async function submit() {
 }
 
 async function remove(id) {
-  if (!await dialog.confirm('确定删除这条反馈？', { danger: true })) return
+  if (!await dialog.confirm('确定撤回这封信件？', { danger: true })) return
   try {
     await deleteFeedback(id)
     feedbacks.value = feedbacks.value.filter((f) => f.id !== id)
@@ -101,8 +101,8 @@ function formatDate(date) {
   <div class="feedback-page">
     <div class="feedback-header">
       <router-link to="/home" class="back-link">← 返回</router-link>
-      <h2>需求反馈</h2>
-      <button class="submit-btn" @click="showForm = !showForm">{{ showForm ? '取消' : '+ 提交反馈' }}</button>
+      <h2>院长信箱</h2>
+      <button class="submit-btn" @click="showForm = !showForm">{{ showForm ? '取消' : '+ 投递信件' }}</button>
     </div>
 
     <div class="feedback-body">
@@ -148,7 +148,7 @@ function formatDate(date) {
       <div v-if="loading" class="loading">加载中...</div>
       <div v-else-if="filteredFeedbacks.length === 0" class="empty">
         <div class="empty-icon">📭</div>
-        <p>暂无反馈</p>
+        <p>信箱空空如也</p>
       </div>
       <div v-else class="feedback-list">
         <div v-for="f in filteredFeedbacks" :key="f.id" class="feedback-item">

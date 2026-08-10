@@ -12,7 +12,8 @@ const activeTab = ref('profile')
 
 // 个人信息
 const nickname = ref('')
-const avatar = ref('')
+const avatarFile = ref(null)
+const avatarPreview = ref('')
 const profileMsg = ref('')
 const profileLoading = ref(false)
 
@@ -27,7 +28,8 @@ watch(() => props.show, (val) => {
   if (val) {
     activeTab.value = 'profile'
     nickname.value = auth.user?.nickname || ''
-    avatar.value = auth.user?.avatar || ''
+    avatarFile.value = null
+    avatarPreview.value = auth.user?.avatar || ''
     profileMsg.value = ''
     passwordMsg.value = ''
     oldPassword.value = ''
@@ -35,13 +37,28 @@ watch(() => props.show, (val) => {
   }
 })
 
+function onAvatarChange(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    profileMsg.value = '头像不能超过 2MB'
+    return
+  }
+  avatarFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
 async function handleProfile() {
   profileLoading.value = true
   profileMsg.value = ''
   try {
-    const res = await updateProfile({ nickname: nickname.value, avatar: avatar.value })
+    const res = await updateProfile({
+      nickname: nickname.value,
+      avatarFile: avatarFile.value || undefined,
+    })
     auth.user.nickname = res.data.nickname
     auth.user.avatar = res.data.avatar
+    avatarFile.value = null
     profileMsg.value = '个人信息已更新'
   } catch (err) {
     profileMsg.value = err.message || '更新失败'
@@ -111,8 +128,13 @@ async function handlePassword() {
             <input v-model="nickname" type="text" class="form-input" placeholder="显示昵称" maxlength="20" />
           </div>
           <div class="form-group">
-            <label>头像 URL</label>
-            <input v-model="avatar" type="text" class="form-input" placeholder="可选" />
+            <label>头像</label>
+            <div class="avatar-upload">
+              <img v-if="avatarPreview" :src="avatarPreview" class="avatar-preview" alt="头像预览" />
+              <div v-else class="avatar-placeholder">头像</div>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" @change="onAvatarChange" class="avatar-input" data-testid="profile-avatar-input" />
+              <p class="avatar-hint">点击上传，支持 jpg/png/webp/gif，≤2MB</p>
+            </div>
           </div>
 
           <p v-if="profileMsg" class="form-msg">{{ profileMsg }}</p>
@@ -268,6 +290,44 @@ async function handlePassword() {
 .form-group label {
   font-size: 13px;
   color: #666;
+}
+
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.avatar-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e8e8e8;
+}
+.avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #999;
+  border: 2px solid #e8e8e8;
+}
+.avatar-input {
+  font-size: 12px;
+  color: #666;
+  flex: 1;
+  min-width: 150px;
+}
+.avatar-hint {
+  font-size: 11px;
+  color: #aaa;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .form-input {

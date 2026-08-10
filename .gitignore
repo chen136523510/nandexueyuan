@@ -2,6 +2,9 @@
 logs/
 *.log
 
+# 敏感文档（账号密码管理，不入库）
+docs/account-passwords.md
+
 # 临时文件
 *.tmp
 *.swp

@@ -22,7 +22,7 @@ function handleLogout() {
       <router-link to="/home" class="menu-item">首页</router-link>
       <router-link to="/chat" class="menu-item">男德通</router-link>
       <router-link to="/wall" class="menu-item">师德墙</router-link>
-      <router-link to="/feedback" class="menu-item">反馈</router-link>
+      <router-link to="/mailbox" class="menu-item">院长信箱</router-link>
       <router-link v-if="auth.role === 'super_admin' || auth.role === 'admin'" to="/admin" class="menu-item">男通讯录</router-link>
       <router-link to="/nde" class="menu-item">德塔</router-link>
     </div>
