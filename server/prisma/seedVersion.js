@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.1.0',
+    date: new Date('2026-08-10'),
+    summary: '界面交互优化',
+    updates: JSON.stringify([
+      '全站弹窗升级为自定义样式，告别浏览器原生弹窗的粗糙感',
+      '提升无障碍体验，图标按钮支持屏幕阅读器朗读',
+      '新增自动化测试基础设施，保障后续迭代质量',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      '菜单与地图界面美化（调研中）',
+      '手机/消息系统（规划中）',
+    ], null, 0),
+  },
+  {
     version: 'v3.0.2',
     date: new Date('2026-08-09'),
     summary: '全站图片压缩优化，加载更快',
