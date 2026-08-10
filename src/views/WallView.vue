@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useDialogStore } from '../stores/dialog'
 import { listPosts, createPost, deletePost, createComment, deleteComment, likePost, unlikePost } from '../api/wall'
 import TopBar from '../components/TopBar.vue'
 
 const auth = useAuthStore()
+const dialog = useDialogStore()
 
 const posts = ref([])
 const loading = ref(true)
@@ -91,7 +93,7 @@ async function handlePublish() {
     const track = document.querySelector('.gallery-track')
     if (track) track.scrollTo({ left: 0, behavior: 'smooth' })
   } catch (e) {
-    alert(e.message || '发布失败')
+    await dialog.alert(e.message || '发布失败')
   } finally {
     publishing.value = false
   }
@@ -99,12 +101,12 @@ async function handlePublish() {
 
 // ===== 删除动态 =====
 async function handleDeletePost(post) {
-  if (!confirm('确定删除这条动态？')) return
+  if (!await dialog.confirm('确定删除这条动态？', { danger: true })) return
   try {
     await deletePost(post.id)
     posts.value = posts.value.filter((p) => p.id !== post.id)
   } catch (e) {
-    alert(e.message || '删除失败')
+    await dialog.alert(e.message || '删除失败')
   }
 }
 
@@ -126,7 +128,7 @@ async function handleLike(post) {
       post.likeCount = res.data.likeCount
     }
   } catch (e) {
-    alert(e.message || '操作失败')
+    await dialog.alert(e.message || '操作失败')
   }
 }
 
@@ -143,18 +145,18 @@ async function handleComment(post) {
     commentText.value[post.id] = ''
     expandedComments.value[post.id] = true
   } catch (e) {
-    alert(e.message || '评论失败')
+    await dialog.alert(e.message || '评论失败')
   }
 }
 
 async function handleDeleteComment(post, comment) {
-  if (!confirm('确定删除这条评论？')) return
+  if (!await dialog.confirm('确定删除这条评论？', { danger: true })) return
   try {
     await deleteComment(comment.id)
     post.comments = post.comments.filter((c) => c.id !== comment.id)
     post.commentCount = post.comments.length
   } catch (e) {
-    alert(e.message || '删除失败')
+    await dialog.alert(e.message || '删除失败')
   }
 }
 

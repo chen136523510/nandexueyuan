@@ -1,12 +1,14 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useDialogStore } from '../stores/dialog'
 import { getVersions, createVersion, updateVersion, deleteVersion } from '../api/announcement'
 
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['close', 'updated'])
 
 const auth = useAuthStore()
+const dialog = useDialogStore()
 const isAdmin = computed(() => auth.role === 'admin' || auth.role === 'super_admin')
 
 // 版本列表
@@ -124,13 +126,13 @@ async function saveVersion() {
 }
 
 async function handleDelete(v) {
-  if (!confirm(`确认删除版本 ${v.version}？`)) return
+  if (!await dialog.confirm(`确认删除版本 ${v.version}？`, { danger: true })) return
   try {
     await deleteVersion(v.id)
     await loadVersions()
     emit('updated')
   } catch (err) {
-    alert(err.message || '删除失败')
+    await dialog.alert(err.message || '删除失败')
   }
 }
 

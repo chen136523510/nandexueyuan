@@ -1,5 +1,6 @@
 <script setup>
-// 根组件：仅负责路由出口与全局布局
+// 根组件：路由出口 + 全局弹窗
+import GlobalDialog from './components/GlobalDialog.vue'
 </script>
 
 <template>
@@ -8,6 +9,7 @@
       <component :is="Component" />
     </transition>
   </router-view>
+  <GlobalDialog />
 </template>
 
 <style>

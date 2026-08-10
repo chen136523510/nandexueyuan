@@ -1,6 +1,9 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { listSessions, getSession, deleteSession } from '../api/chat'
+import { useDialogStore } from '../stores/dialog'
+
+const dialog = useDialogStore()
 
 const messages = ref([])
 const question = ref('')
@@ -86,7 +89,7 @@ function newChat() {
 
 async function deleteChat(id, e) {
   e.stopPropagation()
-  if (!confirm('确定删除这个会话？')) return
+  if (!await dialog.confirm('确定删除这个会话？', { danger: true })) return
   try {
     await deleteSession(id)
     sessions.value = sessions.value.filter((s) => s.id !== id)

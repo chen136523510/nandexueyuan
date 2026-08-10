@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useDialogStore } from '../stores/dialog'
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../api/admin'
 import { createInviteCode, listInviteCodes } from '../api/inviteCode'
 import TopBar from '../components/TopBar.vue'
 import { BookUser, RefreshCw, Plus, Copy, Check, Ban, CheckCircle, KeyRound, ShieldCheck } from 'lucide-vue-next'
 
 const auth = useAuthStore()
+const dialog = useDialogStore()
 
 // 权限
 const isSuperAdmin = computed(() => auth.role === 'super_admin')
@@ -43,7 +45,7 @@ function canManage(u) {
 async function toggleStatus(u) {
   const next = u.status === 'active' ? 'disabled' : 'active'
   const word = next === 'disabled' ? '禁用' : '启用'
-  if (!confirm(`确定${word}「${u.nickname || u.username}」吗？`)) return
+  if (!await dialog.confirm(`确定${word}「${u.nickname || u.username}」吗？`, { danger: next === 'disabled' })) return
   try {
     await updateUserStatus(u.id, next)
     u.status = next
@@ -54,7 +56,7 @@ async function toggleStatus(u) {
 }
 
 async function doResetPassword(u) {
-  if (!confirm(`确定重置「${u.nickname || u.username}」的密码吗？将生成随机临时密码。`)) return
+  if (!await dialog.confirm(`确定重置「${u.nickname || u.username}」的密码吗？将生成随机临时密码。`)) return
   try {
     const res = await resetUserPassword(u.id)
     const pwd = res.data.tempPassword
@@ -68,7 +70,7 @@ async function doResetPassword(u) {
 
 async function toggleRole(u) {
   const next = u.role === 'admin' ? 'member' : 'admin'
-  if (!confirm(`确定将「${u.nickname || u.username}」的角色变更为「${next === 'admin' ? '管理员' : '成员'}」吗？`)) return
+  if (!await dialog.confirm(`确定将「${u.nickname || u.username}」的角色变更为「${next === 'admin' ? '管理员' : '成员'}」吗？`)) return
   try {
     await updateUserRole(u.id, next)
     u.role = next
