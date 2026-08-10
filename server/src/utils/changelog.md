@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-11（黑机 知识库升级 + LLM 回退）
+
+- [新增] `knowledge.js` - `buildSiteKnowledge()` 网站六大功能信息注入 system prompt；补全 `0.o->陈梓键`、`O.o->饶志锐` 昵称映射
+- [修改] `persona.js` - BASE_TEMPLATE 追加网站信息块（buildSiteKnowledge 注入）
+- [回退] `llm.js` - 移除 DeepSeek 多通道，恢复纯火山引擎（`VOLC_*` 配置 + 无条件 `thinking: { type: 'disabled' }`）。院长要求不需要 LLM 多通道
+- commit: 9659047 [feat](男德通): AI知识库四层升级+数据纯净重建+DeepSeek备用通道（DeepSeek 部分本轮已回退）
+
+---
+
 ## 2026-08-10（Phase2）
 - [修改] `persona.js` - 新增 PERSONAS 字典（4 套预设：体委/丘比/开开/正常人）+ getPersona(id,desc) 函数 + buildCustomPersona 自定义人设，BASE_TEMPLATE 模板复用成员知识库+数据规则
 - commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示

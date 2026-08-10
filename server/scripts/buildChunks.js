@@ -59,22 +59,16 @@ async function getChunk(startId) {
   return messages
 }
 
-// 调 LLM 生成提示词（使用 DeepSeek，避免火山引擎额度限制）
+// 调 LLM 生成提示词
 async function generateKeywords(messages) {
   const context = messages
     .map(m => `[${resolveName(m.nickname)} ${new Date(m.msgTime).toLocaleString('zh-CN')}] ${m.content}`)
     .join('\n')
 
-  const DS_KEY = process.env.DEEPSEEK_API_KEY
-  const DS_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
-  const DS_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat'
-
-  if (!DS_KEY) {
-    // DeepSeek 没配置，回退火山引擎
-    const result = await chatCompletion([
-      {
-        role: 'system',
-        content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
+  const result = await chatCompletion([
+    {
+      role: 'system',
+      content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
 
 输出格式（纯文本，每行一个字段）：
 话题：<用逗号分隔的话题标签>
@@ -82,55 +76,10 @@ async function generateKeywords(messages) {
 关键词：<3-5个关键词，逗号分隔>
 情绪：<整体情绪，一个词>
 摘要：<一句话总结>`
-      },
-      { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
-    ], { temperature: 0, maxTokens: 200 })
-    return result.trim()
-  }
-
-  // DeepSeek 调用（OpenAI 兼容协议）
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 60000)
-
-  try {
-    const response = await fetch(`${DS_URL}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${DS_KEY}`,
-      },
-      body: JSON.stringify({
-        model: DS_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
-
-输出格式（纯文本，每行一个字段）：
-话题：<用逗号分隔的话题标签>
-人物：<参与讨论的人名，逗号分隔>
-关键词：<3-5个关键词，逗号分隔>
-情绪：<整体情绪，一个词>
-摘要：<一句话总结>`
-          },
-          { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
-        ],
-        temperature: 0,
-        max_tokens: 200,
-      }),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      const errText = await response.text()
-      throw new Error(`DeepSeek API 错误 ${response.status}: ${errText.slice(0, 200)}`)
-    }
-
-    const data = await response.json()
-    return (data.choices[0].message.content || '').trim()
-  } finally {
-    clearTimeout(timer)
-  }
+    },
+    { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
+  ], { temperature: 0, maxTokens: 200 })
+  return result.trim()
 }
 
 // 全局进度追踪

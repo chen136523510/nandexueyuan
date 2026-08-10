@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-08-11（黑机 男德通 FTS5 检索语法错误）
+
+### BUG-62：FTS5 双列 MATCH 语法错误（列级 OR 不支持）
+
+- **发现时间**：2026-08-11 00:19（黑机知识库升级时发现）
+- **环境**：本地开发环境（server SQLite dev.db，message_chunks_fts 虚拟表）
+- **现象**：`topicSearchAgent` 执行 FTS5 检索时报语法错误，话题搜索功能无法返回结果
+- **根因**：FTS5 虚拟表双列（keywords + summary）检索时，原代码写 `WHERE f.keywords MATCH ? OR f.summary MATCH ?`（列级 OR 查询）。FTS5 不支持对单个列分别 MATCH 再 OR 的语法，正确写法是用表级 MATCH（`WHERE f.message_chunks_fts MATCH ?`），此时 FTS5 会自动搜索所有列
+- **修复**：`topicSearchAgent.js` 改为 `WHERE f.message_chunks_fts MATCH ?`（表级 MATCH，搜索 keywords+summary 所有列），单个参数绑定
+- **文件**：`server/src/agents/topicSearchAgent.js`
+- **状态**：已修复
+- **教训**：FTS5 全文检索语法与普通 SQL 不同--列级 MATCH 只能用于单列，多列检索用表级 MATCH（`表名 MATCH ?`）自动覆盖所有列，不能写 `列1 MATCH ? OR 列2 MATCH ?`
+
+---
+
 ## 2026-08-10（白机 部署 prisma db push 数据丢失）
 
 ### BUG-61：prisma db push --accept-data-loss 误删全部数据表（FTS5 虚拟表附属表触发连锁删除）
