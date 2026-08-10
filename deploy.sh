@@ -77,8 +77,10 @@ if curl -s http://localhost:3000/api/announcement | grep -q "\"v${VERSION}\""; t
 else
   echo "✗ 版本公告异常（期望 v${VERSION}）"
 fi
-if [ "$(http_code http://localhost/)" = "200" ] || [ "$(http_code http://localhost/)" = "301" ] || [ "$(http_code http://localhost/)" = "302" ]; then
-  echo "✓ 前端正常"
+# 配 HTTPS 后 80 端口对 localhost Host 头返回 404（域名级 301 跳转不匹配 localhost），
+# 改为检测 https://localhost/ 返回 200
+if [ "$(curl -sk -o /dev/null -w "%{http_code}" https://localhost/)" = "200" ]; then
+  echo "✓ 前端正常（HTTPS）"
 else
   echo "✗ 前端异常"
 fi
