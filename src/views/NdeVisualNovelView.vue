@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useVisualNovelStore } from '../visualnovel/stores/visualNovelStore.js'
 import { NodeType } from '../visualnovel/engine/types.js'
 import BackgroundLayer from '../visualnovel/components/BackgroundLayer.vue'
@@ -17,7 +17,6 @@ import MapPanel from '../visualnovel/components/MapPanel.vue'
 import TopBar from '../components/TopBar.vue'
 
 const store = useVisualNovelStore()
-const showStartScreen = ref(true)
 
 // 全窗口点击推进对话（原神/视觉小说标准交互）
 // 排除：菜单按钮、面板、选项、输入框、热点、CG、提示弹窗
@@ -42,10 +41,16 @@ function handleStageClick(e) {
   store.advance()
 }
 
-// 开始游戏
-function startGame() {
-  showStartScreen.value = false
-  store.initGame()
+// ===== 主菜单按钮处理 =====
+async function handleContinue() {
+  await store.continueGame()
+}
+
+async function handleNewGame() {
+  const result = await store.startNewGame()
+  if (!result.success && result.reason === 'full') {
+    store.showNotice('存档已满，请先在存档列表中删除旧存档')
+  }
 }
 
 // ===== 快捷键绑定 =====
@@ -57,6 +62,9 @@ function handleKeydown(e) {
     }
     return
   }
+
+  // 主菜单时不响应游戏快捷键
+  if (store.gamePhase === 'menu') return
 
   // CG 展示时，任意键关闭
   if (store.triggeredCG) {
@@ -103,7 +111,7 @@ function handleKeydown(e) {
 // 鼠标右键打开设置
 function handleContextmenu(e) {
   e.preventDefault()
-  if (!store.activePanel && !store.triggeredCG) {
+  if (!store.activePanel && !store.triggeredCG && store.gamePhase === 'playing') {
     store.togglePanel('settings')
   }
 }
@@ -111,6 +119,8 @@ function handleContextmenu(e) {
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('contextmenu', handleContextmenu)
+  // 检查是否有存档（控制"继续游戏"按钮禁用态）
+  store.checkHasSave()
 })
 
 onUnmounted(() => {
@@ -118,6 +128,8 @@ onUnmounted(() => {
   window.removeEventListener('contextmenu', handleContextmenu)
   // 清理打字机定时器
   store.stopTypewriter()
+  // 离开页面时自动存档
+  store.autoSave()
 })
 </script>
 
@@ -125,15 +137,45 @@ onUnmounted(() => {
   <div class="visualnovel-page">
     <TopBar />
 
-    <!-- 开始界面 -->
-    <div v-if="showStartScreen" class="start-screen">
-      <div class="start-content">
-        <h1 class="start-title">德塔</h1>
-        <p class="start-subtitle">A.V.118 — 虚空降临的第118年</p>
-        <p class="start-desc">三年前，男德学院降临大草原，塔楼拔地而起，裂隙开始消散。<br>如今，第二批漂泊者到来。风暴才刚刚开始。</p>
-        <button class="start-btn" @click="startGame">
-          开始故事
-        </button>
+    <!-- 主菜单 -->
+    <div v-if="store.gamePhase === 'menu'" class="main-menu">
+      <div class="menu-content">
+        <h1 class="menu-title">德塔</h1>
+        <p class="menu-subtitle">A.V.118 — 虚空降临的第118年</p>
+        <p class="menu-desc">三年前，男德学院降临大草原，塔楼拔地而起，裂隙开始消散。<br>如今，第二批漂泊者到来。风暴才刚刚开始。</p>
+        <div class="menu-buttons">
+          <button
+            class="menu-btn primary"
+            :disabled="!store.hasSave || store.isLoading"
+            data-testid="vn-menu-continue-btn"
+            @click="handleContinue"
+          >
+            继续游戏
+          </button>
+          <button
+            class="menu-btn"
+            :disabled="store.isLoading"
+            data-testid="vn-menu-newgame-btn"
+            @click="handleNewGame"
+          >
+            新游戏
+          </button>
+          <button
+            class="menu-btn"
+            :disabled="store.isLoading"
+            data-testid="vn-menu-loadlist-btn"
+            @click="store.togglePanel('load')"
+          >
+            存档列表
+          </button>
+          <button
+            class="menu-btn"
+            data-testid="vn-menu-settings-btn"
+            @click="store.togglePanel('settings')"
+          >
+            设置
+          </button>
+        </div>
       </div>
     </div>
 
@@ -161,26 +203,26 @@ onUnmounted(() => {
 
       <!-- 快捷栏 -->
       <QuickMenu />
+    </div>
 
-      <!-- 面板层 -->
-      <SaveLoadPanel />
-      <HistoryPanel />
-      <SettingsPanel />
-      <InventoryPanel />
-      <MapPanel />
+    <!-- 面板层（menu 和 playing 都可显示，移到顶层避免被 game-stage overflow 裁切） -->
+    <SaveLoadPanel />
+    <HistoryPanel />
+    <SettingsPanel />
+    <InventoryPanel />
+    <MapPanel />
 
-      <!-- 轻提示弹窗（敬请期待等） -->
-      <NoticePopup />
+    <!-- 轻提示弹窗（敬请期待等） -->
+    <NoticePopup />
 
-      <!-- 加载中遮罩 -->
-      <div v-if="store.isLoading" class="loading-overlay">
-        <div class="loading-content">
-          <span class="loading-text">载入中…</span>
-          <div v-if="store.preloadProgress > 0" class="loading-bar-wrap">
-            <div class="loading-bar" :style="{ width: store.preloadProgress + '%' }"></div>
-          </div>
-          <span v-if="store.preloadProgress > 0" class="loading-pct">{{ store.preloadProgress }}%</span>
+    <!-- 加载中遮罩 -->
+    <div v-if="store.isLoading" class="loading-overlay">
+      <div class="loading-content">
+        <span class="loading-text">载入中…</span>
+        <div v-if="store.preloadProgress > 0" class="loading-bar-wrap">
+          <div class="loading-bar" :style="{ width: store.preloadProgress + '%' }"></div>
         </div>
+        <span v-if="store.preloadProgress > 0" class="loading-pct">{{ store.preloadProgress }}%</span>
       </div>
     </div>
   </div>
@@ -193,10 +235,11 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   background: #0d1117;
+  position: relative;
 }
 
-/* 开始界面 */
-.start-screen {
+/* 主菜单 */
+.main-menu {
   flex: 1;
   display: flex;
   align-items: center;
@@ -204,12 +247,12 @@ onUnmounted(() => {
   background: radial-gradient(ellipse at center, #1a2332 0%, #0d1117 100%);
 }
 
-.start-content {
+.menu-content {
   text-align: center;
   padding: 40px;
 }
 
-.start-title {
+.menu-title {
   font-size: 48px;
   font-weight: 700;
   color: #e8e0cc;
@@ -218,14 +261,14 @@ onUnmounted(() => {
   text-shadow: 0 2px 20px rgba(201, 169, 110, 0.3);
 }
 
-.start-subtitle {
+.menu-subtitle {
   color: rgba(201, 169, 110, 0.7);
   font-size: 16px;
   letter-spacing: 2px;
   margin: 0 0 8px;
 }
 
-.start-desc {
+.menu-desc {
   color: #8b95a8;
   font-size: 14px;
   line-height: 1.8;
@@ -233,23 +276,48 @@ onUnmounted(() => {
   max-width: 400px;
 }
 
-.start-btn {
-  padding: 14px 48px;
-  background: linear-gradient(135deg, rgba(201, 169, 110, 0.2) 0%, rgba(201, 169, 110, 0.1) 100%);
-  color: rgba(201, 169, 110, 0.9);
-  border: 1px solid rgba(201, 169, 110, 0.3);
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 4px;
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
 }
 
-.start-btn:hover {
+.menu-btn {
+  width: 240px;
+  padding: 12px 32px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e8e0cc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 2px;
+}
+
+.menu-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(201, 169, 110, 0.3);
+  color: rgba(201, 169, 110, 0.9);
+}
+
+.menu-btn.primary {
+  background: linear-gradient(135deg, rgba(201, 169, 110, 0.2) 0%, rgba(201, 169, 110, 0.1) 100%);
+  color: rgba(201, 169, 110, 0.9);
+  border-color: rgba(201, 169, 110, 0.3);
+}
+
+.menu-btn.primary:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(201, 169, 110, 0.3) 0%, rgba(201, 169, 110, 0.15) 100%);
   border-color: rgba(201, 169, 110, 0.5);
   box-shadow: 0 4px 20px rgba(201, 169, 110, 0.2);
+}
+
+.menu-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 /* 游戏舞台 */

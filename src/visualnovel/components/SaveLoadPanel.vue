@@ -7,6 +7,9 @@ const saves = ref([])
 const loading = ref(false)
 const msg = ref('')
 
+// 只读读档模式（从主菜单"存档列表"进入，无存档/覆盖/删除操作）
+const isLoadOnly = computed(() => store.activePanel === 'load')
+
 // 11 个槽位：0=自动，1-10=手动
 const slots = computed(() => {
   const list = []
@@ -41,7 +44,7 @@ async function fetchSaves() {
 watch(
   () => store.activePanel,
   (panel) => {
-    if (panel === 'save') {
+    if (panel === 'save' || panel === 'load') {
       fetchSaves()
     }
   }
@@ -99,10 +102,13 @@ async function handleNewSave() {
 async function handleLoad(slot) {
   loading.value = true
   msg.value = ''
-  const ok = await store.loadFromSlot(slot)
+  // 从主菜单读档时需要预加载图片 + 拉取全局进度；游戏内读档跳过（已有缓存）
+  const fromMenu = store.gamePhase === 'menu'
+  const ok = await store.loadFromSlot(slot, fromMenu ? { preload: true, fetchProgress: true } : {})
   loading.value = false
   if (ok) {
     store.closePanel()
+    if (fromMenu) store.setGamePhase('playing')
   } else {
     msg.value = '读取失败，请重试'
   }
@@ -128,10 +134,10 @@ function formatDate(dateStr) {
 </script>
 
 <template>
-  <div v-if="store.activePanel === 'save'" class="sl-overlay" role="dialog" aria-modal="true" aria-label="存档管理面板" @click.self="close">
+  <div v-if="store.activePanel === 'save' || store.activePanel === 'load'" class="sl-overlay" role="dialog" aria-modal="true" :aria-label="isLoadOnly ? '存档列表' : '存档管理面板'" @click.self="close">
     <div class="sl-panel">
       <div class="sl-header">
-        <h2 class="sl-title">存档管理</h2>
+        <h2 class="sl-title">{{ isLoadOnly ? '存档列表' : '存档管理' }}</h2>
         <button class="sl-close" aria-label="关闭" data-testid="vn-saveload-close-btn" @click="close">✕</button>
       </div>
 
@@ -166,11 +172,11 @@ function formatDate(dateStr) {
             <span v-if="item.save" class="sl-chapter">{{ item.save.chapter }} · {{ item.save.node }}</span>
           </div>
 
-          <!-- 操作按钮：每个槽位都有存档+读档 -->
+          <!-- 操作按钮 -->
           <div class="sl-actions">
-            <!-- 存档按钮 -->
+            <!-- 存档按钮（只读模式下隐藏） -->
             <button
-              v-if="!item.isAuto"
+              v-if="!item.isAuto && !isLoadOnly"
               class="sl-btn primary"
               :disabled="loading"
               :data-testid="`vn-save-slot-${item.slot}-btn`"
@@ -178,8 +184,8 @@ function formatDate(dateStr) {
             >
               {{ item.isEmpty ? '存档' : '覆盖' }}
             </button>
-            <!-- 自动存档：存档只读 -->
-            <span v-else class="sl-readonly">系统自动</span>
+            <!-- 自动存档：存档只读（只读模式下隐藏） -->
+            <span v-else-if="item.isAuto && !isLoadOnly" class="sl-readonly">系统自动</span>
 
             <!-- 读档按钮：空槽位置灰 -->
             <button
@@ -191,9 +197,9 @@ function formatDate(dateStr) {
               读档
             </button>
 
-            <!-- 删除（自动存档不可删除） -->
+            <!-- 删除（自动存档不可删除，只读模式下隐藏） -->
             <button
-              v-if="item.save && !item.isAuto"
+              v-if="item.save && !item.isAuto && !isLoadOnly"
               class="sl-btn danger"
               :disabled="loading"
               :data-testid="`vn-delete-slot-${item.slot}-btn`"
@@ -205,8 +211,8 @@ function formatDate(dateStr) {
         </div>
       </div>
 
-      <!-- 底部：新建存档快捷按钮 -->
-      <div class="sl-footer">
+      <!-- 底部：新建存档快捷按钮（只读模式下隐藏） -->
+      <div v-if="!isLoadOnly" class="sl-footer">
         <button
           class="sl-new-btn"
           :disabled="loading || !firstEmptySlot"

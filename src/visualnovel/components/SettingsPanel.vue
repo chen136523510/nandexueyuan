@@ -66,6 +66,22 @@ function close() {
             {{ store.autoMode ? '开' : '关' }}
           </button>
         </div>
+
+        <!-- 声音开关 -->
+        <div class="sp-row">
+          <label class="sp-label">声音</label>
+          <button
+            class="sp-toggle"
+            role="switch"
+            :aria-pressed="store.soundEnabled"
+            :aria-label="`声音${store.soundEnabled ? '已开启' : '已关闭'}`"
+            data-testid="vn-sound-toggle"
+            :class="{ on: store.soundEnabled }"
+            @click="store.soundEnabled = !store.soundEnabled"
+          >
+            {{ store.soundEnabled ? '开' : '关' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

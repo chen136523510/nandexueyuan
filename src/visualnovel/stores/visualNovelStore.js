@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { buildIndex, getNode, getStartNode, applyEffects, getNextNodeId, executeEvent, mergeScript, interpolate, evalConditionNode } from '../engine/engine.js'
 import { NodeType, ChoiceImpact, SPEAKER_TO_ID } from '../engine/types.js'
 import { getProgress, updateProgress, listSaves, getSave, writeSave, deleteSave } from '../../api/visualNovel.js'
@@ -81,6 +81,47 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
   const textSpeed = ref(30)             // 打字速度（ms/字），越小越快
   const autoMode = ref(false)           // 自动播放
   const autoDelay = ref(2000)           // 自动播放延迟（ms）
+  const soundEnabled = ref(false)       // 声音开关（默认关闭，为未来 BGM 系统预留）
+
+  // ===== 主菜单状态 =====
+  const gamePhase = ref('menu')         // 'menu' | 'playing'，控制主菜单/游戏舞台切换
+  const hasSave = ref(false)            // 是否有存档（控制"继续游戏"按钮禁用态）
+
+  // ===== 设置持久化（localStorage） =====
+  // 设置项（textSpeed/autoMode/autoDelay/soundEnabled）刷新即丢失的问题顺带修复
+  const SETTINGS_KEY = 'nde-vn-settings'
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY)
+      if (!raw) return
+      const saved = JSON.parse(raw)
+      if (typeof saved.textSpeed === 'number') textSpeed.value = saved.textSpeed
+      if (typeof saved.autoMode === 'boolean') autoMode.value = saved.autoMode
+      if (typeof saved.autoDelay === 'number') autoDelay.value = saved.autoDelay
+      if (typeof saved.soundEnabled === 'boolean') soundEnabled.value = saved.soundEnabled
+    } catch (e) {
+      // localStorage 不可用或 JSON 解析失败，用默认值
+    }
+  }
+
+  function persistSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        textSpeed: textSpeed.value,
+        autoMode: autoMode.value,
+        autoDelay: autoDelay.value,
+        soundEnabled: soundEnabled.value,
+      }))
+    } catch (e) {
+      // localStorage 不可用，静默忽略
+    }
+  }
+
+  // store 初始化时读取设置
+  loadSettings()
+  // 设置变化时自动持久化
+  watch([textSpeed, autoMode, autoDelay, soundEnabled], persistSettings)
 
   // ===== 计算属性 =====
   // 合成节点：探索态时生成 {type:'explore'}，渲染层照旧读 currentNode
@@ -879,8 +920,16 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
    *   2. 存档节点不存在但章节存在 -> 回退到章节起始节点 + 轻提示
    *   3. 章节也不存在（被删/重命名）-> 回退到最新已解锁章节起始 + 轻提示
    */
-  async function loadFromSlot(slot) {
+  async function loadFromSlot(slot, { preload = false, fetchProgress = false } = {}) {
     try {
+      // 从主菜单读档时需要先拉全局进度（unlockedChapters 等），游戏内读档则跳过（已有缓存）
+      if (fetchProgress) {
+        const progRes = await getProgress()
+        const progress = progRes.data
+        unlockedChapters.value = progress.unlockedChapters || ['prologue']
+        unlockedCGs.value = progress.unlockedCGs || []
+      }
+
       const res = await getSave(slot)
       const data = res.data
       // 恢复状态
@@ -902,6 +951,10 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
 
       // 重新加载章节
       const loaded = await loadChapter(data.chapter)
+      // 从主菜单读档时预加载该章节图片（游戏内读档跳过，依赖已有缓存）
+      if (loaded && preload && currentIndex.value) {
+        await preloadAssets([...currentIndex.value.values()])
+      }
       if (loaded && currentIndex.value) {
         // 章节加载成功：安全解析节点（第一层容错）
         const safeNode = resolveNodeSafe(currentIndex.value, data.node, data.chapter)
@@ -979,6 +1032,209 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     }
   }
 
+  // ===== 主菜单方法 =====
+
+  /**
+   * 检查是否有存档（控制"继续游戏"按钮禁用态）
+   */
+  async function checkHasSave() {
+    try {
+      const saves = await listSaves()
+      hasSave.value = (saves.data || []).length > 0
+    } catch (err) {
+      console.error('[VisualNovelStore] 检查存档失败:', err)
+      hasSave.value = false
+    }
+  }
+
+  /**
+   * 设置游戏阶段
+   */
+  function setGamePhase(phase) {
+    gamePhase.value = phase
+  }
+
+  /**
+   * 继续游戏（恢复最新存档——slot 0-10 中 updatedAt 最新的）
+   */
+  async function continueGame() {
+    isLoading.value = true
+    try {
+      // 拉取服务端全局进度
+      const res = await getProgress()
+      const progress = res.data
+      affinity.value = progress.affinity || {}
+      storyVariables.value = progress.storyVariables || {}
+      unlockedChapters.value = progress.unlockedChapters || ['prologue']
+      unlockedCGs.value = progress.unlockedCGs || []
+      inventory.value = progress.inventory || []
+      stage.value = []
+      currentLocation.value = null
+      currentExploreLocation.value = null
+      visitedLocations.value = []
+      unlockedLocations.value = []
+
+      // 获取全部存档，找 updatedAt 最新的
+      const savesRes = await listSaves()
+      const saves = savesRes.data || []
+      if (saves.length === 0) {
+        console.warn('[VisualNovelStore] continueGame: 无存档')
+        return false
+      }
+      const latest = saves.reduce((a, b) =>
+        new Date(b.updatedAt) > new Date(a.updatedAt) ? b : a
+      )
+
+      // 按存档章节加载并预加载
+      const initialChapter = (latest.chapter && CHAPTER_LOADERS[latest.chapter]) ? latest.chapter : 'prologue'
+      await loadChapter(initialChapter)
+      await preloadAssets([...currentIndex.value.values()])
+
+      // 恢复存档状态
+      const data = latest
+      affinity.value = data.affinity || {}
+      storyVariables.value = data.variables || {}
+      inventory.value = data.inventory || []
+      stage.value = Array.isArray(data.stage) ? data.stage.map(c => ({ ...c })) : []
+      const space = data.spaceState || null
+      currentLocation.value = space?.currentLocation || null
+      currentExploreLocation.value = space?.currentExploreLocation || null
+      visitedLocations.value = Array.isArray(space?.visitedLocations) ? [...space.visitedLocations] : []
+      unlockedLocations.value = Array.isArray(space?.unlockedLocations) ? [...space.unlockedLocations] : []
+
+      // 容错：存档章节可能跟当前加载的不同
+      let effectiveChapter = 'prologue'
+      if (data.chapter && data.chapter !== 'prologue') {
+        const chapterLoaded = await loadChapter(data.chapter)
+        if (chapterLoaded) {
+          currentChapter.value = data.chapter
+          effectiveChapter = data.chapter
+        } else {
+          console.warn(`[VisualNovelStore] 存档章节 ${data.chapter} 不存在，回退到 prologue`)
+        }
+      }
+
+      // 安全解析节点 + 跳转
+      if (currentIndex.value) {
+        const safeNode = resolveNodeSafe(currentIndex.value, data.node, effectiveChapter)
+        if (safeNode) {
+          if (space?.currentExploreLocation && LOCATIONS[space.currentExploreLocation]) {
+            currentNodeId.value = safeNode
+            isEnded.value = false
+          } else {
+            goToNode(safeNode)
+          }
+          if (safeNode !== data.node) {
+            showNotice('剧本已更新，已从本章开头继续')
+          }
+        }
+      }
+
+      gamePhase.value = 'playing'
+      return true
+    } catch (err) {
+      console.error('[VisualNovelStore] continueGame 失败:', err)
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * 新游戏（自动新增一个存档，从头开始）
+   * @returns {{ success: boolean, reason?: string }}
+   */
+  async function startNewGame() {
+    isLoading.value = true
+    try {
+      // 找第一个空手动槽位（1-10）
+      const savesRes = await listSaves()
+      const saves = savesRes.data || []
+      const occupiedSlots = new Set(saves.map(s => s.slot))
+      let targetSlot = null
+      for (let i = 1; i <= 10; i++) {
+        if (!occupiedSlots.has(i)) { targetSlot = i; break }
+      }
+      if (targetSlot === null) {
+        return { success: false, reason: 'full' }
+      }
+
+      // 加载序章 + 获取起始节点
+      await loadChapter('prologue')
+      const startNode = getStartNode([...currentIndex.value.values()])
+      if (!startNode) {
+        return { success: false, reason: 'no_start_node' }
+      }
+
+      // 构造全新快照写入空槽位
+      const freshSnapshot = {
+        node: startNode,
+        chapter: 'prologue',
+        affinity: {},
+        variables: {},
+        inventory: [],
+        stage: [],
+        spaceState: {
+          currentLocation: null,
+          currentExploreLocation: null,
+          visitedLocations: [],
+          unlockedLocations: [],
+        },
+      }
+      await writeSave(targetSlot, { ...freshSnapshot, thumbnail: null })
+
+      // 拉取全局进度（新存档不覆盖全局进度，但需要恢复 unlockedChapters 等）
+      const res = await getProgress()
+      const progress = res.data
+      affinity.value = {}
+      storyVariables.value = {}
+      unlockedChapters.value = progress.unlockedChapters || ['prologue']
+      unlockedCGs.value = progress.unlockedCGs || []
+      inventory.value = []
+      stage.value = []
+      currentLocation.value = null
+      currentExploreLocation.value = null
+      visitedLocations.value = []
+      unlockedLocations.value = []
+
+      // 预加载序章图片
+      await preloadAssets([...currentIndex.value.values()])
+
+      // 从序章起始节点开始
+      currentChapter.value = 'prologue'
+      goToNode(startNode)
+
+      hasSave.value = true
+      gamePhase.value = 'playing'
+      return { success: true, slot: targetSlot }
+    } catch (err) {
+      console.error('[VisualNovelStore] startNewGame 失败:', err)
+      return { success: false, reason: 'error' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * 返回主菜单（自动存档当前进度到 slot=0）
+   */
+  async function returnToMenu() {
+    if (gamePhase.value === 'playing' && currentNodeId.value) {
+      await saveToSlot(0)
+    }
+    gamePhase.value = 'menu'
+    await checkHasSave()
+  }
+
+  /**
+   * 离开页面时自动存档（在视图 onUnmounted 中调用）
+   */
+  async function autoSave() {
+    if (gamePhase.value === 'playing' && currentNodeId.value) {
+      await saveToSlot(0)
+    }
+  }
+
   // ===== 进度同步 =====
 
   let syncTimer = null
@@ -1046,7 +1302,9 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     // 空间状态（R-035）
     currentLocation, currentExploreLocation, unlockedLocations, visitedLocations, isExploring,
     playerName,
-    textSpeed, autoMode, autoDelay,
+    textSpeed, autoMode, autoDelay, soundEnabled,
+    // 主菜单状态
+    gamePhase, hasSave,
     // 方法
     initGame, loadChapter, goToNode, advance, selectChoice,
     submitInput, hasItem,
@@ -1055,6 +1313,8 @@ export const useVisualNovelStore = defineStore('visualNovel', () => {
     loadFromSlot, fetchSaves, removeSave, getSnapshot,
     togglePanel, closePanel, toggleHideUI, toggleAutoMode, closeCG,
     showNotice, closeNotice,
+    // 主菜单方法
+    continueGame, startNewGame, returnToMenu, autoSave, checkHasSave, setGamePhase,
     // 空间导航（R-035）
     enterExplore, travelTo,
   }

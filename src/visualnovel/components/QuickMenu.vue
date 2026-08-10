@@ -1,8 +1,16 @@
 <script setup>
 import { computed } from 'vue'
 import { useVisualNovelStore } from '../stores/visualNovelStore.js'
+import { useDialogStore } from '../../stores/dialog.js'
 
 const store = useVisualNovelStore()
+const dialog = useDialogStore()
+
+// 返回主菜单（自动存档当前进度到 slot=0）
+async function handleReturnToMenu() {
+  const ok = await dialog.confirm('返回主菜单将自动保存当前进度，确定吗？')
+  if (ok) store.returnToMenu()
+}
 
 const buttons = computed(() => [
   { id: 'inventory', label: '背包', icon: '🎒', action: () => store.togglePanel('inventory') },
@@ -10,6 +18,7 @@ const buttons = computed(() => [
   { id: 'history', label: '回看', icon: '📜', action: () => store.togglePanel('history') },
   { id: 'auto', label: '自动', icon: '▶', active: store.autoMode, action: () => store.toggleAutoMode() },
   { id: 'settings', label: '设置', icon: '⚙', action: () => store.togglePanel('settings') },
+  { id: 'menu', label: '主菜单', icon: '🏠', action: handleReturnToMenu },
   { id: 'hide', label: '隐藏', icon: '👁', action: () => store.toggleHideUI() },
 ])
 </script>
