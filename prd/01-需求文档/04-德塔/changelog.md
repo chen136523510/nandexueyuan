@@ -4,6 +4,25 @@
 
 ---
 
+### [chore] v3.0.2 部署上线 + deploy.sh 验证脚本修复
+
+- **时间**：2026-08-10 09:14
+- **变更人**：陈梓键（白机）
+- **背景**：v3.0.2（WebP 压缩优化）已发版但未部署，院长要求上线以解决"进德塔加载半天"的体验问题。部署过程中发现 deploy.sh 前端验证误报
+- **变更内容**：
+  1. **部署上线**：服务器执行 `git stash && git pull origin master && bash deploy.sh`，9 步全通过（拉取 dbccdcf→695b765 / 依赖安装 / 构建 / 重启 / 公告 v3.0.2 灌入 / 验证）
+  2. **deploy.sh 修复**：前端验证从 `http_code http://localhost/`（期望 200/301/302）改为 `curl -sk https://localhost/`（期望 200）。根因：certbot 配 HTTPS 后，80 端口的 301 强制跳转是域名级（server_name nandexueyuan.top），对 localhost Host 头不匹配走默认 server 返回 404，导致验证脚本误报"前端异常"
+- **验证（线上真实访问）**：
+  - HTTPS 域名 → 200 OK ✅
+  - HTTP→HTTPS 跳转 → 301 ✅
+  - WebP 资源 tower_day.webp → 200 OK，image/webp，453KB（旧 PNG 2.1MB）✅
+  - 旧 PNG → 404（已替换）✅
+- **文件**：`deploy.sh`
+- **状态**：✅ 已部署上线，服务器 master `6e98c1d`
+- **关联文档**：根 CHANGELOG.md（v3.0.2 部署记录）
+
+---
+
 ### [feat] GUI 测试工具集 + 前端 a11y/测试钩子规范实现（架构级）
 
 - **时间**：2026-08-10

@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-08-10（白机 部署脚本验证误报）
+
+### BUG-60：deploy.sh 前端验证误报"前端异常"（HTTPS 配置后 localhost 不匹配）
+
+- **发现时间**：2026-08-10 09:15（白机部署 v3.0.2 时发现）
+- **环境**：生产环境（服务器 Ubuntu 22.04 / nginx 1.18.0 / certbot 已配 HTTPS）
+- **现象**：`bash deploy.sh` 第 9 步验证报"✗ 前端异常"，但实际 HTTPS 服务正常（`curl -sI https://www.nandexueyuan.top` -> 200 OK）
+- **根因**：certbot 配置 HTTPS 后，80 端口的 `return 301 https://$host$request_uri` 强制跳转是**域名级**（`server_name nandexueyuan.top`）。验证脚本用 `http://localhost/` 检测，`localhost` Host 头不匹配该 server_name，走 nginx 默认 server 返回 404。配 HTTPS 前 80 端口直接 serve dist，localhost 能匹配默认 server 返回 200，所以之前不报
+- **修复**：`deploy.sh` 前端验证从 `http_code http://localhost/`（期望 200/301/302）改为 `curl -sk -o /dev/null -w "%{http_code}" https://localhost/`（期望 200）。`-k` 忽略自签证书问题（Let's Encrypt 证书对 localhost 域名不匹配）
+- **教训**：部署脚本的本地验证（localhost）和真实访问（域名）是两个场景，配 HTTPS 后必须同步更新验证逻辑。验证脚本应跟随基础设施演进，否则误报会掩盖真实故障
+
+---
+
 ## 2026-08-08（黑机 空间跳转逻辑修复）
 
 ### BUG-59：第三幕空间跳转逻辑多处缺陷-睡觉出门/走廊无回房间/大厅有睡觉/房间无出口

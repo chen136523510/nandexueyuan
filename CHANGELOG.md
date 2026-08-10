@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-08-10 v3.0.2 部署上线 + deploy.sh 验证脚本修复
+
+### 概要
+
+v3.0.2（WebP 图片压缩优化）部署上线，线上游戏资源从 146.65MB 降至 28.19MB（省 80%），显著改善进德塔加载慢的问题。部署过程中发现 deploy.sh 前端验证项误报（HTTPS 配置后 `http://localhost/` 走 80 端口对 localhost Host 头返回 404），修复为 `https://localhost/` 检测。
+
+### 变更内容
+
+| 文件 | 变更 |
+|------|------|
+| `deploy.sh` | 前端验证从 `http_code http://localhost/`（期望 200/301/302）改为 `curl -sk https://localhost/`（期望 200），适配 certbot 配置后域名级 301 跳转不匹配 localhost 的场景 |
+
+### 部署结果（线上验证通过）
+
+| 验证项 | 结果 |
+|--------|------|
+| HTTPS 域名访问 | ✅ 200 OK |
+| HTTP->HTTPS 跳转 | ✅ 301 Moved Permanently |
+| WebP 资源（tower_day.webp） | ✅ 200 OK，Content-Type: image/webp，453KB（旧 PNG 2.1MB） |
+| 旧 PNG 资源 | ✅ 404（已替换） |
+| 版本公告 v3.0.2 | ✅ 正常 |
+| 后端 API / 师德墙 / 游戏服务器 | ✅ 全部正常 |
+
+### 影响评估
+
+- **影响范围**：线上生产环境（服务器 master `695b765` -> 本地已推 `6e98c1d`）
+- **用户感知**：进德塔加载速度大幅提升（图片总体积降 80%）
+- **回滚策略**：deploy.sh 改动为单 commit `6e98c1d`，可单独 revert
+
+---
+
 ## 2026-08-10 新增 E2E 测试基建 + 前端可访问性规范
 
 ### 概要
