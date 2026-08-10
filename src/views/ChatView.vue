@@ -1,7 +1,8 @@
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { listSessions, getSession, deleteSession } from '../api/chat'
 import { useDialogStore } from '../stores/dialog'
+import { renderMarkdown } from '../utils/markdown'
 
 const dialog = useDialogStore()
 
@@ -11,6 +12,7 @@ const loading = ref(false)
 const chatArea = ref(null)
 const currentSessionId = ref(null)
 const sessions = ref([])
+const abortController = ref(null)
 
 // Agent 图标和标签映射
 const agentIcons = {
@@ -37,7 +39,16 @@ const phaseLabels = {
   analysis: '综合分析',
   done: '完成',
 }
-const sidebarOpen = ref(true)
+const sidebarOpen = ref(window.innerWidth > 768)
+const windowWidth = ref(window.innerWidth)
+const isMobile = computed(() => windowWidth.value <= 768)
+
+function onResize() {
+  windowWidth.value = window.innerWidth
+  // 桌面端自动展开 sidebar，移动端自动收起
+  if (window.innerWidth > 768) sidebarOpen.value = true
+  else sidebarOpen.value = false
+}
 
 const suggestions = [
   '群里发言最多的人是谁',
@@ -48,6 +59,11 @@ const suggestions = [
 
 onMounted(() => {
   loadSessions()
+  window.addEventListener('resize', onResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
 })
 
 async function loadSessions() {
@@ -101,6 +117,21 @@ async function deleteChat(id, e) {
   }
 }
 
+function stopGeneration() {
+  if (abortController.value) {
+    abortController.value.abort()
+    abortController.value = null
+  }
+  loading.value = false
+}
+
+function copyMessage(msg) {
+  navigator.clipboard.writeText(msg.content).then(() => {
+    msg._copied = true
+    setTimeout(() => { msg._copied = false }, 2000)
+  })
+}
+
 async function ask(q) {
   const text = (q || question.value).trim()
   if (!text || loading.value) return
@@ -124,6 +155,7 @@ async function ask(q) {
 
   try {
     const token = localStorage.getItem('token')
+    abortController.value = new AbortController()
     const response = await fetch('/api/chat/ask', {
       method: 'POST',
       headers: {
@@ -131,6 +163,7 @@ async function ask(q) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ question: text, sessionId: currentSessionId.value }),
+      signal: abortController.value.signal,
     })
 
     if (!response.ok) {
@@ -201,10 +234,16 @@ async function ask(q) {
       await scrollBottom()
     }
   } catch (err) {
-    botMsg.content = err.message || '网络错误，请重试'
-    botMsg.error = true
+    // 用户主动停止（abort），不报错，保留已生成的部分回答
+    if (err.name === 'AbortError') {
+      if (!botMsg.content) botMsg.content = '（已停止）'
+    } else {
+      botMsg.content = err.message || '网络错误，请重试'
+      botMsg.error = true
+    }
   }
 
+  abortController.value = null
   loading.value = false
   await scrollBottom()
 }
@@ -240,6 +279,8 @@ function formatDate(date) {
     </div>
 
     <div class="chat-body">
+      <!-- 移动端遮罩（窄屏时 sidebar 以 overlay 形式出现） -->
+      <div v-if="sidebarOpen && isMobile" class="sidebar-overlay" @click="sidebarOpen = false"></div>
       <div v-if="sidebarOpen" class="sidebar">
         <button class="new-chat-btn" @click="newChat">+ 新建对话</button>
         <div class="session-list">
@@ -318,11 +359,22 @@ function formatDate(date) {
 
             <!-- 回答气泡 -->
             <div class="msg-bubble" :class="{ error: msg.error }">
-              <template v-if="msg.content">{{ msg.content }}</template>
+              <div v-if="msg.role === 'bot' && msg.content" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+              <template v-else-if="msg.content">{{ msg.content }}</template>
               <div v-else-if="loading && msg.role === 'bot'" class="msg-thinking-placeholder">
                 <span class="spinner"></span> 正在思考...
               </div>
             </div>
+
+            <!-- 复制按钮（仅 bot 消息且有内容） -->
+            <button
+              v-if="msg.role === 'bot' && msg.content && !msg.error"
+              class="copy-btn"
+              @click="copyMessage(msg)"
+              :title="msg._copied ? '已复制' : '复制回答'"
+            >
+              {{ msg._copied ? '✓ 已复制' : '⎘ 复制' }}
+            </button>
 
             <div v-if="msg.intent" class="msg-meta">
               <span class="intent-tag">{{ msg.intent }}</span>
@@ -349,8 +401,11 @@ function formatDate(date) {
             placeholder="输入问题，回车提问..."
             :disabled="loading"
           />
-          <button @click="ask()" :disabled="loading || !question.trim()">
-            {{ loading ? '...' : '发送' }}
+          <button v-if="loading" class="stop-btn" @click="stopGeneration">
+            ⏹ 停止
+          </button>
+          <button v-else @click="ask()" :disabled="!question.trim()">
+            发送
           </button>
         </div>
       </div>
@@ -674,13 +729,13 @@ function formatDate(date) {
   font-family: var(--md-font-body);
   font-size: 14px;
   line-height: 1.6;
-  white-space: pre-wrap;
   word-break: break-word;
 }
 .msg.user .msg-bubble {
   background: var(--md-primary);
   color: var(--md-text-on-primary);
   border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
 }
 .msg.bot .msg-bubble {
   background: var(--md-bg-card);
@@ -692,6 +747,68 @@ function formatDate(date) {
   background: rgba(201, 160, 160, 0.12);
   border-color: var(--md-danger);
   color: var(--md-danger);
+}
+
+/* Markdown 渲染样式 */
+.markdown-body :deep(p) { margin: 0 0 8px; }
+.markdown-body :deep(p:last-child) { margin-bottom: 0; }
+.markdown-body :deep(strong) { font-weight: 700; }
+.markdown-body :deep(em) { font-style: italic; }
+.markdown-body :deep(del) { text-decoration: line-through; }
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) { margin: 4px 0 8px; padding-left: 20px; }
+.markdown-body :deep(li) { margin: 2px 0; }
+.markdown-body :deep(blockquote) {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--md-border);
+  color: var(--md-text-secondary);
+  background: var(--md-bg-soft);
+  border-radius: 0 var(--md-radius-sm) var(--md-radius-sm) 0;
+}
+.markdown-body :deep(code) {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  background: var(--md-bg-soft);
+  padding: 2px 6px;
+  border-radius: var(--md-radius-sm);
+}
+.markdown-body :deep(pre) {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: var(--md-bg-soft);
+  border: 1px solid var(--md-divider);
+  border-radius: var(--md-radius);
+  overflow-x: auto;
+}
+.markdown-body :deep(pre code) {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+.markdown-body :deep(a) {
+  color: var(--md-primary-hover);
+  text-decoration: none;
+}
+.markdown-body :deep(a:hover) { text-decoration: underline; }
+.markdown-body :deep(table) {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.markdown-body :deep(th),
+.markdown-body :deep(td) {
+  border: 1px solid var(--md-divider);
+  padding: 6px 10px;
+}
+.markdown-body :deep(th) {
+  background: var(--md-bg-soft);
+  font-weight: 600;
+}
+.markdown-body :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--md-divider);
+  margin: 12px 0;
 }
 
 /* 打字动画 */
@@ -807,8 +924,49 @@ function formatDate(date) {
 }
 .input-area button:hover:not(:disabled) { background: var(--md-primary-hover); }
 .input-area button:disabled { background: var(--md-text-disabled); cursor: not-allowed; }
+.input-area .stop-btn {
+  background: var(--md-danger);
+  white-space: nowrap;
+}
+.input-area .stop-btn:hover { background: #b04a4a; }
+
+/* 复制按钮 */
+.copy-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--md-divider);
+  border-radius: var(--md-radius-sm);
+  font-size: 11px;
+  color: var(--md-text-disabled);
+  cursor: pointer;
+  transition: color 0.2s var(--md-ease-out), border-color 0.2s var(--md-ease-out);
+}
+.copy-btn:hover {
+  color: var(--md-text-secondary);
+  border-color: var(--md-text-disabled);
+}
+
+/* 移动端遮罩 */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
 
 @media (max-width: 768px) {
-  .sidebar { width: 200px; }
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 20;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
 }
 </style>

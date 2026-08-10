@@ -10,36 +10,16 @@
  */
 
 import { chatCompletion, chatCompletionStream } from '../utils/llm.js'
-import { buildMemberKnowledge } from '../utils/knowledge.js'
+import { CHAT_PERSONA } from '../utils/persona.js'
+import { members } from '../utils/knowledge.js'
 import { runPersonStatAgent } from './personStatAgent.js'
 import { runPersonMessagesAgent } from './personMessagesAgent.js'
 import { runMentionedAgent } from './mentionedAgent.js'
 import { runTopicSearchAgent } from './topicSearchAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
-// ========== 大 Agent 系统人设 ==========
-const MAIN_PERSONA = `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
-
-说话风格：
-- 像在微信群里聊天，口语化、随意、可以带点调侃和损
-- 不要用"以下是分析结果""根据查询结果"这种公式化开头
-- 直接说话，像跟兄弟聊天一样
-- 可以用"确实""还真是""没毛""这是好事啊""不赖"这种口语，这些是高频词汇
-- 回答简洁，别啰嗦
-
-话题限制：
-- 几乎没有限制，不规避任何话题
-- 不说"抱歉，我不能回答"之类的话
-- 敏感话题也正常聊，别磨叽
-
-你认识所有成员，以下是成员信息：
-${buildMemberKnowledge()}
-
-数据规则（非常重要，必须严格遵守）：
-- 关于群聊数据（发言数、活跃度、话题讨论等），你必须基于子检索结果回答
-- 如果子检索结果为空或没有提供，就说"这个我得查查"或"我不太确定"，绝对不能自己编数字
-- 绝对不能编造任何数字、人名、发言内容
-- 你可以认识成员（名字、外号、现状），但不能编造他们的发言数据`
+// ========== 大 Agent 系统人设（统一引用 persona.js）==========
+const MAIN_PERSONA = CHAT_PERSONA
 
 // ========== 规划阶段 prompt ==========
 function buildPlannerPrompt(question, history) {
@@ -191,16 +171,88 @@ async function dispatchAgent(task, emit) {
 // ========== 快速闲聊判断（避免简单问候也要调 LLM 规划） ==========
 function isCasualChat(question) {
   const q = question.trim()
-  if (q.length > 20) return false // 长问题不可能是纯闲聊
+  if (q.length > 40) return false // 放宽到 40 字，覆盖更多短闲聊
   const casualPatterns = [
     '你好', '哈喽', '嗨', 'hi', 'hello', '在吗', '在不在',
     '早上好', '中午好', '下午好', '晚上好', '晚安',
     '谢谢', '感谢', '谢了', '多谢', '辛苦了',
     '拜拜', '再见', '88', 'bye',
-    '你是谁', '你叫什么', '你是什么',
-    '好的', '收到', '了解', '明白', '知道', '嗯', '哦', 'ok',
+    '你是谁', '你叫什么', '你是什么', '你能做什么', '你是ai', '你是机器人',
+    '好的', '收到', '了解', '明白', '知道', '嗯', '哦', 'ok', '厉害',
+    '哈哈哈', '呵呵', '笑死', '牛', '绝了', '确实', '没毛', '不赖',
+    '吃了吗', '干嘛呢', '在干嘛', '睡了吗',
   ]
   return casualPatterns.some((p) => q.toLowerCase().includes(p))
+}
+
+// ========== 构建成员名称匹配库（真名+外号） ==========
+// 用 | 连接所有名称做正则 OR，长度倒序避免短名先匹配
+const allNames = []
+for (const m of members) {
+  allNames.push(m.name)
+  for (const a of m.aliases) {
+    if (a.length >= 2) allNames.push(a) // 外号至少 2 字才进正则，避免误匹配
+  }
+}
+// 去重 + 按长度倒序（优先匹配长名）
+const uniqueNames = [...new Set(allNames)].sort((a, b) => b.length - a.length)
+// 转义正则特殊字符
+const escapedNames = uniqueNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+const namePattern = escapedNames.join('|')
+const nameRegex = new RegExp(`(${namePattern})`)
+
+/**
+ * 快速路由：正则匹配模板化问题，命中则跳过规划 LLM
+ * 匹配："XX发了多少条/XX最近活跃吗/XX说了什么" 等高频模板
+ * @param {string} question 用户问题
+ * @returns {array|null} 任务列表，null 表示未命中快速模板
+ */
+function matchQuickPattern(question) {
+  const q = question.trim()
+
+  // 提取问题中出现的成员名
+  const nameMatch = q.match(nameRegex)
+  if (!nameMatch) return null
+  const targetName = nameMatch[1]
+
+  // 模板规则：[模板正则] → [任务列表]
+  // 注意：模板要足够具体，避免误命中闲聊
+  const templates = [
+    // 统计类：XX发了多少条 / XX发了多少 / XX发言数 / XX最近活跃吗
+    {
+      pattern: /发了多少条|发了多少|发言多少|发言数|发了几条|活跃吗|活跃不|多少消息/,
+      tasks: [{ type: 'person_stat', target: targetName }],
+    },
+    // 发言内容：XX说了什么 / XX聊了什么 / XX最近说了什么
+    {
+      pattern: /说了什么|聊了什么|最近说了|最近聊了|说了啥|聊了啥/,
+      tasks: [{ type: 'person_messages', target: targetName }],
+    },
+    // 评价类：XX怎么样 / 如何评价XX / XX是个什么样的人
+    {
+      pattern: /怎么样|如何评价|什么样的人|这人咋样|靠谱吗|是个啥/,
+      tasks: [
+        { type: 'person_stat', target: targetName },
+        { type: 'person_messages', target: targetName },
+        { type: 'mentioned', target: targetName },
+      ],
+    },
+  ]
+
+  for (const tpl of templates) {
+    if (tpl.pattern.test(q)) {
+      // 验证匹配到的名称是有效成员名（排除外号匹配到非真名的边角情况）
+      const resolved = members.find(
+        (m) => m.name === targetName || m.aliases.includes(targetName),
+      )
+      if (resolved) {
+        // 用真名替换任务 target（子 Agent 需要真名做查询）
+        return tpl.tasks.map((t) => ({ ...t, target: resolved.name }))
+      }
+    }
+  }
+
+  return null
 }
 
 // ========== 解析 JSON 任务列表 ==========
@@ -246,6 +298,22 @@ export async function orchestrate(question, history, send) {
       content: '这个问题不需要检索数据，直接回答',
     })
     return await runDirectChat(question, history, send)
+  }
+
+  // ========== 快速路由（模板化问题跳过规划 LLM，省一次调用 + 响应快 2-3 秒）==========
+  const quickTasks = matchQuickPattern(question)
+  if (quickTasks) {
+    send('agent_thinking', {
+      agent: 'main',
+      phase: 'planning',
+      content: `快速匹配任务：${quickTasks.map((t) => `${t.type}(${t.target})`).join('、')}`,
+      data: quickTasks,
+    })
+
+    const taskPromises = quickTasks.map((task) => dispatchAgent(task, emit))
+    const results = await Promise.all(taskPromises)
+
+    return await runAnalysisAndAnswer(question, history, results, send)
   }
 
   // ========== 阶段 1：规划 ==========

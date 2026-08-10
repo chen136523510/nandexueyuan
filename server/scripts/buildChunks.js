@@ -143,18 +143,19 @@ async function processConcurrent(tasks, concurrency) {
   }
 }
 
-// 建 FTS5 索引
+// 建 FTS5 索引（keywords + summary 双列）
 async function buildFtsIndex() {
   console.log('\n\n创建 FTS5 索引...')
   try {
     await prisma.$executeRawUnsafe('DROP TABLE IF EXISTS message_chunks_fts')
+    // summary 纳入索引：之前只有 keywords 被索引，LLM 生成的 summary（一句话摘要）是检索盲区
     await prisma.$executeRawUnsafe(
-      `CREATE VIRTUAL TABLE message_chunks_fts USING fts5(keywords, tokenize='trigram')`
+      `CREATE VIRTUAL TABLE message_chunks_fts USING fts5(keywords, summary, tokenize='trigram')`
     )
     await prisma.$executeRawUnsafe(
-      `INSERT INTO message_chunks_fts(rowid, keywords) SELECT id, keywords FROM message_chunks`
+      `INSERT INTO message_chunks_fts(rowid, keywords, summary) SELECT id, keywords, COALESCE(summary, "") FROM message_chunks`
     )
-    console.log('✓ FTS5 索引就绪')
+    console.log('✓ FTS5 索引就绪（keywords + summary）')
   } catch (err) {
     console.error('FTS5 创建失败:', err.message)
   }
