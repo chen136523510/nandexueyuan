@@ -73,7 +73,7 @@ async function handlePassword() {
         <!-- 弹窗头部 -->
         <div class="modal-header">
           <h2 class="modal-title">个人中心</h2>
-          <button class="modal-close" @click="emit('close')">×</button>
+          <button class="modal-close" aria-label="关闭" data-testid="profile-close" @click="emit('close')">×</button>
         </div>
 
         <!-- Tab 切换 -->

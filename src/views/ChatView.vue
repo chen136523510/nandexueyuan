@@ -233,7 +233,7 @@ function formatDate(date) {
     <div class="chat-header">
       <router-link to="/home" class="back-link">← 返回</router-link>
       <h2>男德通</h2>
-      <button class="toggle-btn" @click="sidebarOpen = !sidebarOpen">☰</button>
+      <button class="toggle-btn" aria-label="切换侧边栏" data-testid="chat-toggle-sidebar" @click="sidebarOpen = !sidebarOpen">☰</button>
     </div>
 
     <div class="chat-body">
@@ -252,7 +252,7 @@ function formatDate(date) {
                 {{ formatDate(s.updatedAt) }} · {{ s._count?.turns || 0 }} 条
               </div>
             </div>
-            <button class="delete-btn" @click="deleteChat(s.id, $event)" title="删除">×</button>
+            <button class="delete-btn" aria-label="删除会话" data-testid="chat-delete-session" @click="deleteChat(s.id, $event)" title="删除">×</button>
           </div>
           <div v-if="sessions.length === 0" class="no-sessions">暂无历史会话</div>
         </div>

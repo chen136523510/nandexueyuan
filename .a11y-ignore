@@ -1,17 +1,9 @@
 # a11y 白名单：已知的待渐进迁移项（views/components 层）
 # 格式：相对路径:行号
-# 德塔 visualnovel 模块已完成改造，以下为后续迁移范围
-# 每迁移完一个文件后，删除对应行，最终清空此文件
-
-# components 层
-src/components/NdeSettingsDialog.vue:56
-src/components/ProfileDialog.vue:76
-src/components/VersionHistoryDialog.vue:149
-
-# views 层
-src/views/ChatView.vue:236
-src/views/ChatView.vue:255
-src/views/GameView.vue:616
-src/views/GameView.vue:657
-src/views/GameView.vue:687
-src/views/WallView.vue:217
+#
+# 第1阶段（德塔 visualnovel 模块 16 button）✅ 已完成
+# 第2阶段（views/components 层 9 处图标按钮）✅ 已完成
+#
+# 白名单已清空，全部图标按钮均带 aria-label 或 data-testid。
+# 如扫描报违规，请按规范补充属性，或在此文件登记白名单：
+# prd/01-需求文档/04-德塔/02-设计/技术设计/前端可访问性与测试钩子规范.md

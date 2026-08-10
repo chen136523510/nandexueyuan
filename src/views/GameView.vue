@@ -613,7 +613,7 @@ function drawMinimap() {
       <div class="nde-dialog nde-dialog-npc">
         <div class="nde-dialog-header">
           <span>{{ npcConfig?.name || 'NPC' }}</span>
-          <button @click="closeNpcDialog" class="nde-dialog-close">✕</button>
+          <button @click="closeNpcDialog" class="nde-dialog-close" aria-label="关闭" data-testid="game-npc-close">✕</button>
         </div>
         <div class="nde-dialog-body nde-npc-body">
           <!-- 左侧：立绘 -->
@@ -654,7 +654,7 @@ function drawMinimap() {
       <div class="nde-dialog">
         <div class="nde-dialog-header">
           <span>物品查看</span>
-          <button @click="closeItemDialog" class="nde-dialog-close">✕</button>
+          <button @click="closeItemDialog" class="nde-dialog-close" aria-label="关闭" data-testid="game-item-close">✕</button>
         </div>
         <div class="nde-dialog-body">
           <p>与 <strong>{{ itemId }}</strong> 的交互界面（开发中）</p>
@@ -684,7 +684,7 @@ function drawMinimap() {
       <div class="nde-dialog nde-char-dialog">
         <div class="nde-dialog-header">
           <span>{{ nickname }} · 角色面板</span>
-          <button @click="closeCharPanel" class="nde-dialog-close">✕</button>
+          <button @click="closeCharPanel" class="nde-dialog-close" aria-label="关闭" data-testid="game-char-close">✕</button>
         </div>
         <div class="nde-char-body">
           <!-- 左侧：立绘 -->

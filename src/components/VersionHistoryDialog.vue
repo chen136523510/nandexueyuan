@@ -146,7 +146,7 @@ function formatDate(d) {
         <!-- 头部 -->
         <div class="modal-header">
           <h2 class="modal-title">📋 版本历史</h2>
-          <button class="modal-close" @click="emit('close')">×</button>
+          <button class="modal-close" aria-label="关闭" data-testid="version-history-close" @click="emit('close')">×</button>
         </div>
 
         <!-- 列表态 -->

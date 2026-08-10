@@ -214,7 +214,7 @@ onMounted(() => {
           </div>
           <div v-if="postImagePreview" class="image-preview">
             <img :src="postImagePreview" alt="预览" />
-            <button class="remove-image" @click="clearImage">✕</button>
+            <button class="remove-image" aria-label="移除图片" data-testid="wall-remove-image" @click="clearImage">✕</button>
           </div>
         </div>
       </div>

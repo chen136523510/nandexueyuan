@@ -53,7 +53,7 @@ function onAvatarError(e) {
         <!-- 弹窗头部 -->
         <div class="modal-header">
           <h2 class="modal-title">德塔相关设置</h2>
-          <button class="modal-close" @click="emit('close')">×</button>
+          <button class="modal-close" aria-label="关闭" data-testid="nde-settings-close" @click="emit('close')">×</button>
         </div>
 
         <!-- 主体：左侧立绘 + 右侧形象选择 -->
