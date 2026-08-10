@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-10
+- [新增] `persona.js` - 统一男德通群友人设 CHAT_PERSONA（群友风格+21人成员知识库注入+数据规则+Markdown格式提示），orchestrator 和 chatController 共用
+- commit: d4a2fe5 [feat](男德通): AI优化Phase1-Markdown渲染+死代码清理+快速路由+FTS5增强+前端体验
+
+---
+
 ## 2026-07-01
 - [新增] `response.js` - 统一响应格式（success/fail）+ 错误码常量
 - [新增] `jwt.js` - JWT 签发/校验工具

@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-10
+- [新增] `../utils/markdown.js` - Markdown 安全渲染封装（markdown-it + dompurify，禁 HTML/限链接协议）
+- [修改] `ChatView.vue` - bot 回复改 Markdown 渲染（v-html + renderMarkdown），加完整 .markdown-body 样式（列表/表格/代码块/引用）
+- [修改] `ChatView.vue` - 新增停止生成按钮（AbortController 中断 fetch）+ 复制回答按钮 + 移动端 sidebar overlay 抽屉式（窄屏默认收起 + resize 监听）
+- commit: d4a2fe5 [feat](男德通): AI优化Phase1-Markdown渲染+死代码清理+快速路由+FTS5增强+前端体验
+
+---
+
 ## 2026-08-03
 - [重构] `HomeView.vue` - hero 居中三件套→左对齐 editorial，等高卡片网格→纵向非对称，icon 圆形→内联方形，全页 token 化
 - [修改] `MainView.vue` - 公告标题 display 字体化

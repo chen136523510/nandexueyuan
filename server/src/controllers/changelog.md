@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-10
+- [重构] `chatController.js` - 删除 ~340 行死代码（classifyIntent/handleStatistic/handleSemantic/handleChat/validateSql/looksLikeDataQuestion/buildContextMessages 7 个废弃函数），askChat 已改走 orchestrator 不再走旧版三分支
+- [修改] `chatController.js` - SYSTEM_PERSONA 改为 import 统一 persona.js（原本地硬编码人设删除），移除未使用的 chatCompletion/resolveName/buildMemberKnowledge import
+- [修改] `chatController.js` - askChat 加客户端断开检测（req.on('close') + CLIENT_ABORTED 中断流式输出），用户点停止生成时后端静默停止
+- commit: d4a2fe5 [feat](男德通): AI优化Phase1-Markdown渲染+死代码清理+快速路由+FTS5增强+前端体验
+
+---
+
 ## 2026-07-29
 - [新增] `visualNovelController.js` - 视觉小说存档/进度 controller（getProgress/updateProgress/listSaves/getSave/writeSave/deleteSave）
 - [重命名] `galgameController.js` -> `visualNovelController.js`（Galgame 全局重命名）
