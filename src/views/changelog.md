@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-10（Phase2）
+- [新增] `FeedbackView.vue` - 需求反馈独立页面（表单+列表+状态筛选+admin状态管理+AI提交标记）
+- [修改] `ChatView.vue` - sidebar 加人设选择器（4预设+自定义+localStorage）；SSE 处理 feedback_created 事件展示"已自动提交反馈"提示；warning 阶段高亮样式
+- commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示
+
+---
+
 ## 2026-08-10
 - [新增] `../utils/markdown.js` - Markdown 安全渲染封装（markdown-it + dompurify，禁 HTML/限链接协议）
 - [修改] `ChatView.vue` - bot 回复改 Markdown 渲染（v-html + renderMarkdown），加完整 .markdown-body 样式（列表/表格/代码块/引用）

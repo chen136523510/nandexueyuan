@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-10（Phase2）
+- [新增] `feedbackController.js` - 需求反馈 CRUD（listFeedback/createFeedback/deleteFeedback/updateStatus），复用师德墙权限模型
+- [修改] `chatController.js` - askChat 加 personaId/customDesc 参数传给 orchestrate；加 AI 自动提交反馈（result.feedback 入库 source=ai）；加 feedback_created SSE 事件
+- commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示
+
+---
+
 ## 2026-08-10
 - [重构] `chatController.js` - 删除 ~340 行死代码（classifyIntent/handleStatistic/handleSemantic/handleChat/validateSql/looksLikeDataQuestion/buildContextMessages 7 个废弃函数），askChat 已改走 orchestrator 不再走旧版三分支
 - [修改] `chatController.js` - SYSTEM_PERSONA 改为 import 统一 persona.js（原本地硬编码人设删除），移除未使用的 chatCompletion/resolveName/buildMemberKnowledge import

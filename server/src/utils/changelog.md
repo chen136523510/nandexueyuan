@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-10（Phase2）
+- [修改] `persona.js` - 新增 PERSONAS 字典（4 套预设：体委/丘比/开开/正常人）+ getPersona(id,desc) 函数 + buildCustomPersona 自定义人设，BASE_TEMPLATE 模板复用成员知识库+数据规则
+- commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示
+
+---
+
 ## 2026-08-10
 - [新增] `persona.js` - 统一男德通群友人设 CHAT_PERSONA（群友风格+21人成员知识库注入+数据规则+Markdown格式提示），orchestrator 和 chatController 共用
 - commit: d4a2fe5 [feat](男德通): AI优化Phase1-Markdown渲染+死代码清理+快速路由+FTS5增强+前端体验

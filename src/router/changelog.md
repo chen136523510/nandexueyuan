@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-10
+- [修改] `index.js` - 新增 /feedback 路由 -> FeedbackView.vue（requiresAuth）
+- commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示
+
+---
+
 ## 2026-07-01
 - [修改] `index.js` — 新增 login/register/profile 路由，添加路由守卫（requiresAuth/guestOnly）
 - commit: 未提交
