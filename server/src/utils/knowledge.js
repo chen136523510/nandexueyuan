@@ -5,13 +5,13 @@
 
 // 成员列表
 const members = [
-  { name: '陈梓键', role: '院长', aliases: ['蛋哥', 'mico', '魔弹', 'modan'], status: '', nicknames: ['我'] },
+  { name: '陈梓键', role: '院长', aliases: ['蛋哥', 'mico', '魔弹', 'modan'], status: '', nicknames: ['我', '0.o'] },
   { name: '卢沐阳', role: '成员', aliases: ['一哥'], status: '上班', nicknames: ['酸角洲balabala老奴', '卢沐阳'] },
   { name: '陆城锟', role: '成员', aliases: [], status: '', nicknames: ['陆城锟'] },
   { name: '陈楠', role: '成员', aliases: ['波比', '吵闹波比'], status: '', nicknames: ['陈楠'] },
   { name: '庞楷垒', role: '成员', aliases: ['嫖哥', '阿嫖'], status: '', nicknames: ['庞楷垒'] },
   { name: '陈睿', role: '成员', aliases: ['re哥', '睿哥', '睿总'], status: '', nicknames: ['玩洲的下辈子也完了', '准研究生'] },
-  { name: '饶志锐', role: '成员', aliases: ['饶哥', '情书'], status: '', nicknames: ['饶志锐', '蛋克蛋尼克'] },
+  { name: '饶志锐', role: '成员', aliases: ['饶哥', '情书'], status: '', nicknames: ['饶志锐', '蛋克蛋尼克', 'O.o'] },
   { name: '陈俊杰', role: '成员', aliases: ['班长', '班大哥'], status: '', nicknames: ['人间猫猫黄礼志', '陈俊杰'] },
   { name: '宁浩然', role: '成员', aliases: ['宁总'], status: '', nicknames: ['宁浩然'] },
   { name: '汪煜坤', role: '成员', aliases: ['汪哥', '路明明', '🦌将军'], status: '', nicknames: ['睿爹小儿', '汪煜坤'] },
@@ -65,3 +65,20 @@ export function buildMemberKnowledge() {
 }
 
 export { members }
+
+/**
+ * 网站功能信息（注入 system prompt）
+ * 版本号发版时手动更新
+ */
+const SITE_VERSION = 'v3.2.0'
+
+export function buildSiteKnowledge() {
+  return `男德学院网站功能：
+1. 首页（/home）：群聊高频词词云 + 版本公告
+2. 男德通（/chat）：AI助手，可以查询群聊数据（发言统计、话题搜索、人物评价），支持4套人设切换（体委/丘比/开开/正常人）
+3. 师德墙（/wall）：群友发布动态，类似朋友圈，可以发帖评论
+4. 院长信箱（/mailbox）：可以提交BUG反馈、功能优化、功能新增、剧情设计需求，AI还能帮你自动起草信件
+5. 德塔（/nde）：视觉小说游戏，当前进度到第一章第三幕
+6. 男通讯录（/admin）：成员管理（院长/管理员可用）
+当前版本：${SITE_VERSION}（男德通AI全面升级）`
+}

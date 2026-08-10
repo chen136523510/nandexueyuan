@@ -16,6 +16,8 @@ import { runPersonStatAgent } from './personStatAgent.js'
 import { runPersonMessagesAgent } from './personMessagesAgent.js'
 import { runMentionedAgent } from './mentionedAgent.js'
 import { runTopicSearchAgent } from './topicSearchAgent.js'
+import { runWorldbookAgent } from './worldbookAgent.js'
+import { runDbInfoAgent } from './dbInfoAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
 // ========== 规划阶段 prompt ==========
@@ -38,6 +40,8 @@ function buildPlannerPrompt(question, history, persona) {
 2. person_messages - 查某人自己说过的话（每条带前后各5条上下文）。target 填人名。
 3. mentioned - 查别人提到某人的消息（每条带前后各5条上下文）。target 填人名。
 4. topic_search - 按关键词搜话题（FTS5全文检索）。keywords 填搜索词。
+5. worldbook - 读取德塔世界观设定集全文。当问题涉及德塔、世界观、角色设定、虚空、势力、历史等设定时使用。
+6. db_info - 查询数据库本身的统计信息（消息总数、时间跨度、参与人数、发言排行、版本信息）。当问题涉及"数据库""多少条消息""时间跨度""谁最活跃""群聊统计""版本"等关于数据本身的问题时使用。
 
 【判断规则（非常重要）】
 - 只要问题涉及某个具体的人（评价/怎么样/谁/说了什么/发了多少），就必须派子 Agent 去检索
@@ -47,7 +51,15 @@ function buildPlannerPrompt(question, history, persona) {
 - "XX最近活跃吗" -> 派 person_stat
 - "群里谁喷人最多" -> 派 topic_search
 - "大家讨论过打球吗" -> 派 topic_search
-- 只有纯闲聊（"你好""今天天气怎样""你是谁"）才输出 []
+- "最近群里在聊什么" -> 派 topic_search
+- "群里有没有人聊过XX" -> 派 topic_search
+- "群里有什么瓜/新鲜事" -> 派 topic_search
+- "德塔是什么/德塔里的XX是什么" -> 派 worldbook
+- "世界观/角色设定/虚空/势力" -> 派 worldbook
+- "群聊有多少条消息/跨度多长/谁最活跃/数据库统计" -> 派 db_info
+- "网站版本/最新版本" -> 派 db_info
+- 不确定是否需要检索时，倾向检索（宁可多查不要漏答）
+- 只有纯闲聊（"你好""你是谁"）才输出 []
 
 人名要用真名（如"丘序明"而非"丘哥"）。
 输出必须是合法的 JSON 数组，不要 markdown 标记。
@@ -163,6 +175,12 @@ async function dispatchAgent(task, emit) {
       case 'topic_search':
         result = { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
         break
+      case 'worldbook':
+        result = { agentType: '世界书', ...await runWorldbookAgent(task, emit) }
+        break
+      case 'db_info':
+        result = { agentType: '数据库信息', ...await runDbInfoAgent(task, emit) }
+        break
       default:
         return { ok: false, error: `未知 Agent 类型: ${type}`, agentType: type }
     }
@@ -175,19 +193,18 @@ async function dispatchAgent(task, emit) {
 
 // ========== 快速闲聊判断（避免简单问候也要调 LLM 规划） ==========
 function isCasualChat(question) {
-  const q = question.trim()
-  if (q.length > 40) return false // 放宽到 40 字，覆盖更多短闲聊
+  const q = question.trim().toLowerCase()
+  if (q.length > 10) return false // 真正的闲聊几乎不超 10 字
   const casualPatterns = [
     '你好', '哈喽', '嗨', 'hi', 'hello', '在吗', '在不在',
     '早上好', '中午好', '下午好', '晚上好', '晚安',
     '谢谢', '感谢', '谢了', '多谢', '辛苦了',
     '拜拜', '再见', '88', 'bye',
     '你是谁', '你叫什么', '你是什么', '你能做什么', '你是ai', '你是机器人',
-    '好的', '收到', '了解', '明白', '知道', '嗯', '哦', 'ok', '厉害',
-    '哈哈哈', '呵呵', '笑死', '牛', '绝了', '确实', '没毛', '不赖',
+    '哈哈哈', '呵呵', '笑死', '绝了',
     '吃了吗', '干嘛呢', '在干嘛', '睡了吗',
   ]
-  return casualPatterns.some((p) => q.toLowerCase().includes(p))
+  return casualPatterns.some((p) => q.includes(p))
 }
 
 // ========== 构建成员名称匹配库（真名+外号） ==========
@@ -208,7 +225,7 @@ const nameRegex = new RegExp(`(${namePattern})`)
 
 /**
  * 快速路由：正则匹配模板化问题，命中则跳过规划 LLM
- * 匹配："XX发了多少条/XX最近活跃吗/XX说了什么" 等高频模板
+ * 匹配高频模板直接派发对应 Agent
  * @param {string} question 用户问题
  * @returns {array|null} 任务列表，null 表示未命中快速模板
  */
@@ -217,43 +234,75 @@ function matchQuickPattern(question) {
 
   // 提取问题中出现的成员名
   const nameMatch = q.match(nameRegex)
-  if (!nameMatch) return null
-  const targetName = nameMatch[1]
+  const targetName = nameMatch ? nameMatch[1] : null
+  const resolved = targetName
+    ? members.find((m) => m.name === targetName || m.aliases.includes(targetName))
+    : null
 
-  // 模板规则：[模板正则] → [任务列表]
-  // 注意：模板要足够具体，避免误命中闲聊
+  // 话题搜索模板（不需要成员名）
+  const topicTemplates = [
+    {
+      pattern: /群里最近聊了什么|大家在聊什么|最近有什么新鲜事|最近群里在聊/,
+      tasks: [{ type: 'topic_search', keywords: q }],
+    },
+    {
+      pattern: /讨论过(.{1,10})吗|有人聊过(.{1,10})吗|有没有人提过(.{1,10})|聊过(.{1,10})吗/,
+      extract: (m) => m[1] || m[2] || m[3] || m[4],
+      tasks: (kw) => [{ type: 'topic_search', keywords: kw }],
+    },
+  ]
+
+  // 数据库信息模板（不需要成员名，不需要 LLM 规划）
+  const dbInfoPatterns = [
+    /聊天记录跨度|跨度有.*长|跨度多长|多少条消息|多少条聊天|总.*消息|数据库.*统计/,
+    /群聊统计|群聊.*数据|发言.*排行|谁最活跃|最活跃/,
+    /当前版本|最新版本|网站版本|版本信息/,
+  ]
+  for (const pat of dbInfoPatterns) {
+    if (pat.test(q)) {
+      return [{ type: 'db_info' }]
+    }
+  }
+
+  for (const tpl of topicTemplates) {
+    const m = tpl.pattern.exec(q)
+    if (m) {
+      if (tpl.extract) {
+        const kw = tpl.extract(m)
+        return tpl.tasks(kw)
+      }
+      return tpl.tasks
+    }
+  }
+
+  // 人物模板（需要命中成员名）
+  if (!resolved) return null
+
   const templates = [
     // 统计类：XX发了多少条 / XX发了多少 / XX发言数 / XX最近活跃吗
     {
       pattern: /发了多少条|发了多少|发言多少|发言数|发了几条|活跃吗|活跃不|多少消息/,
-      tasks: [{ type: 'person_stat', target: targetName }],
+      tasks: [{ type: 'person_stat', target: resolved.name }],
     },
     // 发言内容：XX说了什么 / XX聊了什么 / XX最近说了什么
     {
       pattern: /说了什么|聊了什么|最近说了|最近聊了|说了啥|聊了啥/,
-      tasks: [{ type: 'person_messages', target: targetName }],
+      tasks: [{ type: 'person_messages', target: resolved.name }],
     },
     // 评价类：XX怎么样 / 如何评价XX / XX是个什么样的人
     {
       pattern: /怎么样|如何评价|什么样的人|这人咋样|靠谱吗|是个啥/,
       tasks: [
-        { type: 'person_stat', target: targetName },
-        { type: 'person_messages', target: targetName },
-        { type: 'mentioned', target: targetName },
+        { type: 'person_stat', target: resolved.name },
+        { type: 'person_messages', target: resolved.name },
+        { type: 'mentioned', target: resolved.name },
       ],
     },
   ]
 
   for (const tpl of templates) {
     if (tpl.pattern.test(q)) {
-      // 验证匹配到的名称是有效成员名（排除外号匹配到非真名的边角情况）
-      const resolved = members.find(
-        (m) => m.name === targetName || m.aliases.includes(targetName),
-      )
-      if (resolved) {
-        // 用真名替换任务 target（子 Agent 需要真名做查询）
-        return tpl.tasks.map((t) => ({ ...t, target: resolved.name }))
-      }
+      return tpl.tasks
     }
   }
 
@@ -276,7 +325,7 @@ function parseTasks(raw) {
     if (!Array.isArray(tasks)) return []
     // 过滤无效任务
     return tasks.filter(
-      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search'].includes(t.type),
+      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'worldbook', 'db_info'].includes(t.type),
     )
   } catch {
     return []
@@ -448,13 +497,44 @@ export async function orchestrate(question, history, send, personaId, customDesc
 
   const plannerMessages = buildPlannerPrompt(question, history, persona)
   let rawTasks = ''
+  let planningFailed = false
   try {
     rawTasks = await chatCompletion(plannerMessages, { temperature: 0, maxTokens: 500 })
-  } catch {
+  } catch (err) {
+    console.error('[Orchestrator] 规划 LLM 异常:', err.message)
+    planningFailed = true
     rawTasks = '[]'
   }
 
   const tasks = parseTasks(rawTasks)
+
+  // 规划异常或返回空时的 fallback 策略：
+  // - 只有问题包含群聊/数据相关信号词时，才 fallback 到 topic_search
+  // - 否则走闲聊（system prompt 里的网站信息/世界知识足够回答）
+  if (planningFailed || tasks.length === 0) {
+    const dataSignals = /群里|群聊|聊天|发言|消息|谁|讨论|聊过|活跃|统计|数据/
+    if (dataSignals.test(question)) {
+      console.log('[Orchestrator] 规划无任务，fallback 到 topic_search:', question)
+      const fallbackTasks = [{ type: 'topic_search', keywords: question }]
+      send('agent_thinking', {
+        agent: 'main',
+        phase: 'planning',
+        content: planningFailed ? '规划异常，尝试搜索...' : `尝试搜索：${question}`,
+        data: fallbackTasks,
+      })
+
+      const taskPromises = fallbackTasks.map((task) => dispatchAgent(task, emit))
+      const results = await Promise.all(taskPromises)
+      return await runAnalysisAndAnswer(question, history, results, send, persona)
+    }
+    // 不含数据信号 -> 走闲聊（system prompt 已注入网站信息+成员知识）
+    send('agent_thinking', {
+      agent: 'main',
+      phase: 'planning',
+      content: '这个问题不需要检索数据，直接回答',
+    })
+    return await runDirectChat(question, history, send, persona)
+  }
 
   send('agent_thinking', {
     agent: 'main',

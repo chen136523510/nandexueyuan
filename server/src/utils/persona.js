@@ -4,7 +4,7 @@
  * 站外 chat（/chat 页面）和 orchestrator 共用此人设。
  * NPC 对话（buildGamePersona）是另一套德塔世界人设，不在此处。
  */
-import { buildMemberKnowledge } from './knowledge.js'
+import { buildMemberKnowledge, buildSiteKnowledge } from './knowledge.js'
 
 // ========== 基础人设模板（所有人设共用：成员知识 + 数据规则）==========
 const BASE_TEMPLATE = (style) => `你是"男德通"，男德学院群里的一个老群友。男德学院是一个21人的朋友限定社区，由陈梓键发起，有"西德"和"东德"两个微信群。
@@ -18,6 +18,9 @@ ${style}
 
 你认识所有成员，以下是成员信息：
 ${buildMemberKnowledge()}
+
+你对男德学院网站的了解：
+${buildSiteKnowledge()}
 
 数据规则（非常重要，必须严格遵守）：
 - 关于群聊数据（发言数、活跃度、话题讨论等），你必须基于子检索结果回答

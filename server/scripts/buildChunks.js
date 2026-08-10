@@ -37,16 +37,16 @@ async function ensureTable() {
   console.log('✓ message_chunks 表就绪')
 }
 
-// 获取总消息数
-async function getTotalMessages() {
-  const [row] = await prisma.$queryRawUnsafe('SELECT COUNT(*) as count FROM group_messages')
-  return Number(row.count)
-}
-
 // 获取已处理的进度
 async function getProgress() {
   const [row] = await prisma.$queryRawUnsafe('SELECT MAX(endMsgId) as maxId FROM message_chunks')
   return row.maxId ? Number(row.maxId) : 0
+}
+
+// 获取实际消息总数
+async function getTotalMessages() {
+  const [row] = await prisma.$queryRawUnsafe('SELECT COUNT(*) as count FROM group_messages')
+  return Number(row.count)
 }
 
 // 读取一个块的消息
@@ -59,16 +59,22 @@ async function getChunk(startId) {
   return messages
 }
 
-// 调 LLM 生成提示词
+// 调 LLM 生成提示词（使用 DeepSeek，避免火山引擎额度限制）
 async function generateKeywords(messages) {
   const context = messages
     .map(m => `[${resolveName(m.nickname)} ${new Date(m.msgTime).toLocaleString('zh-CN')}] ${m.content}`)
     .join('\n')
 
-  const result = await chatCompletion([
-    {
-      role: 'system',
-      content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
+  const DS_KEY = process.env.DEEPSEEK_API_KEY
+  const DS_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
+  const DS_MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat'
+
+  if (!DS_KEY) {
+    // DeepSeek 没配置，回退火山引擎
+    const result = await chatCompletion([
+      {
+        role: 'system',
+        content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
 
 输出格式（纯文本，每行一个字段）：
 话题：<用逗号分隔的话题标签>
@@ -76,11 +82,55 @@ async function generateKeywords(messages) {
 关键词：<3-5个关键词，逗号分隔>
 情绪：<整体情绪，一个词>
 摘要：<一句话总结>`
-    },
-    { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
-  ], { temperature: 0, maxTokens: 200 })
+      },
+      { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
+    ], { temperature: 0, maxTokens: 200 })
+    return result.trim()
+  }
 
-  return result.trim()
+  // DeepSeek 调用（OpenAI 兼容协议）
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 60000)
+
+  try {
+    const response = await fetch(`${DS_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DS_KEY}`,
+      },
+      body: JSON.stringify({
+        model: DS_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `你是一个群聊数据分析助手。分析以下群聊消息，提取关键信息。
+
+输出格式（纯文本，每行一个字段）：
+话题：<用逗号分隔的话题标签>
+人物：<参与讨论的人名，逗号分隔>
+关键词：<3-5个关键词，逗号分隔>
+情绪：<整体情绪，一个词>
+摘要：<一句话总结>`
+          },
+          { role: 'user', content: `以下是群聊消息（共${messages.length}条）：\n${context}` }
+        ],
+        temperature: 0,
+        max_tokens: 200,
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`DeepSeek API 错误 ${response.status}: ${errText.slice(0, 200)}`)
+    }
+
+    const data = await response.json()
+    return (data.choices[0].message.content || '').trim()
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // 全局进度追踪
@@ -100,11 +150,14 @@ function printProgress() {
   process.stdout.write(`\r进度: ${completedCount}/${totalCount} (${percent}%) | 失败: ${failedCount} | 已用: ${elapsed}s | 预计剩余: ${remMin}m${remSec}s   `)
 }
 
-// 处理一个块
-async function processChunk(startId, chunkIndex) {
-  const messages = await getChunk(startId)
-  if (messages.length === 0) return
+// 获取最大 id（非 COUNT(*)，因为 --clear 重导后 id 非连续，COUNT 会漏掉高位 id）
+async function getMaxId() {
+  const [row] = await prisma.$queryRawUnsafe('SELECT MAX(id) as maxId FROM group_messages')
+  return Number(row.maxId)
+}
 
+// 处理一个块（接收预取的 messages，避免重复查询）
+async function processChunk(messages, startId, chunkIndex) {
   const endId = messages[messages.length - 1].id
   const chunkDate = new Date(messages[0].msgTime).toISOString().slice(0, 10)
 
@@ -135,14 +188,6 @@ async function processChunk(startId, chunkIndex) {
   }
 }
 
-// 并发处理
-async function processConcurrent(tasks, concurrency) {
-  for (let i = 0; i < tasks.length; i += concurrency) {
-    const batch = tasks.slice(i, i + concurrency)
-    await Promise.all(batch.map(t => t()))
-  }
-}
-
 // 建 FTS5 索引（keywords + summary 双列）
 async function buildFtsIndex() {
   console.log('\n\n创建 FTS5 索引...')
@@ -166,40 +211,57 @@ async function main() {
 
   await ensureTable()
 
-  const total = await getTotalMessages()
+  const maxId = await getMaxId()
   const lastEndId = await getProgress()
-  const startFrom = lastEndId
-  totalCount = Math.ceil((total - startFrom) / CHUNK_SIZE)
+  const totalMessages = await getTotalMessages()
+  // 用实际消息数估算 chunk 数（id 有空洞时 MAX(id) 远大于 COUNT(*)）
+  totalCount = Math.ceil(totalMessages / CHUNK_SIZE)
 
-  console.log(`总消息: ${total}`)
-  console.log(`已处理到 ID: ${startFrom}`)
-  console.log(`待处理: ${totalCount} 块`)
+  console.log(`消息总数: ${totalMessages}`)
+  console.log(`MAX(id): ${maxId}`)
+  console.log(`已处理到 ID: ${lastEndId}`)
+  console.log(`待处理: 约 ${totalCount} 块`)
   console.log(`并发: ${CONCURRENCY}`)
   console.log('')
 
-  if (totalCount === 0) {
-    console.log('没有待处理的块')
+  if (totalMessages === 0) {
+    console.log('没有待处理的消息')
     await buildFtsIndex()
     await prisma.$disconnect()
     return
   }
 
-  // 生成任务
-  const tasks = []
-  let currentId = startFrom
-  let chunkIndex = 1
-  while (currentId < total) {
-    const startId = currentId
-    const idx = chunkIndex
-    tasks.push(() => processChunk(startId, idx))
-    currentId += CHUNK_SIZE
-    chunkIndex++
-  }
-
   startTime = Date.now()
   console.log('开始处理...\n')
 
-  await processConcurrent(tasks, CONCURRENCY)
+  // 基于 endId 推进：getChunk 返回的 messages 用完后，下一个 startId = endId
+  // 这样 id 有空洞时也能正确推进，不会空转
+  let currentId = lastEndId
+  let chunkIndex = 1
+
+  while (true) {
+    // 预取一批
+    const batchResults = []
+    for (let i = 0; i < CONCURRENCY; i++) {
+      const messages = await getChunk(currentId)
+      if (messages.length === 0) {
+        // 没有更多消息了
+        batchResults.push(null)
+        break
+      }
+      batchResults.push({ messages, startId: currentId })
+      // 用最后一条消息的 id 作为下一个块的 startId
+      currentId = Number(messages[messages.length - 1].id)
+    }
+
+    if (batchResults.length === 0 || batchResults[0] === null) break
+
+    // 并发处理
+    const tasks = batchResults
+      .filter((r) => r !== null)
+      .map((r) => processChunk(r.messages, r.startId, chunkIndex++))
+    await Promise.all(tasks)
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(0)
   console.log(`\n\n处理完成！成功: ${completedCount - failedCount}, 失败: ${failedCount}, 耗时: ${elapsed}s`)

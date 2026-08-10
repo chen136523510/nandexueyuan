@@ -3,9 +3,9 @@
  * 通过 fetch 调用，无需额外 SDK 依赖
  */
 
-const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
-const API_KEY = process.env.VOLC_API_KEY
-const MODEL = process.env.VOLC_MODEL || 'glm-latest'
+const BASE_URL = process.env.DEEPSEEK_BASE_URL || process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
+const API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VOLC_API_KEY
+const MODEL = process.env.DEEPSEEK_MODEL || process.env.VOLC_MODEL || 'glm-latest'
 const TIMEOUT_MS = 120000 // 120 秒超时（分析阶段数据量大需要更多时间）
 
 /**
@@ -23,12 +23,13 @@ export async function chatCompletion(messages, options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
+  const isDeepSeek = !!process.env.DEEPSEEK_API_KEY
   const body = {
     model: MODEL,
     messages,
     temperature: options.temperature ?? 0.7,
-    // 默认禁用推理模型的深度思考（节省 token，加速响应）
-    ...(options.thinking !== true ? { thinking: { type: 'disabled' } } : {}),
+    // thinking 参数仅火山引擎支持，DeepSeek 不发
+    ...(!isDeepSeek && options.thinking !== true ? { thinking: { type: 'disabled' } } : {}),
   }
   if (options.maxTokens) {
     body.max_tokens = options.maxTokens
@@ -83,12 +84,13 @@ export async function* chatCompletionStream(messages, options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
+  const isDeepSeek = !!process.env.DEEPSEEK_API_KEY
   const body = {
     model: MODEL,
     messages,
     temperature: options.temperature ?? 0.7,
     stream: true,
-    ...(options.thinking !== true ? { thinking: { type: 'disabled' } } : {}),
+    ...(!isDeepSeek && options.thinking !== true ? { thinking: { type: 'disabled' } } : {}),
   }
   if (options.maxTokens) {
     body.max_tokens = options.maxTokens

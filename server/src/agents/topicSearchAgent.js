@@ -72,14 +72,14 @@ export async function runTopicSearchAgent(task, emit) {
   if (ftsWords.length > 0) {
     try {
       const ftsQuery = ftsWords.join(' OR ')
+      // FTS5 双列搜索：用 {keywords summary} 语法搜所有列
       chunks = await prisma.$queryRawUnsafe(
         `SELECT c.id, c.startMsgId, c.endMsgId, c.chunkDate, c.keywords
          FROM message_chunks_fts f
          JOIN message_chunks c ON f.rowid = c.id
-         WHERE f.keywords MATCH ? OR f.summary MATCH ?
+         WHERE f.message_chunks_fts MATCH ?
          ORDER BY rank
          LIMIT 5`,
-        ftsQuery,
         ftsQuery,
       )
     } catch (err) {
