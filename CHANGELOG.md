@@ -4,6 +4,44 @@
 
 ---
 
+## 2026-08-10 v3.1.0 全局自定义弹窗基础设施 + a11y 无障碍改造
+
+### 概要
+
+引入全局自定义弹窗组件（GlobalDialog + Pinia store），替换全站 13 处原生 `alert()`/`confirm()`，消除浏览器原生弹窗的样式割裂和测试阻塞问题。同时完成 a11y 第 2/3 阶段改造（views/components 层 9 处图标按钮补语义化属性，白名单清零）。项目从"图标按钮零语义 + 原生弹窗"升级为"全量 aria-label/data-testid + 统一莫兰迪风格弹窗 + role=dialog 无障碍语义"。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `src/stores/dialog.js`（新增） | Pinia store，暴露 `confirm()`（返回 Promise\<boolean\>）+ `alert()`（返回 Promise\<void\>），支持 danger 模式/自定义按钮文案 |
+| `src/components/GlobalDialog.vue`（新增） | 莫兰迪风格弹窗组件，role="dialog" + aria-modal + data-testid + ESC 关闭 + 过渡动画 |
+| `src/App.vue` | 挂载 `<GlobalDialog />` 全局组件 |
+| `src/views/WallView.vue` | 6 处原生 alert/confirm 替换为 dialog.alert/confirm |
+| `src/views/AdminView.vue` | 3 处原生 confirm 替换（禁用操作带 danger 红色） |
+| `src/views/ChatView.vue` | 1 处原生 confirm 替换（danger） |
+| `src/components/VersionHistoryDialog.vue` | 2 处原生 alert/confirm 替换 |
+| `src/components/NdeSettingsDialog.vue` / `ProfileDialog.vue` / `src/views/GameView.vue`（3处）/ `WallView.vue` | a11y 第 2 阶段：9 处图标按钮补 aria-label + data-testid |
+| `.a11y-ignore` | 白名单清空（第 2 阶段完成，0 待迁移项） |
+
+### 决策依据
+
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| 弹窗实现方式 | Pinia store + 全局组件（非 Vue 插件） | 项目状态管理统一走 Pinia，无 composable 先例；store 方式调用最简单（`await dialog.confirm()`），与原生调用习惯一致 |
+| API 形态 | Promise 化（`confirm()` 返回 Promise\<boolean\>） | 原生 confirm 是同步阻塞返回 boolean，Promise 化后 `if (!await dialog.confirm()) return` 最小改动替换 |
+| z-index | `var(--md-z-modal)`（100） | 修正现有 Dialog 组件用 300 越界的问题，遵循 CSS token 体系 |
+| 样式 | 复用全站 modal 范式（莫兰迪 token） | 与 NdeSettingsDialog/ProfileDialog 风格统一，不引入新视觉 |
+
+### 影响评估
+
+- **影响范围**：全站弹窗交互（师德墙/男德通/管理后台/版本历史/德塔设置）；全站图标按钮无障碍属性
+- **不影响**：业务逻辑（弹窗返回值与原生一致）；后端/游戏服务器
+- **兼容性**：build 通过；lint:a11y 0 违规 0 白名单；线上全量测试通过（登录/师德墙/男德通/德塔/管理后台 5 个页面 × alert+confirm 弹窗）
+- **后续**：a11y 三阶段全部完成；弹窗组件可复用于未来新页面
+
+---
+
 ## 2026-08-10 v3.0.2 部署上线 + deploy.sh 验证脚本修复
 
 ### 概要

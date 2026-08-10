@@ -4,6 +4,22 @@
 
 ---
 
+### [feat] v3.1.0 全局自定义弹窗 + a11y 第 2/3 阶段改造
+
+- **时间**：2026-08-10 10:00~11:30
+- **变更人**：陈梓键（白机）
+- **背景**：GUI 测试痛点（图标按钮定位难 + 原生弹窗阻塞测试 + 屏幕阅读器误读符号），第 1 阶段（德塔 visualnovel 16 button）已完成，本轮完成第 2/3 阶段
+- **变更内容**：
+  1. **a11y 第 2 阶段**：views/components 层 9 处图标按钮补 aria-label + data-testid（NdeSettingsDialog/ProfileDialog/VersionHistoryDialog 关闭按钮 + GameView 3 处弹窗关闭 + WallView 移除图片 + ChatView 侧边栏切换/会话删除），`.a11y-ignore` 白名单清零
+  2. **a11y 第 3 阶段**：新增全局弹窗基础设施（`src/stores/dialog.js` Pinia store + `src/components/GlobalDialog.vue` 莫兰迪风格组件），替换全站 13 处原生 alert/confirm（WallView 6 处 / AdminView 3 处 / ChatView 1 处 / VersionHistoryDialog 2 处），Promise 化 API 兼容原生调用习惯
+  3. **v3.1.0 发版**：版本号 3.0.2->3.1.0（minor，界面交互优化），公告灌入线上
+- **验证**：build 通过；lint:a11y 0 违规 0 白名单；线上全量测试通过（登录/师德墙 confirm 删除动态+评论 / 男德通 confirm 删除会话 / 德塔 a11y 按钮+存档面板+存档恢复 / 管理后台 confirm 禁用+重置+角色变更）
+- **文件**：`src/stores/dialog.js`（新增）、`src/components/GlobalDialog.vue`（新增）、`src/App.vue`、`src/views/WallView.vue`、`src/views/AdminView.vue`、`src/views/ChatView.vue`、`src/components/VersionHistoryDialog.vue`、`src/components/NdeSettingsDialog.vue`、`src/components/ProfileDialog.vue`、`src/views/GameView.vue`、`.a11y-ignore`
+- **状态**：✅ 已部署上线 v3.1.0（服务器 `acc2b47`）
+- **关联文档**：根 CHANGELOG.md（架构级记录）、前端可访问性与测试钩子规范.md（规范文档）
+
+---
+
 ### [chore] v3.0.2 部署上线 + deploy.sh 验证脚本修复
 
 - **时间**：2026-08-10 09:14
