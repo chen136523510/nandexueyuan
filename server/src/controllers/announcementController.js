@@ -8,7 +8,7 @@ const VERSION_REGEX = /^v\d+\.\d+\.\d+$/
 export async function getAnnouncement(req, res, next) {
   try {
     const latest = await prisma.version.findFirst({
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
     })
 
     if (!latest) {
