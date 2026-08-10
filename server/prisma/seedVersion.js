@@ -5,6 +5,25 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.2.0',
+    date: new Date('2026-08-10'),
+    summary: '男德通AI全面升级',
+    updates: JSON.stringify([
+      '男德通AI回答支持Markdown格式渲染（加粗/列表/表格）',
+      '新增4套人设切换：体委/丘比/开开/正常人，还支持自定义人设',
+      '新增院长信箱，可以提交BUG反馈/功能优化/功能新增/剧情设计需求',
+      '男德通AI可以帮你自动起草信件，确认后一键投递到院长信箱',
+      '个人中心头像改为文件上传，不再需要填URL',
+      '黑机离线时查询会提示降级模式，不会再傻等',
+      '检索能力增强，话题搜索支持同义词扩展',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      '网站知识库（AI可回答词云/版本/世界观/角色相关问题）',
+      '向量语义检索（规划中）',
+    ], null, 0),
+  },
+  {
     version: 'v3.1.0',
     date: new Date('2026-08-10'),
     summary: '界面交互优化',
