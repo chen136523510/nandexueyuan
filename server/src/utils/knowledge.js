@@ -5,7 +5,7 @@
 
 // 成员列表
 const members = [
-  { name: '陈梓键', role: '院长', aliases: ['蛋哥', 'mico', '魔弹', 'modan'], status: '', nicknames: ['我', '0.o'] },
+  { name: '陈梓键', role: '院长', aliases: ['蛋哥', 'mico', '魔弹', 'modan'], status: '', nicknames: ['我', '0.o', 'MICO'] },
   { name: '卢沐阳', role: '成员', aliases: ['一哥'], status: '上班', nicknames: ['酸角洲balabala老奴', '卢沐阳'] },
   { name: '陆城锟', role: '成员', aliases: [], status: '', nicknames: ['陆城锟'] },
   { name: '陈楠', role: '成员', aliases: ['波比', '吵闹波比'], status: '', nicknames: ['陈楠'] },
@@ -17,7 +17,7 @@ const members = [
   { name: '汪煜坤', role: '成员', aliases: ['汪哥', '路明明', '🦌将军'], status: '', nicknames: ['睿爹小儿', '汪煜坤'] },
   { name: '袁崇轩', role: '成员', aliases: ['b哥', 'b大哥'], status: '', nicknames: ['袁崇轩'] },
   { name: '邹志华', role: '成员', aliases: ['华哥'], status: '', nicknames: ['邹志华'] },
-  { name: '丘序明', role: '成员', aliases: ['丘哥', '丘比', '禀心寒霜', '四季'], status: '本科山大，现待业在家，在北京逗留一段时间，现在在深圳，预计读港科', nicknames: ['蒸糯re鸽', '不玩游戏', '魔弹仙君'] },
+  { name: '丘序明', role: '成员', aliases: ['丘哥', '丘比', '禀心寒霜', '四季'], status: '本科山大，现待业在家，在北京逗留一段时间，现在在深圳，预计读港科', nicknames: ['蒸糯re鸽', '不玩游戏', '魔弹仙君', '做题体孝子（暂时）'] },
   { name: '徐浩森', role: '成员', aliases: [], status: '', nicknames: ['徐浩森'] },
   { name: '谌礼鹏', role: '成员', aliases: [], status: '', nicknames: ['两弹元勋林黛玉'] },
   { name: '朱宇涵', role: '成员', aliases: ['朱哥'], status: '', nicknames: ['朱宇涵'] },

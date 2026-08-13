@@ -35,10 +35,11 @@ export async function runDbInfoAgent(task, emit) {
   const speakerCount = { cnt: uniqueSpeakers.size }
 
   // 3. 发言最多的成员（查出 Top 30 再在 JS 层用 resolveName 合并同一人的不同昵称）
+  // 注意：不排除 nickname='我'，那是微信导出时本人账号消息的标识（=陈梓键，11万条）
   const rawMembers = await prisma.$queryRawUnsafe(
     `SELECT nickname, COUNT(*) as cnt
      FROM group_messages
-     WHERE nickname IS NOT NULL AND nickname != '' AND nickname != '我'
+     WHERE nickname IS NOT NULL AND nickname != ''
      GROUP BY nickname
      ORDER BY cnt DESC
      LIMIT 30`,
