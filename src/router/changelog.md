@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-13（白机·移动端适配）
+- [修改] `index.js` - beforeEach 新增德塔移动端守卫：窄屏（≤768px）访问 /nde 直接回大厅（德塔为桌面端体验，移动端隐藏）
+- commit: 待提交 [feat](德塔): 移动端适配
+
+---
+
 ## 2026-08-10
 - [修改] `index.js` - 新增 /feedback 路由 -> FeedbackView.vue（requiresAuth）
 - commit: ba91f1f [feat](男德通): AI优化Phase2第一批-人设切换+需求反馈页+AI提需求+黑机离线提示

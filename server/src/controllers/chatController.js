@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { orchestrate } from '../agents/orchestrator.js'
+import { queryDbStats } from '../agents/dbInfoAgent.js'
 
 // ESM __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -372,6 +373,22 @@ export async function deleteSession(req, res, next) {
     }
     await prisma.chatSession.delete({ where: { id: session.id } })
     success(res, null, '已删除')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ========== GET /api/chat/db-info - 群聊数据库统计（首页数据看板） ==========
+export async function getDbInfo(req, res, next) {
+  try {
+    const stats = await queryDbStats()
+    // 字段裁剪：看板只需总数/跨度/人数/排行/年度分布（话题块样本过重，不返回）
+    success(res, {
+      overview: stats.overview,
+      speakerCount: stats.speakerCount,
+      topMembers: stats.topMembers,
+      yearlyStats: stats.yearlyStats,
+    })
   } catch (err) {
     next(err)
   }

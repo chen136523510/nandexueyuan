@@ -96,6 +96,11 @@ router.beforeEach(async (to) => {
   if (to.meta.guestOnly && auth.isLoggedIn) {
     return { name: 'home' }
   }
+
+  // 德塔（视觉小说）为桌面端体验（手游/页游差距大）：移动端访问直接回大厅
+  if (to.name === 'nde' && typeof window !== 'undefined' && window.innerWidth <= 768) {
+    return { name: 'home' }
+  }
 })
 
 export default router

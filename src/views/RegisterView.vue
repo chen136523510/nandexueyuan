@@ -72,9 +72,11 @@ async function handleRegister() {
   align-items: center;
   justify-content: center;
   background: var(--qz-bg-page);
+  padding: 24px 16px;
 }
 .auth-card {
-  width: 380px;
+  width: 100%;
+  max-width: 380px;
   padding: var(--qz-space-xxl) var(--qz-space-xl);
   box-shadow: var(--qz-shadow-md);
 }

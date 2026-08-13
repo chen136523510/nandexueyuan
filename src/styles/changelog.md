@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-13（白机·晚自习模式）
+- [修改] `variables.css` - 新增深色主题 token 层（`:root[data-theme='dark']` 覆写色彩/阴影/渐变：青灰底 + 暖米白字 + 主色提亮 + 主色按钮深底字）；`:root` 补 `color-scheme: light`
+- [修改] `base.css` - body 主题切换颜色平滑过渡；新增 `body.has-bottom-nav` 移动端底部导航占位（含 iOS 安全区）
+- commit: 待提交 [feat](德塔): 门户趣味化
+
+---
+
 ## 2026-08-03
 - [修改] `variables.css` - 扩充设计令牌：新增 display/body 双字体 token（霞鹜文楷+系统无衬线）、hero 字号、shadow-card/-hover、z-index 层级命名、ease-out 缓动；卡片底色从纯白微倾（`#FBFAF8`）消除合成感
 - commit: 53ab43f [refactor](德塔): 社区站视觉体系统一

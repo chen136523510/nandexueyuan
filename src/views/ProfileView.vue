@@ -267,7 +267,7 @@ async function handleLogout() {
   cursor: not-allowed;
 }
 .qz-btn-default {
-  background: #fff;
+  background: var(--md-bg-card);
   color: var(--qz-text-regular);
   border: 1px solid var(--qz-border);
   padding: 8px 20px;

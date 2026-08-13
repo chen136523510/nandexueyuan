@@ -12,11 +12,10 @@ import prisma from '../lib/prisma.js'
 import { resolveName } from '../utils/knowledge.js'
 
 /**
- * 执行数据库信息查询
+ * 查询数据库统计原始数据（REST 端点 /chat/db-info 与 db_info Agent 共用）
+ * 返回：overview（总数/时间跨度）、speakerCount、topMembers、chunkStats、yearlyStats、yearlyChunks
  */
-export async function runDbInfoAgent(task, emit) {
-  emit('db_info', 'analyzing', '正在查询数据库统计信息...')
-
+export async function queryDbStats() {
   // 1. 消息总数 + 时间跨度
   const [overview] = await prisma.$queryRawUnsafe(
     `SELECT COUNT(*) as total,
@@ -64,7 +63,39 @@ export async function runDbInfoAgent(task, emit) {
      FROM message_chunks`,
   ).catch(() => [{ total: 0, earliest: null, latest: null }])
 
-  // 5. 版本信息（最新版）
+  // 5. 按年份统计消息数
+  const yearlyStats = await prisma.$queryRawUnsafe(
+    `SELECT strftime('%Y', datetime(msgTime/1000, 'unixepoch', 'localtime')) AS year, COUNT(*) as cnt
+     FROM group_messages
+     GROUP BY year
+     ORDER BY year ASC`,
+  ).catch(() => [])
+
+  // 6. 按年份的话题分布（从 message_chunks 提取）
+  const yearlyChunks = await prisma.$queryRawUnsafe(
+    `SELECT substr(chunkDate, 1, 4) AS year, COUNT(*) as cnt,
+            GROUP_CONCAT(DISTINCT substr(keywords, 1, 200)) as sample
+     FROM message_chunks
+     GROUP BY year
+     ORDER BY year ASC`,
+  ).catch(() => [])
+
+  // bigint -> Number 序列化（SQLite COUNT 可能返回 bigint）
+  return JSON.parse(JSON.stringify(
+    { overview, speakerCount, topMembers, chunkStats, yearlyStats, yearlyChunks },
+    (k, v) => (typeof v === 'bigint' ? Number(v) : v),
+  ))
+}
+
+/**
+ * 执行数据库信息查询
+ */
+export async function runDbInfoAgent(task, emit) {
+  emit('db_info', 'analyzing', '正在查询数据库统计信息...')
+
+  const safe = await queryDbStats()
+
+  // 版本信息（最新版）
   let versionInfo = null
   try {
     versionInfo = await prisma.version.findFirst({
@@ -74,29 +105,6 @@ export async function runDbInfoAgent(task, emit) {
   } catch {
     // Version 表可能不存在
   }
-
-  // 6. 按年份统计消息数
-  const yearlyStats = await prisma.$queryRawUnsafe(
-    `SELECT strftime('%Y', datetime(msgTime/1000, 'unixepoch', 'localtime')) AS year, COUNT(*) as cnt
-     FROM group_messages
-     GROUP BY year
-     ORDER BY year ASC`,
-  ).catch(() => [])
-
-  // 7. 按年份的话题分布（从 message_chunks 提取）
-  const yearlyChunks = await prisma.$queryRawUnsafe(
-    `SELECT substr(chunkDate, 1, 4) AS year, COUNT(*) as cnt,
-            GROUP_CONCAT(DISTINCT substr(keywords, 1, 200)) as sample
-     FROM message_chunks
-     GROUP BY year
-     ORDER BY year ASC`,
-  ).catch(() => [])
-
-  // 格式化输出
-  const safe = JSON.parse(JSON.stringify(
-    { overview, speakerCount, topMembers, chunkStats, yearlyStats, yearlyChunks },
-    (k, v) => (typeof v === 'bigint' ? Number(v) : v),
-  ))
 
   const total = safe.overview?.total || 0
   const earliest = safe.overview?.earliest ? new Date(safe.overview.earliest).toLocaleDateString('zh-CN') : '未知'

@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-08-13（白机·移动端适配）
+- [修改] `LoginView.vue` / `RegisterView.vue` - 修复窄屏溢出：auth-card 固定 380px 改 width:100%+max-width，页面加安全内边距
+- [修改] `FeedbackView.vue` / `ChatView.vue` / `WallView.vue` - 100vh 布局改 100dvh（iOS 地址栏）+ `body.has-bottom-nav` 时让出底部导航高度（64px+安全区），反馈列表/聊天输入框/动态流不再被底栏遮住；新增移动端媒体查询（header 内边距、feedback-top 换行、filter-bar 换行）
+- [修改] `AdminView.vue` - 移动端媒体查询（成员卡纵向堆叠+操作按钮换行+邀请码区换行）；邀请码卡片硬编码 #fff/#eee/#aaa 改 --md-* token（深色模式回归）
+- [修改] `HomeView.vue` - 落地页主题开关加 iOS 安全区偏移
+- commit: 待提交 [feat](德塔): 移动端适配
+
+---
+
+## 2026-08-13（白机·门户趣味化）
+- [修改] `HomeView.vue` - 学院大门沉浸化：新增时辰问候语（登录后带昵称）；落地页主题开关悬浮按钮；彩蛋遮罩/弹窗文案 token 化（Hero 场景背景图+视差、功能卡立绘探出按院长要求删除——德塔内容仅限德塔内使用，网站不展示）
+- [修改] `MainView.vue` - 大厅动效：统计数字入场 count-up 滚动；Top5 排行加头像（/man 6 位成员照片映射，其余首字色块兜底）+ 金银铜奖牌；示例提问改打字机轮播（光标闪烁）；公告未读红点 + 铃铛轻摇（localStorage 记录已读版本）；retry 按钮硬编码色 token 化
+- [修改] `AdminView.vue` / `ProfileView.vue` - 深色模式回归：硬编码 #fff/#f5f5f5 改 --md-* token
+- commit: 待提交 [feat](德塔): 门户趣味化
+
+---
+
 ## 2026-08-10（Phase2）
 - [新增] `FeedbackView.vue` - 需求反馈独立页面（表单+列表+状态筛选+admin状态管理+AI提交标记）
 - [修改] `ChatView.vue` - sidebar 加人设选择器（4预设+自定义+localStorage）；SSE 处理 feedback_created 事件展示"已自动提交反馈"提示；warning 阶段高亮样式

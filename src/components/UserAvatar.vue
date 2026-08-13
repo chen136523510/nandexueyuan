@@ -146,7 +146,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .dropdown-item:hover {
-  background: #f5f5f5;
+  background: var(--md-bg-soft);
 }
 
 .dropdown-item.danger {
@@ -154,7 +154,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .dropdown-item.danger:hover {
-  background: #fff1f0;
+  background: rgba(201, 160, 160, 0.15);
 }
 
 /* 动画 */

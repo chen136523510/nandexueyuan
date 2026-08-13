@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AppFooter from '../components/AppFooter.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -10,10 +11,19 @@ const auth = useAuthStore()
 // 彩蛋
 const showEgg = ref(false)
 
-// 敬请期待板块
-const upcoming = [
-  { title: '群聊数据看板', desc: '聊天统计、活跃度趋势、话痨排行榜。建设中，敬请期待。', icon: '数' },
-  { title: '群友高光时刻', desc: '名场面存档，金句合集，社死瞬间永流传。建设中，敬请期待。', icon: '光' },
+// ===== 时辰问候 =====
+const hour = new Date().getHours()
+const greetingWord = hour < 5 ? '夜深了' : hour < 9 ? '早安' : hour < 12 ? '上午好' : hour < 14 ? '午安' : hour < 18 ? '下午好' : '晚上好'
+const greeting = computed(() => {
+  const who = auth.isLoggedIn && auth.user?.nickname ? `，${auth.user.nickname}，欢迎回来` : '，欢迎来到学院'
+  return greetingWord + who
+})
+
+// 学院导览（真实上线的功能，非"敬请期待"）
+const features = [
+  { title: '男德通', desc: 'AI 群聊助手。群聊里的任何事都能问：谁最活跃、几月聊了什么、某人说过什么。', icon: '通', path: '/chat', major: true },
+  { title: '师德墙', desc: '学院公告墙。看看大家都在挂什么，点赞评论走一波。', icon: '墙', path: '/wall' },
+  { title: '院长信箱', desc: '提意见、报 BUG、催更新。信件直达院长案头，亲自批阅。', icon: '箱', path: '/mailbox' },
 ]
 </script>
 
@@ -22,9 +32,15 @@ const upcoming = [
     <!-- 彩蛋：右上角露一角 -->
     <div class="easter-egg" @click="showEgg = true" title="?"></div>
 
+    <!-- 主题开关（落地页无 TopBar，独立悬浮） -->
+    <div class="landing-theme-toggle">
+      <ThemeToggle />
+    </div>
+
     <!-- Hero：左对齐，打破居中三件套 -->
     <header class="hero">
       <div class="hero-inner">
+        <p class="hero-greeting">{{ greeting }}</p>
         <h1 class="hero-title">男德学院</h1>
         <p class="hero-subtitle">修身 · 齐家 · 摸鱼 · 开摆</p>
         <div class="hero-actions">
@@ -39,19 +55,26 @@ const upcoming = [
       </div>
     </header>
 
-    <!-- 敬请期待：非对称 editorial 节奏，打破等高卡片网格 -->
-    <section class="upcoming">
-      <h2 class="section-title">即将上线</h2>
-      <div class="card-list">
-        <article v-for="(u, i) in upcoming" :key="u.title" class="upcoming-card" :class="{ 'card-major': i === 0 }">
+    <!-- 学院导览：真实功能入口，非对称卡片 -->
+    <section class="features">
+      <h2 class="section-title">学院导览</h2>
+      <div class="feature-grid">
+        <button
+          v-for="f in features"
+          :key="f.title"
+          class="feature-card"
+          :class="{ 'card-major': f.major }"
+          @click="router.push(f.path)"
+        >
           <div class="card-head">
-            <span class="card-icon">{{ u.icon }}</span>
-            <h3 class="card-title">{{ u.title }}</h3>
+            <span class="card-icon">{{ f.icon }}</span>
+            <h3 class="card-title">{{ f.title }}</h3>
           </div>
-          <p class="card-desc">{{ u.desc }}</p>
-          <span class="card-badge">敬请期待</span>
-        </article>
+          <p class="card-desc">{{ f.desc }}</p>
+          <span class="card-arrow" aria-hidden="true">→</span>
+        </button>
       </div>
+      <p class="feature-note">未登录也能逛，功能页会引导你先登录。</p>
     </section>
 
     <AppFooter />
@@ -98,6 +121,14 @@ const upcoming = [
   opacity: 1;
 }
 
+/* 落地页主题开关悬浮位（无 TopBar 时仍可切换晚自习模式） */
+.landing-theme-toggle {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: var(--md-z-elevated);
+}
+
 /* Hero — 左对齐，打破居中三件套；莫兰迪渐变 token 化 */
 .hero {
   background:
@@ -111,6 +142,14 @@ const upcoming = [
 .hero-inner {
   max-width: 640px;
   margin: 0 auto;
+}
+
+.hero-greeting {
+  font-family: var(--md-font-display);
+  font-size: 1rem;
+  letter-spacing: 0.14em;
+  color: var(--md-primary-hover);
+  margin: 0 0 1rem;
 }
 
 .hero-title {
@@ -167,8 +206,8 @@ const upcoming = [
   border-color: var(--md-primary-hover);
 }
 
-/* 敬请期待：与 hero 拉开节奏差（一紧一松） */
-.upcoming {
+/* 学院导览：与 hero 拉开节奏差（一紧一松） */
+.features {
   flex: 1;
   padding: 5rem 2rem 6rem;
   background: var(--md-bg);
@@ -181,39 +220,49 @@ const upcoming = [
   margin: 0 0 2.5rem;
   letter-spacing: 0.08em;
   font-weight: 600;
-  max-width: 640px;
+  max-width: 880px;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* 卡片列表：非对称 editorial 节奏，打破等高网格 */
-.card-list {
-  max-width: 640px;
+/* 卡片网格：桌面三列，首卡高亮主推 */
+.feature-grid {
+  max-width: 880px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
-.upcoming-card {
-  background: var(--md-bg-card);
+.feature-card {
+  background-color: var(--md-bg-card);
+  background-image: var(--md-paper-grain);
   border: 1px solid var(--md-border);
   border-radius: var(--md-radius-lg);
-  padding: 1.75rem 1.75rem;
+  padding: 1.75rem 1.75rem 2.75rem;
   text-align: left;
   position: relative;
+  font-family: var(--md-font-body);
+  color: var(--md-text);
+  cursor: pointer;
   box-shadow: var(--md-shadow-card);
-  transition: box-shadow 0.3s var(--md-ease-out), border-color 0.3s var(--md-ease-out);
+  transition: box-shadow 0.3s var(--md-ease-out), border-color 0.3s var(--md-ease-out), transform 0.3s var(--md-ease-out);
 }
 
-/* 第一张卡稍大，制造非对称 */
-.upcoming-card.card-major {
-  padding: 2.25rem 2rem;
+.feature-card.card-major {
+  background-image: var(--md-paper-grain), var(--md-hall-hero-bg);
+  border-color: transparent;
 }
 
-.upcoming-card:hover {
-  box-shadow: var(--md-shadow-card-hover);
+.feature-card:hover {
+  box-shadow: var(--md-shadow-card-lift);
   border-color: var(--md-primary);
+  transform: translateY(-3px) rotate(-0.4deg);
+}
+
+.feature-card:focus-visible {
+  outline: 2px solid var(--md-primary-hover);
+  outline-offset: 2px;
 }
 
 /* icon 内联到标题旁，不再独占圆形 */
@@ -258,22 +307,33 @@ const upcoming = [
   margin: 0 0 1rem;
 }
 
-.card-badge {
-  display: inline-block;
-  font-family: var(--md-font-body);
-  font-size: 0.75rem;
-  color: var(--md-primary-hover);
-  background: var(--md-primary-bg);
-  border: none;
-  padding: 0.25rem 0.8rem;
-  border-radius: var(--md-radius-sm);
+.card-arrow {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.25rem;
+  font-size: 1rem;
+  color: var(--md-text-disabled);
+  transition: color 0.2s var(--md-ease-out), transform 0.2s var(--md-ease-out);
+}
+
+.feature-card:hover .card-arrow {
+  color: var(--md-primary);
+  transform: translateX(3px);
+}
+
+.feature-note {
+  max-width: 880px;
+  margin: 1.75rem auto 0;
+  font-size: 0.85rem;
+  color: var(--md-text-disabled);
+  text-align: center;
 }
 
 /* 彩蛋弹窗 */
 .egg-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(74, 74, 74, 0.75);
+  background: var(--md-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,7 +353,7 @@ const upcoming = [
 }
 
 .egg-text {
-  color: var(--md-text-on-primary);
+  color: var(--md-text);
   font-family: var(--md-font-display);
   font-size: 1.3rem;
   margin: 1.5rem 0 1rem;
@@ -302,7 +362,7 @@ const upcoming = [
 
 .egg-close {
   background: transparent;
-  color: var(--md-text-on-primary);
+  color: var(--md-text);
   border: 1px solid var(--md-primary);
   padding: 0.5rem 1.5rem;
   border-radius: var(--md-radius);
@@ -313,6 +373,7 @@ const upcoming = [
 
 .egg-close:hover {
   background: var(--md-primary);
+  color: var(--md-text-on-primary);
 }
 
 /* 弹窗动画 */
@@ -327,6 +388,12 @@ const upcoming = [
 }
 
 /* 响应式 */
+@media (max-width: 780px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
   .easter-egg {
     width: 100px;

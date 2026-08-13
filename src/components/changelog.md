@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-08-13（白机·移动端适配）
+- [修改] `TopBar.vue` - 移动端抽屉菜单过滤德塔入口（`drawerItems`，桌面菜单不受影响）
+- [修改] `BottomNav.vue` - 移除德塔 tab（移动端隐藏德塔模块）
+- commit: 待提交 [feat](德塔): 移动端适配
+
+---
+
+## 2026-08-13（白机·门户趣味化）
+- [新增] `ThemeToggle.vue` - 主题开关（自动→晚自习深色→浅色 循环，lucide 图标，aria-label）
+- [新增] `BottomNav.vue` - 移动端底部 tab 导航（5 入口 + 安全区适配 + 激活指示条 + 上滑入场）
+- [修改] `TopBar.vue` - 接入主题开关
+- [修改] `WordCloud.vue` - hover 词条显示词频悬浮提示 + 光标反馈 + 底部提示文案（复用 wordcloud2.js hover 回调）
+- [修改] `UserAvatar.vue` / `ProfileDialog.vue` - 深色模式回归：硬编码色 token 化
+- [修改] `../App.vue` - 页面转场升级（fade→淡入+上浮缩放"推门而入"）；移动端 BottomNav 按路由挂载（/home /chat /wall /mailbox）；主题初始化 + auto 模式跨时辰刷新
+- commit: 待提交 [feat](德塔): 门户趣味化
+
+---
+
 ## 2026-08-03
 - [修改] `TopBar.vue` - 标题 display 字体化、active 态圆角背景改下划线、token 化。初版误删 space-between 导致导航挤左，已即时修复（见 BUG-51）
 - [修改] `AppFooter.vue` - 新增 Ft5 宣言行「最尊重女性之人所建」，配色 token 化

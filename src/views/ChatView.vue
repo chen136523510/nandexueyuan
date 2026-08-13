@@ -508,7 +508,14 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* iOS 地址栏收起时用动态视口 */
   background: var(--md-bg);
+}
+
+/* 移动端底部导航显示时：页面高度让出底栏，输入框不被遮住 */
+:global(body.has-bottom-nav) .chat-page {
+  height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
 }
 
 .chat-header {
@@ -1184,6 +1191,9 @@ function formatDate(date) {
     bottom: 0;
     z-index: 20;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
+  .chat-header {
+    padding: 10px 14px;
   }
 }
 </style>

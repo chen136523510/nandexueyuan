@@ -263,7 +263,7 @@ onMounted(() => {
   display: flex;
   gap: 4px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--md-border);
 }
 .tabs button {
   display: flex;
@@ -274,7 +274,7 @@ onMounted(() => {
   border: none;
   background: none;
   cursor: pointer;
-  color: #888;
+  color: var(--md-text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: all 0.2s;
@@ -296,13 +296,13 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 14px 16px;
-  background: #fff;
+  background: var(--md-bg-card);
   border-radius: 10px;
-  border: 1px solid #eee;
+  border: 1px solid var(--md-border);
   transition: border-color 0.2s;
 }
 .user-card:hover {
-  border-color: #d0d0d0;
+  border-color: var(--md-primary);
 }
 .user-card.disabled {
   opacity: 0.55;
@@ -317,7 +317,7 @@ onMounted(() => {
 }
 .user-meta {
   font-size: 12px;
-  color: #aaa;
+  color: var(--md-text-secondary);
   margin-top: 2px;
 }
 .user-tag {
@@ -328,7 +328,7 @@ onMounted(() => {
 }
 .tag-super_admin { background: #e8f5e9; color: #2e7d32; }
 .tag-admin { background: #e3f2fd; color: #1565c0; }
-.tag-member { background: #f5f5f5; color: #888; }
+.tag-member { background: var(--md-bg-soft); color: var(--md-text-secondary); }
 .tag-disabled { background: #fbe9e7; color: #c62828; }
 .tag-self { background: #fff3e0; color: #e65100; }
 
@@ -392,13 +392,15 @@ onMounted(() => {
 /* 邀请码区 */
 .code-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .code-hint {
   font-size: 12px;
-  color: #aaa;
+  color: var(--md-text-secondary);
 }
 .btn-primary {
   display: flex;
@@ -423,9 +425,9 @@ onMounted(() => {
 }
 .code-card {
   padding: 12px 16px;
-  background: #fff;
+  background: var(--md-bg-card);
   border-radius: 10px;
-  border: 1px solid #eee;
+  border: 1px solid var(--md-border);
 }
 .code-used { opacity: 0.6; }
 .code-expired { opacity: 0.5; }
@@ -438,11 +440,11 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #333;
+  color: var(--md-text);
 }
 .code-meta {
   font-size: 12px;
-  color: #aaa;
+  color: var(--md-text-secondary);
   margin-top: 4px;
   display: flex;
   gap: 4px;
@@ -457,8 +459,27 @@ onMounted(() => {
 .loading-hint, .empty-hint {
   text-align: center;
   padding: 32px;
-  color: #aaa;
+  color: var(--md-text-secondary);
   font-size: 14px;
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 16px 14px;
+  }
+  /* 成员卡：信息与操作按钮改为纵向堆叠，按钮换行 */
+  .user-card {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .user-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .code-value {
+    flex-wrap: wrap;
+  }
 }
 
 /* Toast */

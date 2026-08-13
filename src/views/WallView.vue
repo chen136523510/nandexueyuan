@@ -315,10 +315,17 @@ onMounted(() => {
 <style scoped>
 .wall-page {
   height: 100vh;
+  height: 100dvh; /* iOS 地址栏收起时用动态视口 */
   background: var(--md-bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* 移动端底部导航显示时：页面高度让出底栏 */
+:global(body.has-bottom-nav) .wall-page {
+  height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
 }
 
 /* ===== 顶部导航（已抽公共组件 TopBar.vue） ===== */

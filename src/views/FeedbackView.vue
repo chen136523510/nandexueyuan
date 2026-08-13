@@ -183,7 +183,14 @@ function formatDate(date) {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* iOS 地址栏收起时用动态视口 */
   background: var(--md-bg);
+}
+
+/* 移动端底部导航显示时：页面高度让出底栏，避免最后一封信被遮住 */
+:global(body.has-bottom-nav) .feedback-page {
+  height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
 }
 .feedback-header {
   padding: 12px 20px;
@@ -391,5 +398,26 @@ function formatDate(date) {
   font-size: 12px;
   cursor: pointer;
   outline: none;
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+  .feedback-header {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .feedback-body {
+    padding: 16px 14px;
+  }
+  /* 类型标签+来源+日期+删除按钮：窄屏换行，日期不再右挤 */
+  .feedback-top {
+    flex-wrap: wrap;
+  }
+  .feedback-date {
+    margin-left: 0;
+  }
+  .filter-bar {
+    flex-wrap: wrap;
+  }
 }
 </style>

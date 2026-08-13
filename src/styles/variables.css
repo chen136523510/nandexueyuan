@@ -1,5 +1,7 @@
 /* 设计令牌：莫兰迪风格（低饱和、柔和、松弛） */
 :root {
+  color-scheme: light;
+
   /* ===== 字体系统：display + body 配对 ===== */
   /* display: 霞鹜文楷（标题/展示），有古卷学院感 */
   --md-font-display: "LXGW WenKai", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -94,6 +96,24 @@
   --md-z-modal: 100;
   --md-z-toast: 200;
 
+  /* ===== 大厅门户 + 氛围细节扩充（A'+D 布局优化） ===== */
+
+  /* 羊皮纸纹理（SVG feTurbulence 噪点，极低透明度，克制使用） */
+  --md-paper-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='linear' slope='0.05'/></feComponentTransfer></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+
+  /* 大厅入口卡渐变底（男德通主视觉卡） */
+  --md-hall-hero-bg: linear-gradient(150deg, var(--md-primary-bg) 0%, var(--md-bg-soft) 45%, var(--md-secondary-bg) 100%);
+
+  /* TopBar 滚动变形阴影 */
+  --md-shadow-topbar: 0 2px 12px rgba(74, 74, 74, 0.07);
+
+  /* 入口卡 hover 抬起阴影 */
+  --md-shadow-card-lift: 0 8px 24px rgba(74, 74, 74, 0.1);
+
+  /* TopBar 滚动后半透明背景 + 全屏遮罩 */
+  --md-bg-card-translucent: rgba(253, 251, 247, 0.92);
+  --md-overlay: rgba(74, 74, 74, 0.4);
+
   /* ===== 向后兼容别名(旧 --qz- 指向新 --md-,平滑迁移) ===== */
   --qz-primary: var(--md-primary);
   --qz-primary-dark: var(--md-primary-hover);
@@ -136,4 +156,55 @@
   --qz-shadow-md: var(--md-shadow);
   --qz-shadow-lg: var(--md-shadow-lg);
   --qz-shadow-hover: var(--md-shadow);
+}
+
+/* ===== 深色主题（晚自习模式）：莫兰迪暗色，青灰底 + 暖米白字 =====
+ * 由 useTheme 组合式函数按 <html data-theme="dark"> 生效；
+ * 只覆写颜色类 token，间距/圆角/字号/层级不动。 */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* 背景：深夜青灰（带一点鼠尾草绿的灰） */
+  --md-bg: #26282A;
+  --md-bg-card: #2E3130;
+  --md-bg-soft: #363936;
+
+  /* 文字：暖米白，避免纯白刺眼 */
+  --md-text: #D9D6CC;
+  --md-text-secondary: #9B9B90;
+  --md-text-disabled: #6B6B62;
+
+  /* 边框/分割 */
+  --md-border: #41453F;
+  --md-divider: #3A3E39;
+
+  /* 主色在暗底上整体提亮一档，保证对比度 */
+  --md-primary-hover: #B9D3B0;
+  --md-primary-bg: #39433A;
+  --md-secondary-bg: #3A4249;
+
+  /* 主色按钮上的文字改用深底字（浅绿底深字比浅字更清晰） */
+  --md-text-on-primary: #26282A;
+
+  /* 链接 */
+  --md-link: #A8C5A0;
+  --md-link-hover: #C9DFC2;
+
+  /* Hero/大厅渐变：暗色版本 */
+  --md-hero-bg: linear-gradient(135deg, #39433A 0%, #26282A 100%);
+  --md-hero-texture: radial-gradient(circle, rgba(168, 197, 160, 0.12) 1px, transparent 1px);
+  --md-hall-hero-bg: linear-gradient(150deg, #39433A 0%, #2E3130 45%, #3A4249 100%);
+
+  /* 阴影：暗底上加深，制造层次而非浮起白光 */
+  --md-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --md-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --md-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --md-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --md-shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.45);
+  --md-shadow-topbar: 0 2px 12px rgba(0, 0, 0, 0.4);
+  --md-shadow-card-lift: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* TopBar 滚动后半透明背景 + 全屏遮罩 */
+  --md-bg-card-translucent: rgba(46, 49, 48, 0.92);
+  --md-overlay: rgba(0, 0, 0, 0.55);
 }

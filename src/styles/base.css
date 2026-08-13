@@ -12,6 +12,14 @@ body {
   font-size: var(--md-fs-base);
   line-height: 1.75;
   -webkit-font-smoothing: antialiased;
+  /* 主题切换（晚自习模式）时颜色平滑过渡 */
+  transition: background-color 0.3s var(--md-ease-out), color 0.3s var(--md-ease-out);
+}
+
+/* 移动端底部导航占位：BottomNav 显示时由 App.vue 挂到 body 上，
+ * 防止页面内容被固定底栏遮住（含 iOS 安全区） */
+body.has-bottom-nav {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
 button {
@@ -26,4 +34,16 @@ a {
 
 a:hover {
   color: var(--md-link-hover);
+}
+
+/* 无障碍：用户偏好减少动效时，全站 CSS 动效收敛为瞬时切换 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
