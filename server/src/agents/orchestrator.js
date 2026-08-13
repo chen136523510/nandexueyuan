@@ -257,6 +257,7 @@ function matchQuickPattern(question) {
     /聊天记录跨度|跨度有.*长|跨度多长|多少条消息|多少条聊天|总.*消息|数据库.*统计/,
     /群聊统计|群聊.*数据|发言.*排行|谁最活跃|最活跃/,
     /当前版本|最新版本|网站版本|版本信息/,
+    /多少信息|知道多少|了解多少|有哪些信息|什么信息/,
   ]
   for (const pat of dbInfoPatterns) {
     if (pat.test(q)) {
@@ -512,7 +513,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
   // - 只有问题包含群聊/数据相关信号词时，才 fallback 到 topic_search
   // - 否则走闲聊（system prompt 里的网站信息/世界知识足够回答）
   if (planningFailed || tasks.length === 0) {
-    const dataSignals = /群里|群聊|聊天|发言|消息|谁|讨论|聊过|活跃|统计|数据/
+    const dataSignals = /群里|群聊|聊天|发言|消息|谁|讨论|聊过|活跃|统计|数据|信息/
     if (dataSignals.test(question)) {
       console.log('[Orchestrator] 规划无任务，fallback 到 topic_search:', question)
       const fallbackTasks = [{ type: 'topic_search', keywords: question }]
