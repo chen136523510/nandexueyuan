@@ -16,6 +16,7 @@ import { runPersonStatAgent } from './personStatAgent.js'
 import { runPersonMessagesAgent } from './personMessagesAgent.js'
 import { runMentionedAgent } from './mentionedAgent.js'
 import { runTopicSearchAgent } from './topicSearchAgent.js'
+import { runTimeSearchAgent } from './timeSearchAgent.js'
 import { runWorldbookAgent } from './worldbookAgent.js'
 import { runDbInfoAgent } from './dbInfoAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
@@ -40,8 +41,9 @@ function buildPlannerPrompt(question, history, persona) {
 2. person_messages - 查某人自己说过的话（每条带前后各5条上下文）。target 填人名。
 3. mentioned - 查别人提到某人的消息（每条带前后各5条上下文）。target 填人名。
 4. topic_search - 按关键词搜话题（FTS5全文检索）。keywords 填搜索词。
-5. worldbook - 读取德塔世界观设定集全文。当问题涉及德塔、世界观、角色设定、虚空、势力、历史等设定时使用。
-6. db_info - 查询数据库本身的统计信息（消息总数、时间跨度、参与人数、发言排行、版本信息）。当问题涉及"数据库""多少条消息""时间跨度""谁最活跃""群聊统计""版本"等关于数据本身的问题时使用。
+5. time_search - 按时间范围检索消息（按日期范围查，不是搜字符串）。startDate/endDate 填 YYYY-MM-DD，可选 keywords 填额外关键词。
+6. worldbook - 读取德塔世界观设定集全文。当问题涉及德塔、世界观、角色设定、虚空、势力、历史等设定时使用。
+7. db_info - 查询数据库本身的统计信息（消息总数、时间跨度、参与人数、发言排行、版本信息）。当问题涉及"数据库""多少条消息""时间跨度""谁最活跃""群聊统计""版本"等关于数据本身的问题时使用。
 
 【判断规则（非常重要）】
 - 只要问题涉及某个具体的人（评价/怎么样/谁/说了什么/发了多少），就必须派子 Agent 去检索
@@ -58,6 +60,8 @@ function buildPlannerPrompt(question, history, persona) {
 - "世界观/角色设定/虚空/势力" -> 派 worldbook
 - "群聊有多少条消息/跨度多长/谁最活跃/数据库统计" -> 派 db_info
 - "网站版本/最新版本" -> 派 db_info
+- "X月份聊了什么/最近三个月/去年暑假/某段时间" -> 派 time_search（把自然语言时间转成 YYYY-MM-DD 日期范围）
+- "X月份有没有聊过XX" -> 同时派 time_search（日期范围）和 topic_search（关键词）
 - 不确定是否需要检索时，倾向检索（宁可多查不要漏答）
 - 只有纯闲聊（"你好""你是谁"）才输出 []
 
@@ -69,6 +73,9 @@ function buildPlannerPrompt(question, history, persona) {
 "陈梓键发了多少条消息" -> [{"type":"person_stat","target":"陈梓键"}]
 "群里谁喷人最多" -> [{"type":"topic_search","keywords":"喷 骂 垃圾 废物"}]
 "马逸杰最近聊了什么" -> [{"type":"person_messages","target":"马逸杰"}]
+"7月份聊了什么" -> [{"type":"time_search","startDate":"2026-07-01","endDate":"2026-07-31"}]
+"去年暑假有什么瓜" -> [{"type":"time_search","startDate":"2025-07-01","endDate":"2025-08-31"}]
+"7月份有没有聊过游戏" -> [{"type":"time_search","startDate":"2026-07-01","endDate":"2026-07-31","keywords":"游戏"},{"type":"topic_search","keywords":"游戏"}]
 "你好" -> []
 
 只输出 JSON 数组，不要其他内容。`,
@@ -174,6 +181,9 @@ async function dispatchAgent(task, emit) {
         break
       case 'topic_search':
         result = { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
+        break
+      case 'time_search':
+        result = { agentType: '时间检索', ...await runTimeSearchAgent(task, emit) }
         break
       case 'worldbook':
         result = { agentType: '世界书', ...await runWorldbookAgent(task, emit) }
@@ -326,7 +336,7 @@ function parseTasks(raw) {
     if (!Array.isArray(tasks)) return []
     // 过滤无效任务
     return tasks.filter(
-      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'worldbook', 'db_info'].includes(t.type),
+      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'time_search', 'worldbook', 'db_info'].includes(t.type),
     )
   } catch {
     return []
