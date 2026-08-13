@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.3.0',
+    date: new Date('2026-08-13'),
+    summary: '首页与大厅改版，晚自习深色模式上线，手机端体验升级',
+    updates: JSON.stringify([
+      '首页和学院大厅焕新：时辰问候、数据看板、发言排行、词云都有新面貌',
+      '新增晚自习模式：晚上自动切换深色主题，也可以手动切换',
+      '发言排行升级：前三名有奖牌、头像展示、统计数字滚动更有仪式感',
+      '手机端体验大升级：底部导航、页面适配修复；德塔为桌面端体验，手机端不再显示',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      'TODO 待补充',
+    ], null, 0),
+  },
+  {
     version: 'v3.2.1',
     date: new Date('2026-08-13'),
     summary: '男德通AI进一步升级',

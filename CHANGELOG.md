@@ -4,6 +4,45 @@
 
 ---
 
+## 2026-08-13 v3.3.0 门户趣味化 + 全站主题体系 + 移动端基础设施
+
+### 概要
+
+社区站门户（落地页 + 大厅）趣味化改版，同时引入两项跨层基础设施：**全站主题体系**（新增 `src/composables/` 目录层 + `useTheme` 单例 + `:root[data-theme='dark']` token 覆写，实现晚自习深色模式）和**移动端导航体系**（全局 BottomNav 底部 tab 栏 + `body.has-bottom-nav` 占位机制 + 德塔桌面端路由守卫）。大厅接入真实群聊数据看板（`/chat/db-info` REST 端点，复用 dbInfoAgent SQL）。德塔资产（立绘/背景图）明确边界：仅限德塔内使用，社区站页面不展示。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `src/composables/useTheme.js`（新增层） | 主题单例组合式函数：auto（18:00~7:00 自动深色）/light/dark 循环，localStorage 持久化，跨时辰自动刷新 |
+| `src/styles/variables.css` | 新增 `:root[data-theme='dark']` 全量 token 覆写（青灰底+暖米白字+主色提亮+按钮深底字）；`:root` 补 `color-scheme: light` |
+| `src/components/ThemeToggle.vue`（新增） | 主题开关（自动→深色→浅色循环），接入 TopBar + 落地页 |
+| `src/components/BottomNav.vue`（新增） | 移动端底部 tab 导航（4 入口，安全区适配），App.vue 按路由+窄屏挂载 |
+| `src/App.vue` | 主题初始化 + 页面转场升级（淡入+上浮缩放）；BottomNav 全局挂载 + `body.has-bottom-nav` 占位 |
+| `src/views/HomeView.vue` / `MainView.vue` | 门户改版：时辰问候、数字滚动、Top5 头像奖牌、打字机提问、公告未读红点、词云词频提示 |
+| `src/router/index.js` | 德塔移动端守卫：窄屏（≤768px）访问 /nde 回大厅（手游/页游差距大，德塔仅桌面端） |
+| `server/src/agents/dbInfoAgent.js` + `chatController.js` + `routes/api.js` | 新增 `GET /chat/db-info` 数据看板端点（auth），复用 queryDbStats SQL |
+| `src/views/LoginView.vue` 等 8 个视图 | 移动端适配：380px 卡片溢出、100vh→100dvh+底栏让位、AdminView 堆叠、深色回归白底 token 化 |
+
+### 决策依据
+
+| 决策点 | 选择 | 理由 |
+|--------|------|------|
+| 主题方案 | `html[data-theme]` 属性 + CSS token 覆写（非 class 切换） | 存量页面全部已 token 化，一处覆写全站生效；属性选择器不污染 class 语义 |
+| 主题状态管理 | 模块级单例（`src/composables/useTheme.js`），非 Pinia | 主题是全局 UI 状态、无跨组件数据流，单例 + 组合式函数最轻 |
+| 底部导航挂载位置 | App.vue 全局按路由挂载（非 TopBar 内部） | ChatView/FeedbackView 无 TopBar，全局挂载才能覆盖 4 个主功能路由 |
+| 德塔移动端处理 | 入口隐藏（抽屉过滤+底栏移除）+ 路由守卫兜底 | 手游与页游差距大，德塔不做移动端；守卫防收藏夹/旧链接进入 |
+| 数据看板接口 | 复用 dbInfoAgent 的 queryDbStats，前端/Agent 共用 | 避免双份 SQL 漂移；字段裁剪不返回话题块样本 |
+
+### 影响评估
+
+- **影响范围**：全站页面（落地页/大厅/师德墙/男德通/院长信箱/管理后台/登录注册）视觉与移动端体验；新增深色主题全局生效
+- **不影响**：德塔视觉小说本体（未改动游戏逻辑）；后端 AI Agent 流程（仅新增只读统计端点）
+- **兼容性**：`npm run build` 通过；全动效带 `prefers-reduced-motion` 兜底；触屏设备降级（立绘探出等 hover 交互已按院长要求移除）；100dvh 带 100vh 回退
+- **边界**：德塔资产（立绘/背景/CG）仅限德塔内使用，社区站页面不展示（院长红线）
+
+---
+
 ## 2026-08-10 v3.1.0 全局自定义弹窗基础设施 + a11y 无障碍改造
 
 ### 概要
