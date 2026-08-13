@@ -101,12 +101,26 @@ export async function runTimeSearchAgent(task, emit) {
       .join('\n')
   }
 
-  // 4. 话题块摘要（全部块的 keywords+summary，每块截取前 150 字，不取原始消息）
-  const chunkSummaries = safeChunks.map((c, i) => {
-    const kw = (c.keywords || '').slice(0, 150)
-    const sm = (c.summary || '').slice(0, 100)
-    return `${i + 1}. [${c.chunkDate}] ${kw}${sm ? ' | 摘要: ' + sm : ''}`
-  }).join('\n')
+  // 4. 话题块摘要（按月聚合，每月最多取代表性话题，控制 token）
+  // 把话题块按月分组，每月提取关键词去重后拼接，避免 1466 块全塞给 LLM
+  const chunksByMonth = new Map()
+  for (const c of safeChunks) {
+    const month = (c.chunkDate || '').slice(0, 7) // YYYY-MM
+    if (!month) continue
+    if (!chunksByMonth.has(month)) chunksByMonth.set(month, [])
+    chunksByMonth.get(month).push(c)
+  }
+
+  const chunkSummaries = [...chunksByMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, monthChunks]) => {
+      // 每月取前 8 个话题块的 keywords 摘要（已按日期 ASC 排序）
+      const topics = monthChunks.slice(0, 8).map((c, i) => {
+        const kw = (c.keywords || '').slice(0, 100)
+        return `  ${i + 1}. [${c.chunkDate}] ${kw}`
+      }).join('\n')
+      return `${month}（${monthChunks.length}个话题块）：\n${topics}`
+    }).join('\n')
 
   // 5. 取少量抽样消息（每天最多 3 条，总共最多 30 条，避免爆 token）
   const sampleMessages = []
