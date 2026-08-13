@@ -5,6 +5,23 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.2.1',
+    date: new Date('2026-08-13'),
+    summary: '男德通AI进一步升级',
+    updates: JSON.stringify([
+      'AI知识库四层升级：新增世界书Agent（按需读取德塔设定集）、数据库信息Agent（直接查统计不靠LLM编）',
+      '新增时间范围检索：问"7月份聊了什么"不再搜字符串，而是按日期范围精确检索',
+      '群聊数据纯净重建：仅保留西德+东德两个群，排除私聊和其他群，数据从51万条增至53.8万条',
+      '发言排行按真人合并：同一个人的不同群昵称自动合并统计（如饶志锐+O.o合并为一条）',
+      '网站功能信息注入：AI现在知道网站有哪些功能模块',
+      'FTS5双列检索修复：话题搜索不再报语法错误',
+    ], null, 0),
+    plans: JSON.stringify([
+      '第一章后续章节剧情',
+      '向量语义检索（规划中）',
+    ], null, 0),
+  },
+  {
     version: 'v3.2.0',
     date: new Date('2026-08-10'),
     summary: '男德通AI全面升级',
