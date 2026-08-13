@@ -25,20 +25,35 @@ export async function runDbInfoAgent(task, emit) {
      FROM group_messages`,
   ).catch(() => [{ total: 0, earliest: null, latest: null }])
 
-  // 2. 参与人数（不同 nickname 数量，排除空昵称）
-  const [speakerCount] = await prisma.$queryRawUnsafe(
-    `SELECT COUNT(DISTINCT nickname) as cnt FROM group_messages WHERE nickname IS NOT NULL AND nickname != ''`,
-  ).catch(() => [{ cnt: 0 }])
+  // 2. 参与人数（查出所有 nickname 再在 JS 层用 resolveName 去重，合并同一人的不同昵称）
+  const allNicknames = await prisma.$queryRawUnsafe(
+    `SELECT DISTINCT nickname FROM group_messages WHERE nickname IS NOT NULL AND nickname != ''`,
+  ).catch(() => [])
+  const uniqueSpeakers = new Set(
+    allNicknames.map((r) => resolveName(r.nickname)),
+  )
+  const speakerCount = { cnt: uniqueSpeakers.size }
 
-  // 3. 发言最多的 Top 10 成员
-  const topMembers = await prisma.$queryRawUnsafe(
+  // 3. 发言最多的成员（查出 Top 30 再在 JS 层用 resolveName 合并同一人的不同昵称）
+  const rawMembers = await prisma.$queryRawUnsafe(
     `SELECT nickname, COUNT(*) as cnt
      FROM group_messages
      WHERE nickname IS NOT NULL AND nickname != '' AND nickname != '我'
      GROUP BY nickname
      ORDER BY cnt DESC
-     LIMIT 10`,
+     LIMIT 30`,
   ).catch(() => [])
+
+  // 合并同一人的不同昵称（resolveName 将外号/群昵称映射到真名）
+  const mergedMap = new Map()
+  for (const m of rawMembers) {
+    const realName = resolveName(m.nickname)
+    mergedMap.set(realName, (mergedMap.get(realName) || 0) + Number(m.cnt))
+  }
+  const topMembers = [...mergedMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, cnt]) => ({ nickname: name, cnt }))
 
   // 4. 分块统计
   const [chunkStats] = await prisma.$queryRawUnsafe(
