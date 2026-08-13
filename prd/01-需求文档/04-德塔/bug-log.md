@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-08-13（黑机 数据库部署后线上仍是旧数据）
+
+### BUG-63：DATABASE_URL 指向 prod.db，scp 上传 dev.db 不生效
+
+- **发现时间**：2026-08-13 12:30（黑机部署数据库后线上验证）
+- **环境**：生产环境（服务器 SQLite）
+- **现象**：scp 上传了新 dev.db（538,915 条，8/10 截止）到服务器，pm2 restart 后线上男德通返回的仍是旧数据（510,059 条，7/5 截止）
+- **根因**：服务器 `.env` 里 `DATABASE_URL=file:./prod.db`，Prisma 连的是 **prod.db** 不是 dev.db。上传了 dev.db 但 Prisma 根本没读它，一直读旧的 prod.db
+- **修复**：`cp dev.db prod.db` 覆盖 Prisma 实际读取的文件（旧 prod.db 备份为 `prod.db.bak.20260813`）
+- **文件**：无代码文件修改（部署配置问题）
+- **状态**：已修复
+- **教训**：部署数据库前必须确认 `.env` 的 `DATABASE_URL` 实际指向哪个文件，不能想当然认为是 dev.db。服务器上 dev.db 和 prod.db 是两个独立文件，Prisma 只读 DATABASE_URL 指定的那个
+
+### BUG-62：dbInfoAgent 发言排行排除 nickname='我' 导致陈梓键 11 万条丢失
+
+- **发现时间**：2026-08-13 12:00（院长反馈"陈梓键发言应该最多"）
+- **环境**：本地 + 生产环境
+- **现象**：dbInfoAgent 发言排行中陈梓键不在第一，实际第一是饶志锐 59,926 条
+- **根因**：微信导出时本人账号消息的 nickname 统一为"我"（talker=me），SQL 查询 `AND nickname != '我'` 把陈梓键的 114,629 条全部排除了
+- **修复**：去掉 `AND nickname != '我'`，`resolveName('我')` -> 陈梓键，合并后正确排第一
+- **文件**：`server/src/agents/dbInfoAgent.js`
+- **状态**：已修复
+
+---
+
 ## 2026-08-11（黑机 男德通 FTS5 检索语法错误）
 
 ### BUG-62：FTS5 双列 MATCH 语法错误（列级 OR 不支持）

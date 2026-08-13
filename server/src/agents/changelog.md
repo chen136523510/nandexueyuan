@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-08-13（黑机 v3.2.1 时间范围检索+发言排行修复）
+
+- [新增] `timeSearchAgent.js` - 时间范围检索 Agent，自然语言时间转 SQL 日期查询（`chunkDate BETWEEN ? AND ?`），支持可选关键词叠加。按日/月聚合统计 + 话题块摘要 + 每天抽样消息（防 token 爆炸）
+- [修改] `orchestrator.js` - 四处改动支持 time_search：import / planner prompt（新增类型+路由规则+示例）/ dispatchAgent switch / parseTasks 白名单
+- [修改] `dbInfoAgent.js` - 发言排行查 Top 30 后 JS 层 `resolveName` 合并同一人不同昵称；不排除 `nickname='我'`（=陈梓键 11 万条）；参与人数同样 JS 层去重
+- [修改] `orchestrator.js` - dbInfoPatterns 补 `/多少信息|知道多少/`；fallback dataSignals 加 `|信息`
+- commit: f295f88 / b89afb5 / d7229d6 / 1b826c0
+
+---
+
 ## 2026-08-11（黑机 知识库四层升级）
 
 - [新增] `worldbookAgent.js` - 世界书 Agent，按需读取设定集 v1.4 全文（3 万字），用户问到德塔/世界观/角色设定/势力/历史时触发，避免常驻上下文
