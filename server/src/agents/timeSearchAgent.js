@@ -2,8 +2,8 @@
  * 时间范围检索子 Agent
  *
  * 输入：{ startDate: "2026-07-01", endDate: "2026-07-31", keywords?: "游戏" }
- * 逻辑：按 chunkDate 日期范围查 message_chunks，可选叠加关键词 LIKE 过滤
- * 返回：该时间段内的话题块及原始消息
+ * 逻辑：按 chunkDate 日期范围查 message_chunks，返回聚合统计 + 抽样消息
+ * 返回：该时间段内的按日/按周统计 + 代表性话题块摘要
  *
  * 当用户问到"7月份聊了什么""最近三个月""去年暑假"等时间范围问题时，
  * orchestrator 会派发 time_search 任务，本 Agent 将自然语言时间转化为 SQL 日期查询。
@@ -26,7 +26,32 @@ export async function runTimeSearchAgent(task, emit) {
     return { ok: false, error: '缺少 startDate 或 endDate' }
   }
 
-  // 1. 按日期范围查分块
+  // 1. 统计该范围内消息总数（从 group_messages 直接按日期统计，不依赖分块）
+  let dailyStats = []
+  try {
+    dailyStats = await prisma.$queryRawUnsafe(
+      `SELECT strftime('%Y-%m-%d', datetime(msgTime/1000, 'unixepoch', 'localtime')) AS date,
+              COUNT(*) as cnt
+       FROM group_messages
+       WHERE msgTime >= ? AND msgTime <= ?
+       GROUP BY date
+       ORDER BY date ASC`,
+      new Date(startDate).getTime(),
+      new Date(endDate).getTime() + 86400000, // endDate 含当天全天
+    )
+  } catch (err) {
+    console.error('[TimeSearch dailyStats Error]', err.message)
+  }
+
+  const safeDaily = JSON.parse(JSON.stringify(dailyStats, (k, v) => (typeof v === 'bigint' ? Number(v) : v)))
+  const totalMessages = safeDaily.reduce((sum, d) => sum + d.cnt, 0)
+
+  if (totalMessages === 0) {
+    emit('time_search', 'done', `${startDate} ~ ${endDate} 范围内未找到消息`)
+    return { ok: true, summary: `${startDate} ~ ${endDate} 范围内未找到相关消息`, count: 0 }
+  }
+
+  // 2. 查话题块（全部，不限 30）
   let chunks = []
   try {
     let query = `SELECT id, startMsgId, endMsgId, chunkDate, keywords, summary
@@ -34,7 +59,6 @@ export async function runTimeSearchAgent(task, emit) {
                  WHERE chunkDate BETWEEN ? AND ?`
     const params = [startDate, endDate]
 
-    // 可选关键词过滤
     if (keywords && keywords.trim()) {
       const words = keywords.trim().split(/\s+/).filter((w) => w.length >= 2)
       if (words.length > 0) {
@@ -45,99 +69,91 @@ export async function runTimeSearchAgent(task, emit) {
       }
     }
 
-    query += ` ORDER BY chunkDate ASC LIMIT 30`
+    query += ` ORDER BY chunkDate ASC`
 
     chunks = await prisma.$queryRawUnsafe(query, ...params)
   } catch (err) {
-    console.error('[TimeSearch Error]', err.message)
-    emit('time_search', 'done', `检索失败: ${err.message}`)
-    return { ok: false, error: err.message }
+    console.error('[TimeSearch chunks Error]', err.message)
   }
 
-  if (!chunks || chunks.length === 0) {
-    emit('time_search', 'done', `${startDate} ~ ${endDate} 范围内未找到话题块`)
-    return { ok: true, summary: `${startDate} ~ ${endDate} 范围内未找到相关话题`, messages: [], count: 0 }
+  const safeChunks = JSON.parse(JSON.stringify(chunks, (k, v) => (typeof v === 'bigint' ? Number(v) : v)))
+
+  emit('time_search', 'searching', `共 ${totalMessages} 条消息，${safeChunks.length} 个话题块，正在生成摘要...`)
+
+  // 3. 按月/周聚合统计（大范围时压缩，小范围时按日展示）
+  const rangeMs = new Date(endDate).getTime() - new Date(startDate).getTime()
+  const rangeDays = Math.ceil(rangeMs / 86400000)
+
+  let aggregateSummary
+  if (rangeDays <= 31) {
+    // 31 天以内：按日统计
+    aggregateSummary = safeDaily.map((d) => `${d.date}：${d.cnt} 条`).join('\n')
+  } else {
+    // 超过 31 天：按月统计
+    const monthlyMap = new Map()
+    for (const d of safeDaily) {
+      const month = d.date.slice(0, 7) // YYYY-MM
+      monthlyMap.set(month, (monthlyMap.get(month) || 0) + d.cnt)
+    }
+    aggregateSummary = [...monthlyMap.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([month, cnt]) => `${month}：${cnt} 条`)
+      .join('\n')
   }
 
-  emit('time_search', 'searching', `找到 ${chunks.length} 个话题块，提取消息中...`)
+  // 4. 话题块摘要（全部块的 keywords+summary，每块截取前 150 字，不取原始消息）
+  const chunkSummaries = safeChunks.map((c, i) => {
+    const kw = (c.keywords || '').slice(0, 150)
+    const sm = (c.summary || '').slice(0, 100)
+    return `${i + 1}. [${c.chunkDate}] ${kw}${sm ? ' | 摘要: ' + sm : ''}`
+  }).join('\n')
 
-  // 2. 取完整消息（用 startMsgId/endMsgId 范围查询，避免重复）
-  const ranges = chunks.map((c) => [c.startMsgId, c.endMsgId])
-  // 合并重叠范围，减少查询次数
-  const mergedRanges = mergeRanges(ranges)
-
-  let allMessages = []
-  for (const [from, to] of mergedRanges) {
-    const msgs = await prisma.$queryRawUnsafe(
-      `SELECT id, nickname, msgTime, content
-       FROM group_messages
-       WHERE id BETWEEN ? AND ?
-       ORDER BY id ASC`,
-      from, to,
-    )
-    allMessages.push(...msgs)
+  // 5. 取少量抽样消息（每天最多 3 条，总共最多 30 条，避免爆 token）
+  const sampleMessages = []
+  const sampleByDate = new Map()
+  for (const d of safeDaily) {
+    if (d.cnt > 0) {
+      const msgs = await prisma.$queryRawUnsafe(
+        `SELECT id, nickname, msgTime, content
+         FROM group_messages
+         WHERE msgTime >= ? AND msgTime < ?
+         ORDER BY msgTime ASC
+         LIMIT 3`,
+        new Date(d.date).getTime(),
+        new Date(d.date).getTime() + 86400000,
+      )
+      const safeMsgs = JSON.parse(JSON.stringify(msgs, (k, v) => (typeof v === 'bigint' ? Number(v) : v)))
+      sampleByDate.set(d.date, safeMsgs)
+      sampleMessages.push(...safeMsgs)
+      if (sampleMessages.length >= 30) break
+    }
   }
 
-  // 3. 按日期分组统计
-  const safeMessages = JSON.parse(JSON.stringify(allMessages, (k, v) => (typeof v === 'bigint' ? Number(v) : v)))
+  const sampleText = sampleMessages.slice(0, 30).map((m) => {
+    const date = new Date(m.msgTime).toLocaleString('zh-CN')
+    return `[${date}] ${resolveName(m.nickname)}：${(m.content || '').slice(0, 80)}`
+  }).join('\n')
 
-  const byDate = new Map()
-  for (const m of safeMessages) {
-    const date = new Date(m.msgTime).toLocaleDateString('zh-CN')
-    const day = byDate.get(date) || { count: 0, messages: [] }
-    day.count++
-    if (day.messages.length < 10) day.messages.push(m)
-    byDate.set(date, day)
-  }
+  const summary = `${startDate} ~ ${endDate} 共 ${totalMessages} 条消息，${safeChunks.length} 个话题块。
 
-  const dateSummary = [...byDate.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, info]) => `${date}（${info.count}条）`)
-    .join('\n')
+消息分布（${rangeDays <= 31 ? '按日' : '按月'}）：
+${aggregateSummary}
 
-  const totalMessages = safeMessages.length
-  const topSamples = safeMessages.slice(0, 8).map((m) => ({
-    nickname: resolveName(m.nickname),
-    msgTime: m.msgTime,
-    content: (m.content || '').slice(0, 80),
-  }))
+话题块摘要（共 ${safeChunks.length} 块）：
+${chunkSummaries}
 
-  const summary = `${startDate} ~ ${endDate} 共 ${totalMessages} 条消息，${chunks.length} 个话题块：
-${dateSummary}
+抽样消息（每天最多3条，共 ${sampleMessages.length} 条）：
+${sampleText}`
 
-代表性消息：
-${topSamples.map((s, i) => `${i + 1}. [${new Date(s.msgTime).toLocaleString('zh-CN')}] ${s.nickname}：${s.content}`).join('\n')}`
-
-  emit('time_search', 'done', `时间检索完成（${startDate} ~ ${endDate}，${totalMessages} 条消息，${chunks.length} 个话题块）`, {
+  emit('time_search', 'done', `时间检索完成（${startDate} ~ ${endDate}，${totalMessages} 条消息，${safeChunks.length} 个话题块）`, {
     count: totalMessages,
-    chunkCount: chunks.length,
-    sample: topSamples,
+    chunkCount: safeChunks.length,
   })
 
   return {
     ok: true,
     summary,
     formattedText: summary,
-    messages: safeMessages,
     count: totalMessages,
   }
-}
-
-/**
- * 合并重叠的 ID 范围
- * [[1,5],[3,8],[10,15]] -> [[1,8],[10,15]]
- */
-function mergeRanges(ranges) {
-  if (ranges.length === 0) return []
-  const sorted = ranges.sort((a, b) => a[0] - b[0])
-  const merged = [sorted[0]]
-  for (let i = 1; i < sorted.length; i++) {
-    const last = merged[merged.length - 1]
-    if (sorted[i][0] <= last[1] + 1) {
-      last[1] = Math.max(last[1], sorted[i][1])
-    } else {
-      merged.push(sorted[i])
-    }
-  }
-  return merged
 }
