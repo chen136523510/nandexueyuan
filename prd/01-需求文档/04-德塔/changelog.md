@@ -6,7 +6,7 @@
 
 ### [feat] 门户趣味化（首页学院大门 + 大厅动效 + 晚自习深色主题 + 移动端底部导航）
 
-- **时间**：2026-08-13 14:17 ~ 14:58
+- **时间**：2026-08-13 14:17 ~ 15:38
 - **变更人**：陈梓键（白机）
 - **背景**：院长提出「优化网站布局，让网站更有意思」，评审四方案（A 首页沉浸 / B 大厅动效 / C 时辰氛围 / D 彩蛋体系 + 移动端适配）后选定 A+B+C+移动端全部落地。纯前端改动，全部复用 public/ 已有素材（VN 背景图/角色立绘//man 照片），无新出图、未动 API
 - **变更内容**：
@@ -15,9 +15,10 @@
   3. **C 晚自习深色主题**：variables.css 新增 `:root[data-theme='dark']` 全量 token 覆写（莫兰迪暗色系）；useTheme 组合式函数（auto 18:00~7:00 自动深色/light/dark 循环 + 持久化 + 跨时辰刷新）；ThemeToggle 接入 TopBar + 落地页；页面转场升级「推门而入」式；深色回归修复 AdminView/ProfileView/ProfileDialog/UserAvatar/MainView 硬编码白底
   4. **移动端适配**：新增 BottomNav 底部 tab 导航（首页/男德通/师德墙/信箱/德塔），App.vue 按路由 + 窄屏挂载（/home /chat /wall /mailbox，沉浸页 /nde 不显示）；`body.has-bottom-nav` 底部占位含 iOS 安全区；全动效带 reduce-motion 兜底 + 触屏降级
   5. **移动端适配深化 + 德塔移动端隐藏**：Login/Register 卡片 380px 固定宽溢出修复（width:100%+max-width）；Feedback/Chat/Wall 三个 100vh 布局改 100dvh（iOS 地址栏）+ 底部导航显示时让位 64px+安全区（最后一封信/聊天输入框/动态流不再被底栏遮住）；AdminView 移动端纵向堆叠 + 邀请码卡片白底 token 化；**德塔移动端隐藏三层**：TopBar 抽屉过滤德塔入口 / BottomNav 移除德塔 tab / 路由守卫窄屏访问 /nde 回大厅（手游与页游差距大，德塔仅桌面端体验）
-- **验证**：`npm run build` 通过 ✅；浏览器人工验证待院长过目（本会话按院长指示未开浏览器截图）
-- **文件**：`src/views/HomeView.vue`、`src/views/MainView.vue`、`src/views/AdminView.vue`、`src/views/ProfileView.vue`、`src/views/LoginView.vue`、`src/views/RegisterView.vue`、`src/views/FeedbackView.vue`、`src/views/ChatView.vue`、`src/views/WallView.vue`、`src/components/TopBar.vue`、`src/components/ThemeToggle.vue`（新增）、`src/components/BottomNav.vue`（新增）、`src/components/WordCloud.vue`、`src/components/UserAvatar.vue`、`src/components/ProfileDialog.vue`、`src/composables/useTheme.js`（新增）、`src/styles/variables.css`、`src/styles/base.css`、`src/App.vue`、`src/router/index.js`
-- **状态**：✅ 代码完成 + build 通过；⏳ 待浏览器人工验证；未发版、未部署
+- **验证**：`npm run build` 通过 ✅；生产部署 deploy.sh 9 步全通过 ✅；线上验证（HTTPS 200 / 新构建生效 / 版本公告 v3.3.0 / API+游戏服务器 PM2 online / 日志无报错）✅；浏览器人工体验待院长过目
+- **部署修复**：部署期间发现并修复 BUG-65（prod.db 缺 spaceState 列）与 BUG-66（colyseus 0.16.25 坏发布），详见 bug-log.md
+- **文件**：`src/views/HomeView.vue`、`src/views/MainView.vue`、`src/views/AdminView.vue`、`src/views/ProfileView.vue`、`src/views/LoginView.vue`、`src/views/RegisterView.vue`、`src/views/FeedbackView.vue`、`src/views/ChatView.vue`、`src/views/WallView.vue`、`src/components/TopBar.vue`、`src/components/ThemeToggle.vue`（新增）、`src/components/BottomNav.vue`（新增）、`src/components/WordCloud.vue`、`src/components/UserAvatar.vue`、`src/components/ProfileDialog.vue`、`src/composables/useTheme.js`（新增）、`src/styles/variables.css`、`src/styles/base.css`、`src/App.vue`、`src/router/index.js`、`game-server/package.json`
+- **状态**：✅ 已部署上线 v3.3.0（服务器 commit `1f1068c`，公告已灌入）
 - **关联文档**：src/views/changelog.md、src/components/changelog.md、src/styles/changelog.md、src/composables/changelog.md、src/router/changelog.md
 
 ---

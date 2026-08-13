@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-08-13（白机 v3.3.0 部署期间发现两处部署阻塞）
+
+### BUG-66：@colyseus/core@0.16.25 发布包含 workspace:^ 坏依赖，npm install 无法安装
+
+- **发现时间**：2026-08-13 15:25（白机部署 v3.3.0，deploy.sh 第 4 步失败）
+- **环境**：生产服务器（game-server npm install）
+- **现象**：`npm install` 报 `Unsupported URL Type "workspace:": workspace:^`，部署中断
+- **根因**：`@colyseus/core@0.16.25`（0.16.x 最新版）的 dependencies 里 `"@colyseus/greeting-banner": "workspace:^"`——上游 monorepo 发布事故，npm 不识别 workspace 协议。范围依赖 `0.16.x` 会把 core 解析到这个坏发布
+- **修复**：game-server/package.json 直接依赖 + `overrides` 双重锁定 `@colyseus/core: 0.16.24`（该版本依赖正常），package-lock.json 同步
+- **文件**：`game-server/package.json`、`game-server/package-lock.json`
+- **状态**：已修复 + 已部署上线
+- **教训**：子依赖的坏发布会穿透范围版本号；关键运行依赖应 pin 精确版本（AGENTS 已有 Colyseus 锁 0.16.0 记录，本次是 core 子包）
+
+### BUG-65：prod.db 缺 spaceState 列（8/13 dev.db 覆盖线上库时带丢了字段）
+
+- **发现时间**：2026-08-13 15:20（白机部署 v3.3.0，deploy.sh 第 3 步迁移失败）
+- **环境**：生产环境（服务器 SQLite prod.db）
+- **现象**：`prisma migrate deploy` 报 `database is locked`，migrate status 显示 3 个未应用迁移；PRAGMA 检查发现 prod.db 的 `game_saves` 表缺 `spaceState` 列——线上 visualNovelController 读写该列（R-035 空间机制），存档读写会报 `no such column: spaceState`
+- **根因**：① 8/13 黑机 `cp dev.db prod.db` 覆盖线上库时，dev.db 长期用 `prisma db push` 管理，其 `_prisma_migrations` 表缺 3 条迁移记录（galgame_tables / inventory / game_save_space_state），且该 dev.db 的 game_saves 表本身缺 spaceState 列，覆盖后把缺陷带到了线上；② migrate deploy 在 API 进程运行中执行，触发 SQLite `database is locked`
+- **修复**：停 API → 备份 `prod.db.bak.20260813_deploy` → `ALTER TABLE game_saves ADD COLUMN spaceState TEXT DEFAULT '{}'` → 3 个迁移逐个 `migrate resolve --applied`（表结构已实际存在，只补迁移记录，防止重复建表）
+- **文件**：无代码修改（线上数据库修复）
+- **状态**：已修复 + 已部署上线（PRAGMA 验证 12 列齐全，API 重启无报错）
+- **教训**：cp 覆盖线上库前必须核对目标库与当前 schema.prisma 的字段一致性（PRAGMA table_info 对比）；db push 管理的库 _prisma_migrations 漂移不可信，deploy.sh 的 migrate 步骤会误判，需以实际表结构为准
+
+---
+
 ## 2026-08-13（黑机 数据库部署后线上仍是旧数据）
 
 ### BUG-63：DATABASE_URL 指向 prod.db，scp 上传 dev.db 不生效
