@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>男德学院 LOGO 草案预览</title>
+<style>
+  body { font-family: 'LXGW WenKai','STKaiti','KaiTi',serif; background:#F5F2EC; margin:0; padding:40px; color:#4A4A4A; }
+  h1 { text-align:center; }
+  h2 { border-left:4px solid #A8C5A0; padding-left:12px; margin-top:48px; }
+  .row { display:flex; flex-wrap:wrap; gap:32px; align-items:flex-start; }
+  .card { background:#FDFBF7; border:1px solid #E8E4DC; border-radius:12px; padding:24px; text-align:center; }
+  .dark { background:#35483A; color:#F5F2EC; }
+  img.svg { width:256px; height:256px; display:block; }
+  .small { width:64px; height:64px; }
+  .tiny { width:32px; height:32px; }
+  .tiny2 { width:16px; height:16px; }
+  .combo img { width:560px; height:205px; }
+  .caption { margin-top:12px; font-size:14px; color:#8A8A8A; }
+  .flexend { align-items:flex-end; }
+  .mono-demo svg { width:128px; height:128px; }
+</style>
+</head>
+<body>
+<h1>男德学院 LOGO 草案预览</h1>
+<p style="text-align:center;color:#8A8A8A">方案A 徽章式（主推） / 方案B 组合标（备选） -- 2026-08-16 黑机</p>
+
+<h2>方案A：塔月徽章（完整版 badge-full）</h2>
+<div class="row">
+  <div class="card"><img class="svg" src="badge-full.svg" alt=""><div class="caption">米白底（浅背景）</div></div>
+  <div class="card dark"><img class="svg" src="badge-full.svg" alt=""><div class="caption">深墨绿底（暗背景）</div></div>
+</div>
+
+<h2>方案A-2：简化塔月标（mark-simple，favicon 用）</h2>
+<div class="row flexend">
+  <div class="card"><img class="svg" src="mark-simple.svg" alt=""><div class="caption">256px</div></div>
+  <div class="card"><img class="small svg" src="mark-simple.svg" alt=""><div class="caption">64px</div></div>
+  <div class="card"><img class="tiny svg" src="mark-simple.svg" alt=""><div class="caption">32px</div></div>
+  <div class="card"><img class="tiny2 svg" src="mark-simple.svg" alt=""><div class="caption">16px（favicon 实际尺寸）</div></div>
+</div>
+
+<h2>方案A-3：单色版（mark-mono，印刷/任意单色场景）</h2>
+<div class="row mono-demo">
+  <div class="card" style="color:#4A4A4A"><img src="mark-mono.svg" alt=""><div class="caption">墨灰</div></div>
+  <div class="card" style="color:#B8905E"><img src="mark-mono.svg" alt=""><div class="caption">暖赭金</div></div>
+  <div class="card dark" style="color:#F5F2EC"><img src="mark-mono.svg" alt=""><div class="caption">米白（暗底反转）</div></div>
+</div>
+
+<h2>方案B：组合标（combo-horizontal，导航栏/页头用）</h2>
+<div class="row combo">
+  <div class="card"><img src="combo-horizontal.svg" alt=""><div class="caption">横排版</div></div>
+</div>
+</body>
+</html>

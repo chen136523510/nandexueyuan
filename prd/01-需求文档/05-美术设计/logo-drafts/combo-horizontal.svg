@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 512" width="1400" height="512">
+  <!-- 男德学院 LOGO 方案B：组合标（图形+字标，日常导航栏横排版） -->
+  <!-- 图形部分 -->
+  <g>
+    <circle cx="256" cy="256" r="248" fill="#35483A"/>
+    <circle cx="328" cy="188" r="26" fill="#D4A574"/>
+    <circle cx="337" cy="179" r="22" fill="#35483A"/>
+    <g fill="#F5F2EC">
+      <rect x="200" y="160" width="22" height="24"/>
+      <rect x="234" y="160" width="22" height="24"/>
+      <rect x="268" y="160" width="22" height="24"/>
+      <rect x="200" y="184" width="90" height="186"/>
+    </g>
+    <path d="M 234 370 V 346 A 11 11 0 0 1 256 346 V 370 Z" fill="#35483A"/>
+    <path d="M 186 370 H 304" stroke="#F5F2EC" stroke-width="8"/>
+  </g>
+
+  <!-- 中文字标（霞鹜文楷） -->
+  <text x="580" y="290" font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="120" fill="#4A4A4A" letter-spacing="28">男德学院</text>
+
+  <!-- 院训副标 -->
+  <text x="584" y="376" font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="34" fill="#8A8A8A" letter-spacing="14">修身 · 齐家 · 摸鱼 · 开摆</text>
+</svg>

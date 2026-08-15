@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 男德学院 LOGO 方案A：塔月徽章（单色版，印刷/暗底通用） -->
+  <!-- 用法：fill 全部继承 currentColor，引用处 <svg style="color:#4A4A4A"> 或任意单色 -->
+  <circle cx="256" cy="256" r="248" fill="none" stroke="currentColor" stroke-width="4"/>
+
+  <!-- 月 -->
+  <circle cx="328" cy="188" r="26" fill="currentColor"/>
+  <circle cx="337" cy="179" r="22" fill="#FFFFFF"/>
+
+  <!-- 塔 -->
+  <g fill="currentColor">
+    <rect x="200" y="160" width="22" height="24"/>
+    <rect x="234" y="160" width="22" height="24"/>
+    <rect x="268" y="160" width="22" height="24"/>
+    <rect x="200" y="184" width="90" height="186"/>
+  </g>
+
+  <!-- 塔门 -->
+  <path d="M 234 370 V 346 A 11 11 0 0 1 256 346 V 370 Z" fill="#FFFFFF"/>
+
+  <!-- 地平线 -->
+  <path d="M 186 370 H 304" stroke="currentColor" stroke-width="8"/>
+</svg>

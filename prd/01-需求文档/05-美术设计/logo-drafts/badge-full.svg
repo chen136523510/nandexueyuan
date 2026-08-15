@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 男德学院 LOGO 方案A：塔月徽章（完整版） -->
+  <defs>
+    <path id="topArc" d="M 50 256 A 206 206 0 0 1 462 256" fill="none"/>
+    <path id="bottomArc" d="M 60 256 A 196 196 0 0 0 452 256" fill="none"/>
+  </defs>
+
+  <!-- 环形结构（暖赭金） -->
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#B8905E" stroke-width="3"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#B8905E" stroke-width="1.2"/>
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#B8905E" stroke-width="2"/>
+
+  <!-- 环排文字：上院名 / 下院训 -->
+  <text font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="30" fill="#B8905E" letter-spacing="10">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">男德学院</textPath>
+  </text>
+  <text font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="22" fill="#B8905E" letter-spacing="6">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">修身 · 齐家 · 摸鱼 · 开摆</textPath>
+  </text>
+
+  <!-- 3/9点菱形分隔饰 -->
+  <path d="M 29 256 L 36 249 L 43 256 L 36 263 Z" fill="#B8905E"/>
+  <path d="M 469 256 L 476 249 L 483 256 L 476 263 Z" fill="#B8905E"/>
+
+  <!-- 盾徽（深墨绿底，暖赭描边） -->
+  <path d="M 140 152 H 372 V 268 C 372 342 322 396 256 418 C 190 396 140 342 140 268 Z"
+        fill="#35483A" stroke="#B8905E" stroke-width="5"/>
+
+  <!-- 月（暖赭新月） -->
+  <circle cx="320" cy="194" r="20" fill="#D4A574"/>
+  <circle cx="327" cy="187" r="17" fill="#35483A"/>
+
+  <!-- 德塔加护微光（三星） -->
+  <circle cx="196" cy="212" r="4" fill="#D4A574"/>
+  <circle cx="208" cy="254" r="2.8" fill="#D4A574"/>
+  <circle cx="338" cy="240" r="2.8" fill="#D4A574"/>
+
+  <!-- 塔（米白，砖石塔身+垛口） -->
+  <g fill="#F5F2EC">
+    <rect x="216" y="176" width="14" height="20"/>
+    <rect x="238" y="176" width="14" height="20"/>
+    <rect x="260" y="176" width="14" height="20"/>
+    <rect x="282" y="176" width="14" height="20"/>
+    <rect x="216" y="196" width="80" height="156"/>
+  </g>
+
+  <!-- 塔门（拱形）与窗 -->
+  <path d="M 242 352 V 332 A 14 14 0 0 1 270 332 V 352 Z" fill="#35483A"/>
+  <rect x="228" y="228" width="12" height="16" rx="2" fill="#35483A"/>
+  <rect x="272" y="228" width="12" height="16" rx="2" fill="#35483A"/>
+  <rect x="250" y="272" width="12" height="16" rx="2" fill="#35483A"/>
+
+  <!-- 地平线与传送阵（一楼大厅） -->
+  <path d="M 206 352 H 306" stroke="#F5F2EC" stroke-width="3"/>
+  <path d="M 198 362 Q 256 394 314 362" fill="none" stroke="#D4A574" stroke-width="3.5"/>
+  <path d="M 220 366 Q 256 386 292 366" fill="none" stroke="#D4A574" stroke-width="2.2"/>
+</svg>

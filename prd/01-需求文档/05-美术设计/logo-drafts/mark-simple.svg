@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 男德学院 LOGO 方案A：塔月徽章（简化 favicon 版，16px 单焦点） -->
+  <circle cx="256" cy="256" r="248" fill="#35483A"/>
+
+  <!-- 月 -->
+  <circle cx="328" cy="188" r="26" fill="#D4A574"/>
+  <circle cx="337" cy="179" r="22" fill="#35483A"/>
+
+  <!-- 塔（米白粗笔画，16px 仍可辨） -->
+  <g fill="#F5F2EC">
+    <rect x="200" y="160" width="22" height="24"/>
+    <rect x="234" y="160" width="22" height="24"/>
+    <rect x="268" y="160" width="22" height="24"/>
+    <rect x="200" y="184" width="90" height="186"/>
+  </g>
+
+  <!-- 塔门（拱形） -->
+  <path d="M 234 370 V 346 A 11 11 0 0 1 256 346 V 370 Z" fill="#35483A"/>
+
+  <!-- 地平线 -->
+  <path d="M 186 370 H 304" stroke="#F5F2EC" stroke-width="8"/>
+</svg>
