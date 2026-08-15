@@ -394,7 +394,7 @@ async function runFeedbackFlow(question, history, send, persona) {
 
   let feedback = null
   try {
-    const raw = await chatCompletion(feedbackMessages, { temperature: 0, maxTokens: 200 })
+    const raw = await chatCompletion(feedbackMessages, { temperature: 0 })
     const cleaned = raw.replace(/```json|```/g, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
     if (match) {
@@ -437,13 +437,16 @@ async function runFeedbackFlow(question, history, send, persona) {
 
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(answerMessages, { temperature: 0.7, maxTokens: 500 })) {
+    for await (const chunk of chatCompletionStream(answerMessages, { temperature: 0.7 })) {
       send('token', { content: chunk })
       answer += chunk
     }
   } catch (err) {
     console.error('[Orchestrator] 反馈流式输出异常:', err.message)
-    if (!answer) answer = '回答时出错了，请稍后再试~'
+    if (!answer) {
+      answer = '回答时出错了，请稍后再试~'
+      send('token', { content: answer })
+    }
   }
 
   return { answer, sources: [], intent: 'feedback', feedback }
@@ -510,7 +513,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
   let rawTasks = ''
   let planningFailed = false
   try {
-    rawTasks = await chatCompletion(plannerMessages, { temperature: 0, maxTokens: 500 })
+    rawTasks = await chatCompletion(plannerMessages, { temperature: 0 })
   } catch (err) {
     console.error('[Orchestrator] 规划 LLM 异常:', err.message)
     planningFailed = true
@@ -585,7 +588,7 @@ async function runDirectChat(question, history, send, persona) {
 
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(messages, { temperature: 0.7, maxTokens: 1000 })) {
+    for await (const chunk of chatCompletionStream(messages, { temperature: 0.7 })) {
       send('token', { content: chunk })
       answer += chunk
     }
@@ -593,6 +596,7 @@ async function runDirectChat(question, history, send, persona) {
     console.error('[Orchestrator] 闲聊流式输出异常:', err.message)
     if (!answer) {
       answer = '回答时出错了，请稍后再试~'
+      send('token', { content: answer })
     }
   }
 
@@ -630,15 +634,15 @@ async function runAnalysisAndAnswer(question, history, agentResults, send, perso
   // 流式输出最终回答（加 try-catch 捕获网络中断/超时/LLM 异常）
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5, maxTokens: 2000 })) {
+    for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5 })) {
       send('token', { content: chunk })
       answer += chunk
     }
   } catch (err) {
     console.error('[Orchestrator] 流式输出异常:', err.message)
-    // 降级：发一条错误提示给前端，但返回部分答案（如果已有）
     if (!answer) {
       answer = '回答时出错了，请稍后再试~'
+      send('token', { content: answer })
     }
   }
 

@@ -282,7 +282,7 @@ export async function talkNpc(req, res, next) {
 
     let answer = ''
     try {
-      for await (const chunk of chatCompletionStream(messages, { temperature: 0.8, maxTokens: 200 })) {
+      for await (const chunk of chatCompletionStream(messages, { temperature: 0.8 })) {
         send('token', { content: chunk })
         answer += chunk
       }

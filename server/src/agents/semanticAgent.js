@@ -60,7 +60,7 @@ export async function runSemanticAgent(question, emit) {
       },
       { role: 'user', content: question },
     ]
-    keywords = (await chatCompletion(keywordMsgs, { temperature: 0, maxTokens: 50 })).trim()
+    keywords = (await chatCompletion(keywordMsgs, { temperature: 0 })).trim()
     emit('semantic', 'analyzing', `关键词：${keywords}`)
   } catch {
     console.log('[Semantic] 关键词提取失败，用原问题检索')

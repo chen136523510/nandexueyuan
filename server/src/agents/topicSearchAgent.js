@@ -36,7 +36,7 @@ async function expandSynonyms(keywords) {
 输入"喷人" -> 喷人 骂 吐槽 菜 垃圾 废物 离谱`,
       },
       { role: 'user', content: keywords },
-    ], { temperature: 0, maxTokens: 80 })
+    ], { temperature: 0 })
     return result.trim()
   } catch (err) {
     console.log('[TopicSearch] 同义词扩展失败，用原始关键词:', err.message)

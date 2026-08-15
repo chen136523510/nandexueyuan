@@ -55,7 +55,7 @@ export async function runStatisticAgent(question, emit) {
 
   let analysis = ''
   try {
-    analysis = await chatCompletion(analysisMsgs, { temperature: 0, maxTokens: 200 })
+    analysis = await chatCompletion(analysisMsgs, { temperature: 0 })
     emit('statistic', 'analyzing', analysis)
   } catch {
     analysis = question
@@ -94,7 +94,7 @@ export async function runStatisticAgent(question, emit) {
     { role: 'user', content: `问题: ${question}\n分析:\n${analysis}` },
   ]
 
-  const sqlRaw = await chatCompletion(sqlMessages, { temperature: 0, maxTokens: 500 })
+  const sqlRaw = await chatCompletion(sqlMessages, { temperature: 0 })
   const sql = sqlRaw.replace(/```sql|```/g, '').trim()
   emit('statistic', 'searching', `SQL: ${sql}`)
 
@@ -126,7 +126,7 @@ export async function runStatisticAgent(question, emit) {
       },
       { role: 'user', content: `问题: ${question}\nSQL: ${sql}\n结果: ${JSON.stringify(safeResult)}` },
     ]
-    summary = await chatCompletion(summaryMsgs, { temperature: 0, maxTokens: 150 })
+    summary = await chatCompletion(summaryMsgs, { temperature: 0 })
   } catch {
     summary = `查到 ${safeResult.length} 条结果`
   }
