@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-15（黑机 BUG-67 修复）
+
+- [修改] `timeSearchAgent.js` - 话题块摘要按月聚合（chunksByMonth），每月只取前 8 个代表性话题块、keywords 截 100 字、标题标注每月总块数。修复大范围查询 18 万字符 prompt 爆炸导致 LLM 时间错乱（BUG-67），2026 全年查询 prompt 184,082 -> 7,278 字符
+- commit: 8cc3f13
+
+---
+
 ## 2026-08-13（黑机 v3.2.1 时间范围检索+发言排行修复）
 
 - [新增] `timeSearchAgent.js` - 时间范围检索 Agent，自然语言时间转 SQL 日期查询（`chunkDate BETWEEN ? AND ?`），支持可选关键词叠加。按日/月聚合统计 + 话题块摘要 + 每天抽样消息（防 token 爆炸）
