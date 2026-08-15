@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-08-16（黑机 方案A + BUG-68 glm-5.2 适配）
+
+- [修改] `topicSearchAgent.js` - 方案A落地：新增 `sampleChunkMessages()` 块内抽样（关键词命中优先+头尾各1条定边界+顺序补齐，每块预算 `MSG_BUDGET_PER_CHUNK=10`），命中块返回 formattedText（每块摘要头+抽样消息，5 块全覆盖），替代旧版全量返回由 orchestrator `slice(0,30)` 截断的信息失真。同题对比：旧版只引用第 1 块，新版挖出多块证据完整排行。commit: 586bb0e
+- [修改] `llm.js`（utils，影响所有 Agent）- BUG-68 适配 glm-5.2 纯推理模型：删 thinking:disabled 参数（被 400 拒绝）、不再发送 max_tokens（思考消耗输出预算）、makeLlmError 按错误码识别审核（不再 400 全判 CONTENT_MODERATION）、超时 120s->180s
+- [修改] `orchestrator.js` - BUG-68：三处流式 catch 补 `send('token')` 兜底文案推前端（原来静默只写库，用户端零输出）；规划/闲聊/分析/反馈流去 maxTokens
+- [修改] `statisticAgent.js` / `semanticAgent.js` - 去 maxTokens（思考模型预算适配）
+- commit: 7f516a8 / 586bb0e
+
+---
+
 ## 2026-08-15（黑机 BUG-67 修复）
 
 - [修改] `timeSearchAgent.js` - 话题块摘要按月聚合（chunksByMonth），每月只取前 8 个代表性话题块、keywords 截 100 字、标题标注每月总块数。修复大范围查询 18 万字符 prompt 爆炸导致 LLM 时间错乱（BUG-67），2026 全年查询 prompt 184,082 -> 7,278 字符
