@@ -3,8 +3,14 @@
  *
  * 输入：{ keywords: "打球 游戏" }
  * 逻辑：同义词扩展 + FTS5 四级降级检索（分块FTS双列 -> 分块LIKE -> 消息FTS -> 消息LIKE）
- * 返回：{ ok: true, keywords, messages, sources } 或 { ok: false, error }
+ * 返回：{ ok: true, keywords, messages, formattedText, sources } 或 { ok: false, error }
+ *
+ * 命中话题块时不再全量返回块内消息：每块输出「摘要头 + 抽样消息」（关键词命中优先 + 头尾定边界），
+ * formattedText 覆盖全部命中块，避免旧版 orchestrator slice(0,30) 只覆盖第一个块的信息失真（方案A）。
  */
+
+// 每个命中话题块传给 LLM 的消息预算（条）。5 块 × 10 条 + 摘要头 ≈ 覆盖全部块且体积可控
+const MSG_BUDGET_PER_CHUNK = 10
 
 import prisma from '../lib/prisma.js'
 import { chatCompletion } from '../utils/llm.js'
@@ -42,6 +48,39 @@ async function expandSynonyms(keywords) {
     console.log('[TopicSearch] 同义词扩展失败，用原始关键词:', err.message)
     return keywords
   }
+}
+
+/**
+ * 块内消息抽样：关键词命中优先 + 头尾各1条定时间边界 + 顺序补齐
+ * 解决全量捞取后 orchestrator slice(0,30) 只覆盖第一个块的信息失真（方案A，2026-08-15 调研）
+ * @param {array} msgs 块内全部消息（按 id ASC）
+ * @param {array} keywords 检索关键词
+ * @param {number} budget 每块消息预算
+ * @returns {array} 抽样消息（保持原对话顺序）
+ */
+function sampleChunkMessages(msgs, keywords, budget) {
+  if (msgs.length <= budget) return msgs
+
+  const kw = keywords.filter((k) => k.length >= 2)
+  const scored = msgs.map((m, i) => {
+    const text = m.content || ''
+    let score = 0
+    for (const k of kw) if (text.includes(k)) score++
+    return { i, score }
+  })
+
+  const picked = new Set()
+  // 1. 关键词命中的消息优先（按命中词数排序），预留头尾 2 个名额
+  const hits = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score)
+  for (const h of hits.slice(0, budget - 2)) picked.add(h.i)
+  // 2. 头尾各 1 条，定块的时间边界
+  picked.add(0)
+  picked.add(msgs.length - 1)
+  // 3. 不足预算时顺序补齐
+  let i = 0
+  while (picked.size < budget && i < msgs.length) picked.add(i++)
+
+  return [...picked].sort((a, b) => a - b).map((idx) => msgs[idx])
 }
 
 /**
@@ -106,10 +145,11 @@ export async function runTopicSearchAgent(task, emit) {
     }
   }
 
-  // 命中分块 -> 取完整消息
+  // 命中分块 -> 块头摘要 + 块内抽样消息（每块预算 MSG_BUDGET_PER_CHUNK，不再全量捞取）
   if (chunks && chunks.length > 0) {
     emit('topic_search', 'searching', `找到 ${chunks.length} 个相关话题块，提取消息中...`)
-    let allMessages = []
+    let allMessages = [] // 全部命中块的总消息（供 count 统计）
+    const formattedBlocks = []
     for (const chunk of chunks) {
       const msgs = await prisma.$queryRawUnsafe(
         `SELECT id, nickname, msgTime, content FROM group_messages WHERE id BETWEEN ? AND ? ORDER BY id ASC`,
@@ -117,21 +157,33 @@ export async function runTopicSearchAgent(task, emit) {
         chunk.endMsgId,
       )
       allMessages.push(...msgs)
+
+      // 每块：摘要头（日期/关键词/规模）+ 抽样消息（命中优先+头尾边界）
+      const sampled = sampleChunkMessages(msgs, rawWords, MSG_BUDGET_PER_CHUNK)
+      const blockLines = sampled.map((m) => {
+        const time = new Date(m.msgTime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+        return `[${resolveName(m.nickname)} ${time}] ${(m.content || '').slice(0, 200)}`
+      })
+      formattedBlocks.push(
+        `【话题块 ${chunk.chunkDate}】关键词：${(chunk.keywords || '').slice(0, 100)}（块内共 ${msgs.length} 条，抽样 ${sampled.length} 条）\n${blockLines.join('\n')}`,
+      )
     }
 
     const safeMessages = JSON.parse(JSON.stringify(allMessages, (k, v) => (typeof v === 'bigint' ? Number(v) : v)))
+    const formattedText = formattedBlocks.join('\n\n')
     const sources = safeMessages.slice(0, 5).map((r) => ({
       nickname: resolveName(r.nickname),
       msgTime: r.msgTime,
       content: r.content,
     }))
 
-    emit('topic_search', 'done', `提取了 ${safeMessages.length} 条相关消息`, {
+    emit('topic_search', 'done', `提取了 ${safeMessages.length} 条相关消息（${chunks.length} 个话题块，每块抽样呈现）`, {
       count: safeMessages.length,
       sample: sources.map((s) => ({ nickname: s.nickname, content: (s.content || '').slice(0, 60) })),
     })
 
-    return { ok: true, keywords: rawWords.join(' '), messages: safeMessages, sources }
+    // formattedText：每块摘要+抽样，覆盖全部命中块（替代旧版全量 messages 由 orchestrator slice(0,30) 截断）
+    return { ok: true, keywords: rawWords.join(' '), messages: safeMessages, formattedText, sources }
   }
 
   // Level 3: 原始消息 FTS5
