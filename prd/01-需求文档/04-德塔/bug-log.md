@@ -4,7 +4,33 @@
 
 ---
 
-## 2026-08-15（黑机 男德通时间检索回答错乱）
+## 2026-08-15（黑机 男德通提问完全不回答）
+
+### BUG-68：火山引擎将 glm-latest 指向纯推理模型 glm-5.2，thinking:disabled 被 400 拒绝，LLM 全链路挂掉且静默无提示
+
+- **发现时间**：2026-08-15 21:55（院长线上实测反馈"提问之后完全不回答"）
+- **环境**：生产环境（男德通全部 LLM 调用）
+- **现象**：任意提问后 AI 零输出。思考过程面板显示：主 Agent「规划异常，尝试搜索」→ 话题检索用整句当关键词搜不到 →「收到 0/1 个子 Agent 的数据」后无任何回答，也无错误提示
+- **根因**（三层叠加）：
+  1. **模型变更**：火山引擎把 `glm-latest` 别名指向了新的纯推理模型 glm-5.2，该模型不支持 `thinking.type: disabled` 参数，而 `llm.js` 所有调用默认附带该参数 → 火山返回 `400 InvalidParameter: thinking.type disabled is not supported by this model`，规划/分析/回答全部 LLM 调用失败
+  2. **错误误判**：`llm.js` 把所有 HTTP 400 都当作「内容审核拦截」（CONTENT_MODERATION），真实错误码被掩盖，日志和前端都看不到 InvalidParameter 信息，排查方向被误导
+  3. **静默失败**：`orchestrator.js` 三处流式输出 catch 后只把兜底文案写入 answer 变量入库，**从未 send('token') 推给前端** → 用户看到的就是"完全不回答"
+- **修复**：
+  1. `VOLC_MODEL` 改为明确的 `glm-5.2`（latest 别名不可控）
+  2. `llm.js` 删除 thinking 参数（纯推理模型必须允许思考）、不再发送 max_tokens（思考消耗输出预算，会截断正文）、makeLlmError 按错误码识别审核（451 或 code 含 content/filter/moderation 等），不再把所有 400 误判为审核
+  3. `orchestrator.js` 三处流式 catch 补 `send('token', ...)` 把兜底文案真正发给前端
+  4. 全部调用点去掉 maxTokens 限制（规划/分析/闲聊/反馈/NPC/统计/语义/话题共 12 处）
+  5. 超时 120s → 180s（推理模型思考耗时长）
+- **文件**：`server/src/utils/llm.js`、`server/src/agents/orchestrator.js`、`server/src/agents/statisticAgent.js`、`server/src/agents/semanticAgent.js`、`server/src/agents/topicSearchAgent.js`、`server/src/controllers/chatController.js`、`server/.env`
+- **验证**：本地 + 服务器双端直调 orchestrate，话题检索（"群里谁卸载三角洲次数最多"13s 出 203 字符回答）/闲聊（6s）/db_info（5s）三路径全通
+- **状态**：已修复并部署上线（`7f516a8`）
+- **教训**：
+  1. `latest` 别名指向会变，生产配置应 pin 明确版本号（模型 ID 同理于 npm 依赖 pin 精确版本）
+  2. API 错误分类必须基于错误码而非 HTTP 状态码粗分（400 ≠ 审核）
+  3. 流式输出的 catch 分支必须保证前端收到东西（兜底文案或错误事件），静默失败最伤用户体验
+  4. 排查 LLM 问题第一步：拿线上真实请求体（model+参数）直接 curl API 复现，别只看代码推理
+
+---
 
 ### BUG-67：timeSearchAgent 话题块摘要无上限，18 万字符 prompt 爆炸导致 LLM 时间错乱
 

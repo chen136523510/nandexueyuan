@@ -4,7 +4,21 @@
 
 ---
 
-### [fix] 男德通 timeSearchAgent 话题块摘要按月聚合（BUG-67）
+### [fix] 男德通 LLM 全链路修复：glm-5.2 纯推理模型适配（BUG-68）
+
+- **时间**：2026-08-15 21:55 ~ 23:10
+- **变更人**：陈梓键（黑机）
+- **背景**：院长线上实测反馈"提问之后完全不回答"。排查确认火山引擎把 `glm-latest` 别名指向了新的纯推理模型 glm-5.2，不再支持 `thinking.type: disabled` 参数，而 llm.js 所有调用默认带该参数 -> 火山返回 400 InvalidParameter，规划/分析/回答全部 LLM 调用失败；叠加 400 被误判为内容审核、流式异常静默无提示两个缺陷，用户端表现为零输出
+- **变更内容**：
+  1. `server/.env`：VOLC_MODEL 由 `glm-latest` 改为 `glm-5.2`（latest 别名指向不可控）
+  2. `llm.js`：删除 thinking 参数（纯推理模型必须允许思考，disabled 直接 400 拒绝）；不再发送 max_tokens（思考消耗输出预算，小限额会截断正文/JSON）；新增 makeLlmError 按错误码识别审核拦截（451 或 code 含 content/filter/moderation），不再把所有 400 误判为 CONTENT_MODERATION；超时 120s -> 180s
+  3. `orchestrator.js`：三处流式输出 catch 补 `send('token')` 把兜底文案真正推给前端（原来只写库不推送，用户端零输出）
+  4. 全部调用点去掉 maxTokens（orchestrator 规划/闲聊/分析/反馈流、chatController NPC、statisticAgent、semanticAgent、topicSearchAgent 共 12 处）
+- **验证**：本地 + 服务器双端直调 orchestrate：话题检索（"群里谁卸载三角洲次数最多"13s 出 203 字符回答）/闲聊（6s）/db_info（5s）三路径全通；服务器 pm2 重启后线上生效
+- **状态**：✅ 已部署上线（`7f516a8`）
+- **关联文档**：bug-log.md BUG-68
+
+---
 
 - **时间**：2026-08-13 16:30 ~ 2026-08-15 11:50
 - **变更人**：陈梓键（黑机）
