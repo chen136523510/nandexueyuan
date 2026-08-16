@@ -2,11 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>男德学院 LOGO 草案预览</title>
+<title>男德学院 LOGO 草案预览 V3</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css">
 <style>
   body { font-family: 'LXGW WenKai','STKaiti','KaiTi',serif; background:#F5F2EC; margin:0; padding:40px; color:#4A4A4A; }
   h1 { text-align:center; }
   h2 { border-left:4px solid #A8C5A0; padding-left:12px; margin-top:48px; }
+  h2.dta { border-left-color:#B8905E; }
+  .note { color:#8A8A8A; font-size:15px; margin:4px 0 16px; }
   .row { display:flex; flex-wrap:wrap; gap:32px; align-items:flex-start; }
   .card { background:#FDFBF7; border:1px solid #E8E4DC; border-radius:12px; padding:24px; text-align:center; }
   .dark { background:#35483A; color:#F5F2EC; }
@@ -17,37 +20,38 @@
   .combo img { width:560px; height:205px; }
   .caption { margin-top:12px; font-size:14px; color:#8A8A8A; }
   .flexend { align-items:flex-end; }
-  .mono-demo svg { width:128px; height:128px; }
 </style>
 </head>
 <body>
-<h1>男德学院 LOGO 草案预览</h1>
-<p style="text-align:center;color:#8A8A8A">方案A 徽章式（主推） / 方案B 组合标（备选） -- 2026-08-16 黑机</p>
+<h1>男德学院 LOGO 草案预览 V3</h1>
+<p style="text-align:center;color:#8A8A8A">学院 LOGO = 德字圆章·心底藏鱼（德字已矢量化，无字体依赖） / 德塔塔月徽章另行立项 -- 2026-08-16 黑机</p>
 
-<h2>方案A：塔月徽章（完整版 badge-full）</h2>
+<h2>学院 LOGO：德字圆章 · 心底藏鱼（主推）</h2>
+<p class="note">创意：外人看是一枚正经的「德」字章，自家人看得到「心」里那条鱼——摸鱼之心，外人不明觉厉。暖赭印章底 + 米白德字，全取现有色系。德字 = 霞鹜文楷 v1.522 矢量路径。</p>
 <div class="row">
-  <div class="card"><img class="svg" src="badge-full.svg" alt=""><div class="caption">米白底（浅背景）</div></div>
-  <div class="card dark"><img class="svg" src="badge-full.svg" alt=""><div class="caption">深墨绿底（暗背景）</div></div>
+  <div class="card"><img class="svg" src="seal-de-full.svg" alt=""><div class="caption">完整版（环排院名，周边/海报）</div></div>
+  <div class="card"><img class="svg" src="seal-de-bare.svg" alt=""><div class="caption">基准版（群头像/关于页/favicon基准）</div></div>
+  <div class="card dark"><img class="svg" src="seal-de-bare.svg" alt=""><div class="caption">基准版于深底</div></div>
+</div>
+<div class="row flexend" style="margin-top:32px">
+  <div class="card"><img class="small svg" src="seal-de-bare.svg" alt=""><div class="caption">64px</div></div>
+  <div class="card"><img class="tiny svg" src="seal-de-bare.svg" alt=""><div class="caption">32px</div></div>
+  <div class="card"><img class="tiny2 svg" src="seal-de-bare.svg" alt=""><div class="caption">16px（favicon）</div></div>
+</div>
+<div class="row" style="margin-top:32px">
+  <div class="card" style="color:#4A4A4A"><img class="svg" src="seal-de-mono.svg" alt=""><div class="caption">单色版（currentColor）</div></div>
 </div>
 
-<h2>方案A-2：简化塔月标（mark-simple，favicon 用）</h2>
-<div class="row flexend">
-  <div class="card"><img class="svg" src="mark-simple.svg" alt=""><div class="caption">256px</div></div>
-  <div class="card"><img class="small svg" src="mark-simple.svg" alt=""><div class="caption">64px</div></div>
-  <div class="card"><img class="tiny svg" src="mark-simple.svg" alt=""><div class="caption">32px</div></div>
-  <div class="card"><img class="tiny2 svg" src="mark-simple.svg" alt=""><div class="caption">16px（favicon 实际尺寸）</div></div>
-</div>
-
-<h2>方案A-3：单色版（mark-mono，印刷/任意单色场景）</h2>
-<div class="row mono-demo">
-  <div class="card" style="color:#4A4A4A"><img src="mark-mono.svg" alt=""><div class="caption">墨灰</div></div>
-  <div class="card" style="color:#B8905E"><img src="mark-mono.svg" alt=""><div class="caption">暖赭金</div></div>
-  <div class="card dark" style="color:#F5F2EC"><img src="mark-mono.svg" alt=""><div class="caption">米白（暗底反转）</div></div>
-</div>
-
-<h2>方案B：组合标（combo-horizontal，导航栏/页头用）</h2>
+<h2>学院 LOGO 组合标（导航栏横排）</h2>
 <div class="row combo">
-  <div class="card"><img src="combo-horizontal.svg" alt=""><div class="caption">横排版</div></div>
+  <div class="card"><img src="combo2-horizontal.svg" alt=""><div class="caption">德章 + 字标 + 定位语</div></div>
+</div>
+
+<h2 class="dta">德塔（游戏）徽章——已与学院 LOGO 分离，仅存档（日后德塔立项用）</h2>
+<div class="row">
+  <div class="card"><img class="svg" src="badge-full.svg" alt=""><div class="caption">德塔徽章完整版（存档）</div></div>
+  <div class="card"><img class="svg" src="mark-simple.svg" alt=""><div class="caption">德塔简化标（存档）</div></div>
+  <div class="card"><img class="svg" src="mark-mono.svg" alt=""><div class="caption">德塔单色版（存档）</div></div>
 </div>
 </body>
 </html>
