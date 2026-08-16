@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 男德学院 LOGO 方案B：咸鱼学士帽（毕业生自画像） -->
+  <circle cx="256" cy="256" r="246" fill="#35483A"/>
+  <!-- 鱼身（微弯，躺平姿态） -->
+  <path d="M 118 300 C 170 240, 330 228, 398 286 C 402 291, 402 296, 398 301 C 336 362, 176 368, 122 312 C 117 307, 116 304, 118 300 Z" fill="#F5F2EC"/>
+  <!-- 鱼尾 -->
+  <path d="M 120 300 L 78 272 L 90 303 L 74 330 Z" fill="#F5F2EC"/>
+  <!-- 鱼鳃弧线 -->
+  <path d="M 330 258 Q 318 286, 332 314" fill="none" stroke="#35483A" stroke-width="6" stroke-linecap="round"/>
+  <!-- 闭眼微笑（躺平的惬意） -->
+  <path d="M 344 280 Q 352 274, 360 280" fill="none" stroke="#35483A" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 348 296 Q 356 302, 364 296" fill="none" stroke="#35483A" stroke-width="4" stroke-linecap="round"/>
+  <!-- 背鳍（小） -->
+  <path d="M 220 238 Q 234 214, 252 232 Q 236 236, 228 246 Z" fill="#D4A574"/>
+  <!-- 学士帽（斜戴） -->
+  <g transform="rotate(-12 300 210)">
+    <path d="M 232 214 L 306 176 L 380 214 L 306 252 Z" fill="#D4A574"/>
+    <rect x="290" y="212" width="32" height="10" rx="3" fill="#B8905E"/>
+    <path d="M 318 218 L 326 218 L 330 268 L 314 268 Z" fill="#D4A574"/>
+    <circle cx="322" cy="274" r="6" fill="#B8905E"/>
+    <!-- 流苏 -->
+    <path d="M 378 218 Q 392 240, 388 262" fill="none" stroke="#B8905E" stroke-width="4"/>
+    <circle cx="388" cy="268" r="6" fill="#D4A574"/>
+  </g>
+  <!-- 底部小星（德塔加护式微光） -->
+  <circle cx="196" cy="404" r="4" fill="#D4A574"/>
+  <circle cx="256" cy="414" r="4" fill="#D40374" opacity="0" />
+  <circle cx="256" cy="414" r="4" fill="#D4A574"/>
+  <circle cx="316" cy="404" r="4" fill="#D4A574"/>
+</svg>

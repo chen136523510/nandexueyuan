@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 男德学院 LOGO 方案D：双鱼盾徽（大学校徽戏仿，交叉咸鱼x学士帽） -->
+  <defs>
+    <path id="dArc" d="M 74 256 A 182 182 0 0 1 438 256" fill="none"/>
+    <path id="dArcB" d="M 88 256 A 168 168 0 0 0 424 256" fill="none"/>
+  </defs>
+  <circle cx="256" cy="256" r="246" fill="#FDFBF7" stroke="#B8905E" stroke-width="4"/>
+  <circle cx="256" cy="256" r="198" fill="none" stroke="#B8905E" stroke-width="1.5"/>
+  <!-- 盾 -->
+  <path d="M 150 150 H 362 V 266 C 362 338 314 388 256 408 C 198 388 150 338 150 266 Z" fill="#35483A" stroke="#B8905E" stroke-width="4"/>
+  <!-- 学士帽（盾中央，正戴） -->
+  <g>
+    <path d="M 196 226 L 256 198 L 316 226 L 256 254 Z" fill="#D4A574"/>
+    <rect x="244" y="224" width="24" height="8" rx="2" fill="#B8905E"/>
+    <path d="M 306 228 L 312 228 L 315 266 L 303 266 Z" fill="#D4A574"/>
+    <circle cx="309" cy="272" r="5" fill="#B8905E"/>
+  </g>
+  <!-- 交叉双咸鱼（盾下半，横条带） -->
+  <g fill="#F5F2EC" transform="translate(256,330)">
+    <g transform="rotate(-8)">
+      <path d="M -78 0 C -58 -14, 44 -14, 68 0 C 44 14, -58 14, -78 0 Z"/>
+      <path d="M -78 0 L -96 -10 L -90 0 L -96 10 Z"/>
+      <circle cx="52" cy="-3" r="2.5" fill="#35483A"/>
+    </g>
+    <g transform="rotate(8)">
+      <path d="M -68 0 C -48 -14, 54 -14, 78 0 C 54 14, -48 14, -68 0 Z" opacity="0"/>
+    </g>
+  </g>
+  <!-- 下弧环排（内部梗版） -->
+  <text font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="24" fill="#B8905E" letter-spacing="6">
+    <textPath href="#dArcB" startOffset="50%" text-anchor="middle">摸鱼摸鱼摸鱼</textPath>
+  </text>
+  <!-- 上弧环排院名 -->
+  <text font-family="'LXGW WenKai','STKaiti','KaiTi',serif" font-size="34" fill="#B8905E" letter-spacing="14" font-weight="bold">
+    <textPath href="#dArc" startOffset="50%" text-anchor="middle">男德学院</textPath>
+  </text>
+  <circle cx="256" cy="74" r="6" fill="#B8905E"/>
+</svg>
