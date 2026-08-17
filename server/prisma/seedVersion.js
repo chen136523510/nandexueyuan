@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.4.0',
+    date: new Date('2026-08-17'),
+    summary: '学院大厅新开「星河问」：今日运势与星座分析',
+    updates: JSON.stringify([
+      '大厅新开星河问：每天给自己抽一签，星级、宜忌、幸运色，零点自动换签',
+      '运势是认人的：每人每天的签都不一样，刷新也不会变',
+      '星座分析上线：十二星座今日指数随便看，登记生日还能点亮本命星座',
+      '签语风格本院限定：宜摸鱼、忌熬夜修仙，仅供参考，全靠自觉',
+    ], null, 0),
+    plans: JSON.stringify([
+      '抽象小剧场：把群聊名场面改编成小剧本（调研中）',
+      '第一章后续章节剧情',
+    ], null, 0),
+  },
+  {
     version: 'v3.3.0',
     date: new Date('2026-08-13'),
     summary: '首页与大厅改版，晚自习深色模式上线，手机端体验升级',
