@@ -2,9 +2,9 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * 星河问签（FortuneCard）专项测试
+ * 星河问（FortuneCard）专项测试
  *
- * 覆盖：登录 -> 大厅布局（词云 8 列 + 星河问签 4 列）-> 今日运势内容完整性
+ * 覆盖：登录 -> 大厅布局（词云 8 列 + 星河问 4 列）-> 今日运势内容完整性
  *      -> 星座分析 tab/12 宫切换/生日登记/本命标记 -> 深色主题无回归
  * 关联：src/components/FortuneCard.vue / src/utils/fortune.js
  */
@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test'
 const USER = 'chenzijian'
 const PASS = 'czj136523510'
 
-test.describe('星河问签运势模块', () => {
+test.describe('星河问运势模块', () => {
   test.beforeEach(async ({ page }) => {
     // 用 API 直接取 token 注入 localStorage，跳过前端登录表单
     const apiBase = process.env.E2E_API_BASE_URL || 'http://localhost:3000'
@@ -120,7 +120,7 @@ test.describe('星河问签运势模块', () => {
     await expect(card2.locator('.ft-zodiac-btn.mine')).toHaveCount(1)
   })
 
-  test('布局：词云 8 列 + 星河问签 4 列（桌面）；1023px 以下全宽', async ({ page }) => {
+  test('布局：词云 8 列 + 星河问 4 列（桌面）；1023px 以下全宽', async ({ page }) => {
     // 桌面：两卡同排
     const wcCol = await page.evaluate(() => getComputedStyle(document.querySelector('.wc-card')).gridColumn)
     const ftCol = await page.evaluate(() => getComputedStyle(document.querySelector('.fortune-card')).gridColumn)
@@ -135,7 +135,7 @@ test.describe('星河问签运势模块', () => {
     expect(ftColN).toContain('span 12')
   })
 
-  test('深色模式：星河问签卡片无回归（背景/文字 token 生效）', async ({ page }) => {
+  test('深色模式：星河问卡片无回归（背景/文字 token 生效）', async ({ page }) => {
     // 切到深色主题（走主题开关或直接设 data-theme）
     await page.evaluate(() => {
       localStorage.setItem('nde-theme', 'dark')
