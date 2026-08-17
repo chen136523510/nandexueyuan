@@ -65,7 +65,7 @@ function starChars(n) {
 <template>
   <section class="hall-card fortune-card">
     <div class="card-head">
-      <h3 class="card-title">观星台</h3>
+      <h3 class="card-title">星河问签</h3>
       <span class="card-sub">仅供娱乐 · 每日零点换签</span>
     </div>
 

@@ -313,7 +313,7 @@ function yearPct(cnt) {
           </div>
         </section>
 
-        <!-- 群聊高频词云 + 观星台（今日运势/星座分析） -->
+        <!-- 群聊高频词云 + 星河问签（今日运势/星座分析） -->
         <div class="hall-card wc-card">
           <WordCloud :total="stats?.overview?.total || 0" />
         </div>

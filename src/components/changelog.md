@@ -4,9 +4,9 @@
 
 ---
 
-## 2026-08-17（白机·观星台运势模块）
-- [新增] `FortuneCard.vue` - 观星台卡片（大厅第三行 4 列）：双 tab（今日运势/星座分析）。今日运势=星级+宜忌+幸运数字/色+三维运势条+签语；星座分析=12 宫图标选择器+综合指数+梗文案+生日登记（localStorage `nde-birth-md`，本命星座金色角标+「我的」badge）。全 token 化适配深色主题，含 aria-label/reduce-motion 兜底
-- commit: 待提交 [feat](门户): 观星台运势模块
+## 2026-08-17（白机·星河问签运势模块）
+- [新增] `FortuneCard.vue` - 星河问签卡片（大厅第三行 4 列）：双 tab（今日运势/星座分析）。今日运势=星级+宜忌+幸运数字/色+三维运势条+签语；星座分析=12 宫图标选择器+综合指数+梗文案+生日登记（localStorage `nde-birth-md`，本命星座金色角标+「我的」badge）。全 token 化适配深色主题，含 aria-label/reduce-motion 兜底
+- commit: 待提交 [feat](门户): 星河问签运势模块
 
 ---
 
