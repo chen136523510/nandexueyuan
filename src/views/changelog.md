@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-17（白机·观星台运势模块）
+- [修改] `MainView.vue` - 大厅第三行改版：词云卡 12 列 -> 8 列，右侧新增 `FortuneCard`（4 列，观星台运势/星座）；1023px 断点两卡转全宽
+- commit: 待提交 [feat](门户): 观星台运势模块
+
+---
+
 ## 2026-08-13（白机·移动端适配）
 - [修改] `LoginView.vue` / `RegisterView.vue` - 修复窄屏溢出：auth-card 固定 380px 改 width:100%+max-width，页面加安全内边距
 - [修改] `FeedbackView.vue` / `ChatView.vue` / `WallView.vue` - 100vh 布局改 100dvh（iOS 地址栏）+ `body.has-bottom-nav` 时让出底部导航高度（64px+安全区），反馈列表/聊天输入框/动态流不再被底栏遮住；新增移动端媒体查询（header 内边距、feedback-top 换行、filter-bar 换行）

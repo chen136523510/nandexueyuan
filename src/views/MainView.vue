@@ -8,6 +8,7 @@ import TopBar from '../components/TopBar.vue'
 import VersionHistoryDialog from '../components/VersionHistoryDialog.vue'
 import AppFooter from '../components/AppFooter.vue'
 import WordCloud from '../components/WordCloud.vue'
+import FortuneCard from '../components/FortuneCard.vue'
 import { Bell } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -312,10 +313,11 @@ function yearPct(cnt) {
           </div>
         </section>
 
-        <!-- 群聊高频词云 -->
+        <!-- 群聊高频词云 + 观星台（今日运势/星座分析） -->
         <div class="hall-card wc-card">
           <WordCloud :total="stats?.overview?.total || 0" />
         </div>
+        <FortuneCard />
       </div>
     </div>
 
@@ -364,7 +366,7 @@ function yearPct(cnt) {
 .wall-card { grid-column: span 4; }
 .mailbox-card { grid-column: span 4; }
 .ann-card { grid-column: span 4; padding: 0; overflow: hidden; }
-.wc-card { grid-column: span 12; }
+.wc-card { grid-column: span 8; }
 
 /* ===== 男德通主视觉大卡 ===== */
 .hero-card {
@@ -884,6 +886,8 @@ function yearPct(cnt) {
   .wall-card,
   .mailbox-card { grid-column: span 6; }
   .ann-card { grid-column: span 12; }
+  .wc-card,
+  .fortune-card { grid-column: span 12; }
 }
 
 @media (max-width: 639px) {
