@@ -14,13 +14,16 @@ const PASS = 'czj136523510'
 
 test.describe('星河问运势模块', () => {
   test.beforeEach(async ({ page }) => {
-    // 用 API 直接取 token 注入 localStorage，跳过前端登录表单
-    const apiBase = process.env.E2E_API_BASE_URL || 'http://localhost:3000'
-    const res = await page.request.post(apiBase + '/api/auth/login', {
-      data: { username: USER, password: PASS },
-    })
-    const token = (await res.json()).data.token
+    // 登录取 token：页面上下文内同源 fetch（page.request 走独立网络栈，会被本机代理 fake-IP 劫持超时）
     await page.goto('/login')
+    const token = await page.evaluate(async ([u, p]) => {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p }),
+      })
+      return (await res.json()).data.token
+    }, [USER, PASS])
     await page.evaluate((t) => {
       localStorage.setItem('token', t)
     }, token)
