@@ -112,10 +112,17 @@ test.describe('岁月史书·剧情编辑器', () => {
     await page.goto('/history')
     await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点')
 
-    // 工具栏按钮 testid 齐全
-    for (const id of ['btn-layout', 'btn-validate', 'btn-export']) {
+    // 工具栏按钮 testid 齐全（含全图按钮）
+    for (const id of ['btn-fitview', 'btn-layout', 'btn-validate', 'btn-export']) {
       await expect(page.getByTestId(id)).toBeVisible()
     }
+
+    // 搜索框可输入且能定位
+    const search = page.getByTestId('node-search-input')
+    await expect(search).toBeVisible()
+    await search.fill('pro_choice')
+    await search.press('Enter')
+    await expect(page.locator('[role="option"]')).toHaveCount(await page.locator('[role="option"]').count())
 
     // 校验面板关闭按钮带 aria-label（图标按钮 a11y 规范）
     await page.getByTestId('btn-validate').click()

@@ -84,6 +84,8 @@ onMounted(() => loadChapter('prologue'))
 // ===== 工具栏动作 =====
 const onAutoLayout = () => editorRef.value?.doAutoLayout()
 
+const onFitView = () => editorRef.value?.doFitView()
+
 const onValidate = () => editorRef.value?.doValidate()
 
 // 导出文案：生成 .script.js 源码并触发浏览器下载
@@ -134,6 +136,7 @@ const edgeCount = computed(() => flowEdges.value.length)
           <span class="stat" data-testid="stat-edges">{{ edgeCount }} 连线</span>
         </div>
         <div class="toolbar-right">
+          <button class="tool-btn" data-testid="btn-fitview" @click="onFitView">全图</button>
           <button class="tool-btn" data-testid="btn-layout" @click="onAutoLayout">自动布局</button>
           <button class="tool-btn" data-testid="btn-validate" @click="onValidate">校验</button>
           <button class="tool-btn primary" data-testid="btn-export" @click="onExport">导出文案</button>

@@ -11,7 +11,7 @@
  * - 校验面板展示（死链/id 重复/文案不匹配）
  */
 import { ref, computed } from 'vue'
-import { VueFlow, useVueFlow, Handle, Position, MarkerType } from '@vue-flow/core'
+import { VueFlow, useVueFlow, Handle, Position, MarkerType, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -31,7 +31,7 @@ const props = defineProps({
 
 const emit = defineEmits(['export', 'validate', 'update'])
 
-const { onConnect, addEdges, fitView, updateNode } = useVueFlow()
+const { onConnect, addEdges, fitView, updateNode, setCenter } = useVueFlow()
 
 // 节点选中状态（属性面板联动）
 const selectedId = ref(null)
@@ -111,7 +111,42 @@ const updateChoiceNext = (index, value) => {
   emit('update')
 }
 
-defineExpose({ doAutoLayout, doValidate, doExport })
+// ===== 全图适配 =====
+const doFitView = () => {
+  fitView({ padding: 0.15, duration: 300 })
+}
+
+// ===== 节点搜索定位 =====
+// 按 id 前缀/台词关键词匹配，回车或点结果 -> 画布居中到该节点并选中
+const searchKeyword = ref('')
+const searchResults = ref([])
+const searchOpen = ref(false)
+const doSearch = () => {
+  const kw = searchKeyword.value.trim().toLowerCase()
+  if (!kw) { searchResults.value = []; searchOpen.value = false; return }
+  const hits = []
+  for (const n of props.nodes) {
+    const d = n.data || {}
+    if (
+      n.id.toLowerCase().includes(kw) ||
+      (d.text && d.text.toLowerCase().includes(kw)) ||
+      (Array.isArray(d.choices) && d.choices.some(c => (c.text || '').toLowerCase().includes(kw)))
+    ) {
+      hits.push({ id: n.id, label: d.text ? `${n.id} · ${d.text.slice(0, 18)}` : n.id, x: n.position.x, y: n.position.y })
+      if (hits.length >= 12) break
+    }
+  }
+  searchResults.value = hits
+  searchOpen.value = true
+}
+const focusNode = (id, x, y) => {
+  selectedId.value = id
+  searchOpen.value = false
+  // setCenter(视口中心坐标)：节点中心 + 节点半宽（120）
+  setCenter(x + 120, y + 40, { zoom: 1.1, duration: 400 })
+}
+
+defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
 </script>
 
 <template>
@@ -132,9 +167,36 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         <Controls />
         <MiniMap />
 
+        <!-- 搜索定位（Panel 固定在画布层，不随缩放平移移动） -->
+        <Panel position="top-left" class="search-panel" data-testid="node-search">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            class="search-input"
+            placeholder="搜索节点 id / 台词 / 选项…"
+            aria-label="搜索节点"
+            data-testid="node-search-input"
+            @keyup.enter="doSearch"
+            @focus="searchKeyword && doSearch()"
+          />
+          <div v-if="searchOpen && searchResults.length" class="search-results" role="listbox" aria-label="搜索结果">
+            <button
+              v-for="r in searchResults"
+              :key="r.id"
+              class="search-item"
+              role="option"
+              :data-testid="`search-item-${r.id}`"
+              @click="focusNode(r.id, r.x, r.y)"
+            >
+              {{ r.label }}
+            </button>
+          </div>
+          <div v-else-if="searchOpen && !searchResults.length" class="search-empty">无匹配节点</div>
+        </Panel>
+
         <!-- 自定义节点渲染：每种 type 一个 slot -->
         <template #node-dialogue="props">
-          <div class="story-node" :style="{ '--node-color': ns('dialogue').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('dialogue').color }" :data-node-id="props.id" :title="props.data.text || props.id">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('dialogue').icon }}</span><span class="node-type-label">对话</span></div>
             <div class="node-body">
@@ -146,11 +208,12 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         </template>
 
         <template #node-choice="props">
-          <div class="story-node" :style="{ '--node-color': ns('choice').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('choice').color }" :data-node-id="props.id" :title="(props.data.choices || []).map((c, i) => `${i + 1}. ${c.text || ''}`).join('\n')">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('choice').icon }}</span><span class="node-type-label">选项</span></div>
             <div class="node-body">
-              <div class="node-text">{{ (props.data.choices || []).length }} 个选项</div>
+              <div v-for="(c, i) in (props.data.choices || []).slice(0, 3)" :key="i" class="choice-preview" :class="c.impact">{{ i + 1 }}. {{ (c.text || '').slice(0, 14) }}</div>
+              <div v-if="(props.data.choices || []).length > 3" class="choice-more">…共 {{ props.data.choices.length }} 项</div>
             </div>
             <!-- choice 有多个输出端口 -->
             <Handle v-for="(c, i) in (props.data.choices || [])" :key="i" type="source" :position="Position.Right" :id="`choice-${i}`" :style="{ top: `${30 + i * 20}px` }" />
@@ -158,7 +221,7 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         </template>
 
         <template #node-condition="props">
-          <div class="story-node" :style="{ '--node-color': ns('condition').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('condition').color }" :data-node-id="props.id">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('condition').icon }}</span><span class="node-type-label">条件</span></div>
             <div class="node-body">
@@ -169,7 +232,7 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         </template>
 
         <template #node-event="props">
-          <div class="story-node" :style="{ '--node-color': ns('event').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('event').color }" :data-node-id="props.id">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('event').icon }}</span><span class="node-type-label">事件</span></div>
             <div class="node-body">
@@ -180,7 +243,7 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         </template>
 
         <template #node-input="props">
-          <div class="story-node" :style="{ '--node-color': ns('input').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('input').color }" :data-node-id="props.id">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('input').icon }}</span><span class="node-type-label">输入</span></div>
             <div class="node-body">
@@ -191,7 +254,7 @@ defineExpose({ doAutoLayout, doValidate, doExport })
         </template>
 
         <template #node-end="props">
-          <div class="story-node" :style="{ '--node-color': ns('end').color }" :data-node-id="props.id">
+          <div class="story-node" :class="{ selected: selectedId === props.id }" :style="{ '--node-color': ns('end').color }" :data-node-id="props.id">
             <Handle type="target" :position="Position.Left" />
             <div class="node-head"><span class="node-icon">{{ ns('end').icon }}</span><span class="node-type-label">结束</span></div>
             <div class="node-body">
@@ -333,6 +396,103 @@ defineExpose({ doAutoLayout, doValidate, doExport })
   box-shadow: var(--md-shadow-card, 0 1px 4px rgba(0, 0, 0, 0.08));
   overflow: hidden;
   font-size: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.15s var(--md-ease-out, ease-out);
+}
+
+/* 选中态：边框加粗 + 抬升阴影 */
+.story-node.selected {
+  border-width: 3px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-color, #A8C5A0) 30%, transparent),
+    var(--md-shadow-card-lift, 0 4px 16px rgba(0, 0, 0, 0.15));
+}
+
+/* 选项预览（choice 节点卡片） */
+.choice-preview {
+  padding: 1px 0;
+  color: var(--md-text-secondary, #666);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.choice-preview.critical {
+  color: var(--md-warning, #b08040);
+  font-weight: 600;
+}
+
+.choice-more {
+  color: var(--md-text-disabled, #aaa);
+  font-size: 11px;
+}
+
+/* 搜索定位面板（Panel 组件负责定位，这里只管宽度层级） */
+.search-panel {
+  width: 280px;
+  z-index: var(--md-z-elevated, 10);
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--md-border, #ddd);
+  border-radius: var(--md-radius-full, 999px);
+  font-size: var(--md-fs-sm, 13px);
+  font-family: inherit;
+  background: var(--md-bg-card, #fff);
+  color: var(--md-text, #333);
+  box-shadow: var(--md-shadow-card, 0 1px 4px rgba(0, 0, 0, 0.08));
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--md-primary, #A8C5A0);
+  box-shadow: 0 0 0 3px rgba(168, 197, 160, 0.25);
+}
+
+.search-results {
+  margin-top: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--md-bg-card, #fff);
+  border: 1px solid var(--md-border, #ddd);
+  border-radius: var(--md-radius, 8px);
+  box-shadow: var(--md-shadow-card-lift, 0 4px 16px rgba(0, 0, 0, 0.12));
+  padding: 4px;
+}
+
+.search-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--md-radius-sm, 4px);
+  font-size: var(--md-fs-xs, 12px);
+  color: var(--md-text, #333);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-item:hover {
+  background: var(--md-primary-bg, #f0f4ee);
+  color: var(--md-primary, #7a9a72);
+}
+
+.search-empty {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: var(--md-bg-card, #fff);
+  border: 1px solid var(--md-border, #ddd);
+  border-radius: var(--md-radius, 8px);
+  font-size: var(--md-fs-xs, 12px);
+  color: var(--md-text-disabled, #aaa);
+  text-align: center;
 }
 
 .node-head {
