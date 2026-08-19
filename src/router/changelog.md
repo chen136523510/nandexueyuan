@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-19（白机·岁月史书权限限制）
+- [修改] `index.js` - `/history` 路由 meta 加 `requiresAdmin: true`（与 `/admin` 同级），非管理员访问被守卫重定向回首页
+- commit: `186715c` [fix](岁月史书): /history路由+TopBar菜单限管理员可见
+
+---
+
 ## 2026-08-13（白机·移动端适配）
 - [修改] `index.js` - beforeEach 新增德塔移动端守卫：窄屏（≤768px）访问 /nde 直接回大厅（德塔为桌面端体验，移动端隐藏）
 - commit: 待提交 [feat](德塔): 移动端适配

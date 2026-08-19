@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-08-19（白机·权限限制+部署修复）
+
+### [fix] 岁月史书模块限管理员可见 + 学院数据部署修复（BUG-70）
+
+- [修改] `src/router/index.js` - `/history` 路由 meta 加 `requiresAdmin: true`，非管理员访问被路由守卫重定向回首页
+- [修改] `src/components/TopBar.vue` - 岁月史书与男通讯录统一迁入 `adminItems` 管理员专属菜单（桌面端+移动端抽屉均 `v-if="isAdmin"`），普通成员看不到入口
+- [部署] `module_visits` 表建到 prod.db（BUG-70：文档误标 dev.db 致 API 500），详见 bug-log BUG-70
+- 验证：管理员 me=super_admin / 普通成员 me=member / 埋点 API visitId:7 HTTP 200 / deploy.sh 9 步全绿
+- commit: `186715c` + `7900b5d`
+
+---
+
 ## 2026-08-19（白机·学院数据功能落地）
 
 ### [feat] 学院数据：模块使用频率 + 停留时间（R-043 首个功能）

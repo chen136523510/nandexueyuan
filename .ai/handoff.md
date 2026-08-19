@@ -96,6 +96,30 @@
 
 ---
 
+## 白机本轮产出（2026-08-19 15:50）
+
+### 岁月史书模块限管理员可见 + 部署上线
+
+> 院长要求岁月史书模块仅限管理员可见。排查发现此前 `/history` 路由只有 `requiresAuth`（登录即可见），TopBar 菜单对所有用户无条件展示。普通成员既看得到入口也能直接访问。
+
+#### 修复
+
+- **路由守卫**（`src/router/index.js`）：`/history` 路由 meta 加 `requiresAdmin: true`（与 `/admin` 同级），非管理员访问被守卫重定向回首页
+- **TopBar 菜单**（`src/components/TopBar.vue`）：岁月史书与男通讯录统一迁入 `adminItems` 管理员专属菜单数组，桌面端和移动端抽屉均用 `v-if="isAdmin"` 控制显示；普通成员看不到入口
+
+#### 部署上线（deploy.sh 9 步全绿）
+
+- 服务器 `git pull`（`1612715` -> `186715c`）+ `bash deploy.sh` 全流程通过
+- 线上验证：管理员 me=super_admin / 普通成员 me=member / 埋点 API visitId:7 HTTP 200 / HTTPS 200
+
+#### 文档同步
+
+- `src/router/changelog.md`：新增 /history requiresAdmin 记录
+- `src/components/changelog.md`：新增 TopBar adminItems 管理员专属菜单记录
+- `src/history/changelog.md`：新增权限限制+BUG-70 部署修复汇总记录
+
+---
+
 ## 白机本轮产出（2026-08-19 10:40）
 
 ### 可视化剧情编辑器选型调研（R-034，⛰️ uphill 方案呈院长裁决）+ R-040 定位修正 + 岁月史书模块立项
