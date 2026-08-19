@@ -173,6 +173,20 @@ package.json version（不带 v） = 数据库最新 Version.version（带 v） 
 
 **必须等用户确认后**才能执行 git commit + push。遵循部署纪律：**不自动部署**，只提交代码。
 
+#### Step 7: 部署前置检查（用户指示部署时的第一步，强制）
+
+用户明确指示部署后，**执行任何 `ssh`/`scp`/`rsync` 前**必须先完成文档检索（禁止凭记忆使用 IP/密码/路径）：
+
+1. 读 `docs/account-passwords.md`：取服务器 IP、部署目录、密钥路径（⚠️ 历史事故：2026-08-17 凭记忆误用 `47.96.158.95`，密钥被误判丢失排查许久，正确 IP `47.96.158.104` 一直在文档里）
+2. 读 `.ai/handoff.md` 头部：网络环境（SSH 超时史/代理通道）与最新部署状态
+3. 冲突处理：文档与记忆冲突以文档为准；文档间冲突停止并向用户确认，禁止自行裁决
+
+标准部署流程（文档核对后执行）：
+```bash
+# IP/目录以 docs/account-passwords.md 为准，不是记忆值
+ssh root@<文档中的IP> "cd <文档中的部署目录> && git stash && git pull origin master && bash deploy.sh"
+```
+
 ---
 
 ## 边界约束

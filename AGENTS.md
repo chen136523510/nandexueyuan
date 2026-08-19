@@ -64,6 +64,17 @@ cd game-server && node src/index.js  # 游戏服务器 → localhost:2567
 - **严禁**自行执行 `scp`、`rsync`、`systemctl restart`、`pm2 restart`、`ssh ... deploy.sh` 等命令
 - 用户要求部署时，先确认目标环境，确认后再执行
 
+### 动手前必查文档（强制，禁止凭记忆）
+
+**凡涉及服务器地址、SSH 账号/密钥、数据库连接串、环境变量路径等部署相关操作，动手前必须先检索 `docs/` 目录与 `.ai/handoff.md`，以文档记录为准，禁止凭记忆使用 IP/密码/路径。**
+
+铁律来源：2026-08-17 v3.4.0 部署时凭记忆连错服务器 IP（误用 `47.96.158.95`），SSH 报 `Permission denied` 被误判为密钥丢失排查许久--实际 `~/.ssh/id_rsa` 密钥有效，纯 IP 错误（正确 IP `47.96.158.104`，记录在 `docs/account-passwords.md`）。教训：凭记忆操作生产资源 = 高概率出错且排查方向被误导，必须固化为流程。
+
+**「查询部署文档」是发版/部署流程的第一步强制动作**，在执行任何 `ssh`/`scp`/`rsync` 之前完成：
+1. 读 `docs/account-passwords.md` 取服务器 IP/部署目录/密钥路径
+2. 读 `.ai/handoff.md` 头部「网络环境」与最新部署状态记录
+3. 若文档与记忆冲突，**以文档为准**；若文档间冲突（如 handoff 记录与 docs/account-passwords.md 不一致），停止并向用户确认，禁止自行裁决
+
 部署参考：`bash deploy.sh`（构建前端 + 重启 Express 和 game-server PM2 进程）。
 
 ## 文档与 Changelog 纪律（强制）
