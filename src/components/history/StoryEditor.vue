@@ -57,6 +57,10 @@ const typeStyle = {
 }
 const ns = (type) => typeStyle[type] || { color: '#999', label: type, icon: '?' }
 
+// 多分支边色板（与 converter.js 同步，Handle/边/序号三处一致）
+const EDGE_COLORS = ['#5B8DB8', '#C98B5E', '#8B7BC7', '#5EA89B', '#C75E7B', '#8FA35E']
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
+
 // 节点显示文案（画布上每个节点卡片只显示概要，完整编辑在右侧面板）
 const nodeSummary = (data) => {
   if (!data) return ''
@@ -65,6 +69,35 @@ const nodeSummary = (data) => {
   if (Array.isArray(data.branches)) return `${data.branches.length} 个分支`
   if (data.unlockChapter) return `-> 跳转章节: ${data.unlockChapter}`
   return data.type || ''
+}
+
+// {playerName} 等插值占位符拆段渲染：{xxx} 显示为徽章（裸文本看着困惑——它是运行时替换的变量）
+const splitVars = (text) => {
+  if (!text) return []
+  const parts = []
+  const re = /\{(\w+)\}/g
+  let last = 0
+  let m
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push({ isVar: false, text: text.slice(last, m.index) })
+    parts.push({ isVar: true, text: m[1] })
+    last = m.index + m[0].length
+  }
+  if (last < text.length) parts.push({ isVar: false, text: text.slice(last) })
+  return parts
+}
+
+// 下一节点下拉选项：全部节点 id + 摘要（比手填 id 防错）
+const nodeOptions = computed(() =>
+  props.nodes.map(n => {
+    const d = n.data || {}
+    const brief = d.text ? d.text.slice(0, 14) : (Array.isArray(d.choices) ? `${d.choices.length}选项` : d.type || '')
+    return { id: n.id, brief }
+  })
+)
+const nodeBrief = (id) => {
+  const o = nodeOptions.value.find(n => n.id === id)
+  return o ? `${o.id} · ${o.brief}` : `${id}（不存在）`
 }
 
 // 自动布局。⚠️ 不能直接 mutate props.nodes[i].position——:nodes 非受控模式下
@@ -201,7 +234,7 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
             <div class="node-head"><span class="node-icon">{{ ns('dialogue').icon }}</span><span class="node-type-label">对话</span></div>
             <div class="node-body">
               <div v-if="props.data.speaker" class="node-speaker">{{ props.data.speaker }}</div>
-              <div class="node-text">{{ nodeSummary(props.data) }}</div>
+              <div class="node-text"><template v-for="(seg, si) in splitVars(nodeSummary(props.data))" :key="si"><span v-if="seg.isVar" class="var-badge">{{ seg.text }}</span><template v-else>{{ seg.text }}</template></template></div>
             </div>
             <Handle type="source" :position="Position.Right" />
           </div>
@@ -215,8 +248,8 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
               <div v-for="(c, i) in (props.data.choices || []).slice(0, 3)" :key="i" class="choice-preview" :class="c.impact">{{ i + 1 }}. {{ (c.text || '').slice(0, 14) }}</div>
               <div v-if="(props.data.choices || []).length > 3" class="choice-more">…共 {{ props.data.choices.length }} 项</div>
             </div>
-            <!-- choice 有多个输出端口 -->
-            <Handle v-for="(c, i) in (props.data.choices || [])" :key="i" type="source" :position="Position.Right" :id="`choice-${i}`" :style="{ top: `${30 + i * 20}px` }" />
+            <!-- choice 有多个输出端口：垂直拉距，与边序号颜色对应 -->
+            <Handle v-for="(c, i) in (props.data.choices || [])" :key="i" type="source" :position="Position.Right" :id="`choice-${i}`" :style="{ top: `${28 + i * 18}px`, background: EDGE_COLORS[i % EDGE_COLORS.length] }" />
           </div>
         </template>
 
@@ -227,7 +260,7 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
             <div class="node-body">
               <div class="node-text">{{ (props.data.branches || []).length }} 个分支</div>
             </div>
-            <Handle v-for="(b, i) in (props.data.branches || [])" :key="i" type="source" :position="Position.Right" :id="`branch-${i}`" :style="{ top: `${30 + i * 20}px` }" />
+            <Handle v-for="(b, i) in (props.data.branches || [])" :key="i" type="source" :position="Position.Right" :id="`branch-${i}`" :style="{ top: `${28 + i * 18}px`, background: EDGE_COLORS[i % EDGE_COLORS.length] }" />
           </div>
         </template>
 
@@ -284,10 +317,14 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
           <label class="field">
             <span>台词</span>
             <textarea v-model="selectedNode.data.text" class="field-textarea" rows="4" data-testid="prop-text" @change="emit('update')"></textarea>
+            <span v-if="selectedNode.data.text && selectedNode.data.text.includes('{')" class="hint-text">含 {变量} 占位符（运行时替换为玩家名等，画布显示为徽章）</span>
           </label>
           <label class="field">
             <span>下一节点</span>
-            <input v-model="selectedNode.data.next" type="text" class="field-input" data-testid="prop-next" @change="emit('update')" />
+            <select v-model="selectedNode.data.next" class="field-select" data-testid="prop-next" @change="emit('update')">
+              <option value="">（无跳转/章节结束）</option>
+              <option v-for="o in nodeOptions" :key="o.id" :value="o.id">{{ o.id }} · {{ o.brief }}</option>
+            </select>
           </label>
           <div v-if="selectedNode.data.background" class="field-readonly">
             <span>背景</span><code>{{ selectedNode.data.background }}</code>
@@ -298,7 +335,10 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
         <div v-else-if="selectedNode.type === 'choice'" class="props-body">
           <div v-if="!Array.isArray(selectedNode.data.choices)" class="empty-hint">无选项</div>
           <div v-for="(c, i) in (selectedNode.data.choices || [])" :key="i" class="choice-item">
-            <div class="choice-head">选项 {{ i + 1 }}</div>
+            <div class="choice-head">
+              <span class="choice-idx" :style="{ background: EDGE_COLORS[i % EDGE_COLORS.length] }">{{ CIRCLED[i] || i + 1 }}</span>
+              选项 {{ i + 1 }}
+            </div>
             <input :value="c.text" type="text" class="field-input" :data-testid="`choice-text-${i}`" placeholder="选项文案" @input="updateChoiceText(i, $event.target.value)" />
             <select :value="c.impact" class="field-select" :data-testid="`choice-impact-${i}`" @change="updateChoiceImpact(i, $event.target.value)">
               <option value="critical">critical（标黄·推进剧情）</option>
@@ -306,7 +346,10 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
             </select>
             <label class="field-inline">
               <span>跳转</span>
-              <input :value="c.next" type="text" class="field-input" :data-testid="`choice-next-${i}`" placeholder="目标节点 id" @input="updateChoiceNext(i, $event.target.value)" />
+              <select :value="c.next" class="field-select" :data-testid="`choice-next-${i}`" @change="updateChoiceNext(i, $event.target.value)">
+                <option value="">（无跳转）</option>
+                <option v-for="o in nodeOptions" :key="o.id" :value="o.id">{{ o.id }} · {{ o.brief }}</option>
+              </select>
             </label>
             <div v-if="c.effects" class="field-readonly">
               <span>效果</span><code>{{ JSON.stringify(c.effects) }}</code>
@@ -525,6 +568,40 @@ defineExpose({ doAutoLayout, doValidate, doExport, doFitView, focusNode })
   color: var(--md-text-secondary, #666);
   line-height: 1.3;
   word-break: break-all;
+}
+
+/* {playerName} 等插值变量徽章：裸文本困惑，徽章一眼可辨 */
+.var-badge {
+  display: inline-block;
+  padding: 0 4px;
+  margin: 0 1px;
+  border-radius: var(--md-radius-sm, 4px);
+  background: color-mix(in srgb, var(--md-secondary, #7A9EC8) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--md-secondary, #7A9EC8) 45%, transparent);
+  color: var(--md-secondary, #5B7EA8);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  vertical-align: baseline;
+}
+
+.hint-text {
+  font-size: var(--md-fs-xs, 12px);
+  color: var(--md-text-disabled, #aaa);
+}
+
+/* 属性面板选项序号圆标（与边颜色对应） */
+.choice-idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--md-radius-full, 999px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 2px;
 }
 
 /* 属性面板 */

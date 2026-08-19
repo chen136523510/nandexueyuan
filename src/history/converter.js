@@ -57,6 +57,10 @@ export function nodesToFlow(skeleton, scriptNodes) {
 
   // 3. 出边收集：next / choices[].next / branches[].next / hotspots[].action.target
   // Handle id 约定：choice -> `choice-${i}`，condition -> `branch-${i}`，其余默认
+  // 多分支可视区分：①label 只放序号（①②③…）不放选项长文案（连线上一堆字看着费劲）
+  //                ②stroke 按出口序号循环高区分色
+  const EDGE_COLORS = ['#5B8DB8', '#C98B5E', '#8B7BC7', '#5EA89B', '#C75E7B', '#8FA35E']
+  const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
   const edges = []
   const pushEdge = (source, target, label, kind, extra = {}) => {
     edges.push({
@@ -72,15 +76,20 @@ export function nodesToFlow(skeleton, scriptNodes) {
 
   for (const node of skeleton) {
     if (node.next) {
-      pushEdge(node.id, node.next, '', 'next')
+      pushEdge(node.id, node.next, '', 'next', {
+        style: { stroke: '#B0B0A8', strokeWidth: 1.5 },
+      })
     }
     if (Array.isArray(node.choices)) {
       node.choices.forEach((c, i) => {
         const merged = nodes.find(n => n.id === node.id)?.data.choices?.[i]
-        const label = (merged?.text || c.text || `选项${i + 1}`).slice(0, 12)
-        pushEdge(node.id, c.next, label, 'choice', {
+        const fullText = merged?.text || c.text || ''
+        pushEdge(node.id, c.next, CIRCLED[i] || `${i + 1}`, 'choice', {
           sourceHandle: `choice-${i}`,
-          data: { impact: c.impact, index: i },
+          style: { stroke: EDGE_COLORS[i % EDGE_COLORS.length], strokeWidth: 2 },
+          labelBgStyle: { fill: '#fff' },
+          labelStyle: { fill: EDGE_COLORS[i % EDGE_COLORS.length], fontWeight: '700' },
+          data: { impact: c.impact, index: i, text: fullText },
         })
       })
     }
@@ -89,6 +98,8 @@ export function nodesToFlow(skeleton, scriptNodes) {
         const label = b.else ? '否则' : formatCondition(b.if)
         pushEdge(node.id, b.next, label, 'branch', {
           sourceHandle: `branch-${i}`,
+          style: { stroke: EDGE_COLORS[i % EDGE_COLORS.length], strokeWidth: 2 },
+          labelBgStyle: { fill: '#fff' },
           data: { index: i },
         })
       })
