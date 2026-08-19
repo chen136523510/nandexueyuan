@@ -24,12 +24,27 @@
 
 ```bash
 # 三个终端分别启动
-npm run dev                      # 前端 → localhost:4396
-cd server && npm run dev         # API 后端 → localhost:3000
-cd game-server && node src/index.js  # 游戏服务器 → localhost:2567
+npm run dev                      # 前端 -> localhost:4396
+cd server && npm run dev         # API 后端 -> localhost:3000
+cd game-server && node src/index.js  # 游戏服务器 -> localhost:2567
 ```
 
 **包管理器**：项目 `package.json` 声明 `pnpm`，但实际脚本用 `npm`。新装依赖统一用 `npm install <pkg>`，不要混用 yarn/pnpm 命令以免锁文件冲突。
+
+### 启动本地服务纪律（强制，红线）
+
+> **启动任何本地 dev 服务器后，必须自己用浏览器或 curl 实测页面可达，确认服务真正存活后再告诉院长访问。** 禁止只执行启动命令就宣称「服务已启动」。
+
+**铁律来源**：2026-08-19 岁月史书一期验收时，`npm run dev | head` 的管道把 vite 进程带崩（管道关闭 SIGPIPE），curl 返回 200 实为残留进程秒死，院长访问 localhost 被拒绝连接。教训：**启动命令执行成功 ≠ 服务存活**，必须实测。
+
+**强制流程**：
+1. 后台启动服务：`run_in_background: true`，**禁止接管道**（`| head`/`| tail` 等会 SIGPIPE 杀进程）
+2. 等待 3~5 秒让服务初始化
+3. 实测可达：curl 确认 HTTP 状态码 + **用浏览器打开页面确认 DOM 渲染正常**（不只是 curl 200，要看到实际内容）
+4. 实测通过后再告知院长访问地址
+5. 若实测失败：查日志找根因，修复后重试，禁止让院长当人肉探测器
+
+**「自测可达」的标准**：curl 200 且浏览器能打开页面看到实际内容（标题/关键 DOM 元素），两者都通过才算服务存活。
 
 ## Git 工作流（单人仓）
 
