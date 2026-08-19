@@ -94,4 +94,8 @@ router.post('/feedback', auth, createFeedback)
 router.delete('/feedback/:id', auth, deleteFeedback)
 router.patch('/feedback/:id/status', auth, requireRole('admin', 'super_admin'), updateFeedbackStatus)
 
+// 学院数据·模块访问埋点（岁月史书）
+import { analyticsRouter } from './analyticsRouter.js'
+router.use('/analytics', analyticsRouter)
+
 export default router

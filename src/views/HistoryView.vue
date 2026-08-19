@@ -2,20 +2,20 @@
 /**
  * 岁月史书（/history）
  *
- * 一期：剧情可视化编辑器（R-034）
- * - 章节选择（序章/第一章），动态加载骨架+文案 -> nodesToFlow -> 画布
- * - 工具栏：自动布局 / 校验 / 导出文案 .script.js
- * - 导出产物为格式化源码，手动替换 data/scripts/ 下对应文件即生效（零后端改动）
- *
- * 二期规划（R-043）：学院数据展示中心
+ * 双 tab 模块：
+ * - 学院数据（默认）：各模块使用频率 + 停留时间（R-043）
+ * - 剧情编辑器：Vue Flow 画布编辑（R-034，院长指示搁置但保留入口）
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import TopBar from '../components/TopBar.vue'
+import AnalyticsPanel from '../components/history/AnalyticsPanel.vue'
 import StoryEditor from '../components/history/StoryEditor.vue'
 import { nodesToFlow, layoutWithDagre } from '../history/converter.js'
 import dagre from '@dagrejs/dagre'
 
-// ===== 章节加载（镜像 visualNovelStore.CHAPTER_LOADERS 的静态数据部分） =====
+const activeTab = ref('data') // data | editor
+
+// ===== 剧情编辑器数据（懒加载，切 tab 时才加载） =====
 const CHAPTERS = [
   {
     id: 'prologue',
@@ -49,6 +49,7 @@ const CHAPTERS = [
   },
 ]
 
+const editorLoaded = ref(false)
 const currentChapter = ref('prologue')
 const loading = ref(false)
 const skeleton = ref([])
@@ -59,7 +60,6 @@ const importWarnings = ref([])
 const editorRef = ref(null)
 const dirty = ref(false)
 
-// 加载章节 -> 转画布
 const loadChapter = async (chapterId) => {
   const ch = CHAPTERS.find(c => c.id === chapterId)
   if (!ch) return
@@ -70,7 +70,6 @@ const loadChapter = async (chapterId) => {
     skeleton.value = sk
     scriptNodes.value = sc
     const flow = nodesToFlow(sk, sc)
-    // 初始布局在赋值前算好：:nodes 非受控模式下 Vue Flow 接管后再改 position 不生效
     flowNodes.value = layoutWithDagre(flow.nodes, flow.edges, dagre)
     flowEdges.value = flow.edges
     importWarnings.value = flow.warnings
@@ -79,16 +78,21 @@ const loadChapter = async (chapterId) => {
   }
 }
 
-onMounted(() => loadChapter('prologue'))
+const ensureEditor = async () => {
+  if (!editorLoaded.value) {
+    editorLoaded.value = true
+    await loadChapter('prologue')
+  }
+}
 
-// ===== 工具栏动作 =====
+const onTabChange = async (tab) => {
+  activeTab.value = tab
+  if (tab === 'editor') await ensureEditor()
+}
+
 const onAutoLayout = () => editorRef.value?.doAutoLayout()
-
 const onFitView = () => editorRef.value?.doFitView()
-
 const onValidate = () => editorRef.value?.doValidate()
-
-// 导出文案：生成 .script.js 源码并触发浏览器下载
 const onExport = () => {
   const src = editorRef.value?.doExport()
   if (!src) return
@@ -102,7 +106,6 @@ const onExport = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
-
 const onEditorUpdate = () => { dirty.value = true }
 
 const nodeCount = computed(() => flowNodes.value.length)
@@ -114,53 +117,77 @@ const edgeCount = computed(() => flowEdges.value.length)
     <TopBar />
 
     <div class="history-main">
-      <!-- 工具栏 -->
-      <header class="toolbar" role="toolbar" aria-label="编辑器工具栏">
-        <div class="toolbar-left">
-          <h1 class="page-title">岁月史书</h1>
-          <span class="page-sub">剧情编辑器 · 一期</span>
-          <span v-if="dirty" class="dirty-badge" data-testid="dirty-badge">未导出</span>
-        </div>
-        <div class="toolbar-center">
-          <label class="chapter-select-wrap" for="chapter-select">章节</label>
-          <select
-            id="chapter-select"
-            v-model="currentChapter"
-            class="chapter-select"
-            data-testid="chapter-select"
-            @change="loadChapter(currentChapter)"
-          >
-            <option v-for="c in CHAPTERS" :key="c.id" :value="c.id">{{ c.label }}</option>
-          </select>
-          <span class="stat" data-testid="stat-nodes">{{ nodeCount }} 节点</span>
-          <span class="stat" data-testid="stat-edges">{{ edgeCount }} 连线</span>
-        </div>
-        <div class="toolbar-right">
-          <button class="tool-btn" data-testid="btn-fitview" @click="onFitView">全图</button>
-          <button class="tool-btn" data-testid="btn-layout" @click="onAutoLayout">自动布局</button>
-          <button class="tool-btn" data-testid="btn-validate" @click="onValidate">校验</button>
-          <button class="tool-btn primary" data-testid="btn-export" @click="onExport">导出文案</button>
-        </div>
-      </header>
-
-      <!-- 导入警告条 -->
-      <div v-if="importWarnings.length" class="import-warnings" data-testid="import-warnings">
-        导入警告：{{ importWarnings.join('；') }}
+      <!-- Tab 切换 -->
+      <div class="tab-bar" role="tablist" aria-label="岁月史书子模块">
+        <button
+          role="tab"
+          :aria-selected="activeTab === 'data'"
+          class="tab-btn"
+          :class="{ active: activeTab === 'data' }"
+          data-testid="tab-data"
+          @click="onTabChange('data')"
+        >学院数据</button>
+        <button
+          role="tab"
+          :aria-selected="activeTab === 'editor'"
+          class="tab-btn"
+          :class="{ active: activeTab === 'editor' }"
+          data-testid="tab-editor"
+          @click="onTabChange('editor')"
+        >剧情编辑器</button>
       </div>
 
-      <!-- 编辑器画布 -->
-      <div class="editor-wrap">
-        <div v-if="loading" class="loading-hint">剧本加载中…</div>
-        <StoryEditor
-          v-else
-          ref="editorRef"
-          :nodes="flowNodes"
-          :edges="flowEdges"
-          :skeleton="skeleton"
-          :script-nodes="scriptNodes"
-          @update="onEditorUpdate"
-          @export="onExport"
-        />
+      <!-- 学院数据（默认） -->
+      <div v-show="activeTab === 'data'" class="tab-content">
+        <AnalyticsPanel />
+      </div>
+
+      <!-- 剧情编辑器 -->
+      <div v-show="activeTab === 'editor'" class="tab-content editor-content">
+        <header class="toolbar" role="toolbar" aria-label="编辑器工具栏">
+          <div class="toolbar-left">
+            <span v-if="dirty" class="dirty-badge" data-testid="dirty-badge">未导出</span>
+          </div>
+          <div class="toolbar-center">
+            <label class="chapter-select-wrap" for="chapter-select">章节</label>
+            <select
+              id="chapter-select"
+              v-model="currentChapter"
+              class="chapter-select"
+              data-testid="chapter-select"
+              :disabled="loading"
+              @change="loadChapter(currentChapter)"
+            >
+              <option v-for="c in CHAPTERS" :key="c.id" :value="c.id">{{ c.label }}</option>
+            </select>
+            <span class="stat" data-testid="stat-nodes">{{ nodeCount }} 节点</span>
+            <span class="stat" data-testid="stat-edges">{{ edgeCount }} 连线</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="tool-btn" data-testid="btn-fitview" @click="onFitView">全图</button>
+            <button class="tool-btn" data-testid="btn-layout" @click="onAutoLayout">自动布局</button>
+            <button class="tool-btn" data-testid="btn-validate" @click="onValidate">校验</button>
+            <button class="tool-btn primary" data-testid="btn-export" @click="onExport">导出文案</button>
+          </div>
+        </header>
+
+        <div v-if="importWarnings.length" class="import-warnings" data-testid="import-warnings">
+          导入警告：{{ importWarnings.join('；') }}
+        </div>
+
+        <div class="editor-wrap">
+          <div v-if="loading" class="loading-hint">剧本加载中…</div>
+          <StoryEditor
+            v-else
+            ref="editorRef"
+            :nodes="flowNodes"
+            :edges="flowEdges"
+            :skeleton="skeleton"
+            :script-nodes="scriptNodes"
+            @update="onEditorUpdate"
+            @export="onExport"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -186,7 +213,46 @@ const edgeCount = computed(() => flowEdges.value.length)
   box-sizing: border-box;
 }
 
-/* 工具栏 */
+/* Tab 栏 */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--md-border, #e5e3dd);
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  color: var(--md-text-secondary, #888);
+  font-size: var(--md-fs-md, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s var(--md-ease-out, ease-out);
+}
+
+.tab-btn:hover {
+  color: var(--md-text, #333);
+}
+
+.tab-btn.active {
+  color: var(--md-primary, #A8C5A0);
+  border-bottom-color: var(--md-primary, #A8C5A0);
+}
+
+.tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-content {
+  gap: var(--md-sp-2, 8px);
+}
+
+/* 工具栏（编辑器 tab） */
 .toolbar {
   display: flex;
   align-items: center;
@@ -204,18 +270,6 @@ const edgeCount = computed(() => flowEdges.value.length)
   display: flex;
   align-items: baseline;
   gap: var(--md-sp-2, 8px);
-}
-
-.page-title {
-  font-size: var(--md-fs-lg, 18px);
-  font-weight: 700;
-  color: var(--md-text, #333);
-  margin: 0;
-}
-
-.page-sub {
-  font-size: var(--md-fs-xs, 12px);
-  color: var(--md-text-secondary, #888);
 }
 
 .dirty-badge {
@@ -285,7 +339,6 @@ const edgeCount = computed(() => flowEdges.value.length)
   background: var(--md-primary-hover, #96b38e);
 }
 
-/* 导入警告 */
 .import-warnings {
   padding: var(--md-sp-2, 8px) var(--md-sp-4, 16px);
   background: var(--md-warning, #b08040);
@@ -294,10 +347,9 @@ const edgeCount = computed(() => flowEdges.value.length)
   font-size: var(--md-fs-xs, 12px);
 }
 
-/* 编辑器区域 */
 .editor-wrap {
   flex: 1;
-  min-height: 70vh;
+  min-height: 60vh;
   border: 1px solid var(--md-border, #e5e3dd);
   border-radius: var(--md-radius, 8px);
   overflow: hidden;
@@ -317,7 +369,6 @@ const edgeCount = computed(() => flowEdges.value.length)
   z-index: var(--md-z-overlay, 50);
 }
 
-/* 窄屏 */
 @media (max-width: 768px) {
   .history-main {
     padding: var(--md-sp-2, 8px);

@@ -3,14 +3,17 @@ import { fail, ErrorCode } from '../utils/response.js'
 import prisma from '../lib/prisma.js'
 
 // JWT 鉴权中间件
+// Authorization: Bearer <token>（主路径）；?token=<token>（sendBeacon 场景补偿，无法带 header）
 export async function auth(req, res, next) {
   try {
     const header = req.headers.authorization
-    if (!header || !header.startsWith('Bearer ')) {
+    const queryToken = req.query.token
+    const token = (header && header.startsWith('Bearer ') && header.slice(7)) || (typeof queryToken === 'string' && queryToken) || null
+
+    if (!token) {
       return fail(res, ErrorCode.UNAUTHORIZED.code, '未登录', ErrorCode.UNAUTHORIZED.httpStatus)
     }
 
-    const token = header.slice(7)
     let decoded
     try {
       decoded = verifyToken(token)

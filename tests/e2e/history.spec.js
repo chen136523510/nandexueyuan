@@ -29,11 +29,21 @@ test.describe('岁月史书·剧情编辑器', () => {
     }, token)
   })
 
-  test('序章加载：157 节点 180 连线渲染 + 节点卡片分型显示 + 布局展开', async ({ page }) => {
+  test('学院数据 tab：面板加载 + 统计渲染', async ({ page }) => {
     await page.goto('/history')
+    // 默认就是学院数据 tab
+    await expect(page.getByTestId('analytics-panel')).toBeVisible()
+    await expect(page.locator('.panel-title')).toHaveText('学院数据')
+    // 切时间范围可用
+    await page.getByTestId('analytics-days').selectOption('7')
+  })
+
+  test('序章加载', async ({ page }) => {
+    await page.goto('/history')
+    await page.getByTestId('tab-editor').click()
 
     // 工具栏统计
-    await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点')
+    await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点', { timeout: 10000 })
     await expect(page.getByTestId('stat-edges')).toHaveText('180 连线')
 
     // 画布节点渲染（Vue Flow 渲染 .vue-flow__node，自定义卡片 .story-node）
@@ -64,8 +74,9 @@ test.describe('岁月史书·剧情编辑器', () => {
     expect(errors).toEqual([])
   })
 
-  test('章节切换：第一章 320 节点加载', async ({ page }) => {
+  test('章节切换', async ({ page }) => {
     await page.goto('/history')
+    await page.getByTestId('tab-editor').click()
     await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点')
 
     // 切第一章
@@ -74,8 +85,9 @@ test.describe('岁月史书·剧情编辑器', () => {
     await expect(page.getByTestId('stat-edges')).toHaveText('354 连线')
   })
 
-  test('节点编辑：选中 -> 改台词 -> 未导出标记出现 -> 校验通过', async ({ page }) => {
+  test('节点编辑', async ({ page }) => {
     await page.goto('/history')
+    await page.getByTestId('tab-editor').click()
     await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点')
 
     // 初始无未导出标记
@@ -108,8 +120,9 @@ test.describe('岁月史书·剧情编辑器', () => {
     await expect(page.getByTestId('validate-panel')).toContainText('全部通过，无错误无警告')
   })
 
-  test('a11y：工具按钮与图标按钮可定位', async ({ page }) => {
+  test('a11y', async ({ page }) => {
     await page.goto('/history')
+    await page.getByTestId('tab-editor').click()
     await expect(page.getByTestId('stat-nodes')).toHaveText('157 节点')
 
     // 工具栏按钮 testid 齐全（含全图按钮）
