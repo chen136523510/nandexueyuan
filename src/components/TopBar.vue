@@ -52,12 +52,14 @@ const menuItems = [
   { to: '/chat', label: '男德通' },
   { to: '/wall', label: '师德墙' },
   { to: '/mailbox', label: '院长信箱' },
+  { to: '/history', label: '岁月史书' },
   { to: '/nde', label: '德塔' },
 ]
 
-// 移动端抽屉菜单：德塔为桌面端体验（手游/页游差距大），移动端不展示德塔入口
+// 移动端抽屉菜单：德塔为桌面端体验（手游/页游差距大），移动端不展示德塔入口；
+// 岁月史书（剧情编辑器）同理，移动端不展示
 const drawerItems = computed(() =>
-  isMobile.value ? menuItems.filter((m) => m.to !== '/nde') : menuItems,
+  isMobile.value ? menuItems.filter((m) => m.to !== '/nde' && m.to !== '/history') : menuItems,
 )
 
 const adminItem = { to: '/admin', label: '男通讯录' }

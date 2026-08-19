@@ -38,6 +38,12 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
+    path: '/history',
+    name: 'history',
+    component: () => import('../views/HistoryView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/nde',
     name: 'nde',
     component: () => import('../views/NdeVisualNovelView.vue'),

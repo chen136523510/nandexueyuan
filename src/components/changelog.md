@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-19（白机·岁月史书模块一期）
+- [新增] `history/StoryEditor.vue` - Vue Flow 剧情画布：6 种节点类型自定义渲染（#node-xxx slot，dialogue 绿/choice 赭/condition 蓝/event 灰/input 金/end 红棕，分色角标+概要），右侧属性面板（dialogue speaker/text/next 可编辑、choice 选项 text/impact/next 可编辑、condition/event/input/end 一期只读展示），校验结果浮动面板（错误红/警告金分组）
+- [修改] `TopBar.vue` - menuItems 加「岁月史书」（/history，德塔前）；移动端抽屉过滤 /history（桌面编辑器体验）
+- commit: 待提交 [feat](岁月史书): 剧情可视化编辑器一期（R-034）
+
+---
+
 ## 2026-08-17（白机·星河问运势模块）
 - [新增] `FortuneCard.vue` - 星河问卡片（大厅第三行 4 列）：双 tab（今日运势/星座分析）。今日运势=星级+宜忌+幸运数字/色+三维运势条+签语；星座分析=12 宫图标选择器+综合指数+梗文案+生日登记（localStorage `nde-birth-md`，本命星座金色角标+「我的」badge）。全 token 化适配深色主题，含 aria-label/reduce-motion 兜底
 - commit: 0bdb3a4 [feat](门户): 星河问运势模块（改名历程：观星台 -> 星河问签 5b2f674 -> 定名星河问 945f7a2，院长裁决）
