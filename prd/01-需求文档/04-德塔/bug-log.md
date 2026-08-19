@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-08-19（白机 R-043 学院数据部署阶段）
+
+### BUG-70：module_visits 建表建到了 dev.db，prod.db 仍无表致埋点 API 500
+
+- **发现时间**：2026-08-19 15:25（R-043 学院数据功能部署后 curl 验证）
+- **环境**：生产环境（服务器 SQLite prod.db）
+- **现象**：岁月史书·学院数据功能（R-043）代码已部署（commit `c72c538`，PM2 v3.4.0 在线），curl 调 `POST /api/analytics/visit` 和 `GET /api/analytics/summary` 均返回 HTTP 500 `{"code":1,"message":"上报失败"}`。服务器 PM2 错误日志明确报 `The table main.module_visits does not exist in the current database`
+- **根因**：建表 SQL 文件（`docs/module-visits-schema.sql`）第 2 行注释写的是 `sqlite3 prisma/dev.db`，配套说明文档（`docs/module-visits-schema.sql.md`）执行命令也写的 `sqlite3 prisma/dev.db`。但服务器 `.env` 的 `DATABASE_URL=file:./prod.db`，**Prisma 实际连接的是 prod.db 不是 dev.db**（BUG-61 同族问题）。对 dev.db 建表后，Prisma 连 prod.db 仍找不到表。即使重启 PM2 让 Prisma 重新连接，错误依旧
+- **修复**：
+  1. 对 prod.db 执行建表 SQL：`sqlite3 server/prisma/prod.db < docs/module-visits-schema.sql`（先备份 prod.db）
+  2. 重启 API 进程：`pm2 restart nandexueyuan-api`
+  3. curl 验证：enter 返回 `{"code":0,"data":{"visitId":1}}` HTTP 200；summary 返回 7 天聚合数据 HTTP 200
+- **文件**（文档修正，非代码）：`docs/module-visits-schema.sql`（注释改标 prod.db）、`docs/module-visits-schema.sql.md`（执行命令改 `sqlite3 server/prisma/prod.db`，新增 BUG-70 警示，补 pm2 restart 步骤）
+- **教训**：服务器有 dev.db 和 prod.db 两个库文件，**`DATABASE_URL` 指向哪个，sqlite3 命令行就必须操作哪个**。文档中写 db 操作命令时必须与 `DATABASE_URL` 一致，不能默认写 dev.db。同族 BUG-61（dev.db 覆盖 prod.db 致数据丢失）和 BUG-65（dev.db 缺列带到线上）都是 dev.db/prod.db 混淆家族
+
+---
+
 ## 2026-08-17（白机 v3.4.0 发版部署流程事故）
 
 ### BUG-69：凭记忆连错服务器 IP（.95≠.104），SSH Permission denied 被误判为密钥丢失

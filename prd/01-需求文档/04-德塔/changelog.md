@@ -4,6 +4,21 @@
 
 ---
 
+### [fix] R-043 学院数据部署：module_visits 建表到 prod.db 修复埋点 API 500（BUG-70）
+
+- **时间**：2026-08-19 15:25 ~ 15:35
+- **变更人**：陈梓键（白机）
+- **背景**：R-043 学院数据功能（commit `c72c538`）部署后 curl 验证，埋点 API 全部 500。服务器日志报 `The table main.module_visits does not exist`。根因是建表 SQL 文档误标 `sqlite3 prisma/dev.db`，而服务器 `DATABASE_URL=file:./prod.db`，Prisma 连的是 prod.db
+- **变更内容**：
+  1. 对 prod.db 执行建表 SQL（先备份 `prod.db.bak.20260819_153xxx`）
+  2. `pm2 restart nandexueyuan-api` 让 Prisma 重新连接发现新表
+  3. 文档修正：`docs/module-visits-schema.sql` 注释改标 prod.db；`docs/module-visits-schema.sql.md` 执行命令改 `sqlite3 server/prisma/prod.db`，新增 BUG-70 警示和 pm2 restart 步骤
+- **验证**：curl `POST /analytics/visit` 返回 `{"code":0,"data":{"visitId":1}}` HTTP 200；`GET /analytics/summary?days=7` 返回 7 天聚合数据 HTTP 200（含 8 模块标签映射）
+- **状态**：✅ 已部署上线（2026-08-19 15:35，白机）
+- **关联文档**：bug-log.md BUG-70
+
+---
+
 ### [feat] 男德通话题检索方案A：块内抽样+摘要混合（消灭 slice(0,30) 信息失真）
 
 - **时间**：2026-08-15 23:30 ~ 2026-08-16 00:10

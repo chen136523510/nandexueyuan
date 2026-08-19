@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-19
+- [新增] `analyticsRouter.js` - 学院数据埋点 API（`POST /analytics/visit` 进入/离开上报 + `GET /analytics/summary` 聚合查询）；`api.js` 挂载到 `/api/analytics`
+- [部署] `module_visits` 表手动建表到 prod.db（不走 migrate deploy，SQL 见 `docs/module-visits-schema.sql`；BUG-70：初版文档误标 dev.db 已修正）
+- commit: `c72c538`（功能）+ `1612715`（建表SQL落档）
+
+---
+
 ## 2026-08-07
 - [修改] `visualNovelController.js` — writeSave/getSave 增删 spaceState JSON 字段（R-035 空间状态快照），GameSave 表新增列（迁移 `20260807120000_add_game_save_space_state`）
 - commit: `b4c9e68`
