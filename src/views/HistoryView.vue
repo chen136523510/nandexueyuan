@@ -12,7 +12,8 @@
 import { ref, computed, onMounted } from 'vue'
 import TopBar from '../components/TopBar.vue'
 import StoryEditor from '../components/history/StoryEditor.vue'
-import { nodesToFlow } from '../history/converter.js'
+import { nodesToFlow, layoutWithDagre } from '../history/converter.js'
+import dagre from '@dagrejs/dagre'
 
 // ===== 章节加载（镜像 visualNovelStore.CHAPTER_LOADERS 的静态数据部分） =====
 const CHAPTERS = [
@@ -69,7 +70,8 @@ const loadChapter = async (chapterId) => {
     skeleton.value = sk
     scriptNodes.value = sc
     const flow = nodesToFlow(sk, sc)
-    flowNodes.value = flow.nodes
+    // 初始布局在赋值前算好：:nodes 非受控模式下 Vue Flow 接管后再改 position 不生效
+    flowNodes.value = layoutWithDagre(flow.nodes, flow.edges, dagre)
     flowEdges.value = flow.edges
     importWarnings.value = flow.warnings
   } finally {

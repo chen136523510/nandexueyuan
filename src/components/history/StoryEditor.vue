@@ -10,7 +10,7 @@
  * - dagre 自动层次布局
  * - 校验面板展示（死链/id 重复/文案不匹配）
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { VueFlow, useVueFlow, Handle, Position, MarkerType } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -31,7 +31,7 @@ const props = defineProps({
 
 const emit = defineEmits(['export', 'validate', 'update'])
 
-const { onConnect, addEdges, fitView } = useVueFlow()
+const { onConnect, addEdges, fitView, updateNode } = useVueFlow()
 
 // 节点选中状态（属性面板联动）
 const selectedId = ref(null)
@@ -67,19 +67,16 @@ const nodeSummary = (data) => {
   return data.type || ''
 }
 
-// 自动布局
+// 自动布局。⚠️ 不能直接 mutate props.nodes[i].position——:nodes 非受控模式下
+// Vue Flow 初始化时已把数组转成内部 state，后续改原数组不生效（节点全堆原点的根因）。
+// 必须走 updateNode API 写入 Vue Flow 内部 state。
 const doAutoLayout = () => {
   const laid = layoutWithDagre(props.nodes, props.edges, dagre)
-  laid.forEach(node => {
-    const flowNode = props.nodes.find(n => n.id === node.id)
-    if (flowNode) flowNode.position = node.position
-  })
+  for (const node of laid) {
+    updateNode(node.id, { position: node.position })
+  }
   setTimeout(() => fitView({ padding: 0.15 }), 50)
 }
-
-watch(() => props.nodes, () => {
-  if (props.nodes.length > 0) setTimeout(doAutoLayout, 100)
-}, { immediate: true })
 
 // ===== 校验 =====
 const validateResult = ref(null)

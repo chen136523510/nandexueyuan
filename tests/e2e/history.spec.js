@@ -29,7 +29,7 @@ test.describe('岁月史书·剧情编辑器', () => {
     }, token)
   })
 
-  test('序章加载：157 节点 180 连线渲染 + 节点卡片分型显示', async ({ page }) => {
+  test('序章加载：157 节点 180 连线渲染 + 节点卡片分型显示 + 布局展开', async ({ page }) => {
     await page.goto('/history')
 
     // 工具栏统计
@@ -39,6 +39,19 @@ test.describe('岁月史书·剧情编辑器', () => {
     // 画布节点渲染（Vue Flow 渲染 .vue-flow__node，自定义卡片 .story-node）
     const nodeCount = await page.locator('.vue-flow__node').count()
     expect(nodeCount).toBe(157)
+
+    // 布局展开断言（防回归：曾因非受控 mutate position 不生效全堆原点）
+    const transforms = await page.locator('.vue-flow__node').evaluateAll((els) =>
+      els.map((el) => {
+        const m = el.style.transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/)
+        return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 }
+      })
+    )
+    const atOrigin = transforms.filter((t) => Math.abs(t.x) < 1 && Math.abs(t.y) < 1).length
+    expect(atOrigin).toBeLessThan(5) // 全堆原点 = 布局没跑；允许个别视觉重叠
+    const xs = transforms.map((t) => t.x)
+    const spread = Math.max(...xs) - Math.min(...xs)
+    expect(spread).toBeGreaterThan(1000) // dagre LR 布局横向应铺开上千像素
 
     // 节点分型：对话节点带说话人徽标
     const speakers = await page.locator('.story-node .node-speaker').allInnerTexts()
