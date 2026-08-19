@@ -52,17 +52,21 @@ const menuItems = [
   { to: '/chat', label: '男德通' },
   { to: '/wall', label: '师德墙' },
   { to: '/mailbox', label: '院长信箱' },
-  { to: '/history', label: '岁月史书' },
   { to: '/nde', label: '德塔' },
 ]
 
-// 移动端抽屉菜单：德塔为桌面端体验（手游/页游差距大），移动端不展示德塔入口；
-// 岁月史书（剧情编辑器）同理，移动端不展示
+const isAdmin = computed(() => auth.role === 'super_admin' || auth.role === 'admin')
+
+// 移动端抽屉菜单：德塔为桌面端体验（手游/页游差距大），移动端不展示德塔入口
 const drawerItems = computed(() =>
-  isMobile.value ? menuItems.filter((m) => m.to !== '/nde' && m.to !== '/history') : menuItems,
+  isMobile.value ? menuItems.filter((m) => m.to !== '/nde') : menuItems,
 )
 
-const adminItem = { to: '/admin', label: '男通讯录' }
+// 管理员专属菜单（岁月史书 + 男通讯录）
+const adminItems = [
+  { to: '/history', label: '岁月史书' },
+  { to: '/admin', label: '男通讯录' },
+]
 </script>
 
 <template>
@@ -72,7 +76,9 @@ const adminItem = { to: '/admin', label: '男通讯录' }
     <!-- 桌面菜单 -->
     <div v-if="!isMobile" class="topbar-menu">
       <router-link v-for="m in menuItems" :key="m.to" :to="m.to" class="menu-item">{{ m.label }}</router-link>
-      <router-link v-if="auth.role === 'super_admin' || auth.role === 'admin'" to="/admin" class="menu-item">{{ adminItem.label }}</router-link>
+      <template v-if="isAdmin">
+        <router-link v-for="m in adminItems" :key="m.to" :to="m.to" class="menu-item">{{ m.label }}</router-link>
+      </template>
     </div>
 
     <div class="topbar-right">
@@ -109,11 +115,14 @@ const adminItem = { to: '/admin', label: '男通讯录' }
               :to="m.to"
               class="drawer-item"
             >{{ m.label }}</router-link>
-            <router-link
-              v-if="auth.role === 'super_admin' || auth.role === 'admin'"
-              to="/admin"
-              class="drawer-item"
-            >{{ adminItem.label }}</router-link>
+            <template v-if="isAdmin">
+              <router-link
+                v-for="m in adminItems"
+                :key="m.to"
+                :to="m.to"
+                class="drawer-item"
+              >{{ m.label }}</router-link>
+            </template>
           </div>
         </aside>
       </div>

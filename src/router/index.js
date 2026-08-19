@@ -41,7 +41,7 @@ const routes = [
     path: '/history',
     name: 'history',
     component: () => import('../views/HistoryView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/nde',
