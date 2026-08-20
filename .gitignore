@@ -167,3 +167,12 @@ dist.tar.gz
 __pycache__/
 *.pyc
 .sentry-native/
+
+# 数据库备份文件（db push 前的手动备份，不入库）
+*.db.bak.*
+
+# 服务器运行时上传目录（用户头像/师德墙/聊天图片，生产数据不入库；seed 例外见下）
+server/uploads/avatars/
+server/uploads/wall/
+server/uploads/chat/
+!server/uploads/wall-seed/
