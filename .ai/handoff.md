@@ -47,13 +47,14 @@
 2. **BUG-71**：uploadChatImage 误用 `res.json(success({url}))`（success 第一参是 res），上传成功但响应 500。教训：本项目 success/fail 是「收 res 的帮助函数」不是响应体构造器，新写 handler 照抄同文件现有用法
 3. doubao-seed-2-0-mini 默认带 reasoning_content 思考链，传 `thinking:{type:'disabled'}` 关闭（比 reasoning_effort:'minimal' 干净）
 
-#### 部署检查单（下次部署时执行）
+#### 部署检查单（✅ 已全部执行，2026-08-20 15:25 白机）
 
-- [ ] prod.db 执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;`（sqlite3 server/prisma/prod.db）
-- [ ] `mkdir -p server/uploads/chat`（若不存在）
-- [ ] 服务器 .env 加 `VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`（或依赖代码默认值，不配也行）
-- [ ] `pm2 restart nandexueyuan-api`
-- [ ] 线上验证：上传图发消息看 SSE 视觉识别事件
+- [x] prod.db 执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;`（sqlite3 server/prisma/prod.db）✅
+- [x] `mkdir -p server/uploads/chat`（若不存在）✅
+- [x] 服务器 .env 确认 `VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`（依赖代码默认值，未配也行）✅
+- [x] `pm2 restart nandexueyuan-api`（deploy.sh 自动完成）✅
+- [x] 线上验证：上传图发消息看 SSE 视觉识别事件 ✅（浏览器实测通过）
+- [x] 额外修复：Nginx /root 权限（服务器重启后 `dr-xr-x---` 回退，`chmod o+x /root` 修复前端 500）✅
 
 #### 后续待办（二期候选）
 

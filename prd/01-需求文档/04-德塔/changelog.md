@@ -24,7 +24,7 @@
   - 回归：纯文字消息"你好呀"走闲聊短路（"不需要检索数据，直接回答"），token 流式输出正常；刷新页面点历史会话，缩略图 src 正确渲染（`/uploads/chat/...`）
   - `npm run build` 通过（ChatView chunk 161.10 kB / gzip 65.85 kB）
   - `npm run lint:a11y` 通过（117 个 button，0 白名单违规；新增🖼️按钮有 aria-label）
-- **状态**：✅ 本地开发验证通过（2026-08-20 16:30，白机），未部署
+- **状态**：✅ 已部署上线（2026-08-20 15:25，白机。prod.db ALTER TABLE images + deploy.sh 9步 + Nginx /root 权限修复 + 浏览器实测上传图全链路通过）
 - **部署注意事项**：
   1. 服务器 prod.db 需手动执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;` 后 `pm2 restart nandexueyuan-api`
   2. `uploads/chat/` 目录需存在（脚本可加 `mkdir -p server/uploads/chat`；已有 `uploads/` 父目录则只需建 chat 子目录）
