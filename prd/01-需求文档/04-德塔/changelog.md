@@ -30,7 +30,7 @@
   2. `uploads/chat/` 目录需存在（脚本可加 `mkdir -p server/uploads/chat`；已有 `uploads/` 父目录则只需建 chat 子目录）
   3. `.env` 确认 `VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`（或留空用默认值），`VOLC_STD_BASE_URL=https://ark.cn-beijing.volces.com/api/v3`
   4. 视觉模型按量计费，与 coding plan 分开计费（方舟控制台「账单」可分别查看）
-- **关联文档**：`00-调研/Qwen3.8-27B调研与自部署可行性.md`（视觉模型选型前置调研）
+- **关联文档**：`00-调研/Qwen3.8-27B调研与自部署可行性.md`（视觉模型选型前置调研）；`bug-log.md` BUG-71（success 误用响应 500）
 - **踩坑**：
   1. `prisma migrate dev` 在 schema drift 存在时会要求 `prisma migrate reset`（全量删表重建），不能用于已有生产数据的库——53 万条群聊数据面前只能选 `db push` 或手写 ALTER
   2. uploadChatImage 初版误用 `res.json(success({url}))`（`success(res, data)` 第一参是 res 不是 data），上传成功但响应 500，前端 dialog.alert "图片上传失败"——调试时先用浏览器 fetch 在控制台看响应体，再查后端日志定位

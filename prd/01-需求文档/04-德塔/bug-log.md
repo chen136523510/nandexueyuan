@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-08-20（白机 男德通多模态一期开发阶段）
+
+### BUG-71：uploadChatImage 误用 success() 签名，图片上传成功但响应 500
+
+- **发现时间**：2026-08-20 11:44（多模态一期 Playwright 全链路实测，首次点发送）
+- **环境**：本地 dev（Express + Prisma）
+- **现象**：聊天页选图发送，弹「服务器内部错误」；浏览器 console 显示 `POST /api/chat/upload 500`。但 `server/uploads/chat/` 目录里**文件实际已落盘**（multer 正常写入），纯粹是响应阶段炸了
+- **根因**：初版代码写 `res.json(success({ url }))`——`success(res, data, message)` 第一参是 **res** 不是 data，把 `{url}` 当 res 传进去后 `res.json` 不存在，抛 TypeError 进 500 错误处理。对照 `fail(res, code, message)` 的正确用法应为 `success(res, { url })`
+- **修复**：`chatController.js` uploadChatImage 改为 `success(res, { url: ... })`、参数校验改为 `fail(res, ErrorCode.PARAM_ERROR.code, '未收到图片文件', ErrorCode.PARAM_ERROR.httpStatus)`；node --watch 热重载后浏览器复测上传 200，`{"code":0,"data":{"url":"/uploads/chat/xxx.png"}}`
+- **文件**：`server/src/controllers/chatController.js`
+- **教训**：本项目统一响应工具 `success`/`fail` 是「帮助函数收 res 自身」，不是「构造响应体」——新写 handler 时容易按直觉 `res.json(success(data))`。同一轮还发现 400 分支写的是 `res.status(400).json(fail(ErrorCode.PARAM_ERROR, ...))`（fail 被当响应体构造器用，同样错误），说明这是易犯模式。写完 handler 先看同文件其他 handler 的用法照抄签名，不要凭印象
+
+---
+
 ## 2026-08-19（白机 R-043 学院数据部署阶段）
 
 ### BUG-70：module_visits 建表建到了 dev.db，prod.db 仍无表致埋点 API 500

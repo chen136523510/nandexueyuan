@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-20（白机 男德通多模态一期：视觉模型接入层）
+
+- [新增] `llm.js` visionChatCompletion() - 视觉模型调用（图片理解，doubao-seed-2-0-mini-260428）：走标准按量计费端点（`VOLC_STD_BASE_URL`，默认 `https://ark.cn-beijing.volces.com/api/v3`，与 coding plan `/api/coding/v3` 不同通道），key 支持 `VOLC_VISION_API_KEY || VOLC_API_KEY`（2026-08-20 curl 实测同 key 可用），超时 60s，`thinking:{type:'disabled'}` 关闭思考链（实测比 `reasoning_effort:'minimal'` 更干净，后者仍输出 reasoning_content）；复用 makeLlmError（451 审核→CONTENT_MODERATION 上层话术）。现有 chatCompletion/chatCompletionStream 零改动（glm-5.2 coding plan 链路不受影响）
+- commit: 82d2e33
+
+---
+
 ## 2026-08-13（黑机 v3.2.1 昵称映射补全）
 
 - [修改] `knowledge.js` - 补全 nickname 映射：`做题体孝子（暂时）`->丘序明 / `MICO`（大写）->陈梓键；确认 `0.o`->陈梓键 / `O.o`->饶志锐 / `优质单马/优质单男`->王乐添 / `失败的人生/🤡`->黄学远
