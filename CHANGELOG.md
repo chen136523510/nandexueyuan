@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-08-20 v3.5.0 男德通多模态一期（图片理解）
+
+### 概要
+
+男德通 AI 对话新增图片理解能力：主 Agent（glm-5.2，coding plan）+ 视觉子 Agent（doubao-seed-2-0-mini-260428，标准按量端点）双层架构，用户发图男德通先识别再回答。识别描述回写 user turn，历史上下文自带图片记忆。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | 新增 visionChatCompletion()：标准端点 `/api/v3`（VOLC_STD_BASE_URL/VOLC_VISION_MODEL/VOLC_VISION_API_KEY），thinking disabled |
+| `server/src/agents/visionAgent.js` | 新建：第 8 个子 Agent，读图转 base64 调视觉模型，路径白名单 |
+| `server/src/agents/orchestrator.js` | orchestrate 第 6 参 images；带图先识别（跳过闲聊/快速短路）；识别结果注入全阶段；回传 imageDescriptions |
+| `server/src/controllers/chatController.js` | 新增 POST /chat/upload（4MB 白名单）；askChat 接收 images 数组落库+描述回写 |
+| `server/prisma/schema.prisma` | ChatTurn +images String? 列 |
+| `src/views/ChatView.vue` | 🖼️按钮+预览条+气泡缩略图+历史恢复 |
+
+### 决策依据
+
+主模型 glm-5.2 是纯文本模型无法看图，院长"主 Agent 识别到图像需求时调子 Agent"的设想落地为"带图必先识别"（省一次 LLM 判断调用且必正确）。图片传火山用 base64 data URL 而非公网 URL：服务器图片无公网地址（dev 是 localhost），base64 在 dev/prod 行为一致。视觉模型选 doubao-seed-2-0-mini：输入 0.2 元/百万 tokens（单图约 0.001 元），与现有 VOLC_API_KEY 同 key 可用（curl 实测）。替代方案：换多模态主模型（glm-5.2 换 VLM，成本高且丢 coding plan 通道）被否。
+
+### 影响评估
+
+男德通对话链路新增视觉能力，纯文字消息链路零变化（回归实测通过）。数据库 chat_turns 新增可空列，旧数据不受影响。部署需 prod.db 手动 ALTER TABLE（检查单见 handoff）。
+
+---
+
 ## 2026-08-17 v3.4.0 星河问运势模块（门户趣味新模块）
 
 ### 概要

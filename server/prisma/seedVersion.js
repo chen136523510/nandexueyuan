@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.5.0',
+    date: new Date('2026-08-20'),
+    summary: '男德通长眼睛了：发图给它看，它能看懂再回答',
+    updates: JSON.stringify([
+      '男德通聊天新增发图功能：点输入框旁边的图片按钮，最多带 3 张图提问',
+      '它是真的在看图：先默默识别图片内容，再结合你的问题回答，思考过程全程可见',
+      '识别翻车也不怕：万一图片识别失败，它还是会用文字好好回答你',
+      '历史聊天里的图不会丢：翻旧会话还能看到当时发的图',
+    ], null, 0),
+    plans: JSON.stringify([
+      '男德通学会画画（按你的描述出图）',
+      '第一章后续章节剧情',
+    ], null, 0),
+  },
+  {
     version: 'v3.4.0',
     date: new Date('2026-08-17'),
     summary: '学院大厅新开「星河问」：今日运势与星座分析',
