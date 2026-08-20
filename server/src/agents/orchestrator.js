@@ -19,6 +19,7 @@ import { runTopicSearchAgent } from './topicSearchAgent.js'
 import { runTimeSearchAgent } from './timeSearchAgent.js'
 import { runWorldbookAgent } from './worldbookAgent.js'
 import { runDbInfoAgent } from './dbInfoAgent.js'
+import { runVisionAgent } from './visionAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
 // ========== 规划阶段 prompt ==========
@@ -85,7 +86,7 @@ function buildPlannerPrompt(question, history, persona) {
 }
 
 // ========== 分析阶段 prompt ==========
-function buildAnalysisPrompt(question, history, agentResults, persona) {
+function buildAnalysisPrompt(question, history, agentResults, persona, visionContext) {
   const messages = [{ role: 'system', content: persona || CHAT_PERSONA }]
 
   // 注入对话历史
@@ -95,6 +96,15 @@ function buildAnalysisPrompt(question, history, agentResults, persona) {
 
   // 构建检索结果上下文
   let dataContext = `用户问题：${question}\n\n以下是子 Agent 检索到的数据：\n`
+
+  // 视觉识别结果（多模态一期）：作为第一份数据注入
+  if (visionContext) {
+    dataContext += `\n【视觉识别】${visionContext.summary}\n`
+    for (let i = 0; i < visionContext.results.length; i++) {
+      const r = visionContext.results[i]
+      dataContext += `图片${i + 1}（${r.url}）：${r.description}\n`
+    }
+  }
 
   for (const result of agentResults) {
     if (!result.ok) {
@@ -457,28 +467,57 @@ async function runFeedbackFlow(question, history, send, persona) {
  * @param {string} question 用户问题
  * @param {array} history 对话历史 [{role, content}]
  * @param {function} send SSE 发送函数
+ * @param {string} personaId 人设 id
+ * @param {string} customDesc 自定义人设描述
+ * @param {string[]} images 用户上传图片的本站路径（多模态一期，最多 3 张）
  * @returns {{ answer: string, sources: array, intent: string }}
  */
-export async function orchestrate(question, history, send, personaId, customDesc) {
+export async function orchestrate(question, history, send, personaId, customDesc, images = []) {
   // 解析人设（默认 tiwei）
   const persona = getPersona(personaId, customDesc)
   const emit = (agent, phase, content, data) => {
     send('agent_thinking', { agent, phase, content, data: data || null })
   }
 
-  // ========== 快速闲聊判断（跳过规划阶段，省一次 LLM 调用） ==========
-  if (isCasualChat(question)) {
+  // ========== 视觉识别（多模态一期）：带图必先识别 ==========
+  // 主模型 glm-5.2 是纯文本模型看不到图，无法自行判断"是否需要识别"，
+  // 因此带图时无条件先跑视觉子 agent，识别结果拼进问题供后续阶段使用；
+  // 同时跳过闲聊/快速模板短路（图片是消息主体，不能当闲聊处理）
+  let visionContext = null
+  let effectiveQuestion = question
+  if (images?.length) {
+    try {
+      visionContext = await runVisionAgent(images, question, (evt) => send('agent_thinking', evt))
+    } catch (err) {
+      // 视觉识别整体异常降级：主 Agent 仍基于文字回答，不中断
+      console.error('[Orchestrator] 视觉识别整体异常:', err.message)
+      visionContext = {
+        ok: false,
+        summary: '图片识别服务异常',
+        results: images.map((url) => ({ url, ok: false, description: '（图片识别服务异常）' })),
+      }
+    }
+
+    const descText = visionContext.results
+      .map((r, i) => `[图片${i + 1}] ${r.description}`)
+      .join('\n')
+    effectiveQuestion = `${question}\n\n[用户同时发来图片，视觉子Agent识别结果：]\n${descText}`
+  }
+
+  // 快速闲聊判断
+  if (!images?.length && isCasualChat(question)) {
     send('agent_thinking', {
       agent: 'main',
       phase: 'planning',
       content: '这个问题不需要检索数据，直接回答',
     })
-    return await runDirectChat(question, history, send, persona)
+    const base = await runDirectChat(effectiveQuestion, history, send, persona)
+    return { ...base, imageDescriptions: buildImageDescriptions(visionContext) }
   }
 
-  // ========== 快速路由（模板化问题跳过规划 LLM，省一次调用 + 响应快 2-3 秒）==========
+  // 快速路由
   const quickTasks = matchQuickPattern(question)
-  if (quickTasks) {
+  if (!images?.length && quickTasks) {
     send('agent_thinking', {
       agent: 'main',
       phase: 'planning',
@@ -489,7 +528,8 @@ export async function orchestrate(question, history, send, personaId, customDesc
     const taskPromises = quickTasks.map((task) => dispatchAgent(task, emit))
     const results = await Promise.all(taskPromises)
 
-    return await runAnalysisAndAnswer(question, history, results, send, persona)
+    const base = await runAnalysisAndAnswer(effectiveQuestion, history, results, send, persona, visionContext)
+    return { ...base, imageDescriptions: buildImageDescriptions(visionContext) }
   }
 
   // ========== 反馈意图检测（用户说"xx有bug""xx太慢"时自动提交反馈）==========
@@ -509,7 +549,8 @@ export async function orchestrate(question, history, send, personaId, customDesc
     content: '正在分析问题，规划检索任务...',
   })
 
-  const plannerMessages = buildPlannerPrompt(question, history, persona)
+  // 规划输入带图片识别结果（主 Agent 可据此判断还需派哪些检索任务）
+  const plannerMessages = buildPlannerPrompt(effectiveQuestion, history, persona)
   let rawTasks = ''
   let planningFailed = false
   try {
@@ -526,8 +567,10 @@ export async function orchestrate(question, history, send, personaId, customDesc
   // - 只有问题包含群聊/数据相关信号词时，才 fallback 到 topic_search
   // - 否则走闲聊（system prompt 里的网站信息/世界知识足够回答）
   if (planningFailed || tasks.length === 0) {
+    // 带图时规划无任务很正常（图是消息主体），直接走闲聊回答即可，
+    // 识别结果已在 effectiveQuestion 里，闲聊也能基于图片描述作答
     const dataSignals = /群里|群聊|聊天|发言|消息|谁|讨论|聊过|活跃|统计|数据|信息/
-    if (dataSignals.test(question)) {
+    if (!images?.length && dataSignals.test(question)) {
       console.log('[Orchestrator] 规划无任务，fallback 到 topic_search:', question)
       const fallbackTasks = [{ type: 'topic_search', keywords: question }]
       send('agent_thinking', {
@@ -547,7 +590,8 @@ export async function orchestrate(question, history, send, personaId, customDesc
       phase: 'planning',
       content: '这个问题不需要检索数据，直接回答',
     })
-    return await runDirectChat(question, history, send, persona)
+    const base = await runDirectChat(effectiveQuestion, history, send, persona)
+    return { ...base, imageDescriptions: buildImageDescriptions(visionContext) }
   }
 
   send('agent_thinking', {
@@ -561,7 +605,8 @@ export async function orchestrate(question, history, send, personaId, customDesc
 
   // 无任务 -> 纯闲聊
   if (tasks.length === 0) {
-    return await runDirectChat(question, history, send, persona)
+    const base = await runDirectChat(effectiveQuestion, history, send, persona)
+    return { ...base, imageDescriptions: buildImageDescriptions(visionContext) }
   }
 
   // ========== 阶段 2：并行检索 ==========
@@ -569,7 +614,16 @@ export async function orchestrate(question, history, send, personaId, customDesc
   const results = await Promise.all(taskPromises)
 
   // ========== 阶段 3：分析 + 回答 ==========
-  return await runAnalysisAndAnswer(question, history, results, send, persona)
+  const base = await runAnalysisAndAnswer(effectiveQuestion, history, results, send, persona, visionContext)
+  return { ...base, imageDescriptions: buildImageDescriptions(visionContext) }
+}
+
+// 视觉识别描述汇总（供 chatController 写回 user turn，null 表示无图）
+function buildImageDescriptions(visionContext) {
+  if (!visionContext) return null
+  return visionContext.results
+    .map((r, i) => `图${i + 1}: ${r.description}`)
+    .join('；')
 }
 
 // ========== 纯闲聊 ==========
@@ -604,7 +658,7 @@ async function runDirectChat(question, history, send, persona) {
 }
 
 // ========== 分析 + 回答 ==========
-async function runAnalysisAndAnswer(question, history, agentResults, send, persona) {
+async function runAnalysisAndAnswer(question, history, agentResults, send, persona, visionContext = null) {
   // 黑机离线降级检测：重度任务全部降级时给用户提示
   const heavyResults = agentResults.filter((r) => r._wasHeavy)
   const heavyDegraded = heavyResults.filter((r) => r._degraded)
@@ -629,7 +683,7 @@ async function runAnalysisAndAnswer(question, history, agentResults, send, perso
     })),
   })
 
-  const analysisMessages = buildAnalysisPrompt(question, history, agentResults, persona)
+  const analysisMessages = buildAnalysisPrompt(question, history, agentResults, persona, visionContext)
 
   // 流式输出最终回答（加 try-catch 捕获网络中断/超时/LLM 异常）
   let answer = ''

@@ -8,6 +8,12 @@ const API_KEY = process.env.VOLC_API_KEY
 const MODEL = process.env.VOLC_MODEL || 'glm-5.2'
 const TIMEOUT_MS = 180000 // 180 秒超时（glm-5.2 是纯推理模型，思考耗时长，且不限 max_tokens）
 
+// 视觉模型走标准按量计费端点（与 coding plan 端点不同通道），2026-08-20 实测同 key 可用
+const STD_BASE_URL = process.env.VOLC_STD_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
+const VISION_MODEL = process.env.VOLC_VISION_MODEL || 'doubao-seed-2-0-mini-260428'
+const VISION_API_KEY = process.env.VOLC_VISION_API_KEY || API_KEY
+const VISION_TIMEOUT_MS = 60000 // 视觉模型 60 秒超时
+
 /**
  * 构造 LLM API 错误
  * 内容审核拦截 -> CONTENT_MODERATION（上层有专门话术）
@@ -143,6 +149,55 @@ export async function* chatCompletionStream(messages, options = {}) {
         }
       }
     }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('LLM API 超时')
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * 视觉模型调用（OpenAI 兼容多模态，用于图片理解）
+ * @param {Array<{role: string, content: Array<{type: string, text?: string, image_url?: {url: string}}>}>} messages
+ * @returns {Promise<string>} 识别描述文本
+ * @throws {Error} CONTENT_MODERATION / 超时 / API 错误
+ */
+export async function visionChatCompletion(messages) {
+  if (!VISION_API_KEY) {
+    throw new Error('LLM API 错误: VOLC_VISION_API_KEY 未配置')
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS)
+
+  const body = {
+    model: VISION_MODEL,
+    messages,
+    // 视觉描述不需要思考链，直接出结果省时省 token（2026-08-20 实测 thinking disabled 可正常返回）
+    thinking: { type: 'disabled' },
+  }
+
+  try {
+    const response = await fetch(`${STD_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${VISION_API_KEY}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw makeLlmError(response.status, errText)
+    }
+
+    const data = await response.json()
+    return data.choices[0].message.content
   } catch (err) {
     if (err.name === 'AbortError') {
       throw new Error('LLM API 超时')

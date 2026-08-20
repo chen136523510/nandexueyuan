@@ -168,6 +168,7 @@ model ChatTurn {
   sessionId Int
   role      String   // user | assistant
   content   String
+  images    String?  // JSON 字符串：用户上传图片的 URL 数组（多模态一期，仅 user turn）
   intent    String?  // statistic | semantic | chat（仅 assistant）
   sources   String?  // JSON 字符串，引用来源
   createdAt DateTime @default(now())

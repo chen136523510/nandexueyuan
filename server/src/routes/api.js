@@ -6,7 +6,7 @@ import { createInviteCode, listInviteCodes } from '../controllers/inviteCodeCont
 import { listUsers, updateUserStatus, resetUserPassword, updateUserRole } from '../controllers/adminController.js'
 import { getAnnouncement, getVersions, createVersion, updateVersion, deleteVersion } from '../controllers/announcementController.js'
 import { importChatCsv, listBatches, upload } from '../controllers/chatImportController.js'
-import { askChat, talkNpc, listSessions, getSession, deleteSession, getDbInfo } from '../controllers/chatController.js'
+import { askChat, talkNpc, listSessions, getSession, deleteSession, getDbInfo, uploadChatImage, chatImageUpload } from '../controllers/chatController.js'
 import {
   listPosts, createPost, deletePost,
   createComment, deleteComment,
@@ -61,6 +61,7 @@ router.get('/admin/chat/batches', auth, requireRole('admin', 'super_admin'), lis
 
 // AI 助手 — 问答（已登录 + 限流）
 router.post('/chat/ask', auth, rateLimit(10), askChat)
+router.post('/chat/upload', auth, rateLimit(10), chatImageUpload.single('image'), uploadChatImage)
 router.post('/chat/npc/talk', auth, rateLimit(10), talkNpc)
 
 // AI 助手 — 群聊数据库统计（首页数据看板，已登录）

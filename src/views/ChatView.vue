@@ -22,6 +22,7 @@ const agentIcons = {
   person_messages: '💬',
   mentioned: '🔍',
   topic_search: '🔎',
+  视觉识别: '👁️',
   router: '🧭',
 }
 const agentLabels = {
@@ -30,6 +31,7 @@ const agentLabels = {
   person_messages: '人物发言 Agent',
   mentioned: '被提及 Agent',
   topic_search: '话题检索 Agent',
+  视觉识别: '视觉识别 Agent',
   router: '路由分析',
 }
 const phaseLabels = {
@@ -63,6 +65,55 @@ function onCustomDescChange() {
 const sidebarOpen = ref(window.innerWidth > 768)
 const windowWidth = ref(window.innerWidth)
 const isMobile = computed(() => windowWidth.value <= 768)
+
+// ========== 图片上传（多模态一期）==========
+const pendingImages = ref([])  // 待发送图片 [{file, preview}]
+const imageInput = ref(null)
+const uploadingImages = ref(false)
+const MAX_IMAGES = 3
+
+function pickImages() {
+  if (pendingImages.value.length >= MAX_IMAGES || loading.value) return
+  imageInput.value?.click()
+}
+
+function onImagesPicked(e) {
+  const files = Array.from(e.target.files || [])
+  for (const f of files) {
+    if (pendingImages.value.length >= MAX_IMAGES) break
+    if (f.size > 4 * 1024 * 1024) {
+      dialog.alert(`「${f.name}」超过 4MB 限制`)
+      continue
+    }
+    pendingImages.value.push({ file: f, preview: URL.createObjectURL(f) })
+  }
+  e.target.value = '' // 允许重复选同一张
+}
+
+function removePendingImage(idx) {
+  URL.revokeObjectURL(pendingImages.value[idx].preview)
+  pendingImages.value.splice(idx, 1)
+}
+
+async function uploadImages() {
+  const urls = []
+  for (const img of pendingImages.value) {
+    const fd = new FormData()
+    fd.append('image', img.file)
+    const res = await fetch('/api/chat/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: fd,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || `图片「${img.file.name}」上传失败`)
+    }
+    const data = await res.json()
+    urls.push(data.data.url)
+  }
+  return urls
+}
 
 function onResize() {
   windowWidth.value = window.innerWidth
@@ -108,6 +159,7 @@ async function selectSession(id) {
       messages.value.push({
         role: t.role === 'assistant' ? 'bot' : 'user',
         content: t.content,
+        images: t.images ? (typeof t.images === 'string' ? JSON.parse(t.images) : t.images) : [],
         intent: t.intent || null,
         sources: t.sources ? (typeof t.sources === 'string' ? JSON.parse(t.sources) : t.sources) : [],
       })
@@ -184,9 +236,25 @@ function dismissFeedback(msg) {
 
 async function ask(q) {
   const text = (q || question.value).trim()
-  if (!text || loading.value) return
+  const hasImgs = pendingImages.value.length > 0
+  if ((!text && !hasImgs) || loading.value) return
 
-  messages.value.push({ role: 'user', content: text })
+  // 先上传图片拿 URL（失败则中断，不清空输入让用户重试）
+  let imageUrls = []
+  if (hasImgs) {
+    uploadingImages.value = true
+    try {
+      imageUrls = await uploadImages()
+    } catch (err) {
+      dialog.alert(err.message || '图片上传失败，请重试')
+      uploadingImages.value = false
+      return
+    }
+    uploadingImages.value = false
+  }
+
+  const displayText = text || '[图片]'
+  messages.value.push({ role: 'user', content: displayText, images: imageUrls })
 
   // 创建 bot 消息占位（用于流式更新）
   const botMsg = {
@@ -200,6 +268,8 @@ async function ask(q) {
   }
   messages.value.push(botMsg)
   question.value = ''
+  for (const img of pendingImages.value) URL.revokeObjectURL(img.preview)
+  pendingImages.value = []
   loading.value = true
   await scrollBottom()
 
@@ -213,7 +283,8 @@ async function ask(q) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        question: text,
+        question: displayText,
+        images: imageUrls.length ? imageUrls : undefined,
         sessionId: currentSessionId.value,
         personaId: currentPersona.value,
         customDesc: currentPersona.value === 'custom' ? customPersonaDesc.value : undefined,
@@ -430,6 +501,17 @@ function formatDate(date) {
 
             <!-- 回答气泡 -->
             <div class="msg-bubble" :class="{ error: msg.error }">
+              <!-- 用户消息的图片缩略图（多模态一期） -->
+              <div v-if="msg.role === 'user' && msg.images?.length" class="msg-images">
+                <img
+                  v-for="(img, i) in msg.images"
+                  :key="i"
+                  :src="img"
+                  class="msg-image-thumb"
+                  :alt="`用户发送的图片${i + 1}`"
+                  loading="lazy"
+                />
+              </div>
               <div v-if="msg.role === 'bot' && msg.content" class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
               <template v-else-if="msg.content">{{ msg.content }}</template>
               <div v-else-if="loading && msg.role === 'bot'" class="msg-thinking-placeholder">
@@ -485,18 +567,37 @@ function formatDate(date) {
         </div>
 
         <div class="input-area">
-          <input
-            v-model="question"
-            @keydown="handleEnter"
-            placeholder="输入问题，回车提问..."
-            :disabled="loading"
-          />
-          <button v-if="loading" class="stop-btn" @click="stopGeneration">
-            ⏹ 停止
-          </button>
-          <button v-else @click="ask()" :disabled="!question.trim()">
-            发送
-          </button>
+          <!-- 待发送图片预览条（多模态一期） -->
+          <div v-if="pendingImages.length" class="pending-images">
+            <div v-for="(img, i) in pendingImages" :key="i" class="pending-img">
+              <img :src="img.preview" :alt="img.file.name" />
+              <button class="pending-img-remove" @click="removePendingImage(i)" :disabled="loading || uploadingImages" aria-label="移除图片">×</button>
+            </div>
+          </div>
+          <div class="input-row">
+            <input
+              v-model="question"
+              @keydown="handleEnter"
+              placeholder="输入问题，回车提问..."
+              :disabled="loading"
+            />
+            <button
+              class="img-btn"
+              @click="pickImages"
+              :disabled="loading || uploadingImages || pendingImages.length >= MAX_IMAGES"
+              :title="pendingImages.length >= MAX_IMAGES ? `最多${MAX_IMAGES}张` : '上传图片'"
+              aria-label="上传图片"
+            >
+              🖼️
+            </button>
+            <input ref="imageInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none" @change="onImagesPicked" />
+            <button v-if="loading" class="stop-btn" @click="stopGeneration">
+              ⏹ 停止
+            </button>
+            <button v-else @click="ask()" :disabled="!question.trim() && !pendingImages.length">
+              发送
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1034,6 +1135,7 @@ function formatDate(date) {
 
 .input-area {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 16px 20px;
   background: var(--md-bg-card);
@@ -1042,7 +1144,12 @@ function formatDate(date) {
   margin: 0 auto;
   width: 100%;
 }
-.input-area input {
+.input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.input-row input {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid var(--md-border);
@@ -1054,7 +1161,7 @@ function formatDate(date) {
   outline: none;
   transition: border-color 0.2s var(--md-ease-out);
 }
-.input-area input:focus { border-color: var(--md-primary); }
+.input-row input:focus { border-color: var(--md-primary); }
 .input-area button {
   padding: 10px 24px;
   background: var(--md-primary);
@@ -1069,6 +1176,65 @@ function formatDate(date) {
 }
 .input-area button:hover:not(:disabled) { background: var(--md-primary-hover); }
 .input-area button:disabled { background: var(--md-text-disabled); cursor: not-allowed; }
+
+/* 图片按钮（多模态一期）：次级样式，与主发送按钮区分 */
+.img-btn {
+  padding: 10px 14px !important;
+  background: var(--md-bg-soft) !important;
+  border: 1px solid var(--md-border) !important;
+  color: var(--md-text) !important;
+}
+.img-btn:hover:not(:disabled) { background: var(--md-bg-hover, var(--md-bg-card)) !important; }
+
+/* 待发送图片预览条 */
+.pending-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pending-img {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--md-radius);
+  overflow: hidden;
+  border: 1px solid var(--md-border);
+}
+.pending-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pending-img-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0 !important;
+  border-radius: 0 0 0 var(--md-radius);
+  background: rgba(0, 0, 0, 0.55) !important;
+  color: #fff !important;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* 消息气泡内用户图片缩略图 */
+.msg-images {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.msg-image-thumb {
+  max-width: 160px;
+  max-height: 120px;
+  border-radius: 6px;
+  object-fit: cover;
+  cursor: default;
+}
 .input-area .stop-btn {
   background: var(--md-danger);
   white-space: nowrap;

@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-20（白机·男德通多模态一期：图片上传 UI）
+- [修改] `ChatView.vue` - 输入区多模态改造：🖼️ 图片按钮（aria-label="上传图片"，次级样式与主发送按钮区分）+ 隐藏 file input（accept jpeg/png/webp/gif，multiple）+ 待发送预览条（64px 缩略图 + × 删除，blob URL 用后 revoke）；ask() 先逐张 POST /chat/upload 得 URL 再发 /chat/ask 带 `images` 数组；有图无文字可发送（显示 [图片]）；用户消息气泡渲染图片缩略图（160px，历史会话恢复同渲染，selectSession 解析 images JSON）；agentIcons/agentLabels 新增「视觉识别: 👁️」分组；发送按钮 disabled 条件改为「无文字且无图」
+- commit: 见本轮
+
+---
+
 ## 2026-08-19（白机·岁月史书模块一期）
 - [新增] `HistoryView.vue` - 岁月史书页面（/history）：TopBar + 工具栏（章节选择/自动布局/校验/导出文案）+ StoryEditor 画布区。章节加载镜像 visualNovelStore.CHAPTER_LOADERS（序章 157 节点/第一章 320 节点），统计徽标实时显示节点/连线数，dirty 状态「未导出」标记
 - commit: 待提交 [feat](岁月史书): 剧情可视化编辑器一期（R-034）

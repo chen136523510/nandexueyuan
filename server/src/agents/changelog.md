@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-20（白机·男德通多模态一期：视觉子 Agent）
+- [新增] `visionAgent.js` - 视觉子 Agent（第 8 个子 Agent）：读 `/uploads/chat/` 图片转 base64 data URL（服务器无公网图片地址，火山 API 访问不到内网，base64 在 dev/prod 行为一致），调 doubao-seed-2-0-mini 生成中文描述（150 字内，带用户问题引导重点）；多图逐张识别单张失败不炸整体；路径白名单校验（仅 `/uploads/chat/` 前缀 + 防 `..` 穿越）
+- [改造] `orchestrator.js` - orchestrate 新增第 6 参 `images`：带图必先跑视觉识别（主模型 glm-5.2 纯文本看不到图，无法自行判断），识别结果拼进 effectiveQuestion 供规划/闲聊/分析全阶段使用；带图时跳过 isCasualChat/matchQuickPattern 短路（图是消息主体）；buildAnalysisPrompt 新增 visionContext 参数把【视觉识别】段注入数据上下文首部；所有 return 点带 imageDescriptions 回传 chatController 写回 user turn
+- [成本] doubao-seed-2-0-mini 输入 0.2 元/百万 tokens，一张图约 1000+ tokens ≈ 0.001 元/次，忽略不计
+- commit: 见本轮
+
+---
+
 ## 2026-08-16（黑机 方案A + BUG-68 glm-5.2 适配）
 
 - [修改] `topicSearchAgent.js` - 方案A落地：新增 `sampleChunkMessages()` 块内抽样（关键词命中优先+头尾各1条定边界+顺序补齐，每块预算 `MSG_BUDGET_PER_CHUNK=10`），命中块返回 formattedText（每块摘要头+抽样消息，5 块全覆盖），替代旧版全量返回由 orchestrator `slice(0,30)` 截断的信息失真。同题对比：旧版只引用第 1 块，新版挖出多块证据完整排行。commit: 586bb0e

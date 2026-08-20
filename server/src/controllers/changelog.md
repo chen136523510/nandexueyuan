@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-20（白机·男德通多模态一期：图片上传与 askChat 改造）
+- [新增] `chatController.js` uploadChatImage + chatImageUpload - 聊天图片上传端点（multer diskStorage 存 `uploads/chat/`，4MB/张，mimetype 白名单 jpeg/png/webp/gif，文件名 `chat_时间戳_随机.ext`）；askChat 改造：接收 `images: string[]`（最多 3 张，正则校验 `/uploads/chat/` 前缀防任意路径读取），有图时允许 question 为空（默认置 `[图片]`），user turn 入库 `images` 列存 URL 数组，orchestrator 回传的 imageDescriptions 追加写回 content（历史上下文自带图片记忆）
+- [踩坑] 初版 uploadChatImage 误用 `res.json(success({url}))`（success 第一参是 res 不是 data），上传成功但返回 500，改 `success(res, {url})` 修复
+- commit: 见本轮
+
+---
+
 ## 2026-08-10（Phase2）
 - [新增] `feedbackController.js` - 需求反馈 CRUD（listFeedback/createFeedback/deleteFeedback/updateStatus），复用师德墙权限模型
 - [修改] `chatController.js` - askChat 加 personaId/customDesc 参数传给 orchestrate；加 AI 自动提交反馈（result.feedback 入库 source=ai）；加 feedback_created SSE 事件

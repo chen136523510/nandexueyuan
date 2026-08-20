@@ -7,12 +7,49 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { orchestrate } from '../agents/orchestrator.js'
 import { queryDbStats } from '../agents/dbInfoAgent.js'
+import multer from 'multer'
 
 // ESM __dirname
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 // chatController.js 在 server/src/controllers/，到 prd/ 要 ../../../
 const PRD_ROOT = resolve(__dirname, '../../../prd')
+
+// ========== 聊天图片上传（多模态一期）==========
+// 与 wallController 的 uploads/wall 同级约定，静态服务 /uploads/** 已全局生效
+const chatUploadDir = resolve('uploads/chat')
+import { existsSync, mkdirSync } from 'node:fs'
+if (!existsSync(chatUploadDir)) mkdirSync(chatUploadDir, { recursive: true })
+
+const CHAT_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+export const chatImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, chatUploadDir),
+    filename: (req, file, cb) => {
+      const ext = (file.originalname.match(/\.[a-zA-Z0-9]+$/) || ['.png'])[0].toLowerCase()
+      cb(null, `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`)
+    },
+  }),
+  limits: { fileSize: 4 * 1024 * 1024 }, // 4MB/张
+  fileFilter: (req, file, cb) => {
+    if (!CHAT_IMAGE_MIMES.includes(file.mimetype)) {
+      return cb(new Error('仅支持 jpg/png/webp/gif 图片'))
+    }
+    cb(null, true)
+  },
+})
+
+// ========== POST /api/chat/upload - 聊天图片上传（多模态一期）==========
+export async function uploadChatImage(req, res, next) {
+  try {
+    if (!req.file) {
+      return fail(res, ErrorCode.PARAM_ERROR.code, '未收到图片文件', ErrorCode.PARAM_ERROR.httpStatus)
+    }
+    success(res, { url: `/uploads/chat/${req.file.filename}` })
+  } catch (err) {
+    next(err)
+  }
+}
 
 // ========== 系统人设（统一引用 persona.js）==========
 const SYSTEM_PERSONA = CHAT_PERSONA
@@ -118,12 +155,20 @@ export async function askChat(req, res, next) {
   }
 
   try {
-    const { question, sessionId, personaId, customDesc } = req.body
+    let { question, sessionId, personaId, customDesc, images } = req.body
 
-    if (!question || !question.trim()) {
+    // 图片校验（多模态一期）：最多 3 张，必须是本站 /uploads/chat/ 前缀（visionAgent 侧还有二次路径校验）
+    if (images !== undefined) {
+      if (!Array.isArray(images)) images = []
+      images = images.filter((u) => typeof u === 'string' && /^\/uploads\/chat\/[\w.-]+$/.test(u)).slice(0, 3)
+    }
+
+    const hasImages = images?.length > 0
+    if ((!question || !question.trim()) && !hasImages) {
       send('error', { message: '问题不能为空' })
       return res.end()
     }
+    if (!question || !question.trim()) question = '[图片]' // 只发图无文字
 
     // 创建或复用会话
     let session = null
@@ -138,9 +183,14 @@ export async function askChat(req, res, next) {
       })
     }
 
-    // 保存用户消息
+    // 保存用户消息（图片 URL 数组单独存 images 列，识别描述由 orchestrator 写回——见下方二次更新）
     await prisma.chatTurn.create({
-      data: { sessionId: session.id, role: 'user', content: question },
+      data: {
+        sessionId: session.id,
+        role: 'user',
+        content: question,
+        images: hasImages ? JSON.stringify(images) : null,
+      },
     })
 
     // 读取历史对话
@@ -155,7 +205,15 @@ export async function askChat(req, res, next) {
       .slice(-19)
 
     // 多 Agent 协调器（并行检索 + 主 Agent 综合回答）
-    const result = await orchestrate(question, history, send, personaId, customDesc)
+    const result = await orchestrate(question, history, send, personaId, customDesc, images)
+
+    // 把视觉识别描述追加进 user turn（历史上下文自带图片记忆，后续轮次主 Agent 仍"记得"图）
+    if (hasImages && result.imageDescriptions) {
+      await prisma.chatTurn.updateMany({
+        where: { sessionId: session.id, role: 'user', content: question },
+        data: { content: `${question}\n[图片内容：${result.imageDescriptions}]` },
+      })
+    }
 
     // AI 生成的反馈草稿（不自动入库，推给前端让用户确认后提交）
     if (result.feedback) {

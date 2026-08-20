@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-20
+- [新增] `POST /api/chat/upload` - 男德通聊天图片上传（auth + rateLimit(10) + multer，多模态一期）；`api.js` 挂载于 `/chat/ask` 之后
+- ⚠️ 部署注意：`chat_turns` 表需新增 `images TEXT` 列（服务器 prod.db 手动执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;` 后 `pm2 restart`；本地已用 prisma db push 应用到 dev.db。migrate dev 会要求 reset 数据库被拒——53 万群聊数据不能 reset，这是 prisma migrate 的 drift 检测行为，与 BUG-61 教训一致）
+
+---
+
 ## 2026-08-19
 - [新增] `analyticsRouter.js` - 学院数据埋点 API（`POST /analytics/visit` 进入/离开上报 + `GET /analytics/summary` 聚合查询）；`api.js` 挂载到 `/api/analytics`
 - [部署] `module_visits` 表手动建表到 prod.db（不走 migrate deploy，SQL 见 `docs/module-visits-schema.sql`；BUG-70：初版文档误标 dev.db 已修正）

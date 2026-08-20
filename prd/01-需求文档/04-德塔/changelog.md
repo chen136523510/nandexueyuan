@@ -4,6 +4,40 @@
 
 ---
 
+### [feat] 男德通多模态一期：图片理解（主 Agent + 视觉子 Agent）
+
+- **时间**：2026-08-20 10:50 ~ 16:30
+- **变更人**：陈梓键（白机）
+- **背景**：院长希望在男德通 AI 中接入多模态能力。调研确认 doubao-seed-2-0-mini-260428 支持图片理解（输入 0.2 元/百万 tokens，一张图约 0.001 元），与现有 coding plan 的 glm-5.2 形成「主 Agent（文本理解+检索+回答）+ 视觉子 Agent（图片描述）」分工。Qwen3.8-27B 能输出视频/图片的说法系误传（该模型仅理解视觉输入，不生成），调研落档 `00-调研/Qwen3.8-27B调研与自部署可行性.md`
+- **变更内容**：
+  1. `server/src/utils/llm.js` 新增 `visionChatCompletion()`：走标准按量端点 `/api/v3/chat/completions`（`VOLC_STD_BASE_URL`，与 coding plan `/api/coding/v3` 不同通道），模型 `VOLC_VISION_MODEL || doubao-seed-2-0-mini-260428`，key 支持 `VOLC_VISION_API_KEY || VOLC_API_KEY`，超时 60s，`thinking:{type:'disabled'}` 关闭思考链（2026-08-20 curl 实测同 key 可用且返回正常）
+  2. `server/src/agents/visionAgent.js`（新建）第 8 个子 Agent：读 `/uploads/chat/` 图片转 base64 data URL（服务器无公网图片地址，火山 API 访问不到内网，base64 在 dev/prod 行为一致），system prompt 要求 150 字内中文客观描述；多图逐张识别单张失败不炸整体；路径白名单校验（仅 `/uploads/chat/` 前缀 + 防 `..` 穿越）
+  3. `server/src/agents/orchestrator.js` 改造：`orchestrate()` 新增第 6 参 `images`；带图时先跑 `runVisionAgent`（跳过 isCasualChat/matchQuickPattern 短路），识别结果拼进 `effectiveQuestion` 供规划/闲聊/分析全阶段使用；`buildAnalysisPrompt` 新增 `visionContext` 参数把【视觉识别】段注入数据上下文首部；所有 return 点带 `imageDescriptions` 回传 chatController 写回 user turn（历史上下文自带图片记忆，后续轮次主 Agent 仍"记得"图）
+  4. `server/src/controllers/chatController.js`：新增 `POST /api/chat/upload`（multer diskStorage 存 `uploads/chat/`，4MB/张，mimetype 白名单 jpeg/png/webp/gif，文件名 `chat_时间戳_随机.ext`）；`askChat` 改造：接收 `images: string[]`（最多 3 张，正则校验 `/uploads/chat/` 前缀防任意路径读取），有图时允许 question 为空（默认置 `[图片]`），user turn 入库 `images` 列存 URL 数组，orchestrator 回传的 imageDescriptions 追加写回 content
+  5. `server/prisma/schema.prisma`：`ChatTurn` 模型新增 `images String?` 列（JSON 字符串，仅 user turn 使用）。**迁移避坑**：`prisma migrate dev` 检测到 schema drift 后要求 reset 数据库（全量 dev.db 53 万条群聊数据不能 reset，BUG-61 前科），改用 `prisma db push --accept-data-loss` 只加列不删数据，实测列存在且数据完好（103 条历史 chat_turns 零丢失）
+  6. `src/views/ChatView.vue`：输入区🖼️图片按钮（aria-label="上传图片"，次级样式与主发送按钮区分）+ 隐藏 file input（accept jpeg/png/webp/gif，multiple）+ 待发送预览条（64px blob 缩略图 + × 删除，URL.revokeObjectURL 防内存泄漏）；ask() 先逐张 POST /chat/upload 得 URL 再发 /chat/ask 带 `images` 数组；用户消息气泡渲染图片缩略图（160px，历史会话恢复同渲染，selectSession 解析 images JSON）；发送按钮 disabled 条件改为「无文字且无图」
+  7. `.env.example`：新增 `VOLC_STD_BASE_URL`、`VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`、`VOLC_VISION_API_KEY=`（留空复用 VOLC_API_KEY）
+- **验证**：
+  - Step 0 curl 连通性：doubao-seed-2-0-mini-260428 标准端点 `/api/v3` 返回正常；`thinking:{type:'disabled'}` 与 `reasoning_effort:'minimal'` 两种关思考参数均被接受，选用前者（无 reasoning_content 字段，描述更干净）
+  - Playwright 全链路：上传 public/game/sprites/avatars/player_set1.png → 预览条渲染 → 提问"这张图里是什么角色，什么风格？" → SSE 事件流出现"👁️ 视觉识别 Agent start/progress/done" → AI 回答"低像素点阵风（pixel art）、粉毛动漫少女、蓝眼睛..."（完全基于图片，群友语气）
+  - 数据库：user turn `content` 含 `[图片内容：图1: ...]` 回写、`images` 列存 `["/uploads/chat/chat_xxx.png"]`（curl 验证静态服务 HTTP 200，4327 bytes）
+  - 回归：纯文字消息"你好呀"走闲聊短路（"不需要检索数据，直接回答"），token 流式输出正常；刷新页面点历史会话，缩略图 src 正确渲染（`/uploads/chat/...`）
+  - `npm run build` 通过（ChatView chunk 161.10 kB / gzip 65.85 kB）
+  - `npm run lint:a11y` 通过（117 个 button，0 白名单违规；新增🖼️按钮有 aria-label）
+- **状态**：✅ 本地开发验证通过（2026-08-20 16:30，白机），未部署
+- **部署注意事项**：
+  1. 服务器 prod.db 需手动执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;` 后 `pm2 restart nandexueyuan-api`
+  2. `uploads/chat/` 目录需存在（脚本可加 `mkdir -p server/uploads/chat`；已有 `uploads/` 父目录则只需建 chat 子目录）
+  3. `.env` 确认 `VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`（或留空用默认值），`VOLC_STD_BASE_URL=https://ark.cn-beijing.volces.com/api/v3`
+  4. 视觉模型按量计费，与 coding plan 分开计费（方舟控制台「账单」可分别查看）
+- **关联文档**：`00-调研/Qwen3.8-27B调研与自部署可行性.md`（视觉模型选型前置调研）
+- **踩坑**：
+  1. `prisma migrate dev` 在 schema drift 存在时会要求 `prisma migrate reset`（全量删表重建），不能用于已有生产数据的库——53 万条群聊数据面前只能选 `db push` 或手写 ALTER
+  2. uploadChatImage 初版误用 `res.json(success({url}))`（`success(res, data)` 第一参是 res 不是 data），上传成功但响应 500，前端 dialog.alert "图片上传失败"——调试时先用浏览器 fetch 在控制台看响应体，再查后端日志定位
+  3. doubao-seed-2-0-mini 默认带 `reasoning_content`（思考链），视觉描述场景不需要，传 `thinking:{type:'disabled'}` 可关闭（实测比 `reasoning_effort:'minimal'` 更干净，后者仍有少量 reasoning_content 输出）
+
+---
+
 ### [fix] R-043 学院数据部署：module_visits 建表到 prod.db 修复埋点 API 500（BUG-70）
 
 - **时间**：2026-08-19 15:25 ~ 15:35
