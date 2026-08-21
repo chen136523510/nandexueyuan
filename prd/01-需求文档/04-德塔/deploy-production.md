@@ -120,7 +120,7 @@ pm2 --version
 ```bash
 # 修改 server/.env 的 CLOUD_WS_URL
 # 生产地址（通过 Nginx 反代，无需开放 3000 端口）：
-# CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub
+# CLOUD_WS_URL=wss://www.nandexueyuan.top/search-hub
 ```
 
 > ⚠️ 注意：本地开发用 localhost，生产部署用域名。如果后续还要本地联调，记得切回来。
@@ -157,7 +157,7 @@ npx pm2 logs search-worker --lines 10
 
 **预期日志**：
 ```
-[WS Worker] 连接云端: ws://www.nandexueyuan.top/search-hub
+[WS Worker] 连接云端: wss://www.nandexueyuan.top/search-hub
 [WS Worker] 连接已建立，发送握手...
 [WS Worker] 认证成功，黑机已上线
 ```
@@ -280,7 +280,7 @@ location /search-hub {
     proxy_set_header Connection "upgrade";
 }
 ```
-然后黑机 .env 改为：`CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub`
+然后黑机 .env 改为：`CLOUD_WS_URL=wss://www.nandexueyuan.top/search-hub`
 
 **解决方案 B**：安全组放行 3000 端口
 - 阿里云控制台 → ECS → 安全组 → 添加入方向规则 → TCP 3000
@@ -301,7 +301,7 @@ npx pm2 logs search-worker --err --lines 30
 
 黑机 .env 的 `CLOUD_WS_URL` 需要区分：
 - **本地联调**：`ws://localhost:3000/search-hub`
-- **生产部署**：`ws://www.nandexueyuan.top/search-hub`（通过 Nginx 反代，无需开放 3000 端口）
+- **生产部署**：`wss://www.nandexueyuan.top/search-hub`（通过 Nginx 反代，无需开放 3000 端口）
 
 切换后需重启 Worker：`pm2 restart search-worker`
 
@@ -318,10 +318,12 @@ npx pm2 logs search-worker --err --lines 30
 - [x] 云端：PM2 `nandexueyuan-api` + `nandexueyuan-game` 重启成功
 - [x] 云端：日志显示 `[SearchHub] WS Hub 已挂载到 /search-hub`
 - [x] 黑机：PM2 已安装（npx pm2）
-- [x] 黑机：`.env` 的 `CLOUD_WS_URL=ws://www.nandexueyuan.top/search-hub`
+- [x] 黑机：`.env` 的 `CLOUD_WS_URL=wss://www.nandexueyuan.top/search-hub`
 - [x] 黑机：`prod.db` 已同步（07-21 完成）
 - [x] 黑机：PM2 `search-worker` 启动成功，已 `pm2 save`
 - [x] 黑机：日志显示"认证成功，黑机已上线"
+
+> ⚠️ 2026-08-21 修正（BUG-72）：以上清单完成于 2026-07-22（全站尚无 HTTPS，`ws://` 可用）。2026-08-08 certbot `--redirect` 配置 SSL 后，80 端口所有 HTTP/WS 请求被 301 强制跳转到 443，`ws://` Worker 从此连不上（ws 客户端不跟随 301）。生产地址必须用 `wss://`，本地联调 `ws://localhost:3000` 不受影响。
 
 ---
 

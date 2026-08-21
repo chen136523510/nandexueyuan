@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-08-21（黑机 排查男德通降级模式提示）
+
+### BUG-72：SSL 强制跳转导致黑机 WS 检索通道 301 断连，文档未同步更新
+
+- **发现时间**：2026-08-21 19:06（黑机，院长指出对话出现降级提示后排查）
+- **环境**：生产环境（男德通对话重度检索：person_messages / mentioned）
+- **现象**：前端 SSE 推送 `⚠️ 当前高性能计算节点（黑机）离线，本次查询使用降级模式（数据量受限）`。orchestrator 的 `isBlackOnline()` 返回 `false`，重度任务全部本地 LIMIT 50 降级。功能可用但数据量受限，问题被掩盖近两周
+- **根因**：2026-08-08 certbot `--redirect` 配置全站 HTTPS 后，80 端口所有 HTTP/WS 请求被 Nginx **301 强制跳转到 443**。`server/.env` 的 `CLOUD_WS_URL` 写的是 `ws://www.nandexueyuan.top/search-hub`（明文），`ws` 库不跟随 301，握手在鉴权前就断开，云端 `searchHub.js` 从未收到 `auth` 包，`blackOnline` 恒为 `false`。浏览器不受影响（自动跟随 301），且降级模式不中断服务，导致问题长期潜伏
+- **修复**：
+  1. `server/.env`：`CLOUD_WS_URL` 改为 `wss://www.nandexueyuan.top/search-hub`
+  2. `prd/01-需求文档/04-德塔/deploy-production.md`：修正三处生产地址 `ws://` → `wss://`，并在部署检查清单下方追加 BUG-72 警示
+- **文件**：`server/.env`、`prd/01-需求文档/04-德塔/deploy-production.md`
+- **教训**：SSL 上线属于基础设施变更，所有依赖明文端点的配置/文档（WebSocket、内部 API、回调 URL）都要回头审查一遍。仅验证浏览器访问正常不够——WS 长连接、webhook、健康检查等非浏览器流量是 301 重定向的沉默受害者。同族 BUG-60 曾发现 80 端口 301 问题，但只修了前端验证脚本，未联想到检索通道
+
+---
+
 ## 2026-08-20（白机 男德通多模态一期开发阶段）
 
 ### BUG-71：uploadChatImage 误用 success() 签名，图片上传成功但响应 500
