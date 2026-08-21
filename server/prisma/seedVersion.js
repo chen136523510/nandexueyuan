@@ -284,18 +284,16 @@ const versionList = [
 
 async function main() {
   for (const versionData of versionList) {
-    // 幂等：已存在则更新，不存在则创建
+    // 幂等：已存在则跳过（保护线上手动编辑的公告，不再覆盖），不存在则创建
+    // ⚠️ 2026-08-21 事故：院长手动编辑了线上 v3.5.0 公告内容，seedVersion 的 update 行为覆盖了编辑
+    // 改为跳过：种子数据只负责首次创建，后续内容由人工编辑维护
     const existing = await prisma.version.findUnique({ where: { version: versionData.version } })
     if (existing) {
-      await prisma.version.update({
-        where: { version: versionData.version },
-        data: versionData,
-      })
-      console.log(`版本 ${versionData.version} 已存在，已更新`)
-    } else {
-      await prisma.version.create({ data: versionData })
-      console.log(`版本 ${versionData.version} 已创建`)
+      console.log(`版本 ${versionData.version} 已存在，跳过（保护手动编辑）`)
+      continue
     }
+    await prisma.version.create({ data: versionData })
+    console.log(`版本 ${versionData.version} 已创建`)
   }
   console.log(`共处理 ${versionList.length} 条版本记录`)
 }

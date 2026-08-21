@@ -257,7 +257,9 @@ function formatDate(d) {
   width: 560px;
   max-width: 92vw;
   max-height: 85vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -266,6 +268,7 @@ function formatDate(d) {
   justify-content: space-between;
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--md-divider);
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -288,7 +291,11 @@ function formatDate(d) {
 
 .modal-close:hover { color: var(--md-text); }
 
-.modal-body { padding: 20px 24px; }
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
 
 /* 列表态 */
 .list-toolbar { margin-bottom: 16px; }
