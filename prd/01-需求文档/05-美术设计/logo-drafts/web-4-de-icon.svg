@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-4 德字 app 图标：暖赭圆角方块 + 米白「德」+ 「心」底一横躺平线。favicon/app 图标形态，16px 单焦点 -->
+  <defs>
+    <linearGradient id="web4-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#DCB183"/>
+      <stop offset="1" stop-color="#CE9C68"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="224" height="224" rx="52" fill="url(#web4-bg)"/>
+
+  <!-- 「德」字：米白，占据视觉中心偏上 -->
+  <text x="120" y="150" text-anchor="middle" font-family="'LXGW WenKai','KaiTi','STKaiti',serif"
+        font-size="124" fill="#FDFBF7">德</text>
+
+  <!-- 「心」底躺平线：一条暖白短横躺在字底下方——躺平的我们，稳稳接住这个「德」 -->
+  <path d="M78 196 q42 8 84 0" fill="none" stroke="#FDFBF7" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+</svg>

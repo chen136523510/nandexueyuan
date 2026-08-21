@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120">
+  <!-- WEB-1 门匾：深墨绿横匾 + 文楷院名 + 两端如意云头。TopBar 的天然形态——导航栏即门楣，挂牌即品牌 -->
+  <defs>
+    <linearGradient id="web1-board" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B5040"/>
+      <stop offset="1" stop-color="#2C3D31"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 匾体：微圆角横板，暖赭细描边（克制的金边） -->
+  <rect x="14" y="18" width="532" height="84" rx="10" fill="url(#web1-board)" stroke="#D4A574" stroke-width="2.5"/>
+  <!-- 内衬线：双线框是老匾的规矩 -->
+  <rect x="23" y="27" width="514" height="66" rx="6" fill="none" stroke="#D4A574" stroke-width="1" opacity="0.55"/>
+
+  <!-- 两端如意云头角饰：手绘感的简笔卷云 -->
+  <g stroke="#D4A574" stroke-width="2.2" fill="none" stroke-linecap="round">
+    <path d="M46 78 q10 -14 22 -4 q-2 -12 12 -12 q12 0 10 12 q8 -4 10 4"/>
+    <path d="M514 78 q-10 -14 -22 -4 q2 -12 -12 -12 q-12 0 -10 12 q-8 -4 -10 4"/>
+  </g>
+
+  <!-- 院名：霞鹜文楷（草案用系统渲染，定版阶段固化矢量路径与字体解耦） -->
+  <text x="280" y="78" text-anchor="middle" font-family="'LXGW WenKai','LXGW WenKai Screen','KaiTi','STKaiti',serif"
+        font-size="46" fill="#F5F2EC" letter-spacing="10">男德学院</text>
+</svg>

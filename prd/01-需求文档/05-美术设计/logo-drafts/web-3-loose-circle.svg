@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-3 手绘松弛圈：一笔画完的不闭合圆圈（笔触有起有收），圈里文楷「男德」。最松弛、最有手作感、最不像 AI 的方向 -->
+  <rect width="240" height="240" rx="24" fill="#F5F2EC"/>
+
+  <!-- 手绘圈：多段贝塞尔模拟手抖的一笔，起笔右上、收笔左上，留一个呼吸的缺口 -->
+  <path d="M158 34
+           C 196 48 214 82 212 118
+           C 210 158 182 196 138 206
+           C 96 216 52 196 36 158
+           C 20 120 32 74 68 48
+           C 90 32 120 26 142 30"
+        fill="none" stroke="#4A4A4A" stroke-width="5.5" stroke-linecap="round"/>
+
+  <!-- 笔触的呼吸：三处粗细变化用叠线假扮（起笔轻/中段重/收笔飘） -->
+  <path d="M158 34 C 170 38 182 45 190 54" fill="none" stroke="#4A4A4A" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+  <path d="M68 48 C 90 32 120 26 142 30" fill="none" stroke="#4A4A4A" stroke-width="2.6" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- 圈内院名：文楷「男德」，重心略偏，不追求几何居中 -->
+  <text x="122" y="132" text-anchor="middle" font-family="'LXGW WenKai','KaiTi','STKaiti',serif"
+        font-size="62" fill="#4A4A4A" transform="rotate(-3 122 118)">男德</text>
+
+  <!-- 右下小落款：一条暖赭短线 + 小点，手账感 -->
+  <path d="M150 176 q14 4 26 0" fill="none" stroke="#D4A574" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="184" cy="176" r="2.6" fill="#D4A574"/>
+</svg>

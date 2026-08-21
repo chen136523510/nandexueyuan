@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- NDO-3 阶梯塔Δ：Δ笔画变形成层叠退台的高塔（学院据点本体），层线即年代地层，顶点嵌加护微光 -->
+  <defs>
+    <linearGradient id="ndo3-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#25312B"/>
+      <stop offset="1" stop-color="#131B16"/>
+    </linearGradient>
+    <linearGradient id="ndo3-tower" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#475A43"/>
+      <stop offset="1" stop-color="#232F22"/>
+    </linearGradient>
+    <radialGradient id="ndo3-gem" cx="0.5" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#FFF3D6"/>
+      <stop offset="0.55" stop-color="#EBCE97"/>
+      <stop offset="1" stop-color="#D4A574"/>
+    </radialGradient>
+    <filter id="ndo3-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <rect width="240" height="240" rx="28" fill="url(#ndo3-bg)"/>
+
+  <!-- Δ 轮廓：阶梯退台的塔身，每一层比下一层内收，顶部是窄了又窄的塔尖 -->
+  <g fill="url(#ndo3-tower)" stroke="#1A241B" stroke-width="1.5">
+    <path d="M112 34 L130 34 L136 58 L106 58 Z"/>
+    <path d="M104 58 L138 58 L146 86 L96 86 Z"/>
+    <path d="M93 86 L149 86 L158 118 L84 118 Z"/>
+    <path d="M80 118 L161 118 L172 154 L69 154 Z"/>
+    <path d="M64 154 L177 154 Q190 190 190 196 Q120 212 50 196 Q50 190 63 154 Z"/>
+  </g>
+  <!-- 每层的层线光：右缘受光 -->
+  <g stroke="#6A7F5C" stroke-width="1.6" opacity="0.75" stroke-linecap="round">
+    <line x1="107" y1="57" x2="135" y2="57"/>
+    <line x1="97" y1="85" x2="147" y2="85"/>
+    <line x1="86" y1="117" x2="156" y2="117"/>
+    <line x1="71" y1="153" x2="175" y2="153"/>
+  </g>
+  <!-- 底层拱门：据点的入口，微透暖光 -->
+  <path d="M108 196 L108 172 Q120 162 132 172 L132 196 Z" fill="#0E150F"/>
+  <path d="M111 196 L111 174 Q120 167 129 174 L129 196 Z" fill="#D4A574" opacity="0.5"/>
+
+  <!-- 顶点加护微光：嵌在塔尖的宝石 -->
+  <circle cx="121" cy="34" r="16" fill="#EBCE97" opacity="0.28" filter="url(#ndo3-glow)"/>
+  <circle cx="121" cy="30" r="6" fill="url(#ndo3-gem)"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- NDO-5 基准Δ：多场景骨架基准（16px favicon / 传送阵符文 / 简报抬头），三层结构——赭金顶点/深墨绿塔面/暗底+极细轮廓光 -->
+  <rect width="240" height="240" rx="28" fill="#131B16"/>
+  <path d="M120 44 L192 194 Q120 210 48 194 Z" fill="#35483A"/>
+  <!-- 极细轮廓光：受光缘，克制到只有一条线 -->
+  <path d="M120 44 L192 194" stroke="#8FA08B" stroke-width="2" stroke-linecap="round" opacity="0.75"/>
+  <!-- 底层门洞 -->
+  <path d="M106 196 L106 172 Q120 160 134 172 L134 196 Z" fill="#0D130E"/>
+  <!-- 门内微光 -->
+  <path d="M110 196 L110 175 Q120 168 130 175 L130 196 Z" fill="#D4A574" opacity="0.55"/>
+  <!-- 顶点核心：赭金菱形（加护微光的符号化） -->
+  <path d="M120 76 L134 94 L120 112 L106 94 Z" fill="#D4A574"/>
+  <path d="M120 83 L128 94 L120 105 L112 94 Z" fill="#EBCE97"/>
+</svg>

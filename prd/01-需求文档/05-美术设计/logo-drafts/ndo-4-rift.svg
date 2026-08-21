@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- NDO-4 虚空裂Δ：负空间玩法——虚空晶石色（#3E4C63 系）圆底，底边正中撕裂一道Δ形缺口，裂缝尽头透出微光 -->
+  <defs>
+    <linearGradient id="ndo4-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#41506B"/>
+      <stop offset="1" stop-color="#1F2738"/>
+    </linearGradient>
+    <filter id="ndo4-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <radialGradient id="ndo4-core" cx="0.5" cy="0.55" r="0.6">
+      <stop offset="0" stop-color="#FFF6E0"/>
+      <stop offset="0.5" stop-color="#EBCE97"/>
+      <stop offset="1" stop-color="#D4A574"/>
+    </radialGradient>
+    <filter id="ndo4-crack" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5"/>
+    </filter>
+  </defs>
+
+  <rect width="240" height="240" rx="28" fill="url(#ndo4-bg)"/>
+
+  <!-- 底部虚空迷雾：极淡的两层雾块 -->
+  <ellipse cx="76" cy="182" rx="58" ry="16" fill="#161D2B" opacity="0.55"/>
+  <ellipse cx="166" cy="192" rx="52" ry="14" fill="#161D2B" opacity="0.4"/>
+
+  <!-- 岩体：完整的厚实体块，底边中心被撕掉一个Δ -->
+  <path d="M108 46 L186 188 Q120 206 54 188 Z M120 150 L141 187 L99 187 Z"
+        fill="#151C15" fill-rule="evenodd" filter="url(#ndo4-crack)"/>
+  <!-- 顶缘月光 -->
+  <path d="M108 46 L186 188" stroke="#8A9A86" stroke-width="2.2" stroke-linecap="round" opacity="0.8" filter="url(#ndo4-crack)"/>
+  <!-- 左缘暗淡 -->
+  <path d="M108 46 L54 188" stroke="#3A4738" stroke-width="1.4" stroke-linecap="round" opacity="0.8" filter="url(#ndo4-crack)"/>
+
+  <!-- 裂缝深处透出的光：微弱但笃定 -->
+  <circle cx="120" cy="178" r="24" fill="#EBCE97" opacity="0.25" filter="url(#ndo4-glow)"/>
+  <path d="M120 150 L141 187 L99 187 Z" fill="url(#ndo4-core)" opacity="0.92"/>
+  <!-- 几粒飘出的光尘 -->
+  <circle cx="118" cy="138" r="2.4" fill="#EBCE97" opacity="0.85"/>
+  <circle cx="127" cy="128" r="1.8" fill="#EBCE97" opacity="0.6"/>
+  <circle cx="113" cy="120" r="1.4" fill="#EBCE97" opacity="0.45"/>
+</svg>

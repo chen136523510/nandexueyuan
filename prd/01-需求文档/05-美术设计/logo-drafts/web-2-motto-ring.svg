@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-2 四训环徽：外环四段断弧 = 修身/齐家/摸鱼/开摆四训，中心文楷「德」。中国校徽的圆结构 × 社区的松弛内核 -->
+  <defs>
+    <linearGradient id="web2-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDFBF7"/>
+      <stop offset="1" stop-color="#F5F2EC"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="120" cy="120" r="116" fill="url(#web2-bg)"/>
+
+  <!-- 外环：一条鼠尾草绿圆线，在四个方位各断开一段 -->
+  <g stroke="#A8C5A0" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M120 14 A106 106 0 0 1 226 120"/>
+    <path d="M226 120 A106 106 0 0 1 120 226"/>
+    <path d="M120 226 A106 106 0 0 1 14 120"/>
+    <path d="M14 120 A106 106 0 0 1 120 14"/>
+  </g>
+
+  <!-- 断口处各嵌一个暖赭小圆点：四训的节符，也像四个成员围坐 -->
+  <g fill="#D4A574">
+    <circle cx="226" cy="120" r="6"/>
+    <circle cx="120" cy="226" r="6"/>
+    <circle cx="14"  cy="120" r="6"/>
+    <circle cx="120" cy="14"  r="6"/>
+  </g>
+
+  <!-- 四训小字：嵌在断弧旁（上右下左），手作感用文楷 -->
+  <g font-family="'LXGW WenKai','KaiTi','STKaiti',serif" font-size="19" fill="#7E937A" text-anchor="middle">
+    <text x="120" y="52">修身</text>
+    <text x="192" y="127">齐家</text>
+    <text x="120" y="202">摸鱼</text>
+    <text x="48"  y="127">开摆</text>
+  </g>
+
+  <!-- 中心「德」字 -->
+  <text x="120" y="150" text-anchor="middle" font-family="'LXGW WenKai','KaiTi','STKaiti',serif"
+        font-size="72" fill="#4A4A4A">德</text>
+  <!-- 「德」下一点暖赭落款点：印章点，轻轻一点 -->
+  <circle cx="120" cy="168" r="4" fill="#D4A574"/>
+</svg>

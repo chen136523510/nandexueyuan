@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- NDO-2 月护Δ：Δ剪影叠在满月前，冷月轮廓光 + 一点暖窗（班走廊月亮 CG 的符号化） -->
+  <defs>
+    <linearGradient id="ndo2-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E3B36"/>
+      <stop offset="1" stop-color="#121A16"/>
+    </linearGradient>
+    <radialGradient id="ndo2-moon" cx="0.42" cy="0.38" r="0.75">
+      <stop offset="0" stop-color="#F4F1E4"/>
+      <stop offset="0.7" stop-color="#DDD8C6"/>
+      <stop offset="1" stop-color="#C9C3AE"/>
+    </radialGradient>
+    <filter id="ndo2-halo" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <radialGradient id="ndo2-win" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#FFE3B0"/>
+      <stop offset="1" stop-color="#D4A574"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="240" height="240" rx="28" fill="url(#ndo2-sky)"/>
+
+  <!-- 月：月晕 + 本体，位于Δ顶点右上方 -->
+  <circle cx="146" cy="86" r="52" fill="#E8E4D4" opacity="0.22" filter="url(#ndo2-halo)"/>
+  <circle cx="146" cy="86" r="40" fill="url(#ndo2-moon)"/>
+  <!-- 月面淡淡两笔环形山，厚涂手感 -->
+  <circle cx="132" cy="74" r="7" fill="#CFC9B4" opacity="0.7"/>
+  <circle cx="158" cy="98" r="5" fill="#CFC9B4" opacity="0.55"/>
+
+  <!-- Δ：近黑的深绿剪影，正挡在月亮前 -->
+  <path d="M104 50 L188 196 Q120 210 52 196 Z" fill="#141D17"/>
+  <!-- 右缘被月照出的冷银轮廓光 -->
+  <path d="M104 50 L188 196" stroke="#E8E4D4" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  <!-- 左缘微弱天光 -->
+  <path d="M104 50 L52 196" stroke="#5A6E5C" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- 暖窗：冷色世界里的唯一暖点 -->
+  <circle cx="112" cy="158" r="14" fill="#E9BE85" opacity="0.3" filter="url(#ndo2-halo)"/>
+  <rect x="105" y="150" width="14" height="17" rx="2.5" fill="url(#ndo2-win)"/>
+</svg>
