@@ -1,6 +1,21 @@
 /**
- * 数据统计子 Agent
+ * 数据统计子 Agent（⚠️ 已弃用，保留作为工程参考）
  *
+ * 【弃用时间】2026-08-11（知识库四层升级时）
+ * 【弃用原因】被 personStatAgent + dbInfoAgent 替代。本 Agent 用 LLM 生成 SQL
+ *   （分析 -> 生成 SQL -> 校验 -> 执行 -> 摘要），存在幻觉风险（SQL 语法错误、
+ *   字段名推断错误）。替代方案 personStatAgent 对人物统计直接写死 SQL（无幻觉），
+ *   dbInfoAgent 对数据库元信息直接 SQL（无幻觉），statisticAgent 的 LLM 生成 SQL
+ *   路径被废弃。
+ * 【保留原因】本文件是项目中唯一的"LLM 生成 SQL"实现案例，包含完整的 prompt
+ *   工程（分析 prompt + SQL 生成 prompt + 安全校验 + 摘要生成）。如果未来需要
+ *   实现"自由格式 SQL 问答"（如"查最近一个月发言最多的 5 个人"），可以参考
+ *   本文件的 prompt 结构，但建议加 SQL 单元测试防止幻觉。
+ * 【复活方式】在 orchestrator.js dispatchAgent switch 中添加
+ *   case 'statistic': result = { agentType: '数据统计', ...await runStatisticAgent(task, emit) }
+ *   但需评估 LLM 生成 SQL 的安全性和准确性。
+ *
+ * 原始功能描述：
  * 职责：分析问题 -> 生成 SQL -> 执行查询 -> 返回结构化结果
  * 不做流式回答（交给主 Agent 综合输出）
  *

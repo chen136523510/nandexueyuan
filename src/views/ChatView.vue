@@ -14,6 +14,9 @@ const chatArea = ref(null)
 const currentSessionId = ref(null)
 const sessions = ref([])
 const abortController = ref(null)
+// 痛点21：会话记忆压缩摘要（超10轮自动压缩，前端展示提示条）
+const sessionSummary = ref(null)
+const showSummaryDetail = ref(false)
 
 // Agent 图标和标签映射
 const agentIcons = {
@@ -151,10 +154,16 @@ async function selectSession(id) {
   if (loading.value) return
   currentSessionId.value = id
   messages.value = []
+  sessionSummary.value = null
+  showSummaryDetail.value = false
 
   try {
     const res = await getSession(id)
     const turns = res.data?.turns || []
+    // 恢复会话记忆压缩摘要（痛点21）
+    if (res.data?.summary) {
+      sessionSummary.value = res.data.summary
+    }
     for (const t of turns) {
       messages.value.push({
         role: t.role === 'assistant' ? 'bot' : 'user',
@@ -174,6 +183,8 @@ function newChat() {
   if (loading.value) return
   currentSessionId.value = null
   messages.value = []
+  sessionSummary.value = null
+  showSummaryDetail.value = false
 }
 
 async function deleteChat(id, e) {
@@ -347,6 +358,9 @@ async function ask(q) {
             botMsg.sources = data
           } else if (eventType === 'feedback_created') {
             botMsg.feedback = data
+          } else if (eventType === 'history_compressed') {
+            // 痛点21：早期对话已压缩为摘要，展示提示条（不弹窗不打断，用户可展开查看）
+            sessionSummary.value = data.summary
           } else if (eventType === 'done') {
             currentSessionId.value = data.sessionId
             botMsg.intent = data.intent
@@ -452,6 +466,14 @@ function formatDate(date) {
             <div class="suggestions">
               <button v-for="s in suggestions" :key="s" @click="ask(s)">{{ s }}</button>
             </div>
+          </div>
+
+          <!-- 痛点21：早期对话压缩摘要提示条（可展开，不弹窗不打断） -->
+          <div v-if="sessionSummary" class="summary-banner">
+            <details>
+              <summary>💾 更早对话已自动压缩（点击展开查看摘要）</summary>
+              <div class="summary-content">{{ sessionSummary }}</div>
+            </details>
           </div>
 
           <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.role]">
@@ -809,6 +831,27 @@ function formatDate(date) {
   background: var(--md-primary-bg);
   border-color: var(--md-primary);
   color: var(--md-primary-hover);
+}
+
+/* 痛点21：早期对话压缩摘要提示条 */
+.summary-banner {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--md-primary-bg, #f0f4f0);
+  border: 1px dashed var(--md-primary, #6b8e6b);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--md-text-secondary, #666);
+}
+.summary-banner summary {
+  cursor: pointer;
+  user-select: none;
+}
+.summary-banner .summary-content {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--md-text-primary, #333);
 }
 
 .msg {

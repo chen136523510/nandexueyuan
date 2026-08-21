@@ -16,7 +16,7 @@ import { WebSocketServer } from 'ws'
 
 const BLACK_WORKER_TOKEN = process.env.BLACK_WORKER_TOKEN || 'dev-token-change-in-production'
 const HEARTBEAT_TIMEOUT = 60000 // 60 秒无 ping 判定离线
-const TASK_TIMEOUT = 15000 // 单任务 15 秒超时
+const TASK_TIMEOUT = 60000 // 单任务 60 秒超时（黑机全量检索 10 万条级数据需要时间，2026-08-21 院长裁决从 15s 提升）
 
 let wss = null
 let blackWs = null // 当前黑机连接实例
@@ -174,7 +174,7 @@ export function sendSearchTask(task, emit) {
     // 超时处理
     const timeout = setTimeout(() => {
       pendingTasks.delete(taskId)
-      reject(new Error('黑机检索超时（15s）'))
+      reject(new Error('黑机检索超时（60s）'))
     }, TASK_TIMEOUT)
 
     pendingTasks.set(taskId, { resolve, reject, emit, timeout })

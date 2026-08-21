@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-21（白机·男德通 AI 优化第二批：chatController 记忆压缩 + lastIntent 接入）
+
+- [修改] `chatController.js` askChat - ① 记忆压缩集成（痛点21）：读会话 summary，buildHistoryWithSummary 替换早期轮次，回答后 compressIfNeeded 检查压缩并 SSE `history_compressed` 事件通知前端 ② lastIntent（痛点22）：从会话最后一个 assistant turn 的 intent 读取传入 orchestrate ③ NPC 对话温度改 TEMPS.NPC 引用
+- [修改] `schema.prisma` - ChatSession 新增 `summary String?` 列（记忆压缩摘要存储），dev.db 已 db push 同步
+
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·默认人设 normal 同步前端）
 
 - [修改] `chatController.js` - SYSTEM_PERSONA 引用 CHAT_PERSONA（persona.js 默认已改 normal，此处自动跟随，无需改动）；NPC 人设 buildGamePersona 不受影响（独立体系）

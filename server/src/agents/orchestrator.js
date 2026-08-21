@@ -9,7 +9,7 @@
  * 3. 分析+回答阶段：大 Agent 拿到全量数据 -> 先分析推理（SSE展示）-> 再流式输出回答
  */
 
-import { chatCompletion, chatCompletionStream } from '../utils/llm.js'
+import { chatCompletion, chatCompletionStream, TEMPS } from '../utils/llm.js'
 import { getPersona, CHAT_PERSONA } from '../utils/persona.js'
 import { members } from '../utils/knowledge.js'
 import { runPersonStatAgent } from './personStatAgent.js'
@@ -23,7 +23,7 @@ import { runVisionAgent } from './visionAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
 // ========== 规划阶段 prompt ==========
-function buildPlannerPrompt(question, history, persona) {
+function buildPlannerPrompt(question, history, persona, lastIntent = null) {
   const messages = [{ role: 'system', content: persona || CHAT_PERSONA }]
 
   // 注入对话历史（大 Agent 持有上下文）
@@ -31,9 +31,28 @@ function buildPlannerPrompt(question, history, persona) {
     messages.push({ role: turn.role, content: turn.content })
   }
 
+  // 注入上一轮意图（痛点22：多轮追问接续上下文）
+  let lastIntentHint = ''
+  if (lastIntent) {
+    const intentLabel = {
+      person_stat: '人物统计',
+      person_messages: '人物发言',
+      mentioned: '被提及检索',
+      topic_search: '话题检索',
+      time_search: '时间检索',
+      worldbook: '世界观设定',
+      db_info: '数据库统计',
+      multi: '多维度综合检索',
+      chat: '闲聊',
+      feedback: '反馈',
+      npc_talk: 'NPC对话',
+    }[lastIntent] || lastIntent
+    lastIntentHint = `\n【上一轮检索意图】${intentLabel}。如果用户问"还有呢""然后呢""更多"等追问，在上一轮检索意图基础上扩展（如换时间范围、换关键词、增加关联人物），不要重复完全相同的检索。\n`
+  }
+
   messages.push({
     role: 'user',
-    content: `用户问题：${question}
+    content: `用户问题：${question}${lastIntentHint}
 
 你现在需要决定派哪些子 Agent 去检索数据来回答这个问题。
 
@@ -63,6 +82,7 @@ function buildPlannerPrompt(question, history, persona) {
 - "网站版本/最新版本" -> 派 db_info
 - "X月份聊了什么/最近三个月/去年暑假/某段时间" -> 派 time_search（把自然语言时间转成 YYYY-MM-DD 日期范围）
 - "X月份有没有聊过XX" -> 同时派 time_search（日期范围）和 topic_search（关键词）
+- 追问"还有呢""然后呢""更多"时，在上一轮检索意图基础上扩展检索范围（如换时间段、换关键词、增加关联人物），不要重复完全相同的检索
 - 不确定是否需要检索时，倾向检索（宁可多查不要漏答）
 - 只有纯闲聊（"你好""你是谁"）才输出 []
 
@@ -78,6 +98,7 @@ function buildPlannerPrompt(question, history, persona) {
 "去年暑假有什么瓜" -> [{"type":"time_search","startDate":"2025-07-01","endDate":"2025-08-31"}]
 "7月份有没有聊过游戏" -> [{"type":"time_search","startDate":"2026-07-01","endDate":"2026-07-31","keywords":"游戏"},{"type":"topic_search","keywords":"游戏"}]
 "你好" -> []
+"还有呢"（上一轮查了丘序明发言） -> [{"type":"person_messages","target":"丘序明"},{"type":"mentioned","target":"丘序明"}]
 
 只输出 JSON 数组，不要其他内容。`,
   })
@@ -350,14 +371,42 @@ function parseTasks(raw) {
     cleaned = match[0]
   }
 
+  // 白名单过滤（提取为局部函数，两条解析路径共用）
+  const filterValid = (tasks) =>
+    Array.isArray(tasks)
+      ? tasks.filter(
+          (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'time_search', 'worldbook', 'db_info'].includes(t.type),
+        )
+      : []
+
   try {
-    const tasks = JSON.parse(cleaned)
-    if (!Array.isArray(tasks)) return []
-    // 过滤无效任务
-    return tasks.filter(
-      (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'time_search', 'worldbook', 'db_info'].includes(t.type),
-    )
+    return filterValid(JSON.parse(cleaned))
   } catch {
+    // 兜底：LLM 偶发输出字符串数组（如 ["person_stat(丘序明)"]），尝试提取 type(xxx) 格式
+    try {
+      const arr = JSON.parse(cleaned)
+      if (Array.isArray(arr)) {
+        const recovered = arr
+          .filter((t) => typeof t === 'string')
+          .map((s) => {
+            const m = s.match(/^([a-z_]+)\((.*)\)$/)
+            if (!m) return null
+            const [, type, arg] = m
+            if (type === 'time_search') {
+              // time_search 的参数是日期对，字符串形式无法可靠恢复，跳过
+              return null
+            }
+            return arg
+              ? { type, ...(type === 'topic_search' ? { keywords: arg } : { target: arg }) }
+              : { type }
+          })
+          .filter(Boolean)
+        if (recovered.length > 0) {
+          console.log('[Orchestrator] parseTasks 字符串数组兜底恢复:', recovered)
+        }
+        return filterValid(recovered)
+      }
+    } catch { /* 确实无法解析 */ }
     return []
   }
 }
@@ -413,7 +462,7 @@ async function runFeedbackFlow(question, history, send, persona) {
 
   let feedback = null
   try {
-    const raw = await chatCompletion(feedbackMessages, { temperature: 0 })
+    const raw = await chatCompletion(feedbackMessages, { temperature: TEMPS.FEEDBACK })
     const cleaned = raw.replace(/```json|```/g, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
     if (match) {
@@ -456,7 +505,7 @@ async function runFeedbackFlow(question, history, send, persona) {
 
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(answerMessages, { temperature: 0.7 })) {
+    for await (const chunk of chatCompletionStream(answerMessages, { temperature: TEMPS.CHAT })) {
       send('token', { content: chunk })
       answer += chunk
     }
@@ -479,10 +528,11 @@ async function runFeedbackFlow(question, history, send, persona) {
  * @param {string} personaId 人设 id
  * @param {string} customDesc 自定义人设描述
  * @param {string[]} images 用户上传图片的本站路径（多模态一期，最多 3 张）
+ * @param {string} lastIntent 上一轮的 intent（痛点22：多轮追问时注入规划上下文，从会话最后一个 assistant turn 的 intent 字段读取）
  * @returns {{ answer: string, sources: array, intent: string }}
  */
-export async function orchestrate(question, history, send, personaId, customDesc, images = []) {
-  // 解析人设（默认 tiwei）
+export async function orchestrate(question, history, send, personaId, customDesc, images = [], lastIntent = null) {
+  // 解析人设（默认 normal）
   const persona = getPersona(personaId, customDesc)
   const emit = (agent, phase, content, data) => {
     send('agent_thinking', { agent, phase, content, data: data || null })
@@ -559,11 +609,11 @@ export async function orchestrate(question, history, send, personaId, customDesc
   })
 
   // 规划输入带图片识别结果（主 Agent 可据此判断还需派哪些检索任务）
-  const plannerMessages = buildPlannerPrompt(effectiveQuestion, history, persona)
+  const plannerMessages = buildPlannerPrompt(effectiveQuestion, history, persona, lastIntent)
   let rawTasks = ''
   let planningFailed = false
   try {
-    rawTasks = await chatCompletion(plannerMessages, { temperature: 0 })
+    rawTasks = await chatCompletion(plannerMessages, { temperature: TEMPS.PLANNING })
   } catch (err) {
     console.error('[Orchestrator] 规划 LLM 异常:', err.message)
     planningFailed = true
@@ -651,7 +701,7 @@ async function runDirectChat(question, history, send, persona) {
 
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(messages, { temperature: 0.7 })) {
+    for await (const chunk of chatCompletionStream(messages, { temperature: TEMPS.CHAT })) {
       send('token', { content: chunk })
       answer += chunk
     }
@@ -697,7 +747,7 @@ async function runAnalysisAndAnswer(question, history, agentResults, send, perso
   // 流式输出最终回答（加 try-catch 捕获网络中断/超时/LLM 异常）
   let answer = ''
   try {
-    for await (const chunk of chatCompletionStream(analysisMessages, { temperature: 0.5 })) {
+    for await (const chunk of chatCompletionStream(analysisMessages, { temperature: TEMPS.ANALYSIS })) {
       send('token', { content: chunk })
       answer += chunk
     }

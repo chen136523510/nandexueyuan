@@ -1,6 +1,23 @@
 /**
- * 语义检索子 Agent
+ * 语义检索子 Agent（⚠️ 已弃用，保留作为工程参考）
  *
+ * 【弃用时间】2026-08-11（知识库四层升级时）
+ * 【弃用原因】被 topicSearchAgent + timeSearchAgent 替代。本 Agent 的功能被拆分：
+ *   - 关键词检索 -> topicSearchAgent（同义词扩展 + 四级降级 + 块内抽样）
+ *   - 时间范围检索 -> timeSearchAgent（自然语言转日期 + 按日/月聚合）
+ * 【废弃理由】本 Agent 同时承担关键词检索和时间检索两种职责，LLM 提取关键词后
+ *   走 FTS5/LIKE 四级降级，但无同义词扩展（召回率低）且无块内抽样（传 50 条全量
+ *   给 LLM 导致 prompt 爆炸 + slice(0,30) 信息失真）。功能被拆分后两个替代 Agent
+ *   各自优化了对应方向。
+ * 【保留原因】不删除是因为这段代码包含了完整的 FTS5 四级降级检索逻辑
+ *   （分块 FTS -> 分块 LIKE -> 消息 FTS -> 消息 LIKE），是宝贵的检索工程参考。
+ *   如果未来需要重新实现通用语义检索，可以参考本文件的降级策略。
+ * 【复活方式】如需启用，在 orchestrator.js dispatchAgent switch 中添加
+ *   case 'semantic': result = { agentType: '语义检索', ...await runSemanticAgent(task, emit) }
+ *   并在 planner prompt 中增加 semantic 类型说明。但建议基于 topicSearchAgent
+ *   的改进版（同义词缓存 + 块内抽样）重新实现，而非直接复活本文件。
+ *
+ * 原始功能描述：
  * 职责：提取关键词 -> FTS5 检索分块/原始消息 -> 返回相关消息上下文
  * 不做流式回答（交给主 Agent 综合输出）
  *

@@ -15,6 +15,13 @@ const MSG_BUDGET_PER_CHUNK = 10
 import prisma from '../lib/prisma.js'
 import { chatCompletion } from '../utils/llm.js'
 import { resolveName } from '../utils/knowledge.js'
+import { buildFtsQuery } from '../utils/tokenizer.js'
+
+// ========== 同义词缓存（LRU Map，TTL 1 小时）==========
+// 相同关键词重复扩展只调一次 LLM，命中缓存时延迟 3-5s -> 0ms
+const synonymCache = new Map() // key: keywords, value: { expanded, ts }
+const SYNONYM_CACHE_TTL = 3600000 // 1 小时
+const SYNONYM_CACHE_MAX = 200 // 最多缓存 200 组
 
 /**
  * 用 LLM 扩展同义词，提升 FTS5 召回率
@@ -23,6 +30,13 @@ import { resolveName } from '../utils/knowledge.js'
  * @returns {Promise<string>} 扩展后的关键词（含原始词）
  */
 async function expandSynonyms(keywords) {
+  // 命中缓存直接返回
+  const cached = synonymCache.get(keywords)
+  if (cached && Date.now() - cached.ts < SYNONYM_CACHE_TTL) {
+    console.log('[TopicSearch] 同义词缓存命中:', keywords)
+    return cached.expanded
+  }
+
   try {
     const result = await chatCompletion([
       {
@@ -43,7 +57,16 @@ async function expandSynonyms(keywords) {
       },
       { role: 'user', content: keywords },
     ], { temperature: 0 })
-    return result.trim()
+    const expanded = result.trim()
+
+    // 写入缓存（LRU：超限时淘汰最旧）
+    synonymCache.set(keywords, { expanded, ts: Date.now() })
+    if (synonymCache.size > SYNONYM_CACHE_MAX) {
+      const firstKey = synonymCache.keys().next().value
+      synonymCache.delete(firstKey)
+    }
+
+    return expanded
   } catch (err) {
     console.log('[TopicSearch] 同义词扩展失败，用原始关键词:', err.message)
     return keywords
@@ -106,23 +129,22 @@ export async function runTopicSearchAgent(task, emit) {
 
   emit('topic_search', 'searching', `关键词：${rawWords.join('、')}`)
 
-  // Level 1: 分块 FTS5（同时搜索 keywords + summary 两列）
+  // Level 1: 分块 FTS5 v2（unicode61 + 预分词，支持 2 字中文词，同时搜 keywords + summary 两列）
   let chunks = []
-  if (ftsWords.length > 0) {
+  if (rawWords.length > 0) {
     try {
-      const ftsQuery = ftsWords.join(' OR ')
-      // FTS5 双列搜索：用 {keywords summary} 语法搜所有列
+      const ftsQuery = buildFtsQuery(rawWords)
       chunks = await prisma.$queryRawUnsafe(
         `SELECT c.id, c.startMsgId, c.endMsgId, c.chunkDate, c.keywords
-         FROM message_chunks_fts f
+         FROM message_chunks_fts_v2 f
          JOIN message_chunks c ON f.rowid = c.id
-         WHERE f.message_chunks_fts MATCH ?
+         WHERE f.message_chunks_fts_v2 MATCH ?
          ORDER BY rank
          LIMIT 5`,
         ftsQuery,
       )
     } catch (err) {
-      console.error('[TopicSearch FTS5 Error]', err.message)
+      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery, rawWords }))
     }
   }
 
@@ -141,7 +163,7 @@ export async function runTopicSearchAgent(task, emit) {
         )
       }
     } catch (err) {
-      console.error('[TopicSearch LIKE Error]', err.message)
+      console.error('[TopicSearch LIKE Error]', JSON.stringify({ message: err.message, rawWords }))
     }
   }
 
@@ -192,10 +214,10 @@ export async function runTopicSearchAgent(task, emit) {
 
   if (ftsWords.length > 0) {
     try {
-      const ftsQuery = ftsWords.join(' OR ')
+      const ftsQuery = buildFtsQuery(rawWords)
       results = await prisma.$queryRawUnsafe(
         `SELECT m.id, m.nickname, m.msgTime, m.content
-         FROM group_messages_fts f
+         FROM group_messages_fts_v2 f
          JOIN group_messages m ON f.rowid = m.id
          WHERE f.content MATCH ?
          ORDER BY rank
@@ -203,7 +225,7 @@ export async function runTopicSearchAgent(task, emit) {
         ftsQuery,
       )
     } catch (err) {
-      console.error('[TopicSearch FTS5 Error]', err.message)
+      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery, rawWords }))
     }
   }
 
@@ -217,7 +239,7 @@ export async function runTopicSearchAgent(task, emit) {
         )
       }
     } catch (err) {
-      console.error('[TopicSearch LIKE Error]', err.message)
+      console.error('[TopicSearch LIKE Error]', JSON.stringify({ message: err.message, rawWords }))
     }
   }
 

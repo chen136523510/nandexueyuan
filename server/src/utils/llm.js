@@ -8,6 +8,15 @@ const API_KEY = process.env.VOLC_API_KEY
 const MODEL = process.env.VOLC_MODEL || 'glm-5.3'
 const TIMEOUT_MS = 180000 // 180 秒超时（glm-5.3 是纯推理模型，思考耗时长，且不限 max_tokens）
 
+// ========== 温度常量（集中管理，各调用点引用，避免散落硬编码）==========
+export const TEMPS = {
+  PLANNING: 0, // 规划阶段：确定性输出 JSON 任务列表
+  ANALYSIS: 0.5, // 分析阶段：基于检索数据推理回答
+  CHAT: 0.7, // 纯闲聊：灵活自然的对话
+  FEEDBACK: 0, // 反馈结构化生成：确定性输出 JSON
+  NPC: 0.8, // 德塔 NPC 对话：俏皮多变
+}
+
 // 视觉模型走标准按量计费端点（与 coding plan 端点不同通道），2026-08-20 实测同 key 可用
 const STD_BASE_URL = process.env.VOLC_STD_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
 const VISION_MODEL = process.env.VOLC_VISION_MODEL || 'doubao-seed-2-0-mini-260428'

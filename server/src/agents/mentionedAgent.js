@@ -52,16 +52,17 @@ export async function runMentionedAgent(task, emit, options = {}) {
   // 构建 LIKE 条件
   const likeConditions = keywords.map((k) => `content LIKE '%${k.replace(/'/g, "''")}%'`).join(' OR ')
 
-  // 先尝试 FTS5（3字以上的词）
-  const ftsWords = keywords.filter((k) => k.length >= 3)
+  // 先尝试 FTS5 v2（unicode61 + 预分词，2 字人名也能命中，如"丘哥"）
+  // mentioned 职责是搜"别人提到该人"的消息，content LIKE 是对的但 FTS5 v2 更快
   let results = []
 
-  if (ftsWords.length > 0) {
+  if (keywords.length > 0) {
     try {
-      const ftsQuery = ftsWords.join(' OR ')
+      const { buildFtsQuery } = await import('../utils/tokenizer.js')
+      const ftsQuery = buildFtsQuery(keywords)
       results = await prisma.$queryRawUnsafe(
         `SELECT m.id, m.nickname, m.msgTime, m.content
-         FROM group_messages_fts f
+         FROM group_messages_fts_v2 f
          JOIN group_messages m ON f.rowid = m.id
          WHERE f.content MATCH ?
          ORDER BY rank

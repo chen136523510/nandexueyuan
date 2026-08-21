@@ -153,6 +153,7 @@ model ChatSession {
   id        Int      @id @default(autoincrement())
   userId    Int
   title     String?
+  summary   String?  // 早期轮次压缩摘要（痛点21：超过10轮自动压缩，注入 system prompt 保留早期上下文）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

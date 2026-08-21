@@ -28,6 +28,14 @@ const members = [
   { name: '魏嘉豪', role: '成员', aliases: ['wjh', '天空蓝'], status: '', nicknames: ['魏嘉豪'] },
 ]
 
+// 常谈非成员人物（群聊中经常被提及但不是群成员的人）
+// 痛点16修正：人名消歧用。规划阶段/人名匹配时可用此列表识别"群聊外常谈人物"，
+// 避免被当作未知人名浪费检索。身份信息待院长确认后补充。
+const frequentPersons = [
+  { name: '开开', note: '群聊常被提及的圈外人物，身份待院长确认' },
+  { name: '周姐', note: '群聊常被提及的圈外人物，身份待院长确认' },
+]
+
 // 昵称→真名 映射表
 const nicknameToName = {}
 for (const m of members) {
@@ -61,10 +69,12 @@ export function buildMemberKnowledge() {
     }
     return parts.join('。')
   })
-  return lines.join('\n')
+  // 圈外常谈人物（痛点16：人名消歧，用户问到这些人时按圈外人物对待，不做成员统计检索）
+  const freqLines = frequentPersons.map((p) => `- ${p.name}：${p.note}`)
+  return `${lines.join('\n')}\n\n圈外常谈人物（不是群成员，但群聊经常提及）：\n${freqLines.join('\n')}`
 }
 
-export { members }
+export { members, frequentPersons }
 
 /**
  * 网站功能信息（注入 system prompt）

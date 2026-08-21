@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-08-21（白机·男德通 AI 优化第二批：13 项痛点落地）
+
+### 代码改动
+
+- [重构] `orchestrator.js` parseTasks - 双保险兜底：JSON.parse 失败时尝试从字符串数组（`["person_stat(丘序明)"]`）恢复任务对象；温度硬编码全替换为 `TEMPS.*` 常量引用（PLANNING/ANALYSIS/CHAT/FEEDBACK）
+- [新增] `orchestrator.js` 多轮追问（痛点22）：buildPlannerPrompt 新增 lastIntent 参数，注入"上一轮检索了 {意图}，追问时在上一轮基础上扩展"约束 + 示例；chatController 从会话最后一个 assistant turn 的 intent 字段读取传入
+- [重构] `topicSearchAgent.js` FTS5 方案A（痛点1）：两处 FTS5 查询从 trigram 旧表切 v2 表（unicode61 + 预分词），2 字中文词可直接 MATCH 命中；查询侧用 `buildFtsQuery()` 构建 FTS 表达式；同义词扩展加 LRU 缓存（200 组/TTL 1h，命中缓存 0ms）
+- [重构] `personStatAgent.js` + `personMessagesAgent.js`（痛点13）：buildPersonConditions 的 LIKE 改 `nickname = 'xxx'` 精确匹配（只查该人自己发的消息），mentionedAgent 保持 LIKE（职责就是搜"别人提到"）
+- [重构] `mentionedAgent.js` FTS5 切 v2 表 + buildFtsQuery 查询
+- [新增] `memoryCompress.js`（痛点21）：超 20 turns 自动压缩早期轮次为摘要存 ChatSession.summary，注入 system 消息保留上下文；buildHistoryWithSummary 替换早期轮次为摘要消息；前端 SSE `history_compressed` 事件 + 提示条 UI
+- [标注] `semanticAgent.js` + `statisticAgent.js`（痛点17）：标注已弃用，保留代码作工程参考，写明弃用原因/保留原因/复活方式
+- [标注] `server/prisma/dev.db.README.md`（痛点19/20）：dev.db 标注已过时（0 消息 0 分块，数据在线上 prod.db），记录同族 BUG-61/65/70 事故史
+
+### 验证
+
+- 全量模块加载 11/11 通过（含 memoryCompress/tokenizer/TEMPS/frequentPersons）
+- 前端 build 5.74s 通过
+- FTS5 v2 测试 7/7 通过（造数据+重建+2字词命中+长词子串命中+消息级命中+清理）
+
+### 方案文档
+
+- `男德通AI优化方案设计.md`：26 项痛点裁决结果回写，已实施 18 项
+- `AI助手.md`（PRD）：按当前多 Agent 架构重写为 v2，旧三分类架构标注归档
+
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·男德通 AI 优化第一批：人设重构 + glm-5.3 + 闲聊上下文感知）
 
 - [重构] `orchestrator.js` isCasualChat - 闲聊判断上下文感知：匹配词分两级，`ABSOLUTE_CASUAL`（问候/致谢/身份类，零信息量，无论有无上下文都短路）+ `REACTION_CASUAL`（哈哈哈/笑死/吃了吗等情绪反应词，**有上下文时不再短路**，交给规划阶段判断——有语境时短话语可能是高密度回应，规划返回空任务且无数据信号词时仍走闲聊，路由更聪明）。isCasualChat 签名改 `(question, history=[])` 并导出（供测试）

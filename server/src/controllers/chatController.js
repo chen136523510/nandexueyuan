@@ -1,12 +1,13 @@
 import prisma from '../lib/prisma.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
-import { chatCompletionStream } from '../utils/llm.js'
+import { chatCompletionStream, TEMPS } from '../utils/llm.js'
 import { CHAT_PERSONA } from '../utils/persona.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { orchestrate } from '../agents/orchestrator.js'
 import { queryDbStats } from '../agents/dbInfoAgent.js'
+import { compressIfNeeded, buildHistoryWithSummary } from '../agents/memoryCompress.js'
 import multer from 'multer'
 
 // ESM __dirname
@@ -200,12 +201,29 @@ export async function askChat(req, res, next) {
       take: 20,
     })
     historyTurns.reverse()
-    const history = historyTurns
+    const rawHistory = historyTurns
       .filter((t) => t.content !== question || t.role !== 'user')
       .slice(-19)
+    // 痛点21：超10轮记忆压缩。session.summary 存在时，替换早期轮次为摘要消息
+    const sessionWithSummary = await prisma.chatSession.findUnique({
+      where: { id: session.id },
+      select: { summary: true },
+    }).catch(() => null)
+    const history = buildHistoryWithSummary(rawHistory, sessionWithSummary?.summary || null)
+
+    // 痛点22：多轮追问。取上一轮 assistant turn 的 intent，注入规划上下文
+    const lastAssistantTurn = [...historyTurns].reverse().find((t) => t.role === 'assistant')
+    const lastIntent = lastAssistantTurn?.intent || null
 
     // 多 Agent 协调器（并行检索 + 主 Agent 综合回答）
-    const result = await orchestrate(question, history, send, personaId, customDesc, images)
+    const result = await orchestrate(question, history, send, personaId, customDesc, images, lastIntent)
+
+    // 痛点21：回答后检查是否需要压缩（异步，不阻塞 done 事件）
+    compressIfNeeded(session.id).then(({ compressed, summary: newSummary }) => {
+      if (compressed && newSummary) {
+        send('history_compressed', { summary: newSummary })
+      }
+    }).catch(() => { /* 压缩失败不阻塞 */ })
 
     // 把视觉识别描述追加进 user turn（历史上下文自带图片记忆，后续轮次主 Agent 仍"记得"图）
     if (hasImages && result.imageDescriptions) {
@@ -340,7 +358,7 @@ export async function talkNpc(req, res, next) {
 
     let answer = ''
     try {
-      for await (const chunk of chatCompletionStream(messages, { temperature: 0.8 })) {
+      for await (const chunk of chatCompletionStream(messages, { temperature: TEMPS.NPC })) {
         send('token', { content: chunk })
         answer += chunk
       }

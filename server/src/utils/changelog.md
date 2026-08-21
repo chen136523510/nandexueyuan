@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-08-21（白机·男德通 AI 优化第二批：tokenizer + TEMPS + knowledge frequentPersons）
+
+- [新增] `tokenizer.js` - 中文分词工具（FTS5 方案A）：≤4 字整词 + 长词 bigram 滑窗 + 非汉字小写保留；`tokenizeZh(text)` 索引侧分词、`buildFtsQuery(rawWords)` 查询侧构建 FTS5 表达式
+- [新增] `llm.js` TEMPS - 温度常量集中导出（PLANNING=0 / ANALYSIS=0.5 / CHAT=0.7 / FEEDBACK=0 / NPC=0.8），各调用点引用
+- [新增] `knowledge.js` frequentPersons - 圈外常谈人物列表（开开/周姐，身份待院长确认），buildMemberKnowledge 末尾注入
+- [验证] prompt caching 实测：火山 coding 端点自动缓存 system prompt（cached_tokens=1024），无需代码改动
+
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·人设系统重构 + glm-5.3 切换 + 版本号动态化）
 
 - [重构] `persona.js` - 人设系统三层重构：① BASE_TEMPLATE 中性化（删"老群友"默认身份，改为「男德学院网站的 AI 助手」中性表述，结构分【说话风格】/【话题边界】/【成员信息】/【网站信息】/【数据规则】五段，语气完全由各人设 style 块独立定义）② PERSONAS 顺序调整 normal 置首 + 各人设细则微调 ③ 默认人设 tiwei→normal（CHAT_PERSONA 与 getPersona fallback 均改）

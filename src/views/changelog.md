@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-21（白机·男德通记忆压缩前端展示）
+
+- [修改] `ChatView.vue` - ① 记忆压缩提示条（痛点21）：`sessionSummary`/`showSummaryDetail` ref + SSE `history_compressed` 事件接收 + 消息列表顶部 `<details>` 折叠条"💾 更早对话已自动压缩（点击展开查看摘要）"，不弹窗不打断防误操作；selectSession 恢复会话时读 summary 字段，newChat 清空 ② 配套样式 .summary-banner（虚线边框+主色背景）
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·默认人设改 normal）
 - [修改] `ChatView.vue` - currentPersona localStorage fallback 从 `'tiwei'` 改为 `'normal'`（与 persona.js 默认人设同步；已存过人设选择的用户不受影响，仅新用户/清缓存者默认 normal）
 - commit: 见本轮

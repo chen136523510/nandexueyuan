@@ -21,7 +21,8 @@ function validateSql(sql) {
   return true
 }
 
-// 从姓名反查所有可能的匹配条件（talker/nickname/外号）
+// 从姓名反查所有可能的匹配条件（精确匹配，避免 LIKE 误匹配别人消息）
+// 痛点13修正：personStat 职责是查"该人自己发了多少条"，LIKE 会把别人提到该人的消息也计入
 function buildPersonConditions(target) {
   // 在成员列表中查找匹配的人
   const member = members.find(
@@ -29,13 +30,13 @@ function buildPersonConditions(target) {
   )
 
   if (!member) {
-    // 没找到精确匹配，用原始 target 做模糊匹配
+    // 没找到精确匹配，用原始 target 做模糊匹配（未知人物退化为 LIKE）
     return { names: [target], likeConditions: [`nickname LIKE '%${target.replace(/'/g, "''")}%'`] }
   }
 
-  // 收集所有可能的昵称和真名
+  // 精确匹配：只匹配该人的真名/外号/昵称，不含 LIKE 模糊
   const allNames = [member.name, ...member.nicknames, ...member.aliases]
-  const likeConditions = allNames.map((n) => `nickname LIKE '%${n.replace(/'/g, "''")}%'`)
+  const likeConditions = allNames.map((n) => `nickname = '${n.replace(/'/g, "''")}'`)
   return { names: allNames, likeConditions }
 }
 

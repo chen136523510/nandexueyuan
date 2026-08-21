@@ -20,8 +20,9 @@ function buildPersonConditions(target) {
     return { names: [target], likeConditions: [`nickname LIKE '%${target.replace(/'/g, "''")}%'`] }
   }
 
+  // 精确匹配（痛点13修正）：只查该人自己发的消息，LIKE 会把别人提到该人的消息也计入
   const allNames = [member.name, ...member.nicknames, ...member.aliases]
-  const likeConditions = allNames.map((n) => `nickname LIKE '%${n.replace(/'/g, "''")}%'`)
+  const likeConditions = allNames.map((n) => `nickname = '${n.replace(/'/g, "''")}'`)
   return { names: allNames, likeConditions }
 }
 
