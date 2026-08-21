@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-21（白机·默认人设改 normal）
+- [修改] `ChatView.vue` - currentPersona localStorage fallback 从 `'tiwei'` 改为 `'normal'`（与 persona.js 默认人设同步；已存过人设选择的用户不受影响，仅新用户/清缓存者默认 normal）
+- commit: 见本轮
+
+---
+
 ## 2026-08-20（白机·男德通多模态一期：图片上传 UI）
 - [修改] `ChatView.vue` - 输入区多模态改造：🖼️ 图片按钮（aria-label="上传图片"，次级样式与主发送按钮区分）+ 隐藏 file input（accept jpeg/png/webp/gif，multiple）+ 待发送预览条（64px 缩略图 + × 删除，blob URL 用后 revoke）；ask() 先逐张 POST /chat/upload 得 URL 再发 /chat/ask 带 `images` 数组；有图无文字可发送（显示 [图片]）；用户消息气泡渲染图片缩略图（160px，历史会话恢复同渲染，selectSession 解析 images JSON）；agentIcons/agentLabels 新增「视觉识别: 👁️」分组；发送按钮 disabled 条件改为「无文字且无图」
 - commit: 见本轮

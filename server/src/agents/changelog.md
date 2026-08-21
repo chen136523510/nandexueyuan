@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-21（白机·男德通 AI 优化第一批：人设重构 + glm-5.3 + 闲聊上下文感知）
+
+- [重构] `orchestrator.js` isCasualChat - 闲聊判断上下文感知：匹配词分两级，`ABSOLUTE_CASUAL`（问候/致谢/身份类，零信息量，无论有无上下文都短路）+ `REACTION_CASUAL`（哈哈哈/笑死/吃了吗等情绪反应词，**有上下文时不再短路**，交给规划阶段判断——有语境时短话语可能是高密度回应，规划返回空任务且无数据信号词时仍走闲聊，路由更聪明）。isCasualChat 签名改 `(question, history=[])` 并导出（供测试）
+- [配套] 规划/分析/闲聊全链路人设默认从 tiwei 群友风格改为 normal 中性风格（详见 utils/changelog persona.js 条目）
+- [验证] 20 项单测全过（verify-persona-casual.mjs）+ glm-5.3 真实 planner prompt 3/3 解析成功（verify-glm53-planner.mjs：如何评价丘序明->3任务/7月份聊了什么->1任务/你好->0任务）
+- commit: 见本轮
+
+---
+
 ## 2026-08-20（白机·男德通多模态一期：视觉子 Agent）
 - [新增] `visionAgent.js` - 视觉子 Agent（第 8 个子 Agent）：读 `/uploads/chat/` 图片转 base64 data URL（服务器无公网图片地址，火山 API 访问不到内网，base64 在 dev/prod 行为一致），调 doubao-seed-2-0-mini 生成中文描述（150 字内，带用户问题引导重点）；多图逐张识别单张失败不炸整体；路径白名单校验（仅 `/uploads/chat/` 前缀 + 防 `..` 穿越）
 - [改造] `orchestrator.js` - orchestrate 新增第 6 参 `images`：带图必先跑视觉识别（主模型 glm-5.2 纯文本看不到图，无法自行判断），识别结果拼进 effectiveQuestion 供规划/闲聊/分析全阶段使用；带图时跳过 isCasualChat/matchQuickPattern 短路（图是消息主体）；buildAnalysisPrompt 新增 visionContext 参数把【视觉识别】段注入数据上下文首部；所有 return 点带 imageDescriptions 回传 chatController 写回 user turn

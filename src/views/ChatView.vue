@@ -52,7 +52,7 @@ const personaOptions = [
   { id: 'normal', name: '正常人' },
   { id: 'custom', name: '自定义' },
 ]
-const currentPersona = ref(localStorage.getItem('chat_persona') || 'tiwei')
+const currentPersona = ref(localStorage.getItem('chat_persona') || 'normal')
 const customPersonaDesc = ref(localStorage.getItem('chat_persona_custom') || '')
 
 function onPersonaChange() {

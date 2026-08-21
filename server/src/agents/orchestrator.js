@@ -212,19 +212,28 @@ async function dispatchAgent(task, emit) {
 }
 
 // ========== 快速闲聊判断（避免简单问候也要调 LLM 规划） ==========
-function isCasualChat(question) {
+// 绝对闲聊：纯问候/致谢/身份类，零信息量，无论有无上下文都可短路
+const ABSOLUTE_CASUAL = [
+  '你好', '哈喽', '嗨', 'hi', 'hello', '在吗', '在不在',
+  '早上好', '中午好', '下午好', '晚上好', '晚安',
+  '谢谢', '感谢', '谢了', '多谢', '辛苦了',
+  '拜拜', '再见', '88', 'bye',
+  '你是谁', '你叫什么', '你是什么', '你能做什么', '你是ai', '你是机器人',
+]
+// 情绪反应词：无上下文时是闲聊；有上下文时可能是对上文的高密度回应
+// （如答完数据后回"笑死"可能是开启新话题的前奏），交给规划阶段判断——
+// 规划返回空任务且无数据信号词时仍会走闲聊直接回答，路由更聪明而已
+const REACTION_CASUAL = [
+  '哈哈哈', '呵呵', '笑死', '绝了',
+  '吃了吗', '干嘛呢', '在干嘛', '睡了吗',
+]
+
+export function isCasualChat(question, history = []) {
   const q = question.trim().toLowerCase()
   if (q.length > 10) return false // 真正的闲聊几乎不超 10 字
-  const casualPatterns = [
-    '你好', '哈喽', '嗨', 'hi', 'hello', '在吗', '在不在',
-    '早上好', '中午好', '下午好', '晚上好', '晚安',
-    '谢谢', '感谢', '谢了', '多谢', '辛苦了',
-    '拜拜', '再见', '88', 'bye',
-    '你是谁', '你叫什么', '你是什么', '你能做什么', '你是ai', '你是机器人',
-    '哈哈哈', '呵呵', '笑死', '绝了',
-    '吃了吗', '干嘛呢', '在干嘛', '睡了吗',
-  ]
-  return casualPatterns.some((p) => q.includes(p))
+  const hasContext = Array.isArray(history) && history.length > 0
+  const patterns = hasContext ? ABSOLUTE_CASUAL : [...ABSOLUTE_CASUAL, ...REACTION_CASUAL]
+  return patterns.some((p) => q.includes(p))
 }
 
 // ========== 构建成员名称匹配库（真名+外号） ==========
@@ -505,7 +514,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
   }
 
   // 快速闲聊判断
-  if (!images?.length && isCasualChat(question)) {
+  if (!images?.length && isCasualChat(question, history)) {
     send('agent_thinking', {
       agent: 'main',
       phase: 'planning',

@@ -5,8 +5,8 @@
 
 const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
 const API_KEY = process.env.VOLC_API_KEY
-const MODEL = process.env.VOLC_MODEL || 'glm-5.2'
-const TIMEOUT_MS = 180000 // 180 秒超时（glm-5.2 是纯推理模型，思考耗时长，且不限 max_tokens）
+const MODEL = process.env.VOLC_MODEL || 'glm-5.3'
+const TIMEOUT_MS = 180000 // 180 秒超时（glm-5.3 是纯推理模型，思考耗时长，且不限 max_tokens）
 
 // 视觉模型走标准按量计费端点（与 coding plan 端点不同通道），2026-08-20 实测同 key 可用
 const STD_BASE_URL = process.env.VOLC_STD_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
@@ -55,7 +55,7 @@ export async function chatCompletion(messages, options = {}) {
     model: MODEL,
     messages,
     temperature: options.temperature ?? 0.7,
-    // glm-5.2 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算，导致正文截断/为空）
+    // glm-5.3 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算，导致正文截断/为空）
   }
 
   try {
@@ -105,7 +105,7 @@ export async function* chatCompletionStream(messages, options = {}) {
     messages,
     temperature: options.temperature ?? 0.7,
     stream: true,
-    // glm-5.2 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算）
+    // glm-5.3 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算）
   }
 
   try {

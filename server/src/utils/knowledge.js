@@ -68,17 +68,29 @@ export { members }
 
 /**
  * 网站功能信息（注入 system prompt）
- * 版本号发版时手动更新
+ * 版本号从根 package.json 动态读取，与发版流程（release-helper 改 package.json）自动同步
  */
-const SITE_VERSION = 'v3.2.0'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+function readSiteVersion() {
+  try {
+    const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+    return `v${pkg.version}`
+  } catch {
+    return '未知'
+  }
+}
 
 export function buildSiteKnowledge() {
   return `男德学院网站功能：
 1. 首页（/home）：群聊高频词词云 + 版本公告
-2. 男德通（/chat）：AI助手，可以查询群聊数据（发言统计、话题搜索、人物评价），支持4套人设切换（体委/丘比/开开/正常人）
+2. 男德通（/chat）：AI助手，可以查询群聊数据（发言统计、话题搜索、人物评价），支持4套人设切换（正常人/体委/丘比/开开）+ 自定义人设，支持发图提问（图片理解）
 3. 师德墙（/wall）：群友发布动态，类似朋友圈，可以发帖评论
 4. 院长信箱（/mailbox）：可以提交BUG反馈、功能优化、功能新增、剧情设计需求，AI还能帮你自动起草信件
 5. 德塔（/nde）：视觉小说游戏，当前进度到第一章第三幕
 6. 男通讯录（/admin）：成员管理（院长/管理员可用）
-当前版本：${SITE_VERSION}（男德通AI全面升级）`
+当前版本：${readSiteVersion()}`
 }

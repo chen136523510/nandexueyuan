@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-08-21（白机·人设系统重构 + glm-5.3 切换 + 版本号动态化）
+
+- [重构] `persona.js` - 人设系统三层重构：① BASE_TEMPLATE 中性化（删"老群友"默认身份，改为「男德学院网站的 AI 助手」中性表述，结构分【说话风格】/【话题边界】/【成员信息】/【网站信息】/【数据规则】五段，语气完全由各人设 style 块独立定义）② PERSONAS 顺序调整 normal 置首 + 各人设细则微调 ③ 默认人设 tiwei→normal（CHAT_PERSONA 与 getPersona fallback 均改）
+- [切换] `llm.js` - 主模型 glm-5.2→glm-5.3（2026-08-21 实测：连通 3.9s/响应正常；thinking:disabled 仍被 400 拒绝（同 5.2 行为）；glm-latest 别名仍指向 glm-5.2 故弃用；不传 thinking/不设 max_tokens 策略不变）。同步根 `.env` VOLC_MODEL=glm-5.3
+- [修复] `knowledge.js` buildSiteKnowledge - 版本号硬编码 v3.2.0 改为动态读根 package.json 的 version 字段（发版流程改 package.json 即自动同步，不再手动维护）；网站功能介绍同步更新（人设列表顺序 + 发图提问）
+- [验证] 20 项单测全过；llm.js 端到端 glm-5.3 三场景实测通过（normal 人设闲聊 5.5s / 流式 / 规划 JSON 输出）
+- commit: 见本轮
+
+---
+
 ## 2026-08-20（白机 男德通多模态一期：视觉模型接入层）
 
 - [新增] `llm.js` visionChatCompletion() - 视觉模型调用（图片理解，doubao-seed-2-0-mini-260428）：走标准按量计费端点（`VOLC_STD_BASE_URL`，默认 `https://ark.cn-beijing.volces.com/api/v3`，与 coding plan `/api/coding/v3` 不同通道），key 支持 `VOLC_VISION_API_KEY || VOLC_API_KEY`（2026-08-20 curl 实测同 key 可用），超时 60s，`thinking:{type:'disabled'}` 关闭思考链（实测比 `reasoning_effort:'minimal'` 更干净，后者仍输出 reasoning_content）；复用 makeLlmError（451 审核→CONTENT_MODERATION 上层话术）。现有 chatCompletion/chatCompletionStream 零改动（glm-5.2 coding plan 链路不受影响）
