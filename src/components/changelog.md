@@ -4,7 +4,14 @@
 
 ---
 
-## 2026-08-19（白机·岁月史书权限限制）
+## 2026-08-21（白机·公告弹窗标题栏固定 + seedVersion 保护手动编辑）
+
+- [修改] `VersionHistoryDialog.vue` - 公告弹窗标题栏常驻：`.modal-card` 从整体 `overflow-y:auto` 改为 `flex column + overflow:hidden`，`.modal-header` 加 `flex-shrink:0` 固定不随内容滚动，`.modal-body` 独立 `overflow-y:auto`。院长反馈"滚动时标题和关闭按钮要常态展示在窗口最上方，不然还要滚上去再关闭"。线上实测：body 滚动到底（scrollTop 5242/5913）header 位置纹丝不动（headerFixed=true）
+- [修改] `server/prisma/seedVersion.js` - 幂等策略从"已存在则 update"改为"已存在则跳过"：⚠️ 事故（2026-08-21）：院长线上手动编辑了公告内容，seedVersion 跑时 update 覆盖了编辑。改为跳过保护：种子数据只负责首次创建，后续内容由人工编辑维护
+- [修改] 线上部署：git pull + build 12.72s + seedVersion 验证跳过生效（v3.6.0/v3.5.0/v3.4.0 全部"已存在，跳过（保护手动编辑）"）
+- commit: 52e1331
+
+---
 - [修改] `TopBar.vue` - 岁月史书（/history）与男通讯录（/admin）统一迁入 `adminItems` 管理员专属菜单，桌面端和移动端抽屉均加 `v-if="isAdmin"` 控制；`drawerItems` 过滤移除 /history（已从公共菜单分离）
 - commit: `186715c` [fix](岁月史书): /history路由+TopBar菜单限管理员可见
 
