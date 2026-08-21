@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.6.0',
+    date: new Date('2026-08-21'),
+    summary: '男德通全面优化：换新模型 glm-5.3，二字词汇检索增强，长会话自动压缩总结',
+    updates: JSON.stringify([
+      '男德通更换新模型：glm-5.3',
+      '针对二字词汇检索进一步优化',
+      '超过10轮的会话自动压缩总结',
+      '提升上下文管理能力',
+    ], null, 0),
+    plans: JSON.stringify([
+      '男德通学会画画（按你的描述出图）',
+      '第一章后续章节剧情',
+    ], null, 0),
+  },
+  {
     version: 'v3.5.0',
     date: new Date('2026-08-20'),
     summary: '男德通长眼睛了：发图给它看，它能看懂再回答',

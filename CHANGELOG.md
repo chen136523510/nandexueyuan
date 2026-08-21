@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-08-21 v3.6.0 男德通 AI 优化（glm-5.3 + FTS5 v2 + 记忆压缩 + 人设重构）
+
+### 概要
+
+男德通 AI 两批优化落地：主模型 glm-5.2->glm-5.3、人设系统重构（基础模板中性化+默认改 normal）、FTS5 方案A（unicode61+预分词，2 字中文词可检索）、超 10 轮对话自动记忆压缩、多轮追问（lastIntent 注入规划）、同义词缓存（LRU）、人名精确匹配、圈外常谈人物、温度常量集中、黑机超时 60s、parseTasks 兜底、版本号动态化。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | MODEL 默认 glm-5.3；新增 TEMPS 温度常量集中导出（PLANNING/ANALYSIS/CHAT/FEEDBACK/NPC） |
+| `server/src/utils/persona.js` | BASE_TEMPLATE 中性化（去"老群友"默认身份）；PERSONAS normal 置首；默认 tiwei->normal |
+| `server/src/utils/knowledge.js` | 版本号硬编码 v3.2.0 改动态读 package.json；新增 frequentPersons（开开/周姐=高中同班同学）注入知识库 |
+| `server/src/utils/tokenizer.js` | 新建：中文分词工具（≤4 字整词 + 长词 bigram 滑窗），FTS5 方案A 核心 |
+| `server/src/agents/orchestrator.js` | isCasualChat 上下文感知（情绪反应词有上下文不短路）；parseTasks 兜底；buildPlannerPrompt +lastIntent 多轮追问；温度改 TEMPS |
+| `server/src/agents/memoryCompress.js` | 新建：超 20 turns 压缩早期轮次为摘要，注入 system 消息 |
+| `server/src/agents/topicSearchAgent.js` | FTS5 查询切 v2 表；同义词扩展加 LRU 缓存 |
+| `server/src/agents/personStatAgent.js` + `personMessagesAgent.js` | nickname LIKE 改 `=` 精确匹配 |
+| `server/src/agents/mentionedAgent.js` | FTS5 切 v2 + buildFtsQuery |
+| `server/src/agents/semanticAgent.js` + `statisticAgent.js` | 标注已弃用（工程经验保留） |
+| `server/src/searchHub.js` | TASK_TIMEOUT 15s->60s |
+| `server/src/controllers/chatController.js` | 记忆压缩集成；lastIntent 读取传入；NPC 温度改 TEMPS |
+| `server/prisma/schema.prisma` | ChatSession +summary String? |
+| `server/scripts/rebuildFtsV2.js` | 新建：FTS5 v2 索引重建脚本（unicode61+预分词） |
+| `src/views/ChatView.vue` | 默认人设 normal；记忆压缩提示条 UI（details 折叠） |
+
+### 决策依据
+
+glm-5.3 实测连通（thinking:disabled 仍被 400，与 5.2 行为一致，不传即可）。FTS5 trigram 对 2 字中文词先天缺陷（3 字符滑窗无 2-gram），方案A 用 unicode61+预分词根治（≤4 字整词入索引，>4 字 bigram 滑窗），7/7 验证通过（考研命中 202 块，旧版 0 命中）。记忆压缩阈值 20 turns（=10 轮对话），前端 details 折叠条防误操作。人名 personStat/personMessages 改 `=` 精确匹配（只查本人发言），mentioned 保持 LIKE（职责就是搜"别人提到"）。prompt caching 实测火山自动生效（cached_tokens=1024），无需代码改动。
+
+### 影响评估
+
+男德通对话链路全面升级，纯文字消息回归正常。FTS5 v2 新表与旧 trigram 表并存（回退用），线上已重建（30 秒，5,372 块+538,915 消息）。ChatSession 新增可空 summary 列。部署已完成：.env glm-5.3 + prod.db ALTER TABLE summary + rebuildFtsV2 + pm2 restart。
+
+---
+
 ## 2026-08-20 v3.5.0 男德通多模态一期（图片理解）
 
 ### 概要
