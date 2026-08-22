@@ -21,6 +21,11 @@ body {
 body.has-bottom-nav {
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
+/* ChatView.vue 使用 flex 纵向布局 + 100dvh，body padding 推高整个页面会导致输入区
+ * 仍贴在视口底部被底栏压住，因此对 .chat-page 显式减去底栏高度 */
+body.has-bottom-nav .chat-page {
+  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
+}
 
 button {
   font-family: inherit;

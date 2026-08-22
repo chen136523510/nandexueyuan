@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-08-22（黑机 移动端页面布局问题）
+
+### BUG-73：手机端男德通输入框被底部导航栏遮挡（scoped `:global` 复合选择器被 Vue 编译器静默丢弃）
+
+- **发现时间**：2026-08-22 04:00 前后（院长手机实测反馈）
+- **环境**：线上生产（移动端视口 ≤768px，BottomNav 显示的路由）
+- **现象**：手机打开男德通 `/chat`，底部输入框被固定导航栏压住约 50px，无法正常看到/点击输入区
+- **根因**：`ChatView.vue` scoped CSS 里写的 `:global(body.has-bottom-nav) .chat-page { height: calc(100dvh - 64px - ...) }` **没有生效**。浏览器实测（Playwright evaluate 遍历 `document.styleSheets`）确认线上样式表里根本没有这条规则——`:global()` 只包裹了 `body.has-bottom-nav`，后半段 `.chat-page` 仍是 scoped 选择器，Vue SFC 编译器处理「global 包裹 + scoped 追加」混合写法时把整条规则静默丢弃。`.chat-page` 于是回落到 `100dvh` 满屏高，输入框贴到视口底部，与 `position:fixed` 的底栏（实测顶 762px）重叠 50px。`FeedbackView.vue` / `WallView.vue` 同款写法疑似同样失效（同族隐患）
+- **修复**：把规则移到全局 `src/styles/base.css`：`body.has-bottom-nav .chat-page { height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)); }`（base.css 无 scoped 编译环节，稳定生效；与既有 `body.has-bottom-nav` padding 规则放一起，语义集中）
+- **验证**（线上注入式实测 + 移动视口 375×812）：注入前 `.chat-page` 812px / 输入框底部 812 / 底栏顶 762（重叠 50px）；注入后 748px / 748 / 762（零重叠），截图确认输入框完整可见。本地 `npm run build` 因 `@dagrejs/dagre` 缺失失败——git stash 验证与本改动无关（岁月史书模块遗留，改动仅 base.css 一个文件不动构建链路）
+- **文件**：`src/styles/base.css`
+- **教训**：Vue scoped CSS 的 `:global()` 只对「纯 global 段」可靠；`global(body.x) .local-class` 这种混搭会被编译器静默丢弃且无警告。跨 body 类 + 组件类的选择器一律放全局样式文件，或用 `:deep()`/非 scoped style 块。验证 CSS 是否生效不要只看代码，直接在浏览器 `document.styleSheets` 里搜规则文本
+
+---
+
 ## 2026-08-21（黑机 排查男德通降级模式提示）
 
 ### BUG-72：SSL 强制跳转导致黑机 WS 检索通道 301 断连，文档未同步更新

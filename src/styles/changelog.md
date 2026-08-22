@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-08-22（黑机·BUG-73 修复）
+- [修改] `base.css` - 新增 `body.has-bottom-nav .chat-page { height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)); }`。修复手机端男德通输入框被底部导航遮挡：ChatView.vue scoped CSS 里 `:global(body.has-bottom-nav) .chat-page` 混搭写法被 Vue SFC 编译器静默丢弃（线上 styleSheets 实测无此规则），移到全局样式文件稳定生效
+- commit: 待提交 [fix](男德通): BUG-73
+
+---
+
 ## 2026-08-13（白机·晚自习模式）
 - [修改] `variables.css` - 新增深色主题 token 层（`:root[data-theme='dark']` 覆写色彩/阴影/渐变：青灰底 + 暖米白字 + 主色提亮 + 主色按钮深底字）；`:root` 补 `color-scheme: light`
 - [修改] `base.css` - body 主题切换颜色平滑过渡；新增 `body.has-bottom-nav` 移动端底部导航占位（含 iOS 安全区）

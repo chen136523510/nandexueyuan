@@ -4,6 +4,18 @@
 
 ---
 
+### [fix] BUG-73 手机端男德通输入框被底栏遮挡（scoped `:global` 混搭选择器被编译器丢弃）
+
+- **时间**：2026-08-22 04:00 ~ 04:30
+- **变更人**：陈梓键（黑机）
+- **背景**：院长手机实测发现男德通页输入框被底部导航压住。排查：`ChatView.vue` scoped CSS 写 `:global(body.has-bottom-nav) .chat-page { height: calc(100dvh - 64px - ...) }`，Playwright 遍历 `document.styleSheets` 确认线上该规则不存在——Vue SFC 编译器对「`:global()` 包裹 + scoped 追加」混合写法静默丢弃整条规则
+- **变更内容**：`src/styles/base.css` 在既有 `body.has-bottom-nav` padding 规则下新增 `body.has-bottom-nav .chat-page { height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)); }`（全局规则，无 scoped 编译环节，稳定生效）
+- **验证**：线上移动视口 375×812 注入式实测：注入前 `.chat-page` 812px / 输入框底 812 / 底栏顶 762（重叠 50px）；注入后 748px / 748 / 762（零重叠），截图确认输入框完整可见。本地 `npm run build` 因 `@dagrejs/dagre` 缺失失败，git stash 验证与本改动无关（岁月史书模块遗留）
+- **教训**：见 bug-log BUG-73——`:global()` 混搭 scoped 选择器不可靠，跨 body 类 + 组件类选择器一律放全局样式文件；`FeedbackView.vue`/`WallView.vue` 同款写法为同族隐患待排查
+- **状态**：✅ 已修复待部署（CSS 改动，需重新构建上线生效）
+
+---
+
 ### [fix] BUG-72 黑机 WS 检索通道被 SSL 301 踢断（ws:// → wss://）
 
 - **时间**：2026-08-21 19:06 ~ 19:40
