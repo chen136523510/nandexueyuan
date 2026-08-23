@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-08-23（黑机·检索管线四项工程化优化）
+
+- [新增] `orchestrator.js` planner 结果缓存（P1-3）：归一化 key（去空白+尾部标点语气词+小写）+ personaId，10min TTL / 200 条 LRU；同问法命中时跳过 planner LLM 直派任务，fallback 任务不缓存
+- [新增] `personMessagesAgent.js` / `mentionedAgent.js` flatMessages 返回字段：消息+上下文化简后的扁平数组带 id，供 orchestrator 跨 Agent 去重
+- [优化] `orchestrator.js` buildAnalysisPrompt 跨 Agent 去重（P0-1）：person/mentioned 的 flatMessages 按 id 去重后重建 formattedText，实测 9 条减到 6 条（省 33% 重复上下文）
+- [新增] `topicSearchAgent.js` 结果缓存（P1-4）：同关键词 10min 内复用完整结果（零查询零 LLM），只缓存成功结果，LRU 50 条
+- [新增] `server/scripts/add-nickname-index.js` 幂等索引脚本：`idx_group_messages_nickname_msgTime (nickname, msgTime)`，本地实测 nickname COUNT 61ms -> 3ms，典型 LIMIT 50 查询 1ms（需服务器执行）
+- [修复] `topicSearchAgent.js` 同义词扩展 429 兜底：LLM 失败时直接用原始关键词，不阻断 FTS5 检索（已有逻辑，本轮缓存路径保留该行为）
+
+- commit: `a507943`
+
+---
+
 ## 2026-08-23（黑机·男德通全量数据分析：map-reduce 分批摘要管线）
 
 ### 代码改动
