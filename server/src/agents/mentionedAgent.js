@@ -129,9 +129,11 @@ export async function runMentionedAgent(task, emit, options = {}) {
 
   // 只传前 N 条 + 上下文给大 Agent（避免文本过大导致服务器 OOM）
   const limitedMessages = messagesWithContext.slice(0, msgSlice)
-  const limitedText = formatMessagesAsText(
-    limitedMessages.flatMap((m) => [m, ...m.context]).filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i).slice(0, ctxSlice),
-  )
+  const flatList = limitedMessages
+    .flatMap((m) => [m, ...m.context])
+    .filter((m, i, arr) => arr.findIndex((x) => x.id === m.id) === i)
+    .slice(0, ctxSlice)
+  const limitedText = formatMessagesAsText(flatList)
 
   return {
     ok: true,
@@ -140,5 +142,6 @@ export async function runMentionedAgent(task, emit, options = {}) {
     target,
     keywords,
     formattedText: limitedText,
+    flatMessages: flatList, // 供 orchestrator 跨 Agent 按 id 去重（person/mentioned 上下文高度重叠）
   }
 }

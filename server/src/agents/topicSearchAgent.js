@@ -106,6 +106,13 @@ function sampleChunkMessages(msgs, keywords, budget) {
   return [...picked].sort((a, b) => a - b).map((idx) => msgs[idx])
 }
 
+// ========== 检索结果缓存（P1-4：相同关键词 10 分钟内复用完整结果）==========
+// 同义词扩展已有 1h LRU，这里再补数据库+格式化层：同关键词重复提问（群友常用）
+// 命中时 0 次查询 0 次格式化直接返回。只缓存成功结果，失败不缓存
+const resultCache = new Map()
+const RESULT_CACHE_TTL = 600000 // 10 分钟
+const RESULT_CACHE_MAX = 50
+
 /**
  * 执行话题检索
  * @param {{ keywords: string }} task 任务
@@ -113,6 +120,17 @@ function sampleChunkMessages(msgs, keywords, budget) {
  */
 export async function runTopicSearchAgent(task, emit) {
   const keywords = task.keywords || ''
+
+  // 命中缓存：直接复用（新消息延迟 10 分钟可见，对群聊问答可接受）
+  const cacheKey = keywords.trim().toLowerCase()
+  const cached = resultCache.get(cacheKey)
+  if (cached && Date.now() - cached.ts < RESULT_CACHE_TTL) {
+    emit('topic_search', 'analyzing', `命中检索缓存（10 分钟内同关键词）...`)
+    emit('topic_search', 'done', cached.doneContent, cached.doneData)
+    return cached.result
+  }
+  if (cached) resultCache.delete(cacheKey) // 过期清除
+
   emit('topic_search', 'analyzing', `正在提取搜索关键词...`)
 
   // 同义词扩展：一次轻量 LLM 调用，显著提升召回率
@@ -207,6 +225,22 @@ export async function runTopicSearchAgent(task, emit) {
     })
 
     // formattedText：每块摘要+抽样，覆盖全部命中块（替代旧版全量 messages 由 orchestrator slice(0,30) 截断）
+    // 写入结果缓存（P1-4）
+    const doneContent = `提取了 ${safeMessages.length} 条相关消息（${chunks.length} 个话题块，每块抽样呈现，缓存 10 分钟）`
+    const doneData = {
+      count: safeMessages.length,
+      sample: sources.map((s) => ({ nickname: s.nickname, content: (s.content || '').slice(0, 60) })),
+    }
+    if (resultCache.size >= RESULT_CACHE_MAX) {
+      const firstKey = resultCache.keys().next().value
+      resultCache.delete(firstKey)
+    }
+    resultCache.set(cacheKey, {
+      result: { ok: true, keywords: rawWords.join(' '), messages: safeMessages, formattedText, sources },
+      doneContent,
+      doneData,
+      ts: Date.now(),
+    })
     return { ok: true, keywords: rawWords.join(' '), messages: safeMessages, formattedText, sources }
   }
 
