@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-6 小板凳：群聊吃瓜日常的具象。「搬好小板凳」=围观点评的存在感。凡夫原型，最松弛的坐姿 -->
+  <rect width="240" height="240" rx="24" fill="#F5F2EC"/>
+
+  <!-- 地面：一条断续淡线 -->
+  <path d="M40 186 Q 120 190 200 186" fill="none" stroke="#A8C5A0" stroke-width="1.4" opacity="0.5" stroke-dasharray="3 5"/>
+
+  <!-- 凳面：略歪的圆角横板（暖赭），手作微倾 -->
+  <path d="M52 104 Q 54 100 62 100 L 150 96 Q 158 96 156 102 L 152 116 Q 150 120 142 120 L 56 122 Q 50 122 50 116 Z"
+        fill="#D4A574"/>
+
+  <!-- 坐垫：鼠尾草绿薄垫压在凳面上，微同倾 -->
+  <ellipse cx="100" cy="98" rx="36" ry="8" fill="#A8C5A0" transform="rotate(-3 100 98)"/>
+
+  <!-- 凳腿：两条外八，深墨绿粗线，一长一短（手作歪） -->
+  <path d="M66 120 C 62 140 56 160 54 180" fill="none" stroke="#35483A" stroke-width="7" stroke-linecap="round"/>
+  <path d="M138 116 C 142 136 148 158 152 178" fill="none" stroke="#35483A" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- 凳面下沿暗影：厚度感 -->
+  <path d="M52 114 Q 100 118 152 112" fill="none" stroke="#8A6A3F" stroke-width="1.8" opacity="0.5"/>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-5 长明灯：书院灯笼。晚间群聊最活跃，「总有一盏灯亮着的地方」=社区。暖光与德塔塔窗形成屋外灯/屋内窗的暗对仗 -->
+  <defs>
+    <radialGradient id="web5-glow" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#FFE3B0"/>
+      <stop offset="0.6" stop-color="#E9BE85"/>
+      <stop offset="1" stop-color="#D4A574"/>
+    </radialGradient>
+    <filter id="web5-blur" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <rect width="240" height="240" rx="24" fill="#F5F2EC"/>
+
+  <!-- 提梁：拱形手柄，手绘微微不对称 -->
+  <path d="M104 50 C 104 30 136 30 136 50" fill="none" stroke="#35483A" stroke-width="3.2" stroke-linecap="round"/>
+
+  <!-- 上下盖 -->
+  <rect x="102" y="46" width="36" height="11" rx="3" fill="#35483A"/>
+  <rect x="105" y="165" width="30" height="9" rx="3" fill="#35483A"/>
+
+  <!-- 灯笼身：不完美椭圆（手作感），米白纸面+暖赭描边 -->
+  <path d="M120 58
+           C 152 60 168 92 166 120
+           C 168 150 150 174 120 176
+           C 90 174 72 150 74 120
+           C 72 92 88 60 120 58 Z"
+        fill="#FDFBF7" stroke="#D4A574" stroke-width="2.6"/>
+
+  <!-- 骨架竖线：两根淡暖赭，纸灯笼结构 -->
+  <path d="M92 78 C 80 110 80 130 92 160" fill="none" stroke="#D4A574" stroke-width="1.2" opacity="0.55"/>
+  <path d="M148 78 C 160 110 160 130 148 160" fill="none" stroke="#D4A574" stroke-width="1.2" opacity="0.55"/>
+
+  <!-- 透光竖窗：灯亮着 -->
+  <circle cx="120" cy="118" r="34" fill="#E9BE85" opacity="0.4" filter="url(#web5-blur)"/>
+  <rect x="111" y="86" width="18" height="64" rx="9" fill="url(#web5-glow)"/>
+  <rect x="111" y="86" width="18" height="64" rx="9" fill="none" stroke="#8A6A3F" stroke-width="1" opacity="0.5"/>
+
+  <!-- 流苏：三根不等长，手作松弛 -->
+  <path d="M114 174 L 112 198" fill="none" stroke="#D4A574" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M120 174 L 120 204" fill="none" stroke="#D4A574" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M126 174 L 128 196" fill="none" stroke="#D4A574" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="112" cy="200" r="2.4" fill="#D4A574"/>
+  <circle cx="120" cy="206" r="2.4" fill="#D4A574"/>
+  <circle cx="128" cy="198" r="2.4" fill="#D4A574"/>
+</svg>

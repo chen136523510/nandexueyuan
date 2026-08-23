@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-9 冒泡小屋：家的门面。烟囱冒的不是烟，是聊天。「这个家的烟囱在冒话」--社区=家+群聊。与德塔塔（异世界堡垒）形成家屋/堡垒对仗 -->
+  <rect width="240" height="240" rx="24" fill="#F5F2EC"/>
+
+  <!-- 屋身 -->
+  <rect x="62" y="116" width="112" height="68" rx="6" fill="#FDFBF7" stroke="#35483A" stroke-width="3"/>
+
+  <!-- 烟囱：先画，被屋顶盖住底部（插在屋顶里） -->
+  <rect x="146" y="74" width="16" height="28" rx="2" fill="#D4A574"/>
+
+  <!-- 屋顶：三角山墙 -->
+  <path d="M48 116 L118 60 L188 116 Z" fill="#35483A" stroke="#35483A" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- 门：深色不透光（避免撞德塔门洞暖光），暖赭把手 -->
+  <rect x="106" y="138" width="28" height="46" rx="4" fill="#2C3D31"/>
+  <circle cx="128" cy="162" r="2.4" fill="#D4A574"/>
+
+  <!-- 窗：一扇小方窗，暖光（屋里有人） -->
+  <rect x="74" y="130" width="20" height="20" rx="2" fill="#E9BE85" opacity="0.85" stroke="#35483A" stroke-width="1.5"/>
+  <line x1="84" y1="130" x2="84" y2="150" stroke="#35483A" stroke-width="1"/>
+  <line x1="74" y1="140" x2="94" y2="140" stroke="#35483A" stroke-width="1"/>
+
+  <!-- 对话气泡：烟囱冒出的「烟」=聊天。手绘云朵形+小尾巴指向烟囱口 -->
+  <path d="M138 44
+           Q 126 36 132 26
+           Q 124 14 140 16
+           Q 146 6 158 14
+           Q 174 8 176 22
+           Q 190 24 184 36
+           Q 192 48 178 50
+           Q 174 58 162 54
+           Q 150 60 142 52
+           Q 132 54 138 44 Z"
+        fill="#FDFBF7" stroke="#D4A574" stroke-width="2.6"/>
+  <!-- 气泡小尾巴：指向烟囱口 (154,74) -->
+  <path d="M150 52 Q 148 62 154 72" fill="none" stroke="#D4A574" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- 气泡内三点：正在打字 -->
+  <circle cx="150" cy="32" r="2.6" fill="#35483A"/>
+  <circle cx="162" cy="32" r="2.6" fill="#35483A"/>
+  <circle cx="174" cy="32" r="2.6" fill="#35483A"/>
+</svg>

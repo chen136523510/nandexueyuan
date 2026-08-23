@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- WEB-8 躺平的人：开摆的行为符号化。不是院名文字，是通用汉字「人」的行为化--连「人」都躺了。凡夫+弄臣原型 -->
+  <rect width="240" height="240" rx="24" fill="#F5F2EC"/>
+
+  <!-- 地面淡线 -->
+  <path d="M28 164 Q 120 168 212 160" fill="none" stroke="#A8C5A0" stroke-width="1.4" opacity="0.45" stroke-dasharray="3 5"/>
+
+  <!-- 头：暖赭实心圆（血缘色），左侧偏下 -->
+  <circle cx="62" cy="150" r="16" fill="#D4A574"/>
+  <!-- 脖颈短接 -->
+  <path d="M76 146 Q 82 144 86 144" fill="none" stroke="#35483A" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- 身体：水平躺姿，微曲（深墨绿粗线），从肩到脚 -->
+  <path d="M86 144 C 110 140 140 138 172 142" fill="none" stroke="#35483A" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- 翘腿：二郎腿，从腰中点翘起再回勾搭膝盖 -->
+  <path d="M130 140 C 138 120 150 100 162 94" fill="none" stroke="#35483A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M162 94 C 170 96 176 104 172 114" fill="none" stroke="#35483A" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- 脚：身体末端一个小回勾 -->
+  <path d="M172 142 Q 180 140 184 146" fill="none" stroke="#35483A" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Zzz：极淡的三点渐小（打盹），克制不卡通 -->
+  <circle cx="50" cy="112" r="3" fill="#A8C5A0" opacity="0.7"/>
+  <circle cx="40" cy="100" r="2.2" fill="#A8C5A0" opacity="0.5"/>
+  <circle cx="33" cy="91" r="1.6" fill="#A8C5A0" opacity="0.35"/>
+</svg>
