@@ -34,10 +34,13 @@ function buildSearchKeywords(target) {
  */
 export async function runMentionedAgent(task, emit, options = {}) {
   const { target } = task
-  const limit = options.limit !== undefined ? options.limit : 30 // 默认 30 条，黑机传 null 表示全量
-  const limitSql = limit ? `LIMIT ${limit}` : ''
-  const msgSlice = limit ?? 20 // 传给大 Agent 的消息条数
-  const ctxSlice = limit ?? 150 // 上下文总条数上限
+  // limit 语义：undefined=默认 30；数字=显式条数；null=黑机全量模式
+  // BUG-74 修复：原 `limit ?? 30` 在 null 时也取默认值，黑机全量名不副实（实际仍 30 条）
+  const limit = options.limit !== undefined ? options.limit : 30
+  const limitSql = limit === null ? '' : `LIMIT ${limit}`
+  // 全量模式（null）传给大 Agent 的条数上限（有界，防 OOM；真·全量走 fullAnalysisAgent 分批管线）
+  const msgSlice = limit === null ? 200 : limit
+  const ctxSlice = limit === null ? 1000 : limit ?? 150
   emit('mentioned', 'analyzing', `正在分析 ${target} 被提及的搜索词...`)
 
   const keywords = buildSearchKeywords(target)

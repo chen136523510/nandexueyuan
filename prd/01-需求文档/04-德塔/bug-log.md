@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-08-23（黑机 男德通全量数据分析开发阶段）
+
+### BUG-75：topicSearchAgent catch 块引用 try 内 const，FTS5 报错时被 ReferenceError 吞掉真实错误
+
+- **发现时间**：2026-08-23 凌晨（全量分析回归测试「考研讨论过吗」时暴露）
+- **环境**：本地 dev.db（缺 `message_chunks_fts_v2` 表的环境必现）；线上 v2 表存在时不触发
+- **现象**：普通话题提问回答「系统返回错误：ftsQuery is not defined」，AI 如实报告了技术异常。FTS5 降级链（Level1 -> Level2 LIKE）没有走到
+- **根因**：`topicSearchAgent.js` 两处 `catch` 块的 `console.error` 引用了 `try` 块内声明的 `const ftsQuery`——块级作用域隔离使 catch 里该变量不存在，**FTS5 查询本身报错时 catch 自己抛 ReferenceError**，把真实错误（缺表）吞掉并冒泡为 agent 失败。commit `6717042`（FTS5 方案A 改造）引入，属存量 bug，本轮回归测试顺带抓到
+- **修复**：两处 `ftsQuery` 声明提到 try 外（Level1 分块 FTS5 / Level3 消息 FTS5），catch 能正确打印真实错误+查询串，降级链恢复正常
+- **验证**：修复后同题重跑，FTS5 Error 日志正确打印「no such table: message_chunks_fts_v2」+ 完整 ftsQuery，随后走 LIKE 降级（本地库旧版 FTS 表也不命中属预期，线上有 v2 表不受影响）
+- **文件**：`server/src/agents/topicSearchAgent.js`
+- **教训**：catch 块里引用的变量必须在 try 外声明；「错误日志代码本身有 bug」是最阴险的一类——平时不报错（FTS5 正常时 catch 不执行），环境异常时才爆雷且掩盖原始错误
+
+### BUG-74：黑机「全量检索」名不副实——`limit ?? 30` 把 null 全量又变回默认截断
+
+- **发现时间**：2026-08-23 凌晨（全量数据分析调研时代码审查发现）
+- **环境**：男德通重度检索（person_messages / mentioned 走黑机 WS worker 的场景）
+- **现象**：黑机 worker 传 `{ limit: null }` 意图全量，但用户看到的回答依然只基于最近 30/50 条消息，AI 还如实说「基于抽样」
+- **根因**：`personMessagesAgent.js` 写 `const msgSlice = limit ?? 30`——`??` 运算符在值为 `null` 时也取右侧默认值（只有 `undefined` 才穿透），黑机传的 `null` 全量标记被吃掉，最终传给 LLM 的仍只有 30 条（mentioned 同款 20 条）。黑机在线时真正生效的只有 COUNT 总数，「全量」从未实现过
+- **修复**：两个 agent 的 limit 语义显式三分支：`undefined`=默认、数字=显式条数、`null`=黑机全量（SQL 不加 LIMIT，传 LLM 的 msgSlice 提升到 300/200 有界上限防 OOM）。真·全量由本轮新增的 fullAnalysisAgent 分批管线负责
+- **验证**：代码级修复+语法/模块加载检查通过；黑机全量链路的真实效果随全量分析功能一起验证
+- **文件**：`server/src/agents/personMessagesAgent.js`、`server/src/agents/mentionedAgent.js`
+- **教训**：`??` 与 `||` 都会在 null 时取默认值，「用 null 表示全量」的哨兵值设计必须配 `!== undefined` 显式判断，否则哨兵永远不生效。该 bug 潜伏近一个月无人发现，因为降级行为「看起来正常」
+
+### 本轮另修复（未达 bug-log 级，记 changelog）：fullAnalysisAgent SQL 拼接 OR 优先级问题
+
+`WHERE ${cond} AND id BETWEEN` 中 cond 含 OR 时，AND 优先级高于 OR 导致 id 限制只作用于最后一个 OR 分支（dry-run 抓到：BETWEEN 查询返回 93873 条而非预估 642 条）。所有拼接 whereSql 的查询统一加括号包裹修复。教训：**含 OR 的动态 WHERE 片段与外部条件组合时必须括号包裹**。
+
+---
+
 ## 2026-08-22（黑机 移动端页面布局问题）
 
 ### BUG-73：手机端男德通输入框被底部导航栏遮挡（scoped `:global` 复合选择器被 Vue 编译器静默丢弃）

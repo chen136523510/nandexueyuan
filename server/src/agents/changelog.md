@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-08-23（黑机·男德通全量数据分析：map-reduce 分批摘要管线）
+
+### 代码改动
+
+- [新增] `fullAnalysisAgent.js` - 全量分析子 Agent（第 9 个子 Agent）。**背景**：院长反馈 AI 自述「统计基于抽样非全量」，排查确认检索管线三处截断（topic 每块抽 10 条 / person·mentioned 传 LLM 30/20 条 / orchestrator 总闸 2 万字符），院长裁决要「AI 针对全量数据做分析」。**架构（map-reduce）**：范围圈定（复用各 agent 条件：人物 nickname 精确匹配 / 话题 FTS5 v2 命中块+旧版 fts 降级+LIKE 兜底 / 提及关键词 LIKE / 时间范围±关键词）→ 一次性取全量 `id+LENGTH(content)`（0.2s/9.4万行，替代逐页全表扫描）→ 内存按 24,000 字符/批切分 → 上限 40 批（超出跨全时段等距抽样并明示）→ map 并发 4 批查询感知摘要（带用户原始问题，保留人物/事件/次数/金句，单批重试 3 次线性退避）→ 分层 reduce（每 12 份合一循环至 1 份）→ 底稿 ≤15,000 字符带覆盖口径头注入现有分析流。关键参数集中常量：BATCH_CHAR_BUDGET/MAX_BATCHES/MAP_CONCURRENCY/REDUCE_GROUP_SIZE/DRAFT_CHAR_LIMIT/TOPIC_CHUNK_LIMIT
+- [新增] `orchestrator.js` 全量意图路由：planner prompt 加 `full:true` 字段规则+示例（限 topic_search/person_messages/mentioned/time_search 四类）；parseTasks 白名单透传 full；matchQuickPattern 正则兜底标 full（`全量|完整分析|逐条|全部消息|每一条` 与 planner 双保险）；dispatchAgent 检测 full 走本地 fullAnalysisAgent（不走黑机避开 WS 60s 超时），失败降级普通检索，CLIENT_ABORTED 透传中断；dispatchAgent 签名加第三参 question（map prompt 需要）
+- [修复] `personMessagesAgent.js` + `mentionedAgent.js` **BUG-74**：`limit ?? 30` 在黑机传 `null` 全量时也取默认值（`??` 只放行 undefined），全量名不副实近一个月。改显式三分支：undefined=默认 / 数字=显式条数 / null=全量（SQL 无 LIMIT + msgSlice 提至 300/200 有界防 OOM），真·全量由 fullAnalysisAgent 负责
+- [修复] `topicSearchAgent.js` **BUG-75**（存量，`6717042` 引入）：两处 catch 块引用 try 内 `const ftsQuery`，FTS5 报错时 catch 自身抛 ReferenceError 吞掉真实错误（本地缺 v2 表环境必现）。ftsQuery 提到 try 外
+- [修复] `fullAnalysisAgent.js` OR 优先级：含 OR 的动态 whereSql 与外部 AND 组合处统一括号包裹（dry-run 抓到 BETWEEN 返回 93873 条而非 642 条）
+- [防御] map/reduce 对 glm-5.3 偶发空 content（思考链吃掉输出预算）视为失败重试；reduce 合并失败保留原始摘要拼接不丢数据
+
+### 验证
+
+- 考研话题全量（真调 LLM）：命中 30 块 3,029 条 → 5 批 5/5 成功 → 底稿 3,882 字符（人物观点演变+金句+时间线），86s
+- 丘序明全部发言（dry-run 零 LLM）：93,873 行 0.2s 取完 → 148 批 → 等距抽样 40 批（25,183 条，首尾保真）→ 单批拉取与预估一致（642=642，OR 括号修复生效）
+- 普通提问回归：「考研讨论过吗」走原 topic_search 路径不变
+- 意图正则单测 5/5（全量类命中/普通问题不误标）
+- ⚠️ 验证中途火山 coding plan 5 小时额度耗尽（429，18:55 重置），前端浏览器实测待补
+
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·男德通 AI 优化第二批：13 项痛点落地）
 
 ### 代码改动

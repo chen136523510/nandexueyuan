@@ -20,6 +20,7 @@ import { runTimeSearchAgent } from './timeSearchAgent.js'
 import { runWorldbookAgent } from './worldbookAgent.js'
 import { runDbInfoAgent } from './dbInfoAgent.js'
 import { runVisionAgent } from './visionAgent.js'
+import { runFullAnalysisAgent } from './fullAnalysisAgent.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
 
 // ========== 规划阶段 prompt ==========
@@ -86,6 +87,11 @@ function buildPlannerPrompt(question, history, persona, lastIntent = null) {
 - 不确定是否需要检索时，倾向检索（宁可多查不要漏答）
 - 只有纯闲聊（"你好""你是谁"）才输出 []
 
+【全量分析意图（重要）】
+- 用户明确要求"全量/完整/所有/逐条/深入分析"数据时（如"全量分析考研的讨论""完整分析丘序明的发言"），对应任务加 "full": true 字段
+- full 任务走分批摘要全量管线（AI 读完范围内全部消息再分析），比普通检索慢数分钟，仅在用户明确要求全量/完整时使用
+- 仅 topic_search / person_messages / mentioned / time_search 支持 full；其他类型忽略该字段
+
 人名要用真名（如"丘序明"而非"丘哥"）。
 输出必须是合法的 JSON 数组，不要 markdown 标记。
 
@@ -99,6 +105,8 @@ function buildPlannerPrompt(question, history, persona, lastIntent = null) {
 "7月份有没有聊过游戏" -> [{"type":"time_search","startDate":"2026-07-01","endDate":"2026-07-31","keywords":"游戏"},{"type":"topic_search","keywords":"游戏"}]
 "你好" -> []
 "还有呢"（上一轮查了丘序明发言） -> [{"type":"person_messages","target":"丘序明"},{"type":"mentioned","target":"丘序明"}]
+"全量分析群里关于考研的讨论" -> [{"type":"topic_search","keywords":"考研","full":true}]
+"完整分析丘序明的所有发言" -> [{"type":"person_messages","target":"丘序明","full":true}]
 
 只输出 JSON 数组，不要其他内容。`,
   })
@@ -181,9 +189,22 @@ function buildAnalysisPrompt(question, history, agentResults, persona, visionCon
 // 重度任务：数据量大，值得外包给黑机全量检索
 const HEAVY_TASKS = ['person_messages', 'mentioned']
 
-async function dispatchAgent(task, emit) {
+async function dispatchAgent(task, emit, question) {
   const { type } = task
   const isHeavy = HEAVY_TASKS.includes(type)
+
+  // 全量分析任务：走云端 map-reduce 分批管线（不走黑机，避免 60s 任务超时）
+  if (task.full === true) {
+    try {
+      const result = await runFullAnalysisAgent({ ...task, question }, emit)
+      return { agentType: '全量分析', ...result }
+    } catch (err) {
+      // CLIENT_ABORTED（用户停止）向上透传中断；其余降级普通检索
+      if (err.message === 'CLIENT_ABORTED') throw err
+      console.error(`[Orchestrator] 全量分析失败，降级普通检索: ${err.message}`)
+      emit(type, 'warning', `全量分析失败（${err.message}），降级普通检索`)
+    }
+  }
 
   // 黑机在线 + 重度任务 -> 外包给黑机全量检索
   if (isBlackOnline() && isHeavy) {
@@ -276,11 +297,13 @@ const nameRegex = new RegExp(`(${namePattern})`)
 /**
  * 快速路由：正则匹配模板化问题，命中则跳过规划 LLM
  * 匹配高频模板直接派发对应 Agent
+ * 用户明确表达全量意图时给任务补 full:true（planner 兜底，双保险）
  * @param {string} question 用户问题
  * @returns {array|null} 任务列表，null 表示未命中快速模板
  */
 function matchQuickPattern(question) {
   const q = question.trim()
+  const fullIntent = /全量|完整分析|逐条|全部消息|所有消息|每一条|彻彻底底/.test(q)
 
   // 提取问题中出现的成员名
   const nameMatch = q.match(nameRegex)
@@ -320,7 +343,7 @@ function matchQuickPattern(question) {
     if (m) {
       if (tpl.extract) {
         const kw = tpl.extract(m)
-        return tpl.tasks(kw)
+        return [{ type: 'topic_search', keywords: kw, ...(fullIntent ? { full: true } : {}) }]
       }
       return tpl.tasks
     }
@@ -353,6 +376,14 @@ function matchQuickPattern(question) {
 
   for (const tpl of templates) {
     if (tpl.pattern.test(q)) {
+      // 全量意图：给支持 full 的任务类型补标记（person_stat/db_info 等不支持，忽略）
+      if (fullIntent) {
+        return tpl.tasks.map((t) =>
+          ['topic_search', 'person_messages', 'mentioned', 'time_search'].includes(t.type)
+            ? { ...t, full: true }
+            : t,
+        )
+      }
       return tpl.tasks
     }
   }
@@ -372,11 +403,18 @@ function parseTasks(raw) {
   }
 
   // 白名单过滤（提取为局部函数，两条解析路径共用）
+  // full 字段（全量分析意图）透传给 dispatchAgent，仅限支持的四种类型
   const filterValid = (tasks) =>
     Array.isArray(tasks)
-      ? tasks.filter(
-          (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'time_search', 'worldbook', 'db_info'].includes(t.type),
-        )
+      ? tasks
+          .filter(
+            (t) => t && t.type && ['person_stat', 'person_messages', 'mentioned', 'topic_search', 'time_search', 'worldbook', 'db_info'].includes(t.type),
+          )
+          .map((t) => ({
+            ...t,
+            full: t.full === true && ['topic_search', 'person_messages', 'mentioned', 'time_search'].includes(t.type) ? true : undefined,
+          }))
+          .map(({ full, ...rest }) => (full ? { ...rest, full } : rest))
       : []
 
   try {
@@ -584,7 +622,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
       data: quickTasks,
     })
 
-    const taskPromises = quickTasks.map((task) => dispatchAgent(task, emit))
+    const taskPromises = quickTasks.map((task) => dispatchAgent(task, emit, effectiveQuestion))
     const results = await Promise.all(taskPromises)
 
     const base = await runAnalysisAndAnswer(effectiveQuestion, history, results, send, persona, visionContext)
@@ -639,7 +677,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
         data: fallbackTasks,
       })
 
-      const taskPromises = fallbackTasks.map((task) => dispatchAgent(task, emit))
+      const taskPromises = fallbackTasks.map((task) => dispatchAgent(task, emit, question))
       const results = await Promise.all(taskPromises)
       return await runAnalysisAndAnswer(question, history, results, send, persona)
     }
@@ -669,7 +707,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
   }
 
   // ========== 阶段 2：并行检索 ==========
-  const taskPromises = tasks.map((task) => dispatchAgent(task, emit))
+  const taskPromises = tasks.map((task) => dispatchAgent(task, emit, effectiveQuestion))
   const results = await Promise.all(taskPromises)
 
   // ========== 阶段 3：分析 + 回答 ==========

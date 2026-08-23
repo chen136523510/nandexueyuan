@@ -4,6 +4,22 @@
 
 ---
 
+### [feat] 男德通全量数据分析（R-049）：map-reduce 分批摘要管线 + BUG-74/75 修复
+
+- **时间**：2026-08-23 01:51 ~ 17:46
+- **变更人**：陈梓键（黑机）
+- **背景**：院长反馈男德通 AI 回答自述「统计基于抽样聊天记录，不是全量数据」，要求 AI 针对全量数据做分析。排查确认检索管线三处截断（topic 每块抽 10 条 / person·mentioned 传 LLM 30/20 条 / orchestrator 总闸 2 万字符），且黑机 WS「全量」名不副实（BUG-74：`limit ?? 30` 把 null 哨兵吃掉）
+- **变更内容**：
+  1. 新建 `server/src/agents/fullAnalysisAgent.js`（第 9 个子 Agent）：范围圈定 → 一次性取全量 `id+LENGTH(content)`（0.2s/9.4万行）→ 内存按 24k 字符/批切分 → 上限 40 批（超限等距抽样+明示）→ map 并发 4 批查询感知摘要 → 分层 reduce（12 份/组）→ 底稿 ≤15k 字符注入现有分析流
+  2. `orchestrator.js`：全量意图路由（planner `full:true` + matchQuickPattern 正则兜底双保险 + parseTasks 透传 + dispatchAgent 分流本地执行不走黑机）
+  3. BUG-74 修复：`personMessagesAgent.js`/`mentionedAgent.js` limit 显式三分支（undefined=默认/数字=显式/null=全量）
+  4. BUG-75 修复（存量）：`topicSearchAgent.js` 两处 ftsQuery 提到 try 外，catch 不再自身抛 ReferenceError 吞错
+  5. `ChatView.vue`：📚 全量分析 Agent 分组 + mapping/reducing phase + 「第 x/y 批」进度徽章
+- **验证**：考研话题真调 LLM 3,029 条全量→5 批→底稿 3,882 字符/86s；丘序明 dry-run 93,873 行→148 批→40 批抽样正确（零 LLM 消耗）；普通提问回归路径不变；意图正则单测 5/5。**中途火山 coding plan 5h 额度耗尽（18:55 重置），前端浏览器实测待补**
+- **状态**：✅ 代码完成，**未部署**（部署纪律待院长指示）；详情见 [agents/changelog](../../../server/src/agents/changelog.md) 与 bug-log BUG-74/75
+
+---
+
 ### [fix] BUG-73 手机端男德通输入框被底栏遮挡（scoped `:global` 混搭选择器被编译器丢弃）
 
 - **时间**：2026-08-22 04:00 ~ 04:30

@@ -25,6 +25,7 @@ const agentIcons = {
   person_messages: '💬',
   mentioned: '🔍',
   topic_search: '🔎',
+  full_analysis: '📚',
   视觉识别: '👁️',
   router: '🧭',
 }
@@ -34,6 +35,7 @@ const agentLabels = {
   person_messages: '人物发言 Agent',
   mentioned: '被提及 Agent',
   topic_search: '话题检索 Agent',
+  full_analysis: '全量分析 Agent',
   视觉识别: '视觉识别 Agent',
   router: '路由分析',
 }
@@ -43,8 +45,21 @@ const phaseLabels = {
   searching: '检索',
   reasoning: '推理',
   analysis: '综合分析',
+  mapping: '分批摘要',
+  reducing: '汇总合并',
   done: '完成',
   warning: '⚠️ 提示',
+}
+
+// 全量分析批次进度：取该 agent 步骤里最后一条带 current/total 的数据（mapping 阶段每批推一条）
+function lastBatchProgress(steps) {
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const d = steps[i]?.data
+    if (d && typeof d === 'object' && !Array.isArray(d) && d.current !== undefined && d.total !== undefined) {
+      return d
+    }
+  }
+  return null
 }
 
 // ========== 人设选择 ==========
@@ -492,6 +507,13 @@ function formatDate(date) {
                       <span v-if="steps[steps.length-1]?.data?.count !== undefined" class="agent-count">
                         {{ steps[steps.length-1].data.count }} 条
                       </span>
+                      <!-- 全量分析批次进度（data.current/total，映射 mapping 阶段每批一条） -->
+                      <span
+                        v-if="agentKey === 'full_analysis' && lastBatchProgress(steps)"
+                        class="agent-count batch-progress"
+                      >
+                        第 {{ lastBatchProgress(steps).current }}/{{ lastBatchProgress(steps).total }} 批
+                      </span>
                     </div>
                     <div v-for="(step, si) in steps" :key="si" class="agent-step">
                       <span v-if="step.phase" :class="['step-phase', { warning: step.phase === 'warning' }]">{{ phaseLabels[step.phase] || step.phase }}</span>
@@ -929,6 +951,7 @@ function formatDate(date) {
 .agent-semantic, .agent-mentioned { background: var(--md-primary-bg); border-left: 3px solid var(--md-primary); }
 .agent-topic_search { background: rgba(174, 194, 207, 0.18); border-left: 3px solid var(--md-secondary); }
 .agent-person_messages { background: rgba(201, 160, 160, 0.12); border-left: 3px solid var(--md-danger); }
+.agent-full_analysis { background: rgba(154, 173, 118, 0.15); border-left: 3px solid #7d8f5a; }
 .agent-main { background: var(--md-primary-bg); border-left: 3px solid var(--md-primary-hover); }
 .agent-label {
   font-weight: 600;
@@ -967,6 +990,10 @@ function formatDate(date) {
   color: var(--md-text-disabled);
   font-weight: normal;
   margin-left: 4px;
+}
+.batch-progress {
+  color: var(--md-accent);
+  font-weight: 600;
 }
 .data-key {
   font-weight: 600;

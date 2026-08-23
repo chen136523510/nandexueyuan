@@ -34,10 +34,13 @@ function buildPersonConditions(target) {
  */
 export async function runPersonMessagesAgent(task, emit, options = {}) {
   const { target } = task
-  const limit = options.limit !== undefined ? options.limit : 50 // 默认 50 条，黑机传 null 表示全量
-  const limitSql = limit ? `LIMIT ${limit}` : ''
-  const msgSlice = limit ?? 30 // 传给大 Agent 的消息条数
-  const ctxSlice = limit ?? 200 // 上下文总条数上限
+  // limit 语义：undefined=默认 50；数字=显式条数；null=黑机全量模式
+  // BUG-74 修复：原 `limit ?? 50` 在 null 时也取默认值，黑机全量名不副实（实际仍 50 条）
+  const limit = options.limit !== undefined ? options.limit : 50
+  const limitSql = limit === null ? '' : `LIMIT ${limit}`
+  // 全量模式（null）传给大 Agent 的条数上限（有界，防 OOM；真·全量走 fullAnalysisAgent 分批管线）
+  const msgSlice = limit === null ? 300 : limit
+  const ctxSlice = limit === null ? 1500 : limit ?? 200
   emit('person_messages', 'analyzing', `正在查找 ${target} 的发言...`)
 
   const { names, likeConditions } = buildPersonConditions(target)

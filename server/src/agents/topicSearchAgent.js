@@ -132,8 +132,10 @@ export async function runTopicSearchAgent(task, emit) {
   // Level 1: 分块 FTS5 v2（unicode61 + 预分词，支持 2 字中文词，同时搜 keywords + summary 两列）
   let chunks = []
   if (rawWords.length > 0) {
+    // BUG-75 修复：ftsQuery 提到 try 外声明。原 catch 里引用 try 块内的 const ftsQuery，
+    // 块级作用域隔离导致 FTS5 出错时 catch 自己抛 ReferenceError，吞掉真实错误（如缺 v2 表）
+    const ftsQuery = buildFtsQuery(rawWords)
     try {
-      const ftsQuery = buildFtsQuery(rawWords)
       chunks = await prisma.$queryRawUnsafe(
         `SELECT c.id, c.startMsgId, c.endMsgId, c.chunkDate, c.keywords
          FROM message_chunks_fts_v2 f
@@ -213,8 +215,9 @@ export async function runTopicSearchAgent(task, emit) {
   let results = []
 
   if (ftsWords.length > 0) {
+    // BUG-75：同 Level 1，ftsQuery 提到 try 外防 catch 自身 ReferenceError
+    const ftsQuery = buildFtsQuery(rawWords)
     try {
-      const ftsQuery = buildFtsQuery(rawWords)
       results = await prisma.$queryRawUnsafe(
         `SELECT m.id, m.nickname, m.msgTime, m.content
          FROM group_messages_fts_v2 f
