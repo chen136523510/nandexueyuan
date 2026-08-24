@@ -1,12 +1,13 @@
 # RAG 检索增强开发方案（方案 B/C/D）
 
-> 版本：v1.1 | 日期：2026-08-24（白机）
-> 状态：✅ 已实施（2026-08-24 白机，代码落地+本地验证全过，待部署上线。单元 24/24 + bm25 内存库真调 + rerank LLM 真调均通过；rerank 实测延迟 1.3-1.6s，无幻觉 id）
+> 版本：v1.2 | 日期：2026-08-24（白机）
+> 状态：✅ 已部署上线（2026-08-24 18:12，commit `dcd993a`，deploy.sh 9/9）。线上真调：问「群里讨论考研的频率高吗」引用 5 个话题块多块覆盖生效，20.2s；rerank 链路触发且降级机制正常（线上 LLM rerank 偶发失败降级初排，原因待观察，不阻塞）
 > 前置调研：《[RAG检索策略与工程化调研](../00-调研/RAG检索策略与工程化调研.md)》（2026-08-15 黑机，方案 A 已落地）
 > 改动范围：`server/src/agents/topicSearchAgent.js` 为主 + `orchestrator.js` 一行传参
 >
-> v1.0（2026-08-24 上午）：方案落档待排期。v1.1：下午院长批准「开始开发」，当日实施完成。
-> 实施修正两处：① FTS5 v2 分词器实为 unicode61+tokenizeZh 预分词（原方案 §2 写 unicode61 正确，trigram 是旧 v1 表）；② rerankChunks 需 BigInt id 归一（Prisma $queryRawUnsafe 返回 1n，与 LLM 返回的 Number 1 不等，须 Number() 后 Map 匹配）
+> v1.0（上午）：方案落档待排期。v1.1：院长批准「开始开发」当日实施完成（本地验证：单元 24/24 + bm25 内存库真调 + rerank LLM 真调 1.3-1.6s 无幻觉）。
+> 实施修正两处：① FTS5 v2 分词器实为 unicode61+tokenizeZh 预分词（trigram 是旧 v1 表）；② rerankChunks 需 BigInt id 归一（Prisma $queryRawUnsafe 返回 1n，与 LLM 返回的 Number 1 不等，须 Number() 后 Map 匹配）。
+> v1.2：部署上线 + 线上真调验证通过。踩坑：白机 Git Bash curl 发中文 JSON body 到线上会乱码（终端 GBK 编码），线上测中文接口须服务器 node 直跑或浏览器。
 
 ---
 

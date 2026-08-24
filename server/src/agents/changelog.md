@@ -9,6 +9,7 @@
 - [feat] `topicSearchAgent.js` +97 行：①方案 D `dedupChunks()`（keywords 词集 Jaccard > 0.7 合并同质块，保留 rank 靠前的）；②方案 C Level 1 FTS5 SQL `ORDER BY rank LIMIT 5` -> `ORDER BY bm25(message_chunks_fts_v2, 3.0, 1.0) LIMIT 20`（keywords 列权重 3 倍于 summary）；③方案 B `rerankChunks()`（LLM 精排，temp=0 + thinking:disabled，输出 JSON 数组，失败/幻觉 id 降级初排前 5）；④主流程接入 D->C->B 链路（去重 -> 候选 > 6 才触发 rerank -> 否则初排截断）；⑤Level 2 LIKE 召回上限同步 5->20；⑥新增 RERANK_CANDIDATES/KEEP/TRIGGER 常量
 - [feat] `orchestrator.js`：`case 'topic_search'` 传 question 第三参给 runTopicSearchAgent（黑机 WS 通道不经此路径，question 为空时跳过 rerank 走初排，行为与现状一致）
 - [验证] 纯函数单元 24/24（dedupChunks 去重/截断逻辑/rerank 解析降级/常量值）；bm25 内存库真调（tokenizeZh 预分词 + unicode61 + JOIN 生产形态，块3 双命中 > 块1 keywords 正命中 > 块2 summary 顺带提及，LIMIT 20 正确）；rerankChunks LLM 真调 deepseek-v4-flash 2 题（1.3-1.6s，无幻觉 id，"复试分数线"首推 101/"择校"首推 103）
+- [部署] 2026-08-24 18:12 白机 deploy.sh 9/9 全绿上线；线上真调服务器直跑 orchestrate「群里讨论考研的频率高吗」→ 回答引用 5 个话题块多块覆盖生效（2025-02-19~03-30 出分/复试/调剂/上岸），总耗时 20.2s；日志出现 `[TopicSearch] rerank 失败，降级取初排前 5`，证明 rerank 链路被触发（question 传参+LIMIT 20 召回+候选>6）且降级机制正常。待观察：线上 rerank LLM 偶发失败原因（本地真调成功），降级不阻塞
 - [BigInt 兼容] Prisma `$queryRawUnsafe` 返回 BigInt（1n !== 1），rerankChunks 用 `Number(c.id)` 归一后 Map 匹配，避免 LLM 返回的 Number id 与 BigInt chunk.id 不等导致空结果
 - [回退] 三方案互独立可单独 revert；RERANK_TRIGGER 调 Infinity 可一键禁用 rerank
 
