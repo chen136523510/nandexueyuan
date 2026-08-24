@@ -576,6 +576,40 @@ async function runFeedbackFlow(question, history, send, persona) {
   return { answer, sources: [], intent: 'feedback', feedback }
 }
 
+// ========== 规划结果缓存（P1-3：相似问题复用任务列表，省一次 planner LLM）==========
+// key = 规范化 question + personaId；同问法 10 分钟内零规划成本。
+// 不做语义相似（embedding），纯文本归一化——群友问法重复率高（"XX发了多少条"类模板），文本级命中已够用
+const plannerCache = new Map()
+const PLANNER_CACHE_TTL = 600000 // 10 分钟
+const PLANNER_CACHE_MAX = 200
+
+function plannerCacheKey(question, personaId) {
+  // 归一化：去空白 + 去尾部标点/语气词 + 小写英文
+  const normalized = String(question)
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[?？!！。~～呢吧啊呀了的]+$/g, '')
+  return `${personaId || 'normal'}|${normalized}`
+}
+
+function getPlannerCache(key) {
+  const hit = plannerCache.get(key)
+  if (!hit) return null
+  if (Date.now() - hit.ts > PLANNER_CACHE_TTL) {
+    plannerCache.delete(key) // 过期
+    return null
+  }
+  return hit.tasks
+}
+
+function setPlannerCache(key, tasks) {
+  if (plannerCache.size >= PLANNER_CACHE_MAX) {
+    const firstKey = plannerCache.keys().next().value
+    plannerCache.delete(firstKey)
+  }
+  plannerCache.set(key, { tasks, ts: Date.now() })
+}
+
 // ========== 主入口 ==========
 /**
  * @param {string} question 用户问题
@@ -657,72 +691,43 @@ export async function orchestrate(question, history, send, personaId, customDesc
     return result
   }
 
-// ========== 规划结果缓存（P1-3：相似问题复用任务列表，省一次 planner LLM）==========
-// key = 规范化 question + personaId；同问法 10 分钟内零规划成本。
-// 不做语义相似（embedding），纯文本归一化——群友问法重复率高（"XX发了多少条"类模板），文本级命中已够用
-const plannerCache = new Map()
-const PLANNER_CACHE_TTL = 600000 // 10 分钟
-const PLANNER_CACHE_MAX = 200
+  // ========== 阶段 1：规划（带缓存 P1-3）==========
+  send('agent_thinking', {
+    agent: 'main',
+    phase: 'planning',
+    content: '正在分析问题，规划检索任务...',
+  })
 
-function plannerCacheKey(question, personaId) {
-  // 归一化：去空白 + 去尾部标点/语气词 + 小写英文
-  const normalized = String(question)
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[?？!！。~～呢吧啊呀了的]+$/g, '')
-  return `${personaId || 'normal'}|${normalized}`
-}
-
-function getPlannerCache(key) {
-  const hit = plannerCache.get(key)
-  if (!hit) return null
-  if (Date.now() - hit.ts > PLANNER_CACHE_TTL) {
-    plannerCache.delete(key) // 过期
-    return null
-  }
-  return hit.tasks
-}
-
-function setPlannerCache(key, tasks) {
-  if (plannerCache.size >= PLANNER_CACHE_MAX) {
-    const firstKey = plannerCache.keys().next().value
-    plannerCache.delete(firstKey)
-  }
-  plannerCache.set(key, { tasks, ts: Date.now() })
-}
-
-// ========== 阶段 1：规划入口（带缓存）==========
-async function planTasks(effectiveQuestion, question, history, persona, personaId, lastIntent, send) {
   const cacheKey = plannerCacheKey(question, personaId)
+  let tasks
+  let planningFailed = false // 缓存命中视为规划成功
   const cached = getPlannerCache(cacheKey)
   if (cached) {
+    tasks = cached
     send('agent_thinking', {
       agent: 'main',
       phase: 'planning',
       content: `命中规划缓存，直接复用 ${cached.length} 个检索任务（10 分钟内同问法）`,
       data: cached,
     })
-    return cached
-  }
+  } else {
+    // 规划输入带图片识别结果（主 Agent 可据此判断还需派哪些检索任务）
+    const plannerMessages = buildPlannerPrompt(effectiveQuestion, history, persona, lastIntent)
+    let rawTasks = ''
+    try {
+      rawTasks = await chatCompletion(plannerMessages, { temperature: TEMPS.PLANNING, thinking: 'disabled' })
+    } catch (err) {
+      console.error('[Orchestrator] 规划 LLM 异常:', err.message)
+      planningFailed = true
+      rawTasks = '[]'
+    }
 
-  const plannerMessages = buildPlannerPrompt(effectiveQuestion, history, persona, lastIntent)
-  let rawTasks = ''
-  let planningFailed = false
-  try {
-    rawTasks = await chatCompletion(plannerMessages, { temperature: TEMPS.PLANNING, thinking: 'disabled' })
-  } catch (err) {
-    console.error('[Orchestrator] 规划 LLM 异常:', err.message)
-    planningFailed = true
-    rawTasks = '[]'
+    tasks = parseTasks(rawTasks)
+    // 成功规划（非异常且非空）才写缓存；fallback 任务不缓存
+    if (!planningFailed && tasks.length > 0) {
+      setPlannerCache(cacheKey, tasks)
+    }
   }
-
-  const tasks = parseTasks(rawTasks)
-  // 成功规划（非异常且非空）才写缓存；fallback 任务不缓存
-  if (!planningFailed && tasks.length > 0) {
-    setPlannerCache(cacheKey, tasks)
-  }
-  return tasks
-}
 
   // 规划异常或返回空时的 fallback 策略：
   // - 只有问题包含群聊/数据相关信号词时，才 fallback 到 topic_search
