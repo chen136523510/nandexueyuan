@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-08-24（白机·RAG 检索增强开发方案 R-053 落档）
+
+- [方案] 《RAG检索增强开发方案.md》产出（方案 B/C/D，基于 2026-08-15 黑机调研的遗留三项）：B=LLM rerank 候选块（FTS5 召回 LIMIT 5→20，LLM 打分选 5，+1 次轻量调用）；C=FTS5 列权重（`bm25(ft,3.0,1.0)` keywords 权重 3 倍）；D=块间 Jaccard 去重（>0.7 合并）。代码核实：FTS5 v2 表为 `fts5(keywords, summary)` 两列、`dispatchAgent` 已有 question 第三参未传给 topic_search（方案 B 需补 1 行传参）。改动仅 topicSearchAgent.js + orchestrator 1 行，不动 schema。待排期（R-053）
+- commit: 本轮
+
+---
+
 ## 2026-08-24（白机·分析 prompt 数据口径约束）
 
 - [修复] `orchestrator.js` buildAnalysisPrompt 加「数据口径」约束块（院长指示：抽样数据不得冒充精确统计）：人物统计=SQL 精确 COUNT 可引用确切数字；话题检索/消息记录=块内抽样样本只能定性描述（趋势/代表内容/情绪），禁止数样本得出发言人数/块数等精确统计；需精确频率时引导用户走全量分析或人物统计。线上实测同一频率问题：改前 AI 编造「6个话题块/12人参与」，改后明确标注「基于抽样定性判断，无法给出精确提及次数」
