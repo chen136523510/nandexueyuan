@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-08-24（白机·BUG-76 修复 + deepseek 部署上线）
+
+- [修复] `orchestrator.js` **BUG-76**（黑机 `a507943` 引入）：P1-3 缓存代码插进 orchestrate 函数体内部且 `planTasks` 抽出后从未调用，主流程引用 `planningFailed`/`tasks` 时 ReferenceError，线上男德通完全不可用。缓存工具函数移模块顶层 + 规划逻辑合回主流程 + `planningFailed` 外层声明。commit `b5352ba`
+- [部署] deepseek-v4-flash-ga-260731 正式上线：服务器 `.env` VOLC_MODEL 手动切换（deploy.sh 不覆盖 .env）+ nickname 联合索引脚本执行（黑机 8-23 遗留）+ deploy.sh 9/9 + BUG-76 修复重启
+- [验证] 线上实测：闲聊走完整检索流程（「你好」被 planner 规划为 3 任务属示例误匹配但流程正确）、「hi」done 正常、中文时间检索 intent 正确 + 流式逐字输出
+
+---
+
 ## 2026-08-24（白机·主模型切换 deepseek-v4-flash：算力紧张降级 + 确定性场景禁思考）
 
 ### 背景

@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-08-24（白机 主模型切换 deepseek-v4-flash 部署验证阶段）
+
+### BUG-76：planningFailed 未定义致男德通线上完全不可用（黑机 a507943 引入的结构错位）
+
+- **发现时间**：2026-08-24 09:35（白机部署 deepseek-v4-flash 后线上实测「你好」时暴露）
+- **环境**：线上 v3.6.0（部署 commit `4ac9a37` 后任何 chat/ask 请求必现）
+- **现象**：前端 SSE 收到 `event: error` + `data: {"message":"出错了: planningFailed is not defined"}`，男德通完全不能对话
+- **根因**：黑机 commit `a507943`（P1-3 planner 结果缓存）把缓存工具函数（plannerCache/getPlannerCache/setPlannerCache）+ `planTasks` 函数定义直接插进了 `orchestrate` 主函数体内部（650 行反馈检测之后），并把原来 orchestrate 内联的规划逻辑截断成独立函数 `planTasks` 加了 `return tasks` 提前退出。但 `planTasks` **从未被调用**（全仓 grep 只有定义无调用点），导致 orchestrate 主流程走到 730 行 fallback 逻辑时 `planningFailed` 和 `tasks` 两个变量都未定义（它们被关进了 planTasks 函数作用域里），运行时 ReferenceError
+- **修复**：①缓存工具函数（plannerCache/Map/TTL/get/set）移到模块顶层（orchestrate 函数之前）；②规划逻辑（带缓存命中检查）合回 orchestrate 主流程内联，不再抽成独立函数；③`planningFailed` 提到缓存 if-else 外层声明（缓存命中路径视为规划成功，默认 false），避免两个路径变量不一致
+- **验证**：语法 `node --check` + 模块加载通过；线上重启后实测「你好」（走完整 3 任务检索 + 流式回答）、「hi」（done 事件正常）、「2026年7月群里聊了什么」（intent=时间检索，流式逐字输出 done 正常）。commit `b5352ba`
+- **文件**：`server/src/agents/orchestrator.js`
+- **教训**：①把代码从主函数内联抽成独立函数后，**必须确认调用点已更新**--编译不会报错（函数定义合法），但运行时主流程走到引用该函数内变量的地方就 ReferenceError。②缓存代码块插入位置必须分清「模块顶层工具函数」vs「主函数体内联逻辑」，两者混插会导致函数截断。③**deploy.sh 9/9 全过 ≠ 功能可用**（8-21 已有教训），必须线上真调实测确认
+
+---
+
 ## 2026-08-23（黑机 男德通全量数据分析开发阶段）
 
 ### BUG-75：topicSearchAgent catch 块引用 try 内 const，FTS5 报错时被 ReferenceError 吞掉真实错误
