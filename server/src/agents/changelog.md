@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-08-24（白机·主模型切换 deepseek-v4-flash：算力紧张降级 + 确定性场景禁思考）
+
+### 背景
+
+院长指示「目前算力紧张」，男德通主模型从 glm-5.3 切换为 deepseek-v4-flash。
+
+### 模型探测（动手前实测，不靠推理）
+
+- 账内可用两版：`deepseek-v4-flash-260425`（预览）/ `deepseek-v4-flash-ga-260731`（GA 正式），选 GA 版
+- `thinking: {type:'disabled'}` 被接受（200，reasoning_tokens=0）——与 glm-5.3 不同（disabled 被 400 拒绝）
+- `max_tokens` 可传且不吞正文（completion 37 中仅 10 是 reasoning）
+- 混合推理模型：默认自带轻量思考链（reasoning_tokens 几十），不像 glm-5.3 思考链吃满输出预算
+- 流式 SSE 格式与现有解析兼容（delta.content / delta.reasoning_content 分开，只取 content）
+- 速度：1.1~5.1s（glm-5.3 时代 planner 通常 10s+）
+
+### 代码改动
+
+- [修改] `server/src/utils/llm.js` - MODEL 默认 glm-5.3 -> `deepseek-v4-flash-ga-260731`；TIMEOUT_MS 180s -> 60s（实测 1-5s，留足余量）；chatCompletion/chatCompletionStream 新增 `options.thinking: 'disabled'` 透传（仅确定性 JSON 场景用）
+- [优化] `orchestrator.js` planner（712）/feedback（521）两处确定性 JSON 调用传 `thinking: 'disabled'`（跳过思考链，省算力提速，实测 planner 1.1-1.6s）；glm-5.2 注释改模型名表述（视觉前置逻辑不变，deepseek 同样纯文本看不到图）
+- [标注] `fullAnalysisAgent.js` 两处空返回防御注释更新（glm-5.3 思考链吃预算的历史教训，deepseek 下保留防御）
+- [配置] `server/.env` + 根 `.env` 的 VOLC_MODEL 同步改 deepseek-v4-flash-ga-260731（注意：llm.js 读 server/.env，但 .ai/scripts 验证脚本从根 .env 兜底，两处必须一致）
+
+### 验证（真调 LLM）
+
+- planner JSON 解析 3/3：`如何评价丘序明`→3 任务 / `7月份聊了什么`→1 任务 / `你好`→0 任务，1.1-1.6s（verify-deepseek-planner.mjs）
+- e2e 3/3：默认推理闲聊 / thinking:disabled 输出 `[]` 可解析 / 流式首 token 3.8s（verify-deepseek-e2e.mjs）
+- 冒烟：scripts/testLlm.js 200「测试成功」
+
+### 待部署
+
+本地 .env 已切换，**线上服务器 .env 未动**（需 SSH 后手动改 VOLC_MODEL 或随下次 deploy 一起）。部署后线上实测：问「如何评价丘序明」确认规划正常 + 回答质量可接受（deepseek 与 glm 风格有差异，观察群友反馈）。
+
+---
+
 ## 2026-08-23（黑机·检索管线四项工程化优化）
 
 - [新增] `orchestrator.js` planner 结果缓存（P1-3）：归一化 key（去空白+尾部标点语气词+小写）+ personaId，10min TTL / 200 条 LRU；同问法命中时跳过 planner LLM 直派任务，fallback 任务不缓存

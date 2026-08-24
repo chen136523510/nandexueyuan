@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-08-24 主模型切换 deepseek-v4-flash（算力紧张降级 + 确定性场景禁思考）
+
+### 概要
+
+男德通 AI 主模型从 glm-5.3 切换为 deepseek-v4-flash-ga-260731（院长指示：目前算力紧张）。实测账内 GA 版可用（`thinking:disabled` 被接受、`max_tokens` 不吞正文、速度 1-5s）。适配策略：对 planner/feedback 两个确定性 JSON 输出场景传 `thinking:'disabled'` 省算力提速，闲聊/分析/流式保留默认混合推理能力；TIMEOUT_MS 从 180s 缩到 60s。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | MODEL 默认 `deepseek-v4-flash-ga-260731`；TIMEOUT_MS 180s->60s；chatCompletion/chatCompletionStream 新增 `options.thinking:'disabled'` 透传 |
+| `server/src/agents/orchestrator.js` | planner/feedback 传 `thinking:'disabled'`（省算力+提速 1.1-1.6s）；视觉前置注释模型名更新 |
+| `server/src/agents/fullAnalysisAgent.js` | 空返回防御注释更新（保留历史教训） |
+| `server/.env` + 根 `.env` | VOLC_MODEL=deepseek-v4-flash-ga-260731 |
+
+### 决策依据
+
+glm-5.3 纯推理模型特性（思考链吃满输出预算、`thinking:disabled` 被 400 拒绝）已不再适用。deepseek-v4-flash 为混合推理模型（默认轻量思考 chain + reasoning_tokens 几十），对确定性 JSON 输出场景显式禁用思考链可省算力、提速、避免思考内容干扰 JSON 解析。流式 SSE delta.content / delta.reasoning_content 分开返回，现有解析只取 content 兼容。
+
+### 影响评估
+
+代码改动面：全统一入口（llm.js）+ 两处确定性调用点（planner/feedback）。本地 planner 验证 3/3、e2e 3/3、冒烟 200。**线上服务器 .env 未动**（需 SSH 后手动改 VOLC_MODEL 或随下次 deploy 一起）。部署后需观察 deepseek 回答风格与 glm 的差异（更跳跃/更少寒暄），群友反馈后再决定是否调整人设 prompt。
+
+### 替代方案
+
+- deepseek-v3-1-terminus：账内可用，成本更低，但推理能力弱于 v4-flash
+- glm-5.3 不动：算力紧张时不解决，回答慢+思考预算被吞
+- 双通道按需切换：环境变量已有 VOLC_MODEL，可实现「轻度闲聊用 flash / 深度分析用 glm」，但 glm 慢的问题仍在
+
+---
+
 ## 2026-08-21 v3.6.0 男德通 AI 优化（glm-5.3 + FTS5 v2 + 记忆压缩 + 人设重构）
 
 ### 概要

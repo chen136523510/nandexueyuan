@@ -5,8 +5,8 @@
 
 const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
 const API_KEY = process.env.VOLC_API_KEY
-const MODEL = process.env.VOLC_MODEL || 'glm-5.3'
-const TIMEOUT_MS = 180000 // 180 秒超时（glm-5.3 是纯推理模型，思考耗时长，且不限 max_tokens）
+const MODEL = process.env.VOLC_MODEL || 'deepseek-v4-flash-ga-260731'
+const TIMEOUT_MS = 60000 // 60 秒超时（deepseek-v4-flash 实测 1-3s 返回，留足余量）
 
 // ========== 温度常量（集中管理，各调用点引用，避免散落硬编码）==========
 export const TEMPS = {
@@ -48,7 +48,7 @@ function makeLlmError(status, errText) {
 /**
  * 调用 LLM 对话补全
  * @param {Array<{role: string, content: string}>} messages
- * @param {{temperature?: number}} options
+ * @param {{temperature?: number, thinking?: 'disabled'}} options thinking:'disabled' 跳过思考链（仅确定性 JSON 输出场景使用，省算力提速）
  * @returns {Promise<string>} 回复内容
  * @throws {Error} CONTENT_MODERATION(审核拦截) / LLM API 超时 / LLM API 错误
  */
@@ -64,8 +64,9 @@ export async function chatCompletion(messages, options = {}) {
     model: MODEL,
     messages,
     temperature: options.temperature ?? 0.7,
-    // glm-5.3 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算，导致正文截断/为空）
+    // deepseek-v4-flash 是混合推理模型：默认自带轻量思考链；确定性 JSON 场景（规划/反馈）传 disabled 省算力
   }
+  if (options.thinking === 'disabled') body.thinking = { type: 'disabled' }
 
   try {
     const response = await fetch(`${BASE_URL}/chat/completions`, {
@@ -98,7 +99,7 @@ export async function chatCompletion(messages, options = {}) {
 /**
  * 流式调用 LLM 对话补全
  * @param {Array<{role: string, content: string}>} messages
- * @param {{temperature?: number}} options
+ * @param {{temperature?: number, thinking?: 'disabled'}} options thinking:'disabled' 跳过思考链（仅确定性 JSON 输出场景使用）
  * @returns {AsyncGenerator<string>} 逐块 yield 回复内容
  */
 export async function* chatCompletionStream(messages, options = {}) {
@@ -114,8 +115,9 @@ export async function* chatCompletionStream(messages, options = {}) {
     messages,
     temperature: options.temperature ?? 0.7,
     stream: true,
-    // glm-5.3 是纯推理模型：不传 thinking（disabled 会被 400 拒绝），不设 max_tokens（思考会消耗输出预算）
+    // deepseek-v4-flash 是混合推理模型：默认自带轻量思考链；确定性 JSON 场景传 disabled 省算力
   }
+  if (options.thinking === 'disabled') body.thinking = { type: 'disabled' }
 
   try {
     const response = await fetch(`${BASE_URL}/chat/completions`, {

@@ -325,7 +325,7 @@ async function mapBatch(batchText, batchMeta, question) {
     },
   ]
   const result = await chatCompletion(messages, { temperature: TEMPS.ANALYSIS })
-  // glm-5.3 偶发思考链吃掉全部输出预算 -> content 为空字符串，视为失败让上层重试
+  // 空返回视为失败（历史 glm-5.3 思考链吃掉输出预算的教训，deepseek-v4-flash 下保留防御）
   if (!result || !result.trim()) throw new Error('LLM 返回空内容')
   return result
 }
@@ -349,7 +349,7 @@ async function reduceSummaries(summaries, batchMetas, question) {
       { role: 'user', content: `【${label}】共 ${texts.length} 份摘要：\n\n${texts.join('\n\n---\n\n')}` },
     ]
     const result = await chatCompletion(messages, { temperature: TEMPS.ANALYSIS })
-    // 空返回视为失败（glm-5.3 偶发思考链吃掉输出预算），上层用原始摘要兜底
+    // 空返回视为失败（历史 glm-5.3 思考链吃掉输出预算，deepseek-v4-flash 下保留防御）
     if (!result || !result.trim()) throw new Error('合并返回空内容')
     return result
   }

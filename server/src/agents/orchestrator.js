@@ -518,7 +518,7 @@ async function runFeedbackFlow(question, history, send, persona) {
 
   let feedback = null
   try {
-    const raw = await chatCompletion(feedbackMessages, { temperature: TEMPS.FEEDBACK })
+    const raw = await chatCompletion(feedbackMessages, { temperature: TEMPS.FEEDBACK, thinking: 'disabled' })
     const cleaned = raw.replace(/```json|```/g, '').trim()
     const match = cleaned.match(/\{[\s\S]*\}/)
     if (match) {
@@ -595,7 +595,7 @@ export async function orchestrate(question, history, send, personaId, customDesc
   }
 
   // ========== 视觉识别（多模态一期）：带图必先识别 ==========
-  // 主模型 glm-5.2 是纯文本模型看不到图，无法自行判断"是否需要识别"，
+  // 主模型（deepseek-v4-flash）是纯文本模型看不到图，无法自行判断"是否需要识别"，
   // 因此带图时无条件先跑视觉子 agent，识别结果拼进问题供后续阶段使用；
   // 同时跳过闲聊/快速模板短路（图片是消息主体，不能当闲聊处理）
   let visionContext = null
@@ -709,7 +709,7 @@ async function planTasks(effectiveQuestion, question, history, persona, personaI
   let rawTasks = ''
   let planningFailed = false
   try {
-    rawTasks = await chatCompletion(plannerMessages, { temperature: TEMPS.PLANNING })
+    rawTasks = await chatCompletion(plannerMessages, { temperature: TEMPS.PLANNING, thinking: 'disabled' })
   } catch (err) {
     console.error('[Orchestrator] 规划 LLM 异常:', err.message)
     planningFailed = true
