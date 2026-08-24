@@ -12,6 +12,11 @@
 // 每个命中话题块传给 LLM 的消息预算（条）。5 块 × 10 条 + 摘要头 ≈ 覆盖全部块且体积可控
 const MSG_BUDGET_PER_CHUNK = 10
 
+// ========== R-053 RAG 检索增强（方案 B/C/D）：块选取层精度 ==========
+export const RERANK_CANDIDATES = 20   // 方案B：Level 1 召回上限（原 5），大召回保证不漏
+export const RERANK_KEEP = 5          // 方案B：rerank 保留块数
+export const RERANK_TRIGGER = 6       // 方案B：候选数 > 此值才触发 rerank（≤5 直接用初排，省一次 LLM）
+
 import prisma from '../lib/prisma.js'
 import { chatCompletion } from '../utils/llm.js'
 import { resolveName } from '../utils/knowledge.js'
@@ -106,6 +111,71 @@ function sampleChunkMessages(msgs, keywords, budget) {
   return [...picked].sort((a, b) => a - b).map((idx) => msgs[idx])
 }
 
+// ========== 方案 D：块间 Jaccard 去重 ==========
+// 同一天同一话题被切成相邻块的冗余，可能占满全部 5 个名额
+// 相似度 > 0.7 视为同质块，保留 rank 靠前的
+export function dedupChunks(chunks) {
+  if (chunks.length <= 1) return chunks
+  const kept = []
+  for (const c of chunks) {
+    const wordsC = new Set((c.keywords || '').split(/\s+/).filter(Boolean))
+    const isDup = kept.some((k) => {
+      const wordsK = new Set((k.keywords || '').split(/\s+/).filter(Boolean))
+      const inter = [...wordsC].filter((w) => wordsK.has(w)).length
+      const union = new Set([...wordsC, ...wordsK]).size
+      return union > 0 && inter / union > 0.7
+    })
+    if (!isDup) kept.push(c)
+  }
+  return kept
+}
+
+// ========== 方案 B：LLM Rerank 候选块 ==========
+// 用 LLM 做精排，替代 Pinecone/Cohere 的 cross-encoder rerank
+// 确定性 JSON 场景：temperature=0 + thinking:disabled，与 planner/feedback 同策略
+export async function rerankChunks(question, chunks) {
+  if (!chunks.length) return chunks
+
+  const lines = chunks.map((c, i) => `${i + 1}. id=${Number(c.id)} ${c.chunkDate} 关键词：${(c.keywords || '').slice(0, 100)}`)
+  const prompt = `你是检索结果重排序器。根据用户问题，从候选话题块中选出最相关的块。
+规则：
+- 只依据块的日期和关键词判断相关性
+- 保留 ${RERANK_KEEP} 个最相关块，按相关性降序
+- 只输出 JSON 数组（块 id），不要其他内容
+
+【用户问题】${question}
+
+【候选块】
+${lines.join('\n')}`
+
+  // 初排前 5 兜底：LLM 失败 / 输出非法 / id 全幻觉时降级，与旧行为一致
+  const fallback = () => {
+    console.log('[TopicSearch] rerank 失败，降级取初排前 5')
+    return chunks.slice(0, RERANK_KEEP)
+  }
+
+  try {
+    const raw = await chatCompletion([{ role: 'user', content: prompt }], {
+      temperature: 0,
+      thinking: 'disabled',
+    })
+    // 剥 ```json ... ``` 围栏，兼容少数模型带围栏输出
+    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim()
+    const match = cleaned.match(/\[[\d,\s]+\]/)
+    if (!match) return fallback()
+    // 注意：chunk.id 经 Prisma 返回可能是 BigInt（1n !== 1），须 Number 归一后再匹配
+    const ids = JSON.parse(match[0]).map(Number)
+    if (!Array.isArray(ids) || ids.length === 0) return fallback()
+    const idToChunk = new Map(chunks.map((c) => [Number(c.id), c]))
+    const picked = ids.slice(0, RERANK_KEEP).map((id) => idToChunk.get(id)).filter(Boolean)
+    if (picked.length === 0) return fallback()
+    return picked // 按 LLM 给出的相关性降序
+  } catch (err) {
+    console.log('[TopicSearch] rerank 失败，降级取初排前 5:', err.message)
+    return chunks.slice(0, RERANK_KEEP)
+  }
+}
+
 // ========== 检索结果缓存（P1-4：相同关键词 10 分钟内复用完整结果）==========
 // 同义词扩展已有 1h LRU，这里再补数据库+格式化层：同关键词重复提问（群友常用）
 // 命中时 0 次查询 0 次格式化直接返回。只缓存成功结果，失败不缓存
@@ -117,8 +187,9 @@ const RESULT_CACHE_MAX = 50
  * 执行话题检索
  * @param {{ keywords: string }} task 任务
  * @param {function} emit SSE 回调
+ * @param {string} question 用户原问题（R-053 rerank 用；黑机 WS 通道不传，为空时跳过 rerank 走初排）
  */
-export async function runTopicSearchAgent(task, emit) {
+export async function runTopicSearchAgent(task, emit, question) {
   const keywords = task.keywords || ''
 
   // 命中缓存：直接复用（新消息延迟 10 分钟可见，对群聊问答可接受）
@@ -154,13 +225,16 @@ export async function runTopicSearchAgent(task, emit) {
     // 块级作用域隔离导致 FTS5 出错时 catch 自己抛 ReferenceError，吞掉真实错误（如缺 v2 表）
     const ftsQuery = buildFtsQuery(rawWords)
     try {
+      // 方案C：bm25 列权重，keywords（LLM 提炼的主题词，正命中）3 倍于 summary（流水摘要，顺带提及）
+      // 方案B：LIMIT 5 -> 20，大召回保证不漏，精排交给后续 rerank
+      // bm25() 返回负值（越小越相关），ORDER BY 升序语义不变
       chunks = await prisma.$queryRawUnsafe(
         `SELECT c.id, c.startMsgId, c.endMsgId, c.chunkDate, c.keywords
          FROM message_chunks_fts_v2 f
          JOIN message_chunks c ON f.rowid = c.id
          WHERE f.message_chunks_fts_v2 MATCH ?
-         ORDER BY rank
-         LIMIT 5`,
+         ORDER BY bm25(message_chunks_fts_v2, 3.0, 1.0)
+         LIMIT ${RERANK_CANDIDATES}`,
         ftsQuery,
       )
     } catch (err) {
@@ -179,11 +253,28 @@ export async function runTopicSearchAgent(task, emit) {
           `SELECT id, startMsgId, endMsgId, chunkDate, keywords
            FROM message_chunks
            WHERE ${likeConditions}
-           LIMIT 5`,
+           LIMIT ${RERANK_CANDIDATES}`,
         )
       }
     } catch (err) {
       console.error('[TopicSearch LIKE Error]', JSON.stringify({ message: err.message, rawWords }))
+    }
+  }
+
+  // ========== R-053 块选取层精排：方案 D 去重 -> 方案 B rerank（Level 1 已用方案 C 列权重初排）==========
+  if (chunks && chunks.length > 0) {
+    const beforeDedup = chunks.length
+    chunks = dedupChunks(chunks)
+    if (beforeDedup !== chunks.length) {
+      emit('topic_search', 'searching', `候选去重：${beforeDedup} -> ${chunks.length} 块（合并同质块）`)
+    }
+
+    if (question && chunks.length > RERANK_TRIGGER) {
+      emit('topic_search', 'searching', `LLM 重排 ${chunks.length} 个候选块...`)
+      chunks = await rerankChunks(question, chunks)
+    } else if (chunks.length > RERANK_KEEP) {
+      // 无 question（黑机 WS 通道）或候选不足触发线：走初排前 5，与旧行为一致
+      chunks = chunks.slice(0, RERANK_KEEP)
     }
   }
 

@@ -257,7 +257,8 @@ async function dispatchAgent(task, emit, question) {
         result = { agentType: '被提及', ...await runMentionedAgent(task, emit) }
         break
       case 'topic_search':
-        result = { agentType: '话题检索', ...await runTopicSearchAgent(task, emit) }
+        // R-053：传 question 给 rerank（用户原问题参与块精排）；黑机 WS 通道不经此处
+        result = { agentType: '话题检索', ...await runTopicSearchAgent(task, emit, question) }
         break
       case 'time_search':
         result = { agentType: '时间检索', ...await runTimeSearchAgent(task, emit) }
