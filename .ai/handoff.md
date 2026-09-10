@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-09-10 20:20（黑机：**已部署上线** —— 线上主模型切 `glm-5.3-flash`（服务器 .env + PM2 重启，探针 4/4 通过）+ prod.db 437 块 keywords 补齐 + FTS v2 重建，线上真调验证「台海」召回 6755/6757/6765、「斩杀线」召回 10522。⚠️ 发现 rerank 遇敏感候选会 `CONTENT_MODERATION` 降级为初排前 5（R-053 既有行为，被本次关键词补齐放大，待排期优化）。⚠️ `docs/account-passwords.md` 本机缺失，部署靠三处互证文档完成）
+> 最后更新：2026-09-10 20:40（黑机：**已部署上线** —— 线上主模型切 `glm-5.3-flash`（服务器 .env + PM2 重启，探针 4/4 通过）+ prod.db 437 块 keywords 补齐 + FTS v2 重建，线上真调验证「台海」召回 6755/6757/6765、「斩杀线」召回 10522。同批**补齐 `docs/account-passwords.md`**（此前本机缺失，按实测事实重建，含禁用 IP 47.96.158.95）。⚠️ 遗留：rerank 遇敏感候选 `CONTENT_MODERATION` 降级（R-055）、BUG-79 待修、宝塔面板密码待院长补）
 > 所在设备：黑机（判定依据：周四 19:31 工作日晚间时段）
 > 📌 **网络踩坑（白机）**：GitHub HTTPS/SSH 双通道不可达时（443 超时 + publickey 拒绝），可走**服务器中继推送**：本地 `git bundle create /tmp/x.bundle dcd993a..master` → `scp` 到 47.96.158.104 → 服务器 `git fetch /tmp/x.bundle master && git merge --ff-only FETCH_HEAD && git push origin master`（服务器 SSH 通道正常，8-24 实测成功；amend 过的 commit 需服务器 reset --hard + push --force-with-lease）
 > 稳定版本：**v3.6.0 线上**（男德通 AI：**glm-5.3-flash**（2026-09-10 由 deepseek-v4-flash 切回，原生多模态）+ FTS5 v2 + 记忆压缩 + 人设重构 + 多轮追问 + 全量分析 + 检索缓存）
@@ -18,7 +18,7 @@
 ### 部署上线（2026-09-10 20:00 ~ 20:20，院长明确指示「部署吧」）
 
 - **通道**：`root@47.96.158.104`（三处互证：`~/.ssh/config` 别名 `nandexueyuan` / `scripts/sync-prod-db.sh` / `deploy-production.md`；handoff 铁律警告过的错 IP 是 `47.96.158.95`）。部署目录 `/root/projects/www.nandexueyuan.top`，密钥 `~/.ssh/id_ed25519`
-- **⚠️ 文档缺口**：AGENTS.md 指定的凭据文档 `docs/account-passwords.md` 在**本机不存在**（该文件在 .gitignore 内、各机独立维护，黑机未同步）。本次靠上述三处互证文档完成，未凭记忆取用 IP/路径。**建议补齐该文件**
+- **⚠️ 文档缺口（已关闭）**：AGENTS.md 指定的凭据文档 `docs/account-passwords.md` 此前在**本机不存在**（该文件在 .gitignore 内、各机独立维护，黑机未同步）。本次部署靠三处互证文档（`~/.ssh/config` + `scripts/sync-prod-db.sh` + `deploy-production.md`）+ `.env.example` 的 `SERVER_*` 组完成，未凭记忆。**已于 2026-09-10 20:40 按实测事实重建该文件**（含禁用 IP `47.96.158.95`、部署路径、PM2 进程、WAL 备份红线、自检命令），待院长补「宝塔面板账号密码」一节
 - **为何不整库覆盖 prod.db**：prod.db 205M（本地 dev.db 132M），除群聊静态数据外有真实运行期数据（users=21 / chat_turns=148 / game_saves=1 等），整库覆盖会抹掉线上数据。改用新建的 `applyKeywordsPatch.js` 只 UPDATE `message_chunks.keywords` 单字段
 - **执行步骤**：
   1. `sqlite3 prod.db ".backup prod.db.bak.20260910_before_kw_patch"`（**必须 `.backup` 而非 `cp`**——prod.db 处于 WAL 模式，有 `-wal`/`-shm` 活跃写入）+ 备份 `.env` → `.env.bak.20260910`
@@ -59,7 +59,7 @@
 ### ③ 待办（交接下轮）
 - **7 个审核拦截块的代填内容复核**：AI 按「政治议题降级」口径代填（中性领域标签，不复述立场/不点名人物），院长过目确认或调整。校验：`cd server && node scripts/applyManualChunks.js --dry-run`
 - **R-053 rerank 敏感候选降级优化**（已登记需求池 R-055）：敏感候选触发输入侧审核 → `CONTENT_MODERATION` → 降级取初排前 5，丢掉本可进榜的块
-- **补齐 `docs/account-passwords.md`**（本机缺失，AGENTS.md 部署铁律指定的凭据来源）
+- ~~补齐 `docs/account-passwords.md`~~ ✅ **已完成（2026-09-10 20:40）**：按实测事实重建（服务器 IP/禁用 IP `47.96.158.95`/部署路径/PM2 进程/WAL 备份红线/连接自检命令，自检命令实测可跑通）。**唯一遗留**：宝塔面板账号密码未记录（仅入口 URL 在 `.env.example`）——需院长补
 - summary 列补填仍暂缓（需全量重跑 5,372 块约 7 元，且会改变 R-053 排序）
 - 可选：把「原文 AI 阅读 → 中性标签 → 脚本回写」这条链路固化进 R-054 生产管线（本次仅用于解锁检索，不等于数据产品定稿）
 - 本地 `dev.db` 与线上 `prod.db` 现已同步到 keywords 一级；若需整体再同步，用 `scripts/sync-prod-db.sh`（方向是 prod→本地，会覆盖本地 dev.db，注意先备份）
