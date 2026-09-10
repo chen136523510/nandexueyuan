@@ -4,6 +4,35 @@
 
 ---
 
+## 2026-09-10 主模型切回 glm-5.3-flash（原生多模态）+ LLM 参数兼容性降级
+
+### 概要
+
+男德通 AI 主模型由 `deepseek-v4-flash-ga-260731` 切换为火山引擎 `glm-5.3-flash`（院长指示；该模型为原生多模态）。实测 coding 端点连通正常（1.9~4.3s）。**关键兼容性问题**：`glm-5.3-flash` 不支持 `thinking:{type:'disabled'}`，会返回 `400 InvalidParameter`，而 planner/feedback 两个确定性场景正传该参数——不做处理会重演 BUG-68（主链路全挂）。故本次不只是换模型 ID，还把「模型能力差异参数」从无条件透传改为**不支持则自动降级重试**。
+
+同时完成 R-054 前置数据补跑：修复 429/437 个话题块的 keywords（原 432 空 + 5 占位），并重建 `message_chunks_fts_v2`。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | MODEL 默认 `glm-5.3-flash`；抽出 `buildRequestBody`/`postChat`/`isThinkingUnsupported`；`chatCompletion`/`chatCompletionStream` 遇「模型不支持 thinking:disabled」摘参数重试一次 |
+| `server/scripts/repairChunks.js` | 新增：话题块 keywords 幂等补跑脚本（`--dry-run`/`--limit N` 金丝雀，空返回判失败） |
+| `server/.env` + `.env.example` | VOLC_MODEL=glm-5.3-flash |
+
+### 决策依据
+
+院长指示统一使用火山引擎 `glm-5.3-flash`（原生多模态，为后续统一视觉链路留空间）。deepseek-v4-flash 是 2026-08-24 因算力紧张做的降级选择，其 `thinking:disabled` 省算力优化在 glm 系模型上不可用。为不把「省算力优化」与「可换模型」对立起来，改为按模型能力自动降级：支持则禁用思考链，不支持则静默降级并告警，杜绝第三次 BUG-68。
+
+### 替代方案与影响评估
+
+- **备选：沿用 deepseek-v4-flash**——被院长否决（要求统一 glm-5.3-flash）。
+- **备选：直接删掉 thinking 参数（BUG-68 的修法）**——简单但会丢掉 deepseek 上的省算力收益，且下次换模型仍可能踩坑；故采用自动降级。
+- **影响**：`visionAgent.js` 仍走 `doubao-seed-2-0-mini-260428` + 标准端点（与 coding 通道不同），**本次未动**；是否统一视觉链路待院长裁决。
+- **状态**：本地配置与代码已改，**未部署**——线上仍为 v3.6.0 + deepseek-v4-flash，模型切换需改服务器 env + PM2 restart，按部署纪律待院长明确指示。
+
+---
+
 ## 2026-08-24 主模型切换 deepseek-v4-flash（算力紧张降级 + 确定性场景禁思考）
 
 ### 概要

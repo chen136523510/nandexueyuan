@@ -4,6 +4,22 @@
 
 ---
 
+### [fix] R-054 前置数据补跑：432 空 keywords 块 + 5 占位块修复（429/437）+ 主模型切 glm-5.3-flash
+
+- **时间**：2026-09-10 19:00 ~ 19:35
+- **变更人**：陈梓键（黑机）
+- **背景**：白机 R-054 调研复查发现 5,372 个话题块中 432 个 keywords 为空（占 8%，涉 4.3 万条消息，集中 2026-05~08），这些块在 `message_chunks_fts_v2` 无 token、话题检索召回不到；另有 5 个「无法回答」占位块。院长指示启动补跑，并将补跑与男德通模型统一换火山引擎 `glm-5.3-flash`（原生多模态）
+- **变更内容**：
+  1. 新建 `server/scripts/repairChunks.js`：按 `keywords IS NULL OR TRIM='' OR LIKE '%无法回答%'` 幂等筛选待修块 → 按 `id > startMsgId AND id <= endMsgId` 还原原块消息（`startMsgId` 为开区间下界）→ 复用 `buildChunks.js` 同款 prompt 重生成 → `UPDATE`；支持 `--dry-run` 预览 / `--limit N` 金丝雀；并发 5、重试 3；**空返回与占位返回一律判失败**（BUG-77 防御）
+  2. `server/src/utils/llm.js`：主模型默认值改 `glm-5.3-flash`；抽出 `buildRequestBody`/`postChat`/`isThinkingUnsupported`，`chatCompletion`/`chatCompletionStream` 遇「模型不支持 thinking:disabled」自动摘参数重试一次（BUG-78）
+  3. `server/.env` + `.env.example`：`VOLC_MODEL=glm-5.3-flash`
+- **执行结果**：437 个待修块 → **成功 429，失败 7**（耗时 839s）；非空 keywords 4,935 → 5,365；`rebuildFtsV2.js` 重建索引（chunks=5372 / messages=538915）。7 个失败块为**输入侧** `SensitiveContentDetected` 审核拦截（含 2022-08-02 佩洛西窜台日 3 块），改输出提示词无效，未擅自绕过
+- **验证**：块 10517（原占位块）「司法公正」、块 12034「COCO Park」自身均在 FTS 召回内；块 11577「炒股」全库 103 块命中且自身在索引内
+- **状态**：✅ 本地 `dev.db` 数据已完成 + 代码完成，**未部署**（模型切换与 DB 上线待院长指示）；根因详见 bug-log BUG-77/78
+- **关联**：调研文档 [群聊数据挖掘产品调研](../../00-调研/群聊数据挖掘产品调研.md) §1.6；需求池 R-054
+
+---
+
 ### [feat] 男德通全量数据分析（R-049）：map-reduce 分批摘要管线 + BUG-74/75 修复
 
 - **时间**：2026-08-23 01:51 ~ 17:46

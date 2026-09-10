@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-09-10（黑机·主模型切 glm-5.3-flash + thinking 参数自动降级）
+
+- [切换] `llm.js` - 主模型默认值 `deepseek-v4-flash-ga-260731` → `glm-5.3-flash`（院长指示统一火山引擎原生多模态模型）。同步 `server/.env` VOLC_MODEL=glm-5.3-flash + 根 `.env.example`
+- [新增] `llm.js` 抽出 `buildRequestBody(messages, options, stream)` - 统一组装请求体（stream 标志 + thinking:disabled 附加），供 chatCompletion / chatCompletionStream 复用，消除两处重复的 body 构造
+- [新增] `llm.js` `postChat(body, signal)` - 统一 POST `/chat/completions`，返回原始响应不做 ok 判定，便于调用方按需降级重试
+- [修复] `llm.js` 能力差异参数降级（BUG-78）- `isThinkingUnsupported(err)` 识别「模型不支持 thinking:disabled」的 400（思考链/InvalidParameter|not supported）；`chatCompletion` 与 `chatCompletionStream` 命中时**摘掉 thinking 重试一次**并打印 warn。背景：glm 系不支持该参数，而 planner/feedback 无条件透传，换模型即断链（BUG-68 同因）。不删参数是为了保留 deepseek 上的省算力优化
+- [验证] 探针实测：`glm-5.3-flash` 无 thinking 正常返回（1.9s）；带 thinking:disabled 经降级后成功（4.3s，warn 日志正常打印）。此前未降级版本直接 400 失败
+- commit: 见本轮
+
+---
+
 ## 2026-08-21（白机·男德通 AI 优化第二批：tokenizer + TEMPS + knowledge frequentPersons）
 
 - [新增] `tokenizer.js` - 中文分词工具（FTS5 方案A）：≤4 字整词 + 长词 bigram 滑窗 + 非汉字小写保留；`tokenizeZh(text)` 索引侧分词、`buildFtsQuery(rawWords)` 查询侧构建 FTS5 表达式

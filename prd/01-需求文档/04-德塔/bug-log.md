@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-09-10（黑机 R-054 前置数据补跑 + 主模型切 glm-5.3-flash）
+
+### BUG-78：切 glm-5.3-flash 后 thinking:disabled 被 400 拒绝，男德通 planner/feedback 将全链路断掉（BUG-68 同因复发）
+
+- **发现时间**：2026-09-10 19:15（院长指示主模型切 `glm-5.3-flash` 后，切换前探针实测暴露）
+- **环境**：本地 `server/.env`（VOLC_MODEL=glm-5.3-flash）+ `llm.js`
+- **现象**：探针调用带 `thinking:{type:'disabled'}` 时报 `LLM API 错误 400 [InvalidParameter]: thinking.type disabled is not supported by this model`；不带该参数则正常返回（1.9~4.3s）。因 `orchestrator.js` 的 planner(726 行)/feedback(529 行) 都传 `thinking:'disabled'`，若不处理直接切模型，男德通会重演 BUG-68 的「完全不回答」
+- **根因**：`glm-5.3-flash` 与 glm-5.2/5.3 同属不支持 `thinking:disabled` 的模型；而 2026-08-24 为 deepseek-v4-flash（混合推理，支持该参数）加的省算力参数是**无条件透传**的，`llm.js` 对「模型不支持」没有任何降级路径。即**换模型即断链**的结构性隐患一直存在，本次切模型才触发
+- **修复**：`llm.js` 抽出 `buildRequestBody()` / `postChat()` / `isThinkingUnsupported()`；`chatCompletion` 与 `chatCompletionStream` 在「响应非 2xx 且错误信息命中 thinking + InvalidParameter/not supported」时，**自动摘掉 thinking 参数重试一次**（打印 warn 日志）。既不让换模型断链，也保留 deepseek 模型上的省算力优化
+- **验证**：探针复跑——`[无 thinking]` 正常；`[thinking:disabled]` 打印降级 warn 后仍成功返回「在的」（4.3s）
+- **文件**：`server/src/utils/llm.js`
+- **教训**：①模型的**能力差异参数**（thinking / reasoning_effort / max_tokens）不能无条件透传，必须有「模型不支持则降级」的兜底，否则每次换模型都要重演一次 BUG-68。②**换模型前必须先跑探针实测**（连通性 + 各参数兼容性），不能只改 env 就认为切完了
+
+---
+
+### BUG-77：432 个话题块 keywords 为空，根因是纯推理模型思考链吃满输出预算致空串入库（buildChunks 无空返回防御）
+
+- **发现时间**：2026-09-09（白机复查数据时发现清单）；2026-09-10 补跑完成并定位真实根因
+- **环境**：`message_chunks`（5,372 块）中 432 块 keywords 为空串 + 5 块为「无法回答」占位
+- **现象**：432 个块（占 8%，涉 4.3 万条消息）keywords 为空，集中在 2026-05~08（405 个）。这些块在 `message_chunks_fts_v2` 里无任何 token，**话题检索召回不到**，等于近三个月检索覆盖被打了个洞
+- **根因**（两处叠加）：①**模型行为**——当年跑批用的纯推理模型（glm-5.2/5.3 系）思考链吃满输出预算时 `choices[0].message.content` 返回**空字符串**；②**代码缺防御**——`buildChunks.js` 的 `generateKeywords()` 直接 `result.trim()` 入库，**没有把空返回判为失败**，空串被当作正常结果 INSERT。注意：原调研文档推断的「额度耗尽」**不成立**——LLM 彻底失败时 `buildChunks.js` 会 `failedCount++` 并**跳过 INSERT**，块根本不会存在；空块能存在恰恰证明是「成功返回了空串」。另发现 `server/.env` 里「分块脚本用 DeepSeek」的 `DEEPSEEK_*` 配置**从未被代码读取**（全仓无引用），火山额度受限时并无兜底
+- **修复**：新建 `server/scripts/repairChunks.js`（幂等筛选 `keywords IS NULL OR TRIM='' OR LIKE '%无法回答%'`；按 `id > startMsgId AND id <= endMsgId` 还原原块消息——`startMsgId` 是**开区间下界**，存的是上一块末尾 id；**空返回/占位返回一律判失败重试**，绝不写回空内容）。跑批 429/437 成功，剩余 7 块为输入侧审核拦截。跑完 `rebuildFtsV2.js` 重建索引
+- **验证**：非空 keywords 4,935 → 5,365；索引 chunks=5372/messages=538915；块 10517（原占位块）取词「司法公正」自身在召回内；块 12034 取词「COCO Park」在召回内；块 11577 取词「炒股」全库命中 103 块且自身在索引内
+- **文件**：`server/scripts/repairChunks.js`（新增）；数据 `server/prisma/dev.db`
+- **教训**：①**LLM 的空返回必须判为失败**——推理模型「成功但 content 为空」是最隐蔽的失败模式，写库前必须校验非空（`fullAnalysisAgent.js` 早有同款防御，分块脚本却漏了）。②**「块数对得上」不等于数据完整**，要校验字段非空率。③诊断根因要顺着「数据为何长这样」倒推代码路径（失败会 skip INSERT vs 空串会 INSERT），不能停在「大概是额度用完了」的合理猜测上。④**7 个审核拦截块未擅自绕过**：输入侧 `SensitiveContentDetected` 是真实政治敏感内容（佩洛西窜台日等），是否绕过属需院长裁决的事项
+
+---
+
 ## 2026-08-24（白机 主模型切换 deepseek-v4-flash 部署验证阶段）
 
 ### BUG-76：planningFailed 未定义致男德通线上完全不可用（黑机 a507943 引入的结构错位）
