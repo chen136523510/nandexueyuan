@@ -73,8 +73,16 @@ async function main() {
       continue
     }
     const cur = (row.keywords || '').trim()
-    if (cur === item.keywords || (cur !== '' && !FORCE)) {
+    // 「已知坏数据」（空串 或 LLM 失败占位）视为可修，不需 --force；
+    // 只有已经是正常内容的块才要求 --force 才覆盖
+    const wasBroken = cur === '' || cur.includes('无法回答')
+    if (cur === item.keywords) {
       skipped++
+      continue
+    }
+    if (!wasBroken && !FORCE) {
+      skipped++
+      console.log(`- 块 ${item.id}（${row.chunkDate}）: 当前 keywords 已是正常内容且与补丁不同，跳过（需 --force 覆盖）`)
       continue
     }
     ready.push(item)
