@@ -30,7 +30,7 @@
 - **备选：沿用 deepseek-v4-flash**——被院长否决（要求统一 glm-5.3-flash）。
 - **备选：直接删掉 thinking 参数（BUG-68 的修法）**——简单但会丢掉 deepseek 上的省算力收益，且下次换模型仍可能踩坑；故采用自动降级。
 - **影响**：`visionAgent.js` 仍走 `doubao-seed-2-0-mini-260428` + 标准端点（与 coding 通道不同），**本次未动**；是否统一视觉链路待院长裁决。
-- **状态**：本地配置与代码已改，**未部署**——线上仍为 v3.6.0 + deepseek-v4-flash，模型切换需改服务器 env + PM2 restart，按部署纪律待院长明确指示。
+- **状态**：✅ **已于 2026-09-10 20:20 部署上线**（院长指示「部署吧」）。服务器 `server/.env` 切 `VOLC_MODEL=glm-5.3-flash` + `pm2 restart nandexueyuan-api`；同批 prod.db 437 块 keywords 补齐 + `message_chunks_fts_v2` 重建。线上验证：服务器密钥探针 4/4、`/api/hello` 与公网首页 200、真实检索链路（`runTopicSearchAgent`）召回曾修复块。回滚：`cp .env.bak.20260910 .env` + 重启 API。
 
 ---
 
