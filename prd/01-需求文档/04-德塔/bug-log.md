@@ -4,7 +4,20 @@
 
 ---
 
-## 2026-09-10（黑机 R-054 前置数据补跑 + 主模型切 glm-5.3-flash）
+## 2026-09-10（黑机 R-054 前置数据补跑 + 主模型切 glm-5.3-flash + 部署上线）
+
+### BUG-79：mentionedAgent 的 FTS5 MATCH 遇含点号的人名别名报语法错误（`fts5: syntax error near "."`）
+
+- **发现时间**：2026-09-10 20:25（部署 glm-5.3-flash 后核查线上错误日志时发现，**与本次部署无关**）
+- **环境**：线上 prod.db，`group_messages_fts_v2`
+- **现象**：线上错误日志出现 `[Mentioned FTS5 Error] Raw query failed. Code: 1. Message: fts5: syntax error near "."`（累计 1 次）
+- **根因**：`mentionedAgent.js:65` 用 `buildFtsQuery(keywords)` 构造 MATCH 表达式，`keywords` 来自**人名/别名**；而 `tokenizer.js` 的 `extractTokens()` 对非汉字词只做 `toLowerCase()`、**不剥离 FTS5 查询语法字符**（`.` `-` `:` `^` `*` `"` `(` `)`）。群内成员昵称含点号是常态（`O.o`、`@.........`），于是 token `o.o` 直接进 `MATCH o.o` → 点号被 FTS5 当作列限定符 → 语法错误
+- **影响**：**轻微且自愈**——catch（`mentionedAgent.js:76`）之后紧接 LIKE 后备路径（`:81`）仍能出结果，功能不中断，仅多一次查询
+- **修复**：**待修**（本次部署范围外，未改）。建议在 `buildFtsQuery` 侧对每个 token 做 FTS5 引号包裹（`"o.o"`）或统一剥离语法字符；注意索引侧与查询侧要一致，避免改了查询侧却搜不到原 token
+- **文件**：`server/src/agents/mentionedAgent.js`、`server/src/utils/tokenizer.js`
+- **教训**：①**FTS5 MATCH 的查询串必须处理特殊字符**，不能让用户可控内容（含成员昵称）裸进 MATCH——本项目昵称含点号是常态（`O.o`/`@.........`），不是边角案例。②核查线上日志发现历史错误时，要**先判定是否与本次改动相关**再决定动作：本例走的是 `group_messages_fts_v2`（消息索引）+ 人名 token，与本次 keywords 补丁（`message_chunks_fts_v2`）无关，既不误背锅也不漏掉真回归
+
+---
 
 ### BUG-78：切 glm-5.3-flash 后 thinking:disabled 被 400 拒绝，男德通 planner/feedback 将全链路断掉（BUG-68 同因复发）
 

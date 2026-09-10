@@ -29,6 +29,9 @@
   6. `server/.env` `VOLC_MODEL=glm-5.3-flash`（原 `deepseek-v4-flash-ga-260731`）→ `pm2 restart nandexueyuan-api`
 - **线上验证**：`/api/hello` 200、`https://localhost/` 200、公网 `https://www.nandexueyuan.top/` 200（标题「男德学院」）；`.env` 生效后探针 4/4；真实链路 `runTopicSearchAgent` 真调——「台海」召回 6755/6757/6765、「斩杀线」召回 10512/10522、「留学」召回 11384/11389/11391；「考公」块 10522 在 FTS 候选中**排第 7**（召回层已修复）
 - **⚠️ 新发现（R-053 排序层，本次未改，待排期）**：`rerankChunks` 会把候选块 keywords 连同问题一起发给 LLM，含敏感词的候选触发 ARK **输入侧审核** → `CONTENT_MODERATION` → 降级取初排前 5（于是丢掉第 7 名这类本可进榜的块）。这是 R-053 既有的降级路径（改动前日志已有），但本次关键词补齐让敏感块进入候选集，**触发概率上升**。降级本身优雅（`ok=true` 仍有结果），但敏感话题排序质量受损
+- **⚠️ 错误日志观察两项（均已定性，非本次回归）**：
+  1. `[Mentioned FTS5 Error] fts5: syntax error near "."` → 既有缺陷，已登记 **BUG-79**（`buildFtsQuery` 不剥离 FTS5 语法字符，遇 `O.o`/`@.........` 这类含点号昵称报错；有 LIKE 后备自愈）
+  2. `[FullAnalysis] ... LLM API 超时`（累计 3 次）→ 全量分析并发批次超时，**有优雅降级**（`保留原始摘要`），功能不中断。无法从无时间戳的累积日志判定是否与切模型相关，**建议观察**：glm-5.3-flash 实测 1.6~5s/次，若并发 4 批时超时增多，可考虑放宽 `TIMEOUT_MS` 或降并发
 - **回滚方式**：`cp prod.db.bak.20260910_before_kw_patch prod.db`（先停/重启 API 让 SQLite 接管）+ `cp .env.bak.20260910 .env` + `pm2 restart nandexueyuan-api`
 - **过程小插曲**：SSH 22 端口多次 `Connection timed out`（8-10 文档已记载为偶发问题），退避重试即可恢复，非密钥/IP 问题
 
