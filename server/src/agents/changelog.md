@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-09-10（黑机·主模型切 glm-5.3-flash：planner/feedback 的 thinking:disabled 转为自动降级）
+
+- [switch] 主模型由 `deepseek-v4-flash-ga-260731` 切回火山引擎 `glm-5.3-flash`（院长指示，原生多模态）。**本目录代码未改**，但运行时行为变化：`orchestrator.js` 的 planner（726 行）/ feedback（529 行）传入的 `thinking:'disabled'` 在 glm 系模型上被 400 拒绝，由 `utils/llm.js` 新增的自动降级兜底（摘参数重试一次，BUG-78）。即在 glm 上这两个确定性 JSON 场景实际以「思考链开启」运行，较 deepseek 时期略慢、多耗算力，输出仍可解析
+- [note] 其余子 Agent（topic/full/time/person/db/mentioned）均通过 `chatCompletion`/`chatCompletionStream` 间接受影响，无各自改动；`visionAgent` 仍走独立 `doubao-seed-2-0-mini` + 标准端点，**未随主模型统一**（待院长裁决）
+- [note] `topicSearchAgent.js` 未改代码，但 2026-09-10 prod.db 补齐 437 块 keywords 后，其 Level 1 候选集含更多敏感块 → `rerankChunks` 触发输入侧 `CONTENT_MODERATION` 降级的概率上升（需求池 R-055）
+- [verify] 线上 `probeModel.js` 四检通过（连通/thinking 降级/JSON/流式）；`runTopicSearchAgent` 线上真调通过
+- commit: `627a829` / `d42967f`
+
+---
+
 ## 2026-08-24（白机·RAG 检索增强 R-053 实施：方案 B/C/D 全部落地）
 
 - [feat] `topicSearchAgent.js` +97 行：①方案 D `dedupChunks()`（keywords 词集 Jaccard > 0.7 合并同质块，保留 rank 靠前的）；②方案 C Level 1 FTS5 SQL `ORDER BY rank LIMIT 5` -> `ORDER BY bm25(message_chunks_fts_v2, 3.0, 1.0) LIMIT 20`（keywords 列权重 3 倍于 summary）；③方案 B `rerankChunks()`（LLM 精排，temp=0 + thinking:disabled，输出 JSON 数组，失败/幻觉 id 降级初排前 5）；④主流程接入 D->C->B 链路（去重 -> 候选 > 6 才触发 rerank -> 否则初排截断）；⑤Level 2 LIKE 召回上限同步 5->20；⑥新增 RERANK_CANDIDATES/KEEP/TRIGGER 常量

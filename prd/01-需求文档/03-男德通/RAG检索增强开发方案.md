@@ -167,9 +167,13 @@ function dedupChunks(chunks) {
 | 项 | 值 | 说明 |
 |----|-----|------|
 | LLM 增量调用 | 每次 topic_search 未命中缓存时 +1 次 rerank | resultCache 命中（10min 同关键词）则零增量 |
-| rerank prompt 体积 | ~2k 字符（问题 + 20 块 × keywords 截 100 字） | deepseek-v4-flash 单次 < 0.001 元 |
-| rerank 延迟 | 实测 1-2s（thinking:disabled + temp=0） | 总延迟 5-10s → 6-12s，可接受 |
+| rerank prompt 体积 | ~2k 字符（问题 + 20 块 × keywords 截 100 字） | glm-5.3-flash 单次成本同量级（< 0.001 元） |
+| rerank 延迟 | 实测约 2-5s | 2026-09-10 主模型切 glm-5.3-flash 后 `thinking:disabled` 被 400 拒绝 → 降级为思考链开启，rerank 比 deepseek 时期略慢 |
 | 方案 C/D | 零成本 | SQL 改一行 + 纯 JS |
+
+> ⚠️ **上线后实测修正（2026-09-10 部署验证）**：
+> 1. **方案 C 的 summary 列权重实际空转**——`message_chunks.summary` 列 5,372/5,372 **全空**（`buildChunks.js` 的 INSERT 从未写该列，LLM 生成的「摘要」文本被塞在 keywords 字段内）。即 `bm25(fts, 3.0, 1.0)` 中 summary 那一档当前不产生任何区分度——**无损害**（keywords 单列工作正常，线上已验证），但「summary 顺带提及挤占名额」的失真场景当前也不存在。若未来补填 summary，方案 C 权重才会真正生效。
+> 2. **rerank 会被输入侧审核拦截**——rerank 把候选块 keywords 连同用户问题一起发给 LLM，含敏感词的候选触发 ARK **输入侧** `SensitiveContentDetected` → `CONTENT_MODERATION` → 降级取初排前 5，**丢掉本可进榜的靠前块**（2026-09-10 线上实测：「考公」命中块 10522 在候选中排第 7，因降级被截掉）。该降级路径在切模型前已存在，但块 keywords 补齐后敏感块进入候选集、**触发概率上升**。降级本身优雅（`ok=true` 仍有结果），受损的是敏感话题的排序质量。**优化方案见需求池 R-055**
 
 ---
 

@@ -44,7 +44,7 @@ chatController.askChat()
        │    ├─ matchQuickPattern() → 正则模板直接派 Agent（跳过规划 LLM）
        │    └─ matchFeedbackIntent() → runFeedbackFlow()
        │
-       ├─ ③ 阶段 1：规划（LLM，deepseek-v4-flash temp=0 thinking:disabled）
+       ├─ ③ 阶段 1：规划（LLM，glm-5.3-flash temp=0 thinking:disabled→glm 不支持该参数，llm.js 自动降级，见 §4）
        │    └─ buildPlannerPrompt() → chatCompletion() → parseTasks()
        │       输出 JSON 任务数组 → 规划缓存（10min TTL / 200 条 LRU）
        │
@@ -66,7 +66,7 @@ chatController.askChat()
 1. **闲聊短路**：`isCasualChat(question, history)` --≤10 字 + 匹配 ABSOLUTE_CASUAL 词表（问候/致谢/身份类零信息量）直接闲聊；REACTION_CASUAL（哈哈哈/笑死等）有上下文时不短路（可能是高密度回应）
 2. **快速路由**：`matchQuickPattern(question)` --正则匹配高频模板（"XX 发了多少条"→person_stat、"群里最近聊了什么"→topic_search、"多少条消息"→db_info），跳过规划 LLM
 3. **反馈检测**：`matchFeedbackIntent(question)` --用户说"xx 有 bug""xx 太慢"时走反馈流程，LLM 判断是否真反馈，确认后 `feedback_created` SSE 事件推前端确认
-4. **LLM 规划**：deepseek-v4-flash temp=0 thinking:disabled，输出 JSON 任务数组，带 `full:true` 标记走全量管线
+4. **LLM 规划**：glm-5.3-flash temp=0 thinking:disabled（glm 不支持 → llm.js 自动降级，见 §4），输出 JSON 任务数组，带 `full:true` 标记走全量管线
 
 ---
 
@@ -127,10 +127,12 @@ chatController.askChat()
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| `MODEL` | `deepseek-v4-flash-ga-260731` | 火山引擎方舟 GA 版（2026-08-24 从 glm-5.3 切换，算力紧张降级） |
+| `MODEL` | `glm-5.3-flash` | 火山引擎方舟（2026-09-10 从 deepseek-v4-flash 切回，**原生多模态**） |
 | `BASE_URL` | `https://ark.cn-beijing.volces.com/api/coding/v3` | coding plan 端点 |
-| `TIMEOUT_MS` | 60000 (60s) | glm 时代 180s，deepseek 实测 1-5s |
-| 视觉模型 | `doubao-seed-2-0-mini-260428` | 标准按量端点，60s，thinking:disabled |
+| `TIMEOUT_MS` | 60000 (60s) | 实测 glm-5.3-flash 1.6~5s/次 |
+| 视觉模型 | `doubao-seed-2-0-mini-260428` | 标准按量端点，60s，thinking:disabled。**未随主模型统一**——glm-5.3-flash 虽为原生多模态，是否合并视觉链路待裁决 |
+
+> ⚠️ **换模型前必跑 `node scripts/probeModel.js [模型ID]`**（探测连通/thinking 兼容/JSON/流式四项）。BUG-78 的教训：只改 env 不等于切完，`thinking:disabled` 这类**能力差异参数**在不同模型上行为不同，必须实测。
 
 ### 导出函数
 
@@ -141,17 +143,17 @@ chatController.askChat()
 | `visionChatCompletion(messages)` | 图片理解 | 固定 thinking:disabled |
 | `TEMPS` | 温度常量 | PLANNING=0 / ANALYSIS=0.5 / CHAT=0.7 / FEEDBACK=0 / NPC=0.8 |
 
-### 模型特性（deepseek-v4-flash vs glm-5.3）
+### 模型特性（glm-5.3-flash vs deepseek-v4-flash）
 
-| 维度 | deepseek-v4-flash | glm-5.3（旧） |
-|------|-------------------|-------------|
-| `thinking:disabled` | 接受（200，reasoning_tokens=0） | 400 拒绝 |
-| `max_tokens` | 可传，不吞正文 | 思考链吃满输出预算导致正文截断/为空 |
-| 推理类型 | 混合推理（默认轻量思考链） | 纯推理（思考链重） |
-| 响应速度 | 1-5s | 10s+ |
+| 维度 | glm-5.3-flash（当前） | deepseek-v4-flash |
+|------|----------------------|-------------------|
+| `thinking:disabled` | **400 拒绝**（`InvalidParameter: thinking.type disabled is not supported by this model`） | 接受（200，reasoning_tokens=0） |
+| `max_tokens` | llm.js 当前不透传 | 可传，不吞正文 |
+| 推理类型 | 原生多模态 | 纯文本（混合推理） |
+| 响应速度 | 实测 1.6~5s | 1-5s |
 | 流式格式 | delta.content / delta.reasoning_content 分开 | 同 |
 
-适配策略：planner / feedback 两个确定性 JSON 输出场景传 `thinking:'disabled'`（省算力 + 提速 + 避免思考内容干扰 JSON 解析）；闲聊/分析/流式保留默认混合推理能力。
+适配策略：planner / feedback 仍传 `thinking:'disabled'`（确定性 JSON 场景省算力），但 **glm 系不支持该参数**——`llm.js` 已加「模型不支持则摘掉参数**自动降级重试一次**」（BUG-78），换模型因此不再断链；代价是这两个场景在 glm 上以「思考链开启」运行（略慢、多耗算力）。闲聊/分析/流式本就是默认思考链，不受影响。
 
 ### 错误处理
 
@@ -209,14 +211,14 @@ chatController.askChat()
 | 函数 | 用途 |
 |------|------|
 | `tokenizeZh(text)` | 索引侧：token 空格 join 写入 FTS5 列 |
-| `buildFtsQuery(rawWords)` | 查询侧：多词 token 全部 OR 连接（宽松召回） |
+| `buildFtsQuery(rawWords)` | 查询侧：多词 token 全部 OR 连接（宽松召回）。⚠️ **不剥离 FTS5 语法字符**——遇含点号的人名别名（`O.o`/`@.........`）会报 `fts5: syntax error near "."`（**BUG-79**，有 LIKE 后备自愈，待修） |
 
 索引重建脚本 `scripts/rebuildFtsV2.js`：纯本地 CPU 操作，batch 500，不调 LLM。
 
 ### FTS5 四级降级链（topicSearchAgent）
 
 ```
-Level 1: 分块 FTS5 v2 (unicode61 + 预分词，搜 keywords + summary 两列)
+Level 1: 分块 FTS5 v2 (unicode61 + 预分词，搜 keywords + summary 两列；⚠️ summary 列当前 5,372/5,372 全空 → 实际等价单列 keywords)
   ↓ 失败（缺 v2 表等）
 Level 2: 分块 LIKE (keywords LIKE '%词%' OR summary LIKE '%词%')
   ↓ 召回不足
@@ -407,10 +409,12 @@ importChat.js --clear
 group_messages（53.8 万条）
   ↓
 buildChunks.js（LLM 分块）
-  ↓ 每 100 条为一块
-  ↓ LLM 生成 keywords + summary + participants
+  ↓ 每 100 条为一块，LLM 生成「话题/人物/关键词/情绪/摘要」五段文本
+  ↓ ⚠️ 实际只写 keywords 一列（summary / participants 从未填充，摘要文本被塞在 keywords 内）
 message_chunks（5,372 块）
-  ↓
+  ↓ 补漏 repairChunks.js（按空/占位 keywords 反查回填，空返回判失败）
+  ↓ 人工 applyManualChunks.js（审核拦截块回写，不调 LLM）
+  ↓ 跨库 applyKeywordsPatch.js（单字段补丁，id+起止区间三重校验）
 rebuildFtsV2.js（FTS5 v2 索引重建）
   ↓ tokenizer.js 预分词
   ↓ tokenize='unicode61'，batch 500
@@ -435,7 +439,7 @@ message_chunks_fts_v2（FTS5 虚拟表）
 # LLM
 VOLC_API_KEY=ark-xxx
 VOLC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
-VOLC_MODEL=deepseek-v4-flash-ga-260731
+VOLC_MODEL=glm-5.3-flash
 VOLC_STD_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428
 VOLC_VISION_API_KEY=<同 VOLC_API_KEY 或独立>
@@ -524,4 +528,4 @@ doubao-embedding 1024 维，向量化 5,372 分块 keywords+summary → sqlite-v
 | 需求池 | `pm/需求池.md` | 全局需求排期 |
 | RAG 检索策略调研 | `prd/01-需求文档/00-调研/RAG检索策略与工程化调研.md` | 检索方案对比 |
 
-> **注**：《男德通AI产品全览.md》基于 v3.5.0 审计，部分内容已过时（默认人设写 tiwei 实际已改 normal、TASK_TIMEOUT 写 15s 实际已改 60s、SITE_VERSION 写硬编码实际已改动态）。本文档以 v3.6.0 + deepseek-v4-flash 线上代码为准，如遇冲突以本文档和源码为准。
+> **注**：《男德通AI产品全览.md》基于 v3.5.0 审计，部分内容已过时（默认人设写 tiwei 实际已改 normal、TASK_TIMEOUT 写 15s 实际已改 60s、SITE_VERSION 写硬编码实际已改动态）。本文档以 v3.6.0 + glm-5.3-flash 线上代码为准，如遇冲突以本文档和源码为准。
