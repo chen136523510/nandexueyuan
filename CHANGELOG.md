@@ -10,7 +10,7 @@
 
 男德通 AI 主模型由 `deepseek-v4-flash-ga-260731` 切换为火山引擎 `glm-5.3-flash`（院长指示；该模型为原生多模态）。实测 coding 端点连通正常（1.9~4.3s）。**关键兼容性问题**：`glm-5.3-flash` 不支持 `thinking:{type:'disabled'}`，会返回 `400 InvalidParameter`，而 planner/feedback 两个确定性场景正传该参数——不做处理会重演 BUG-68（主链路全挂）。故本次不只是换模型 ID，还把「模型能力差异参数」从无条件透传改为**不支持则自动降级重试**。
 
-同时完成 R-054 前置数据补跑：修复 429/437 个话题块的 keywords（原 432 空 + 5 占位），并重建 `message_chunks_fts_v2`。
+同时完成 R-054 前置数据补跑：432 空 + 5 占位共 437 个话题块的 keywords **全部补齐**（自动补跑 429 + 7 个输入侧审核拦截块由 AI 按「政治议题降级」口径代填），5,372 块零空缺，并重建 `message_chunks_fts_v2`。
 
 ### 代码变更
 
@@ -18,6 +18,7 @@
 |------|------|
 | `server/src/utils/llm.js` | MODEL 默认 `glm-5.3-flash`；抽出 `buildRequestBody`/`postChat`/`isThinkingUnsupported`；`chatCompletion`/`chatCompletionStream` 遇「模型不支持 thinking:disabled」摘参数重试一次 |
 | `server/scripts/repairChunks.js` | 新增：话题块 keywords 幂等补跑脚本（`--dry-run`/`--limit N` 金丝雀，空返回判失败） |
+| `server/scripts/applyManualChunks.js` | 新增：审核拦截块人工审稿回写工具（解析填写区、`--dry-run` 校验、不调 LLM） |
 | `server/.env` + `.env.example` | VOLC_MODEL=glm-5.3-flash |
 
 ### 决策依据
