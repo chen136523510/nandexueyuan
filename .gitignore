@@ -61,6 +61,9 @@ pnpm.tgz
 # AI 本地状态（各机器独立，不跟踪）
 .ai/local/
 
+# 审核拦截块人工处理（含群聊原文=政治敏感内容，与群聊库同理由不入库）
+.ai/repair/
+
 # ZCode 工程配置
 # 纳入 git 跟踪：
 #   .zcode/skills/   - ZCode 技能库（项目共享）
