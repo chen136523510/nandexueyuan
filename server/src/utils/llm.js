@@ -5,8 +5,8 @@
 
 const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
 const API_KEY = process.env.VOLC_API_KEY
-const MODEL = process.env.VOLC_MODEL || 'deepseek-v4-flash-ga-260731'
-const TIMEOUT_MS = 60000 // 60 秒超时（deepseek-v4-flash 实测 1-3s 返回，留足余量）
+const MODEL = process.env.VOLC_MODEL || 'glm-5.3-flash'
+const TIMEOUT_MS = 60000 // 60 秒超时（实测秒级返回，留足余量）
 
 // ========== 温度常量（集中管理，各调用点引用，避免散落硬编码）==========
 export const TEMPS = {
@@ -45,6 +45,33 @@ function makeLlmError(status, errText) {
   return new Error(`LLM API 错误 ${status} [${code}]: ${(message || errText).slice(0, 200)}`)
 }
 
+/** 组装请求体；thinking:'disabled' 仅混合推理模型（deepseek-v4-flash）支持，glm 系会 400 拒绝 */
+function buildRequestBody(messages, options, stream) {
+  const body = { model: MODEL, messages, temperature: options.temperature ?? 0.7 }
+  if (stream) body.stream = true
+  if (options.thinking === 'disabled') body.thinking = { type: 'disabled' }
+  return body
+}
+
+/** POST /chat/completions，返回原始响应（不做 ok 判定，调用方按需降级重试） */
+function postChat(body, signal) {
+  return fetch(`${BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify(body),
+    signal,
+  })
+}
+
+/** 模型不支持 thinking:disabled（glm 系纯推理模型，BUG-68）导致的 400 */
+function isThinkingUnsupported(err) {
+  const msg = err.message || ''
+  return /thinking/i.test(msg) && /InvalidParameter|not supported/i.test(msg)
+}
+
 /**
  * 调用 LLM 对话补全
  * @param {Array<{role: string, content: string}>} messages
@@ -60,28 +87,18 @@ export async function chatCompletion(messages, options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
-  const body = {
-    model: MODEL,
-    messages,
-    temperature: options.temperature ?? 0.7,
-    // deepseek-v4-flash 是混合推理模型：默认自带轻量思考链；确定性 JSON 场景（规划/反馈）传 disabled 省算力
-  }
-  if (options.thinking === 'disabled') body.thinking = { type: 'disabled' }
-
   try {
-    const response = await fetch(`${BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    })
-
+    let response = await postChat(buildRequestBody(messages, options, false), controller.signal)
     if (!response.ok) {
-      const errText = await response.text()
-      throw makeLlmError(response.status, errText)
+      const err = makeLlmError(response.status, await response.text())
+      if (options.thinking === 'disabled' && isThinkingUnsupported(err)) {
+        // 切到 glm 系模型即触发（与 BUG-68 同因）：降级重试一次，不让换模型打断 planner/feedback
+        console.warn('[llm] 模型不支持 thinking:disabled，已降级为默认思考链:', err.message.slice(0, 120))
+        response = await postChat(buildRequestBody(messages, { ...options, thinking: undefined }, false), controller.signal)
+        if (!response.ok) throw makeLlmError(response.status, await response.text())
+      } else {
+        throw err
+      }
     }
 
     const data = await response.json()
@@ -110,29 +127,17 @@ export async function* chatCompletionStream(messages, options = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
-  const body = {
-    model: MODEL,
-    messages,
-    temperature: options.temperature ?? 0.7,
-    stream: true,
-    // deepseek-v4-flash 是混合推理模型：默认自带轻量思考链；确定性 JSON 场景传 disabled 省算力
-  }
-  if (options.thinking === 'disabled') body.thinking = { type: 'disabled' }
-
   try {
-    const response = await fetch(`${BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    })
-
+    let response = await postChat(buildRequestBody(messages, options, true), controller.signal)
     if (!response.ok) {
-      const errText = await response.text()
-      throw makeLlmError(response.status, errText)
+      const err = makeLlmError(response.status, await response.text())
+      if (options.thinking === 'disabled' && isThinkingUnsupported(err)) {
+        console.warn('[llm] 模型不支持 thinking:disabled，流式降级为默认思考链:', err.message.slice(0, 120))
+        response = await postChat(buildRequestBody(messages, { ...options, thinking: undefined }, true), controller.signal)
+        if (!response.ok) throw makeLlmError(response.status, await response.text())
+      } else {
+        throw err
+      }
     }
 
     const reader = response.body.getReader()
