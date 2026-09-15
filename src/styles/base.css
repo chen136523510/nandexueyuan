@@ -26,6 +26,13 @@ body.has-bottom-nav {
 body.has-bottom-nav .chat-page {
   height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
 }
+/* BUG-73 同族修复：FeedbackView / WallView 同为 100dvh 固定高页面（最后一封信/墙会被
+ * 底栏遮住），原 scoped :global() 混搭写法被 SFC 编译器编译成 body 高度（语义错误），
+ * 与 .chat-page 一并放全局 */
+body.has-bottom-nav .feedback-page,
+body.has-bottom-nav .wall-page {
+  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
+}
 
 button {
   font-family: inherit;

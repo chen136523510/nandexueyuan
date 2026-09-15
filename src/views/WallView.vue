@@ -322,11 +322,8 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 移动端底部导航显示时：页面高度让出底栏 */
-:global(body.has-bottom-nav) .wall-page {
-  height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
-  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
-}
+/* 移动端底部导航让位规则在全局 base.css（body.has-bottom-nav .wall-page）。
+   本文件原 scoped :global() 混搭写法编译产物错误（body 高度而非页面高度），已删（BUG-73 同族） */
 
 /* ===== 顶部导航（已抽公共组件 TopBar.vue） ===== */
 

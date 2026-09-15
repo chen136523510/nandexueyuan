@@ -52,17 +52,25 @@ export async function runMentionedAgent(task, emit, options = {}) {
 
   emit('mentioned', 'searching', `搜索关键词：${keywords.join('、')}`)
 
-  // 构建 LIKE 条件
-  const likeConditions = keywords.map((k) => `content LIKE '%${k.replace(/'/g, "''")}%'`).join(' OR ')
+  // 构建 LIKE 条件（% / _ 是 LIKE 通配符，昵称含这类字符时须转义防语义放大；ESCAPE 指定转义符）
+  const likeEscape = (s) => s.replace(/'/g, "''").replace(/[\\%_]/g, (c) => '\\' + c)
+  const likeConditions = keywords.map((k) => `content LIKE '%${likeEscape(k)}%' ESCAPE '\\'`).join(' OR ')
 
   // 先尝试 FTS5 v2（unicode61 + 预分词，2 字人名也能命中，如"丘哥"）
   // mentioned 职责是搜"别人提到该人"的消息，content LIKE 是对的但 FTS5 v2 更快
   let results = []
 
-  if (keywords.length > 0) {
+  // BUG-79：昵称可能全是 FTS5 语法字符（@.........），buildFtsQuery 剥离后为空串，
+  // MATCH '' 同样报语法错误，须跳过 FTS 直落 LIKE 后备
+  let ftsQuery = ''
+  try {
+    const { buildFtsQuery } = await import('../utils/tokenizer.js')
+    ftsQuery = buildFtsQuery(keywords)
+  } catch (err) {
+    console.error('[Mentioned FTS5 buildQuery Error]', err.message)
+  }
+  if (ftsQuery) {
     try {
-      const { buildFtsQuery } = await import('../utils/tokenizer.js')
-      const ftsQuery = buildFtsQuery(keywords)
       results = await prisma.$queryRawUnsafe(
         `SELECT m.id, m.nickname, m.msgTime, m.content
          FROM group_messages_fts_v2 f

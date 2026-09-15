@@ -220,10 +220,11 @@ export async function runTopicSearchAgent(task, emit, question) {
 
   // Level 1: 分块 FTS5 v2（unicode61 + 预分词，支持 2 字中文词，同时搜 keywords + summary 两列）
   let chunks = []
-  if (rawWords.length > 0) {
-    // BUG-75 修复：ftsQuery 提到 try 外声明。原 catch 里引用 try 块内的 const ftsQuery，
-    // 块级作用域隔离导致 FTS5 出错时 catch 自己抛 ReferenceError，吞掉真实错误（如缺 v2 表）
-    const ftsQuery = buildFtsQuery(rawWords)
+  // BUG-75 修复：ftsQuery 提到 try 外声明。原 catch 里引用 try 块内的 const ftsQuery，
+  // 块级作用域隔离导致 FTS5 出错时 catch 自己抛 ReferenceError，吞掉真实错误（如缺 v2 表）
+  // BUG-79：查询词可能全是 FTS5 语法字符（来自用户输入/昵称），剥离后为空串须跳过 FTS 防 MATCH '' 报错
+  const level1FtsQuery = buildFtsQuery(rawWords)
+  if (rawWords.length > 0 && level1FtsQuery) {
     try {
       // 方案C：bm25 列权重，keywords（LLM 提炼的主题词，正命中）3 倍于 summary（流水摘要，顺带提及）
       // 方案B：LIMIT 5 -> 20，大召回保证不漏，精排交给后续 rerank
@@ -235,10 +236,10 @@ export async function runTopicSearchAgent(task, emit, question) {
          WHERE f.message_chunks_fts_v2 MATCH ?
          ORDER BY bm25(message_chunks_fts_v2, 3.0, 1.0)
          LIMIT ${RERANK_CANDIDATES}`,
-        ftsQuery,
+        level1FtsQuery,
       )
     } catch (err) {
-      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery, rawWords }))
+      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery: level1FtsQuery, rawWords }))
     }
   }
 
@@ -246,7 +247,10 @@ export async function runTopicSearchAgent(task, emit, question) {
   if (!chunks || chunks.length === 0) {
     try {
       const likeConditions = rawWords
-        .map((w) => `(keywords LIKE '%${w.replace(/'/g, "''")}%' OR summary LIKE '%${w.replace(/'/g, "''")}%')`)
+        .map((w) => {
+          const e = w.replace(/'/g, "''").replace(/[\\%_]/g, (c) => '\\' + c)
+          return `(keywords LIKE '%${e}%' ESCAPE '\\' OR summary LIKE '%${e}%' ESCAPE '\\')`
+        })
         .join(' OR ')
       if (likeConditions) {
         chunks = await prisma.$queryRawUnsafe(
@@ -339,9 +343,10 @@ export async function runTopicSearchAgent(task, emit, question) {
   emit('topic_search', 'searching', '未命中话题块，尝试直接检索原始消息...')
   let results = []
 
-  if (ftsWords.length > 0) {
-    // BUG-75：同 Level 1，ftsQuery 提到 try 外防 catch 自身 ReferenceError
-    const ftsQuery = buildFtsQuery(rawWords)
+  // BUG-75：同 Level 1，ftsQuery 提到 try 外防 catch 自身 ReferenceError
+  // BUG-79：同 Level 1，空串防御
+  const level3FtsQuery = buildFtsQuery(rawWords)
+  if (ftsWords.length > 0 && level3FtsQuery) {
     try {
       results = await prisma.$queryRawUnsafe(
         `SELECT m.id, m.nickname, m.msgTime, m.content
@@ -350,17 +355,17 @@ export async function runTopicSearchAgent(task, emit, question) {
          WHERE f.content MATCH ?
          ORDER BY rank
          LIMIT 50`,
-        ftsQuery,
+        level3FtsQuery,
       )
     } catch (err) {
-      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery, rawWords }))
+      console.error('[TopicSearch FTS5 Error]', JSON.stringify({ message: err.message, stack: (err.stack || '').slice(0, 500), ftsQuery: level3FtsQuery, rawWords }))
     }
   }
 
   // Level 4: 原始消息 LIKE
   if (!results || results.length === 0) {
     try {
-      const likeConditions = rawWords.map((w) => `content LIKE '%${w.replace(/'/g, "''")}%'`).join(' OR ')
+      const likeConditions = rawWords.map((w) => `content LIKE '%${w.replace(/'/g, "''").replace(/[\\%_]/g, (c) => '\\' + c)}%' ESCAPE '\\'`).join(' OR ')
       if (likeConditions) {
         results = await prisma.$queryRawUnsafe(
           `SELECT id, nickname, msgTime, content FROM group_messages WHERE ${likeConditions} ORDER BY msgTime ASC LIMIT 50`,

@@ -187,11 +187,8 @@ function formatDate(date) {
   background: var(--md-bg);
 }
 
-/* 移动端底部导航显示时：页面高度让出底栏，避免最后一封信被遮住 */
-:global(body.has-bottom-nav) .feedback-page {
-  height: calc(100vh - 64px - env(safe-area-inset-bottom, 0px));
-  height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
-}
+/* 移动端底部导航让位规则在全局 base.css（body.has-bottom-nav .feedback-page）。
+   本文件原 scoped :global() 混搭写法编译产物错误（body 高度而非页面高度），已删（BUG-73 同族） */
 .feedback-header {
   padding: 12px 20px;
   background: var(--md-bg-card);

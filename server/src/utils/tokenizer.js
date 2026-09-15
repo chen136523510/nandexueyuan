@@ -27,7 +27,12 @@ function extractTokens(text) {
     }
   }
   // 非汉字词（英文/数字/混合），unicode61 原生支持，保留小写
-  const nonHan = String(text || '').replace(/[\u4e00-\u9fa5]+/g, ' ').split(/\s+/).filter(Boolean)
+  // BUG-79：非汉字切分对齐 unicode61 真实分词（非字母数字即分隔符），否则 O.o / @.........
+  // 这类 token 原样进 MATCH 报 fts5 syntax error，且与索引侧 unicode61 实际 token 不一致
+  const nonHan = String(text || '')
+    .replace(/[\u4e00-\u9fa5]+/g, ' ')
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
   for (const w of nonHan) tokens.add(w.toLowerCase())
   return tokens
 }
