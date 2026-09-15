@@ -4,6 +4,60 @@
 
 ---
 
+## 2026-09-15 v3.7.0 发版：视觉链路动态路由 + R-055 兜底放宽 + BUG-79/73 同族修复
+
+### 概要
+
+一次发版包含 4 项改动：①**视觉链路动态路由规则**（先试主模型直识图，失败 fallback visionAgent）—— 院长 2026-09-15 现场定的「兼容所有模型」运行时探测策略；②**R-055 方案①**：rerank 失败兜底从初排前 5 放宽到前 8（解决"考公"块 10522 因 keywords 触发 CONTENT_MODERATION 丢榜问题）；③**BUG-79 修复**：FTS5 查询串特殊字符三层加固（含点号昵称 / 通配符昵称不再语法报错）；④**BUG-73 同族修复**：移动端 FeedbackView / WallView 底栏让位规则自上线起首次生效。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | 新增 `chatCompletionWithImages()`（主模型多模态入口） |
+| `server/src/agents/visionAgent.js` | 新增 `tryDirectMultimodal()`（运行时探测，失败返回 null 让上层 fallback） |
+| `server/src/agents/orchestrator.js` | vision 决策点 639-664 段从无条件 runVisionAgent 改为三层 fallback |
+| `server/src/agents/topicSearchAgent.js` | 新增 `RERANK_FALLBACK_KEEP=8`，fallback/catch 两处改用（R-055 方案①） |
+| `server/scripts/probeModel.js` | 加 ⑤ 视觉子项（`--vision <URL>` 参数化） |
+| `server/src/utils/tokenizer.js` | 非汉字切分对齐 unicode61 真实分词（按非字母数字切，BUG-79） |
+| `server/src/agents/mentionedAgent.js` | MATCH 空串防御 + LIKE 通配符转义（BUG-79） |
+| `server/src/agents/topicSearchAgent.js` | 同上三处（BUG-79） |
+| `src/styles/base.css` | 全局规则覆盖 chat-page/feedback-page/wall-page（BUG-73 同族） |
+| `src/views/ChatView.vue` / `FeedbackView.vue` / `WallView.vue` | 删三处失效的 scoped `:global()` 规则（编译产物是 body 选择器，语义错误） |
+| `server/src/agents/changelog.md` | 同步两条新变更记录 |
+| `prd/01-需求文档/04-德塔/changelog.md` | 同步两条新变更记录 |
+| `prd/01-需求文档/04-德塔/bug-log.md` | BUG-79 修复记录 + BUG-73 同族修复记录 |
+| `prd/01-需求文档/03-男德通/R-056-rerank重试设计.md` | 新增（R-056 设计落档） |
+| `prd/01-需求文档/03-男德通/summary列重跑材料.md` | 新增（summary 列重跑设计落档） |
+| `AGENTS.md` | 新增"需求池常驻引用"与"部署前必走 release-helper"两条默认规则 |
+| `.env.example` | 清宝塔面板注释段（项目不用宝塔） |
+
+### 决策依据
+
+- **视觉链路规则**：**运行时探测 > 静态元数据**——院长 2026-09-15 明确"兼容所有模型"。任何错误（含不支持多模态 / 超时 / CONTENT_MODERATION）都 fallback 到 visionAgent，**不维护 multimodal: true/false 元数据**。对未来切模型天然适配
+- **R-055 方案①**：**重试优先、降级兜底**的反面——本次只放宽兜底宽度（5→8），**不引入重试机制**（重试留 R-056 待排期）。考公块 10522 案：因 keywords 含「键政」触发输入侧审核，整批 rerank 被踢到降级路径，块 10522 排第 7 被丢——放宽到前 8 直接受益
+- **BUG-79**：**预分词必须与 FTS5 内置分词器语义对齐**——`extractTokens` 非汉字切分只按空白，与 unicode61 真实分词行为不一致，导致含语法字符的 token 直接进 MATCH 报错。修复后索引侧与查询侧天然一致，旧索引免重建
+- **BUG-73 同族**：scoped `:global()` 混搭写法被 SFC 编译器**编译成错误选择器**（不是"静默丢弃"）——`body.has-bottom-nav .feedback-page` 编译产物是 `body.has-bottom-nav{height}`，后半截 `.feedback-page` 被吃掉，规则变成给 body 设高度（语义完全错）。修复要"加全局+删残留"两步一起做
+
+### 备选方案与影响评估
+
+| 项 | 备选 | 院长裁决 |
+|---|---|---|
+| 视觉链路 | 维护模型能力元数据（multimodal: true/false） | 否决，要运行时探测 |
+| R-055 | 方案② rerank 只传粗粒度标签 / ③ 候选少时跳过 rerank | 备选留档，本轮方案①直接受益最明显 |
+| BUG-79 | FTS5 引号包裹 `"o.o"` | 否决（索引侧与查询侧会不一致） |
+| 发版窗口 | 单一 R-055 或单视觉链路单独发版 | 合并一次发版，含 BUG-79/73 + R-055 + 视觉链路（4 项一并入公告） |
+
+### 部署说明
+
+部署前必跑：
+```bash
+cd server && node scripts/probeModel.js --vision "data:image/png;base64,<小图 base64>"
+```
+探明主模型（线上 `glm-5.3-flash`）多模态能力。若探针失败/不支持多模态，运行时探测规则会自动 fallback 到 visionAgent，部署仍可上线。
+
+---
+
 ## 2026-09-10 主模型切回 glm-5.3-flash（原生多模态）+ LLM 参数兼容性降级
 
 ### 概要
