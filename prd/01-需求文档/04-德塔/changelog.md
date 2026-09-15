@@ -4,6 +4,23 @@
 
 ---
 
+### [fix] 遗留清账：BUG-79（FTS5 特殊字符三层加固）+ BUG-73 同族实锤修复（移动端底栏让位从未生效）
+
+- **时间**：2026-09-15 15:45
+- **变更人**：陈梓键（白机）
+- **背景**：院长指示清历史遗留。BUG-79（含点号昵称致 FTS5 语法错误）登记后未修；BUG-73 修复时标注的 FeedbackView/WallView 同族隐患一直挂着
+- **BUG-79 修复**（`server/src/utils/tokenizer.js` + `mentionedAgent.js` + `topicSearchAgent.js`）：
+  1. `extractTokens()` 非汉字切分对齐 unicode61 真实分词（按非字母数字切），`O.o`→`o`、`@.........`→空；索引侧（rebuildFtsV2 同源）与查询侧自动一致，旧索引免重建
+  2. 三处 MATCH 空串防御（查询词全为语法字符时跳过 FTS 落 LIKE）
+  3. 三处 LIKE 通配符转义（`%`/`_`/`\` + `ESCAPE`）
+  - 验证：内存库端到端实测（MATCH 'o' 合法命中 / 旧 'o.o' 复现报错 / LIKE 转义 1 vs 2 / 中文分词零回归）。BUG-67 遗留的「TopicSearch FTS5 Error 偶现」同根因，预计已覆盖，部署后观察日志确认
+- **BUG-73 同族修复**（`src/styles/base.css` + `ChatView.vue`/`FeedbackView.vue`/`WallView.vue`）：build 产物实锤——三处 `:global(body.has-bottom-nav) .xxx-page` 编译成 `body.has-bottom-nav`（`.xxx-page` 被吃掉），规则变成给 body 设高度，**FeedbackView/WallView 的底栏让位自上线起从未生效**（移动端最后一封信/墙被遮 64px）；另 ChatView 留有 BUG-73 修复时的 scoped 残留死规则。删三处失效规则 + base.css 一条全局规则覆盖三页
+  - 验证：build 产物错误规则全消；dev + Playwright 375×812 注入实测三页高度 812→748px 全部生效
+- **状态**：本地验证通过，**未部署**（commit `3d7b72b`，待下次部署窗口）
+- **教训**：预分词必须与 FTS5 内置分词器语义对齐；BUG-73 当年"静默丢弃"表述不准——实际编译成错误选择器，比丢弃更阴险；同类修复要「加全局+删残留」两步一起做
+
+---
+
 ### [fix] R-054 前置数据补跑：432 空 keywords 块 + 5 占位块全部修复（437/437）+ 主模型切 glm-5.3-flash
 
 - **时间**：2026-09-10 19:00 ~ 19:35

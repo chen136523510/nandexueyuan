@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-09-15（白机 遗留清账：BUG-79 修复 + BUG-73 同族实锤修复）
+
+### BUG-79 修复：FTS5 查询串特殊字符三层加固（tokenizer 对齐 unicode61 + MATCH 空串防御 + LIKE 通配符转义）
+
+- **修复时间**：2026-09-15 15:30（白机遗留清账轮，原登记于 2026-09-10）
+- **修复内容**（commit `3d7b72b`）：
+  1. `tokenizer.js` `extractTokens()`：非汉字段切分从「按空白」改为「按非字母数字」（`split(/[^a-zA-Z0-9]+/)`），**向 unicode61 分词器的真实行为对齐**。`O.o` → `o`、`@.........` → 无 token。索引侧（`rebuildFtsV2.js` 走同一 `tokenizeZh`）与查询侧自动一致；旧索引无需重建——unicode61 本就把 `.` 当分隔符，旧索引的真实 token 与新查询串一致
+  2. 三处调用点加**空串防御**（`mentionedAgent.js` Level FTS、`topicSearchAgent.js` Level 1/Level 3）：`buildFtsQuery` 剥离后为空串时跳过 FTS 直落 LIKE 后备，防 `MATCH ''` 同样报语法错误
+  3. 三处 LIKE 后备加**通配符转义**（`%`/`_`/`\` + `ESCAPE '\'`）：昵称/关键词含 `%` 时不再语义放大（实测 `100%` 转义后命中 1 条、不转义误命中 2 条）
+- **验证**（内存库端到端，全部打印实测）：`buildFtsQuery(['O.o'])` → `"o"` 语法合法且命中目标消息；旧 `o.o` 复现 `fts5: syntax error near "."`；`@.........` → 空串走跳过路径；中文/bigram 行为零回归（考研/研究生考试/广州游玩当灯泡 分词输出不变）；三 agent 模块 import OK
+- **影响面**：BUG-67 遗留的「TopicSearch FTS5 Error 偶现（error message 为空）」与 BUG-79 同根因（特殊字符进 MATCH），本次 tokenizer 修复预计已覆盖，**部署后观察线上日志确认**，若不再出现即可关闭 BUG-67 遗留项
+- **教训补充**：预分词器与 FTS5 内置分词器是**两个分词器**，预分词规则必须与内置分词器的分隔符语义对齐，否则索引 token 与查询 token 各说各话；LIKE 后备不是法外之地，通配符转义与 SQL 引号转义要一起做
+
+### BUG-73 同族实锤修复：FeedbackView / WallView 底栏让位规则从未生效（编译产物是 body 高度，非页面高度）+ ChatView 残留清理
+
+- **修复时间**：2026-09-15 15:40（白机遗留清账轮）
+- **现象与实锤方式**：`npm run build` 后 grep 产物 CSS——三个视图的 `:global(body.has-bottom-nav) .xxx-page` 规则编译产物选择器全是 **`body.has-bottom-nav`**（后半截 `.xxx-page` 被编译器吃掉），即规则变成了给 **body** 设 height，页面本身从未让出底栏。移动端 `/feedback`（最后一封信）与 `/wall`（最后一面墙）自上线起一直被底栏遮住 64px，因页面内容可滚动+无人上报而潜伏
+- **额外发现**：BUG-73 当年修复只把规则**加**到了 base.css，`ChatView.vue` scoped 里的旧失效规则**没删**，产物里一直留着一条语义错误的 `body.has-bottom-nav{height:...}` 死规则
+- **修复**（commit `3d7b72b`）：删除三个视图的 scoped 失效规则（各留一行注释指向 base.css），base.css 一条全局规则统一覆盖：`body.has-bottom-nav .chat-page, .feedback-page, .wall-page { height: calc(100dvh - 64px - ...) }`
+- **验证**：build 产物三条错误规则全部消失、全局规则形态正确；本地 dev + Playwright 375×812 运行时注入实测——挂上 `has-bottom-nav` 后三个页面类 computed height 全部 812→748px（FeedbackView/WallView 让位**首次真正生效**）；console 错误仅 API 后端未启动的 500 与 favicon 404，与改动无关
+- **教训补充**：BUG-73 当年「静默丢弃」的表述不准确——实际是**编译成错误选择器**（比丢弃更阴险：规则"存在"但语义完全错）；修复同类问题时要「加全局规则 + 删 scoped 残留」两步一起做，只加不删会留死规则；判定 CSS 是否生效以 build 产物/`document.styleSheets` 为准，不看源码
+
+---
+
 ## 2026-09-10（黑机 R-054 前置数据补跑 + 主模型切 glm-5.3-flash + 部署上线）
 
 ### BUG-79：mentionedAgent 的 FTS5 MATCH 遇含点号的人名别名报语法错误（`fts5: syntax error near "."`）
@@ -13,7 +37,7 @@
 - **现象**：线上错误日志出现 `[Mentioned FTS5 Error] Raw query failed. Code: 1. Message: fts5: syntax error near "."`（累计 1 次）
 - **根因**：`mentionedAgent.js:65` 用 `buildFtsQuery(keywords)` 构造 MATCH 表达式，`keywords` 来自**人名/别名**；而 `tokenizer.js` 的 `extractTokens()` 对非汉字词只做 `toLowerCase()`、**不剥离 FTS5 查询语法字符**（`.` `-` `:` `^` `*` `"` `(` `)`）。群内成员昵称含点号是常态（`O.o`、`@.........`），于是 token `o.o` 直接进 `MATCH o.o` → 点号被 FTS5 当作列限定符 → 语法错误
 - **影响**：**轻微且自愈**——catch（`mentionedAgent.js:76`）之后紧接 LIKE 后备路径（`:81`）仍能出结果，功能不中断，仅多一次查询
-- **修复**：**待修**（本次部署范围外，未改）。建议在 `buildFtsQuery` 侧对每个 token 做 FTS5 引号包裹（`"o.o"`）或统一剥离语法字符；注意索引侧与查询侧要一致，避免改了查询侧却搜不到原 token
+- **修复**：✅ **2026-09-15 完成**（白机遗留清账，commit `3d7b72b`，详见顶部 2026-09-15 节）：tokenizer 非汉字切分对齐 unicode61 + 三处 MATCH 空串防御 + LIKE 通配符转义。**⚠️ 未部署**（本地验证通过，待下次部署窗口上线后观察线上日志）
 - **文件**：`server/src/agents/mentionedAgent.js`、`server/src/utils/tokenizer.js`
 - **教训**：①**FTS5 MATCH 的查询串必须处理特殊字符**，不能让用户可控内容（含成员昵称）裸进 MATCH——本项目昵称含点号是常态（`O.o`/`@.........`），不是边角案例。②核查线上日志发现历史错误时，要**先判定是否与本次改动相关**再决定动作：本例走的是 `group_messages_fts_v2`（消息索引）+ 人名 token，与本次 keywords 补丁（`message_chunks_fts_v2`）无关，既不误背锅也不漏掉真回归
 
@@ -97,7 +121,7 @@
 - **发现时间**：2026-08-22 04:00 前后（院长手机实测反馈）
 - **环境**：线上生产（移动端视口 ≤768px，BottomNav 显示的路由）
 - **现象**：手机打开男德通 `/chat`，底部输入框被固定导航栏压住约 50px，无法正常看到/点击输入区
-- **根因**：`ChatView.vue` scoped CSS 里写的 `:global(body.has-bottom-nav) .chat-page { height: calc(100dvh - 64px - ...) }` **没有生效**。浏览器实测（Playwright evaluate 遍历 `document.styleSheets`）确认线上样式表里根本没有这条规则——`:global()` 只包裹了 `body.has-bottom-nav`，后半段 `.chat-page` 仍是 scoped 选择器，Vue SFC 编译器处理「global 包裹 + scoped 追加」混合写法时把整条规则静默丢弃。`.chat-page` 于是回落到 `100dvh` 满屏高，输入框贴到视口底部，与 `position:fixed` 的底栏（实测顶 762px）重叠 50px。`FeedbackView.vue` / `WallView.vue` 同款写法疑似同样失效（同族隐患）
+- **根因**：`ChatView.vue` scoped CSS 里写的 `:global(body.has-bottom-nav) .chat-page { height: calc(100dvh - 64px - ...) }` **没有生效**。浏览器实测（Playwright evaluate 遍历 `document.styleSheets`）确认线上样式表里根本没有这条规则——`:global()` 只包裹了 `body.has-bottom-nav`，后半段 `.chat-page` 仍是 scoped 选择器，Vue SFC 编译器处理「global 包裹 + scoped 追加」混合写法时把整条规则静默丢弃。`.chat-page` 于是回落到 `100dvh` 满屏高，输入框贴到视口底部，与 `position:fixed` 的底栏（实测顶 762px）重叠 50px。`FeedbackView.vue` / `WallView.vue` 同款写法疑似同样失效（同族隐患——✅ **2026-09-15 实锤并修复**，见顶部 2026-09-15 节：编译产物是 `body` 高度而非页面高度，两页让位规则从未生效）
 - **修复**：把规则移到全局 `src/styles/base.css`：`body.has-bottom-nav .chat-page { height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px)); }`（base.css 无 scoped 编译环节，稳定生效；与既有 `body.has-bottom-nav` padding 规则放一起，语义集中）
 - **验证**（线上注入式实测 + 移动视口 375×812）：注入前 `.chat-page` 812px / 输入框底部 812 / 底栏顶 762（重叠 50px）；注入后 748px / 748 / 762（零重叠），截图确认输入框完整可见。本地 `npm run build` 因 `@dagrejs/dagre` 缺失失败——git stash 验证与本改动无关（岁月史书模块遗留，改动仅 base.css 一个文件不动构建链路）
 - **文件**：`src/styles/base.css`

@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-09-15（白机·遗留清账：BUG-79 FTS5 特殊字符三层加固）
+
+- [fix] `utils/tokenizer.js` `extractTokens()`：非汉字段切分从按空白改为按非字母数字（`split(/[^a-zA-Z0-9]+/)`），对齐 unicode61 分词器真实行为。含点号昵称（`O.o`）不再产出非法 MATCH token；`@.........` 剥离后无 token。索引侧 `rebuildFtsV2.js` 走同一 `tokenizeZh`，两侧自动一致，**旧索引免重建**（unicode61 本就把 `.` 当分隔符，真实 token 不变）
+- [fix] `mentionedAgent.js` / `topicSearchAgent.js`（Level 1、Level 3）：`buildFtsQuery` 产空串时跳过 FTS 直落 LIKE 后备（防 `MATCH ''` 语法错误）；三处 LIKE 后备加 `%`/`_`/`\` 转义 + `ESCAPE '\'`
+- [verify] 内存库（node:sqlite fts5 unicode61）端到端：`buildFtsQuery(['O.o'])`→`"o"` 合法且命中；旧 `o.o` 复现 `fts5: syntax error`；LIKE `100%` 转义后 1 条 vs 不转义 2 条；中文/bigram 分词零回归；两 agent import OK
+- [note] BUG-67 遗留「TopicSearch FTS5 Error 偶现（error message 为空）」与 BUG-79 同根因，本次预计已覆盖；**部署后观察线上日志**，`fts5: syntax error` 不再出现即关闭
+- [状态] 本地验证通过，**未部署**。commit `3d7b72b`
+
+---
+
 ## 2026-09-10（黑机·主模型切 glm-5.3-flash：planner/feedback 的 thinking:disabled 转为自动降级）
 
 - [switch] 主模型由 `deepseek-v4-flash-ga-260731` 切回火山引擎 `glm-5.3-flash`（院长指示，原生多模态）。**本目录代码未改**，但运行时行为变化：`orchestrator.js` 的 planner（726 行）/ feedback（529 行）传入的 `thinking:'disabled'` 在 glm 系模型上被 400 拒绝，由 `utils/llm.js` 新增的自动降级兜底（摘参数重试一次，BUG-78）。即在 glm 上这两个确定性 JSON 场景实际以「思考链开启」运行，较 deepseek 时期略慢、多耗算力，输出仍可解析
