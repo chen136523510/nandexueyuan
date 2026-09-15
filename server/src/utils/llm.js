@@ -183,7 +183,7 @@ export async function* chatCompletionStream(messages, options = {}) {
  */
 export async function visionChatCompletion(messages) {
   if (!VISION_API_KEY) {
-    throw new Error('LLM API 错误: VOLC_VISION_API_KEY 未配置')
+    throw new Error('LLM API 错误: VOLC_VISION_KEY 未配置')
   }
 
   const controller = new AbortController()
@@ -210,6 +210,52 @@ export async function visionChatCompletion(messages) {
     if (!response.ok) {
       const errText = await response.text()
       throw makeLlmError(response.status, errText)
+    }
+
+    const data = await response.json()
+    return data.choices[0].message.content
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('LLM API 超时')
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * 多模态对话补全（调用主模型直接识图）
+ * 与 visionChatCompletion 的区别：端点是 BASE_URL（coding）+ 模型是 MODEL（主模型如 glm-5.3-flash）
+ * 用于「先试主模型直接识图」的运行时探测路径——若主模型支持多模态则跳过 visionAgent 省一次调用；
+ * 不支持时调用方负责 try-catch 后 fallback 到 visionChatCompletion。院长 2026-09-15 定视觉链路动态路由规则。
+ *
+ * messages 形态：content 是 array，可含 {type:'text', text} 与 {type:'image_url', image_url:{url}}（base64 data URL 或公网 URL）
+ * @param {Array<{role: string, content: Array<{type: string, text?: string, image_url?: {url: string}}>}>} messages
+ * @param {{temperature?: number, thinking?: 'disabled'}} options
+ * @returns {Promise<string>} 模型回复文本
+ * @throws {Error} CONTENT_MODERATION / 超时 / API 错误（与 chatCompletion 一致）
+ */
+export async function chatCompletionWithImages(messages, options = {}) {
+  if (!API_KEY) {
+    throw new Error('LLM API 错误: VOLC_API_KEY 未配置')
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
+  try {
+    let response = await postChat(buildRequestBody(messages, options, false), controller.signal)
+    if (!response.ok) {
+      const err = makeLlmError(response.status, await response.text())
+      if (options.thinking === 'disabled' && isThinkingUnsupported(err)) {
+        // 主模型不支持 thinking:disabled（glm 系纯推理，BUG-68）：降级重试一次
+        console.warn('[llm] 多模态主模型不支持 thinking:disabled，已降级为默认思考链:', err.message.slice(0, 120))
+        response = await postChat(buildRequestBody(messages, { ...options, thinking: undefined }, false), controller.signal)
+        if (!response.ok) throw makeLlmError(response.status, await response.text())
+      } else {
+        throw err
+      }
     }
 
     const data = await response.json()

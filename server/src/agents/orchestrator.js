@@ -19,7 +19,7 @@ import { runTopicSearchAgent } from './topicSearchAgent.js'
 import { runTimeSearchAgent } from './timeSearchAgent.js'
 import { runWorldbookAgent } from './worldbookAgent.js'
 import { runDbInfoAgent } from './dbInfoAgent.js'
-import { runVisionAgent } from './visionAgent.js'
+import { runVisionAgent, tryDirectMultimodal } from './visionAgent.js'
 import { runFullAnalysisAgent } from './fullAnalysisAgent.js'
 import { formatMessagesAsText } from './contextSearch.js'
 import { isBlackOnline, sendSearchTask } from '../searchHub.js'
@@ -636,22 +636,27 @@ export async function orchestrate(question, history, send, personaId, customDesc
     send('agent_thinking', { agent, phase, content, data: data || null })
   }
 
-  // ========== 视觉识别（多模态一期）：带图必先识别 ==========
-  // 主模型（deepseek-v4-flash）是纯文本模型看不到图，无法自行判断"是否需要识别"，
-  // 因此带图时无条件先跑视觉子 agent，识别结果拼进问题供后续阶段使用；
-  // 同时跳过闲聊/快速模板短路（图片是消息主体，不能当闲聊处理）
+  // ========== 视觉识别（多模态 + 院长 2026-09-15 视觉链路动态路由规则） ==========
+  // 规则：先试主模型直接识图（任何错误都 fallback）→ 失败 fallback 到 visionAgent → visionAgent 也失败降级到文本。
+  // 这样未来切到任何模型都自动适配——不需要维护 multimodal 能力元数据，由 LLM API 成功/失败反馈决定路由走向。
+  // 同时跳过闲聊/快速模板短路（图片是消息主体，不能当闲聊处理）。
   let visionContext = null
   let effectiveQuestion = question
   if (images?.length) {
-    try {
-      visionContext = await runVisionAgent(images, question, (evt) => send('agent_thinking', evt))
-    } catch (err) {
-      // 视觉识别整体异常降级：主 Agent 仍基于文字回答，不中断
-      console.error('[Orchestrator] 视觉识别整体异常:', err.message)
-      visionContext = {
-        ok: false,
-        summary: '图片识别服务异常',
-        results: images.map((url) => ({ url, ok: false, description: '（图片识别服务异常）' })),
+    // 第一层：主模型直接识图（运行时探测）
+    visionContext = await tryDirectMultimodal(images, question, (evt) => send('agent_thinking', evt))
+    // 第二层：fallback 到 visionAgent（doubao-seed 标准视觉端点）
+    if (!visionContext) {
+      try {
+        visionContext = await runVisionAgent(images, question, (evt) => send('agent_thinking', evt))
+      } catch (err) {
+        // 视觉识别整体异常降级：主 Agent 仍基于文字回答，不中断
+        console.error('[Orchestrator] 视觉识别整体异常:', err.message)
+        visionContext = {
+          ok: false,
+          summary: '图片识别服务异常',
+          results: images.map((url) => ({ url, ok: false, description: '（图片识别服务异常）' })),
+        }
       }
     }
 

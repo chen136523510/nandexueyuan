@@ -4,12 +4,14 @@
  * 用法（在 server/ 目录下运行）：
  *   node scripts/probeModel.js                    # 探测当前 VOLC_MODEL
  *   node scripts/probeModel.js glm-5.3-flash      # 探测指定模型 ID
+ *   node scripts/probeModel.js --vision <URL>     # 加跑视觉子项（主模型直识图能力探测，需传图片 URL 或 base64 data URL）
  *
- * 探测四项：
+ * 探测五项：
  *   ① 基础连通（能否正常返回内容）
  *   ② thinking:disabled 兼容性（glm 系不支持，llm.js 会自动降级；此处显式报告）
  *   ③ 确定性 JSON 输出（planner/feedback 场景）
  *   ④ 流式输出（最终回答场景）
+ *   ⑤ 视觉直识图（主模型多模态能力，院长 2026-09-15 视觉链路动态路由规则启用时必跑；默认不跑，需 --vision 参数）
  *
  * 退出码：0=全部通过，1=有失败项（可据此判断能否切换）
  */
@@ -95,6 +97,35 @@ try {
   record('流式输出', Boolean(s), s ? `${Date.now() - t0}ms 累计 ${s.length} 字` : '无内容产出')
 } catch (e) {
   record('流式输出', false, e.message)
+}
+
+// ⑤ 视觉直识图（主模型多模态能力，院长 2026-09-15 视觉链路动态路由规则启用时必跑；默认不跑，需 --vision 参数）
+const visionArgIdx = process.argv.indexOf('--vision')
+const visionUrl = visionArgIdx > -1 ? process.argv[visionArgIdx + 1] : null
+if (visionUrl) {
+  try {
+    const { chatCompletionWithImages } = await import('../src/utils/llm.js')
+    const t0 = Date.now()
+    const r = await chatCompletionWithImages(
+      [
+        {
+          role: 'system',
+          content: [{ type: 'text', text: '你是图片识别助手。用 50 字内中文描述这张图。' }],
+        },
+        {
+          role: 'user',
+          content: [{ type: 'image_url', image_url: { url: visionUrl } }],
+        },
+      ],
+      { temperature: 0.3 },
+    )
+    const s = (r || '').trim()
+    record('视觉直识图（主模型）', Boolean(s), s ? `${Date.now() - t0}ms 描述:「${s.slice(0, 60)}」` : `${Date.now() - t0}ms 空内容（主模型返回空，疑似多模态失败）`)
+  } catch (e) {
+    record('视觉直识图（主模型）', false, `${e.message.slice(0, 120)}（主模型可能不支持多模态，或图片 URL 不可达）`)
+  }
+} else {
+  console.log('（⑤ 视觉子项未启用：传 --vision <URL> 即可跑，例如 --vision https://... 或 --vision "data:image/png;base64,..."）')
 }
 
 const failed = results.filter(r => !r.ok)

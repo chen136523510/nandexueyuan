@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-09-15 16:25（白机：**R-055 方案①实施** —— 新增 `RERANK_FALLBACK_KEEP=8`，rerank 失败兜底宽度 5→8，rerank 成功路径与无 question/候选不足路径保留 5 不动。临时脚本实测 fallback 路径生效（日志「降级取初排前 8」）。**未部署**，随下次部署窗口上线。⚠️ 剩余待裁决 2 项：①summary 列重跑 ②视觉链路动态路由规则——详见下方「遗留清账状态（2026-09-15 v2）」）
+> 最后更新：2026-09-15 16:50（白机：**视觉链路动态路由实施** —— 4 文件改：llm.js 加 `chatCompletionWithImages`、visionAgent.js 加 `tryDirectMultimodal`、orchestrator.js 三层 fallback、probeModel.js 加 ⑤ 视觉子项。临时脚本 5 case 全过验证 fallback 链路零错误抛出。**未部署**，随下次部署窗口上线（部署前必跑 `node scripts/probeModel.js --vision <URL>` 探明主模型多模态能力）。⚠️ 累计待部署项 5 项，详见下方「待部署汇总（2026-09-15 累计）」）
 > 所在设备：白机（判定依据：周二 15:12 工作日白天时段）
 > 📌 **网络踩坑（白机）**：GitHub HTTPS/SSH 双通道不可达时（443 超时 + publickey 拒绝），可走**服务器中继推送**：本地 `git bundle create /tmp/x.bundle dcd993a..master` → `scp` 到 47.96.158.104 → 服务器 `git fetch /tmp/x.bundle master && git merge --ff-only FETCH_HEAD && git push origin master`（服务器 SSH 通道正常，8-24 实测成功；amend 过的 commit 需服务器 reset --hard + push --force-with-lease）
 > 稳定版本：**v3.6.0 线上**（男德通 AI：**glm-5.3-flash**（2026-09-10 由 deepseek-v4-flash 切回，原生多模态）+ FTS5 v2 + 记忆压缩 + 人设重构 + 多轮追问 + 全量分析 + 检索缓存）
@@ -43,12 +43,15 @@
 - ✅ uploads/chat 孤儿图片清理（量小，不做）
 - ✅ dev.db / _prisma_migrations 漂移根治（低优，下一次动 schema 时一起）
 
-**已实施未部署（1 项）**：
-- ✅ **R-055 方案①**（rerank 兜底放宽前 5→8）——commit 待提交，临时脚本实测 fallback 路径生效（日志「降级取初排前 8」）。rerank 成功路径与无 question/候选不足路径保留 5 不动。**未部署**，随下次部署窗口上线
+**已实施未部署（2 项）**：
+- ✅ **R-055 方案①**（rerank 兜底放宽前 5→8）——commit `0859277`，临时脚本实测 fallback 路径生效（日志「降级取初排前 8」）。rerank 成功路径与无 question/候选不足路径保留 5 不动
+- ✅ **视觉链路动态路由规则**（院长 2026-09-15 第 1 条指令）——4 文件改：llm.js 加 `chatCompletionWithImages`、visionAgent.js 加 `tryDirectMultimodal`、orchestrator.js 三层 fallback、probeModel.js 加 ⑤ 视觉子项。临时脚本 5 case 全过验证 fallback 链路零错误抛出。**部署前必跑**：`cd server && node scripts/probeModel.js --vision "data:image/png;base64,<小图 base64>"` 探明主模型多模态能力
 
-**待院长（2 项，已附材料在上一回复）**：
-1. **summary 列重跑成本与时机**——5,372 块全空，影响 R-053 排序层。详见「summary 列重跑材料」
-2. **视觉链路动态路由规则**——院长定："主模型有多模态能力时，不走；当模型无多模态能力时，走视觉链路；后续换模型按能力路由"。当前 glm-5.3-flash 已是多模态，按规则本应直走主模型而非 visionAgent（doubao-seed-2-0-mini）；何时实施改造待院长指示
+**已落档未实施（1 项）**：
+- 📄 **summary 列重跑材料**——院长 2026-09-15 第 2 条指令："记录相关信息，但不是近期需要实现的"。代码层硬分析已落档到 `prd/01-需求文档/03-男德通/summary列重跑材料.md`，近期不实施
+
+**待院长（0 项）**：
+- 当前无待裁决项——本轮 11 项裁决 + 3 项详细材料已全部归档处理
 
 **已定性暂缓（3 项）**：
 - **glm 全量分析并发超时**——9-10 观察 3 次，院长定「只做记录，不做安排」，部署 BUG-79 修复时顺带看 PM2 日志，不主动优化

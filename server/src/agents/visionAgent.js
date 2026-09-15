@@ -11,7 +11,7 @@
 
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { visionChatCompletion } from '../utils/llm.js'
+import { visionChatCompletion, chatCompletionWithImages } from '../utils/llm.js'
 
 // 服务器运行目录（server/）下的上传目录，与 wallController 的 uploads/wall 同级
 const CHAT_UPLOAD_DIR = path.resolve('uploads/chat')
@@ -131,4 +131,117 @@ export async function runVisionAgent(imageUrls, question, emit) {
   })
 
   return { ok: okCount > 0, summary, results }
+}
+
+/**
+ * 运行时探测：先试主模型直接识图（院长 2026-09-15 视觉链路动态路由规则）
+ * 失败或返回异常 → 返回 null，让调用方 fallback 到 runVisionAgent。**兼容所有未来模型**——不需要维护 multimodal 元数据，
+ * 自然由 LLM API 自身的成功/失败反馈决定路由走向。
+ *
+ * 与 runVisionAgent 的区别：①端点是主模型 coding 通道（不是 doubao-seed 标准视觉端点）；②一次调用所有图（不逐张）；
+ * ③失败不抛错（返回 null 让上层走 visionAgent 兜底）。
+ *
+ * @param {string[]} imageUrls 本站路径（/uploads/chat/xxx.png 等），最多 3 张
+ * @param {string} question 用户提问（用于引导描述重点）
+ * @param {(msg: object) => void} emit SSE 发送函数（推送识别进度）
+ * @returns {Promise<{ok: true, summary: string, results: Array}|null>}
+ */
+export async function tryDirectMultimodal(imageUrls, question, emit) {
+  if (!imageUrls?.length) return null
+
+  emit({
+    agent: '视觉识别',
+    phase: 'start',
+    content: `尝试主模型直接识图（${imageUrls.length} 张，动态路由规则）...`,
+  })
+
+  // 读所有图片转 base64 data URL（与 describeImage 共用同一安全策略）
+  const imagePayloads = []
+  const fileMap = []
+  for (const url of imageUrls) {
+    const filename = url.replace('/uploads/chat/', '')
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      console.warn('[tryDirectMultimodal] 非法图片路径，跳过:', url)
+      continue
+    }
+    const ext = path.extname(filename).toLowerCase()
+    const mime = EXT_MIME[ext]
+    if (!mime) {
+      console.warn('[tryDirectMultimodal] 不支持的图片格式，跳过:', ext)
+      continue
+    }
+    try {
+      const buf = await readFile(path.join(CHAT_UPLOAD_DIR, filename))
+      imagePayloads.push({
+        type: 'image_url',
+        image_url: { url: `${MIME_PREFIX[mime]}${buf.toString('base64')}` },
+      })
+      fileMap.push(url)
+    } catch {
+      console.warn('[tryDirectMultimodal] 图片读取失败，跳过:', filename)
+    }
+  }
+
+  if (imagePayloads.length === 0) return null
+
+  const userContent = [...imagePayloads]
+  userContent.push({
+    type: 'text',
+    text: question?.trim()
+      ? `用户提问：「${question}」\n\n请先逐张描述每张图片（每张 ≤150 字中文），再回答用户问题。`
+      : '请逐张描述每张图片（每张 ≤150 字中文）。',
+  })
+
+  try {
+    const t0 = Date.now()
+    const description = await chatCompletionWithImages(
+      [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'text',
+              text: '你是图片描述助手。客观描述每张图片：画面里有什么（人物/物体/场景/动作）、可见的文字、整体风格与氛围。每张图用「图N: ...」格式分隔。用中文，不要猜测图片之外的信息，不要编造。',
+            },
+          ],
+        },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.3 },
+    )
+    const ms = Date.now() - t0
+    const desc = (description || '').trim()
+    if (!desc) return null
+
+    // 解析「图N: ...」为 per-image 描述（粗略切分；找不到则整段截前 150 字兜底）
+    const results = fileMap.map((url, i) => {
+      const m = desc.match(new RegExp(`图\\s*${i + 1}\\s*[:：]\\s*([^\\n]+)`))
+      return {
+        url,
+        ok: true,
+        description: m ? m[1].trim() : desc.slice(0, 150),
+        source: 'direct-multimodal',
+      }
+    })
+
+    emit({
+      agent: '视觉识别',
+      phase: 'done',
+      content: `主模型直识图 ${ms}ms 完成（${fileMap.length}/${imageUrls.length} 张）`,
+      data: results.map((r) => ({ url: r.url, ok: r.ok, source: r.source })),
+    })
+
+    return { ok: true, summary: desc, results }
+  } catch (err) {
+    // 任何错误（不支持多模态 / 超时 / 解析失败 / 限流 / 审核）→ 返回 null 让上层 fallback。
+    // CONTENT_MODERATION 在这里也走 fallback：因为主模型识图触发审核意味着该图本身敏感，
+    // 即便改走 visionAgent 大概率仍触发——这是预期行为而非 bug，logged 即可。
+    console.log('[tryDirectMultimodal] 主模型直识图失败（fallback 到 visionAgent）:', err.message.slice(0, 120))
+    emit({
+      agent: '视觉识别',
+      phase: 'fallback',
+      content: `主模型直识图失败，降级到 visionAgent（${err.message.slice(0, 80)}）`,
+    })
+    return null
+  }
 }

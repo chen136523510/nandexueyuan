@@ -4,6 +4,23 @@
 
 ---
 
+### [feat] 视觉链路动态路由规则（院长 2026-09-15 定）：先试主模型直识图 → 失败 fallback visionAgent → 再失败降级文本
+
+- **时间**：2026-09-15 16:45
+- **变更人**：陈梓键（白机）
+- **背景**：院长 2026-09-15 现场裁决："先直接把图给到模型，如果能正常识图就正常识图，如果报错就走 visionAgent。这种策略应该是能兼容所有模型的"。原方案需维护模型能力元数据（multimodal: true/false），新策略改为运行时探测，**天然兼容未来任何模型**
+- **改动**（4 文件）：
+  1. `server/src/utils/llm.js`：新增 `chatCompletionWithImages(messages, options)`——走主模型 coding 端点（VOLC_BASE_URL + VOLC_MODEL），复用 thinking:disabled 自动降级重试机制
+  2. `server/src/agents/visionAgent.js`：新增 `tryDirectMultimodal(imageUrls, question, emit)`——读图转 base64 → 一次性发主模型 → 解析为 visionContext 形态；**任何错误（含不支持多模态/超时/审核）都返回 null**，让上层 fallback
+  3. `server/src/agents/orchestrator.js`：vision 决策点 639-664 段从「无条件 runVisionAgent」改为三层 fallback——tryDirectMultimodal → runVisionAgent → 降级文本
+  4. `server/scripts/probeModel.js`：加 ⑤ 视觉子项，`--vision <URL>` 参数启用（默认不跑），用于探测主模型多模态能力
+- **验证**（5 case 全过）：空 imageUrls/非法路径/不存在文件/不支持扩展名 → 返回 null 不调 LLM；真实图 + 无 API key → catch 路径触发返回 null + emit "fallback 到 visionAgent" 日志。**fallback 链路零错误抛出**
+- **部署前置**：`cd server && node scripts/probeModel.js --vision "data:image/png;base64,<小图 base64>"` 探明主模型多模态能力
+- **状态**：本地验证通过，**未部署**（commit 待整理后提交）。**与 R-055 实施（commit `0859277`）一起可合入下一次发版**
+- **设计文档**：本目录无独立设计文档（视觉链路设计短且 inline 即可，详见 `llm.js` `chatCompletionWithImages` 与 `visionAgent.js` `tryDirectMultimodal` 函数头注释）
+
+---
+
 ### [fix] 遗留清账：BUG-79（FTS5 特殊字符三层加固）+ BUG-73 同族实锤修复（移动端底栏让位从未生效）
 
 - **时间**：2026-09-15 15:45

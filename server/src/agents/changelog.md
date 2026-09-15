@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-09-15（白机·视觉链路动态路由规则实施——院长定"先试主模型直识图，失败 fallback visionAgent"）
+
+- [feat] `llm.js`：新增 `chatCompletionWithImages(messages, options)` —— 走主模型 coding 端点（不是 doubao-seed 标准视觉端点），复用 `buildRequestBody` / `postChat` / `isThinkingUnsupported` / `makeLlmError` 四个内部函数；thinking:disabled 自动降级重试机制一致
+- [feat] `visionAgent.js`：新增 `tryDirectMultimodal(imageUrls, question, emit)` —— 复用 `CHAT_UPLOAD_DIR`/`EXT_MIME`/`MIME_PREFIX` 安全策略读图转 base64，一次性发给主模型（不分图），按 `图N: ...` 格式切分 per-image 描述；**任何错误（不支持多模态/超时/解析失败/限流/CONTENT_MODERATION）都返回 null**，让 orchestrator fallback 到 runVisionAgent
+- [feat] `orchestrator.js`：vision 决策点 639-664 段从「无条件 runVisionAgent」改为三层 fallback——
+  1. 第一层：`tryDirectMultimodal`（主模型直识图，运行时探测）
+  2. 第二层：`runVisionAgent`（主模型失败 fallback）
+  3. 第三层：catch 整体异常 → 降级到文本（"图片识别服务异常"，已有行为）
+  - 兼容所有未来模型——不需要维护 multimodal 元数据，由 LLM API 成功/失败反馈决定路由走向
+- [feat] `scripts/probeModel.js`：加 ⑤ 视觉子项，`--vision <URL>` 参数启用（默认不跑，避免增加常规探测成本），探测主模型多模态能力 + 描述质量 + 延迟
+- [verify] 临时脚本 5 case 全过：①空 imageUrls → null 短路 ②非法路径穿越 → null ③不存在文件 → null ④不支持扩展名 → null ⑤真实图 + 无 API key → catch 路径触发返回 null + emit "fallback 到 visionAgent" 日志——证明 fallback 链路零错误抛出
+- [状态] 本地验证通过，**未部署**。commit 待整理后提交。**部署前必跑**：`cd server && node scripts/probeModel.js --vision "data:image/png;base64,<小图 base64>"` 探明主模型多模态能力
+
+---
+
 ## 2026-09-15（白机·遗留清账第二轮：R-055 方案①实施 + 11项裁决归档 + R-056登记）
 
 - [feat] `topicSearchAgent.js`：**R-055 方案①**——rerank 失败兜底宽度 `RERANK_KEEP=5` → 新增 `RERANK_FALLBACK_KEEP=8`。fallback 函数（catch / 解析失败 / id 全幻觉三处共用）从 `chunks.slice(0, RERANK_KEEP)` 改 `chunks.slice(0, RERANK_FALLBACK_KEEP)`，日志同步从「前 5」改「前 8」。**rerank 成功路径与无 question/候选不足路径保留 RERANK_KEEP=5 不动**（院长裁决只放宽兜底宽度，不放宽 rerank 成功输出）。线上 9-10 实测「考公」块 10522 案（keywords 触发 CONTENT_MODERATION 降级丢榜）直接受益
