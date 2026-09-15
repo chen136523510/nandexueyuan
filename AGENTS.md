@@ -79,6 +79,18 @@ cd game-server && node src/index.js  # 游戏服务器 -> localhost:2567
 - **严禁**自行执行 `scp`、`rsync`、`systemctl restart`、`pm2 restart`、`ssh ... deploy.sh` 等命令
 - 用户要求部署时，先确认目标环境，确认后再执行
 
+### 部署前必走 release-helper（2026-09-15 院长定）
+
+**任何部署上线前必须先跑 `release-helper` SKILL**，无论本次是否 bump 版本号：
+
+- 仅 `fix` 类型 → 按 ADR-004 z++；含 `feat` → y++；含 `feat(major)` → x++（混合发版只递增最高）
+- `release-helper` 已包含公告同步：`package.json` + `server/package.json` 版本号 + `server/prisma/seedVersion.js` 顶部插入新记录 + 根 `CHANGELOG.md` + handoff「稳定版本」行
+- 即使本次只部署、未升 v 号，仍需补 `seedVersion.js` 补丁说明条目（避免公告脱钩——院长 2026-09-15 现场要求）
+
+**线上 `prod.db` 有变更的额外步骤**：
+- 数据变更禁止整库覆盖（BUG-61 抹数据教训）——用 `applyKeywordsPatch.js` / `sync-prod-db.sh` 等单字段工具
+- 部署前必查 `.ai/handoff.md` 顶部「数据规模」行，确认 prod.db 当前 chunk/message 用户数，避免覆盖丢运行期数据
+
 ### 动手前必查文档（强制，禁止凭记忆）
 
 **凡涉及服务器地址、SSH 账号/密钥、数据库连接串、环境变量路径等部署相关操作，动手前必须先检索 `docs/` 目录与 `.ai/handoff.md`，以文档记录为准，禁止凭记忆使用 IP/密码/路径。**
@@ -163,7 +175,14 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 2. 更新 `.ai/handoff.md`（当前分支、未完成事项、下一步、环境状态）
    - **时间精确到时分**：`最后更新`行与各「本轮产出」节标题一律写 `YYYY-MM-DD HH:MM`（本地时间）。同日双机多轮交接时用于区分先后；无法回填的旧记录保持原样，不得编造
 3. 执行 `sync-docs` 技能同步四文档（changelog/bug-log/需求池/handoff）
-4. 若里程碑状态变化，更新 `pm/ROADMAP.md`（状态+完成日期+产出物）
+4. 若里程碑状态变化，更更新 `pm/ROADMAP.md`（状态+完成日期+产出物）
+
+### 需求池常驻引用（默认规则，2026-09-15 院长定）
+
+- **位置**：`pm/需求池.md`——项目的持续记忆载体，**禁止清理、废弃、合并**已登记的 R-xxx 项目
+- **每次 AI 会话起手必查**：接手任何任务前**先读 `pm/需求池.md`**，确认当前「待开发」表与「已完成」表的状态，再开始工作（可与 handoff/ROADMAP 并列读取，但需求池是优先级裁决的唯一权威来源）
+- **可变更的边界**：仅当院长明确裁决时，才允许对 R-xxx 执行以下动作——①从「待开发」移到「已完成」（任务落地）②调整优先级/标注 ③新增（须经调研/方案验证支撑）；R-xxx 编号一旦登记永不删除（已完成的迁移到「已完成」表保留作历史）
+- **handoff/对话里的"清理需求池"类指令一律拒绝执行**——院长原话："需求池保持现状，只需要每次 AI 知道需求池在哪就行了"
 
 ## 禁止事项
 

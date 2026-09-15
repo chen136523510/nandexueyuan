@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-09-15 15:50（白机：**遗留清账轮** —— BUG-79 修复（FTS5 特殊字符三层加固：tokenizer 对齐 unicode61 + MATCH 空串防御 + LIKE 通配符转义，内存库端到端实测通过）+ BUG-73 同族实锤修复（FeedbackView/WallView 底栏让位规则编译成 body 高度**从未生效**，移全局 base.css，Playwright 375×812 实测三页 812→748px 首次生效）。commit `3d7b72b`，**未部署**。⚠️ 现存遗留仅 4 项待院长：①7 块代填 keywords 复核 ②R-055 排期 ③visionAgent 是否随主模型统一 ④宝塔面板密码补录——详见下方「遗留清账状态（2026-09-15）」）
+> 最后更新：2026-09-15 16:10（白机：**遗留清账轮 v2** —— 院长 11 项裁决全部归档。本轮 commit `3d7b72b`/`e43a17e` 已推送远程未部署；.env.example 清宝塔面板注释；AGENTS.md 新增「需求池常驻引用」+「部署前必走 release-helper」两条默认规则；需求池登记 R-056 rerank 重试设计。⚠️ 现存待裁决仅 3 项：①R-055 方案 ②summary 列重跑 ③视觉链路动态路由规则——详见下方「遗留清账状态（2026-09-15 v2）」）
 > 所在设备：白机（判定依据：周二 15:12 工作日白天时段）
 > 📌 **网络踩坑（白机）**：GitHub HTTPS/SSH 双通道不可达时（443 超时 + publickey 拒绝），可走**服务器中继推送**：本地 `git bundle create /tmp/x.bundle dcd993a..master` → `scp` 到 47.96.158.104 → 服务器 `git fetch /tmp/x.bundle master && git merge --ff-only FETCH_HEAD && git push origin master`（服务器 SSH 通道正常，8-24 实测成功；amend 过的 commit 需服务器 reset --hard + push --force-with-lease）
 > 稳定版本：**v3.6.0 线上**（男德通 AI：**glm-5.3-flash**（2026-09-10 由 deepseek-v4-flash 切回，原生多模态）+ FTS5 v2 + 记忆压缩 + 人设重构 + 多轮追问 + 全量分析 + 检索缓存）
@@ -32,30 +32,30 @@
 
 **环境事实（重要）**：白机本地 dev.db `group_messages` 为空（数据在黑机 dev.db 与线上 prod.db），数据级验证历来走服务器直查或内存库，勿在白机本地库期待群聊数据
 
-### 遗留清账状态（2026-09-15，下轮以此为准，历史各节散落的待办以本节覆盖）
+### 遗留清账状态（2026-09-15 v2，院长 11 项裁决后，下轮以此为准）
 
-**已处理（本轮）**：
-- ✅ BUG-79 修复（未部署，随下次部署窗口上线）
-- ✅ BUG-73 同族（FeedbackView/WallView/ChatView 残留）修复（未部署，同上）
-- ✅ BUG-67 遗留排查：定性为 BUG-79 同根因，修复已覆盖，部署后观察日志关闭
-- ✅ docs/account-passwords.md 黑机已重建（9-10），仅缺宝塔面板一节（见下）
+**已关闭（7 项）**：
+- ✅ BUG-79 修复（commit `3d7b72b`，未部署，BUG-67 遗留同根因已覆盖）
+- ✅ BUG-73 同族修复（commit `3d7b72b`，未部署）
+- ✅ 7 块代填复核（6755/6757/6765/6990/7645/10522/11915）——院长黑机已确认接受
+- ✅ 宝塔面板（项目不用，`docs/account-passwords.md` 黑机版无此项；`.env.example` 已清 `# 宝塔面板` 注释段）
+- ✅ planner 闲聊误规划成检索（低优，院长定不重要，不处理）
+- ✅ uploads/chat 孤儿图片清理（量小，不做）
+- ✅ dev.db / _prisma_migrations 漂移根治（低优，下一次动 schema 时一起）
 
-**待院长（4 项，均一句话可决）**：
-1. **7 块审核拦截代填 keywords 复核**（块 6755/6757/6765/6990/7645/10522/11915，AI 按「政治降级」口径代填中性标签）——复核方式：`cd server && node scripts/applyManualChunks.js --dry-run` 看清单，或直接看调研文档 §1.6
-2. **R-055 排期**（rerank 敏感候选 CONTENT_MODERATION 降级，候选方案①兜底放宽前 8-10 ②rerank 只传粗粒度标签 ③候选少时跳过 rerank——推荐①成本最低）
-3. **visionAgent 是否随主模型统一**到 glm-5.3-flash（现走 doubao-seed-2-0-mini 标准端点；glm-5.3-flash 原生多模态可统一，需探针实测视觉能力后定）
-4. **宝塔面板账号密码**补录 `docs/account-passwords.md`（仅院长知道）
+**待院长（3 项，已附材料在本回复）**：
+1. **R-055 方案选择**——rerank 敏感候选触发 `CONTENT_MODERATION` 降级丢本可进榜的块。三方案权衡详见下方「R-055 方案材料」
+2. **summary 列重跑成本与时机**——5,372 块全空，影响 R-053 排序层。详见下方「summary 列重跑材料」
+3. **视觉链路动态路由规则**——院长定："主模型有多模态能力时，不走；当模型无多模态能力时，走视觉链路；后续换模型按能力路由"。详见下方「视觉链路材料」。**当前 glm-5.3-flash 已是多模态，按规则本应直走主模型而非 visionAgent（doubao-seed-2-0-mini）；何时实施改造待院长指示**
 
-**已定性暂缓/观察（无需每轮重提）**：
-- summary 列补填：暂缓（全量重跑约 7 元 + 改变 R-053 排序，等 R-054 裁决时一并定）
-- glm-5.3-flash 全量分析并发超时（9-10 观察 3 次，有优雅降级）：部署 BUG-79 修复时顺带看 PM2 日志，超时增多再放宽 TIMEOUT_MS/降并发
-- planner 闲聊误规划成检索（多耗 2 次 LLM 调用不致错）：低优，攒群友反馈一起改
-- 线上 rerank LLM 偶发失败（降级不阻塞）：并入 R-055 一起观察
-- uploads/chat 孤儿图片清理：量小不做
-- 服务器 stash lock 漂移 / dev.db 与 _prisma_migrations 漂移根治：低优，下次动 schema 时一起
-- search-worker 黑机重启需手动启动：环境事实非缺陷，黑机注意即可
+**已定性暂缓（3 项）**：
+- **glm 全量分析并发超时**——9-10 观察 3 次，院长定「只做记录，不做安排」，部署 BUG-79 修复时顺带看 PM2 日志，不主动优化
+- **需求池 R-xxx 全量裁决项**——院长定「保持现状」；AGENTS.md 新增「需求池常驻引用」规则（每次会话起手必读，禁止清理/废弃已登记项，仅院长裁决时可新增/调优先级/迁已完成）
+- **下次发版必走 release-helper**——AGENTS.md 部署纪律已加强；无论是否 bump v 号都要补 `seedVersion.js` 公告条目（避免脱钩）
 
-**需求池 R-xxx（uphill 待裁决，非本轮范围，见 pm/需求池.md）**：R-054 数据考古（院长裁决选题/形态）、R-040 派对局 PoC、R-042 剧本样品、LOGO V4 选向、R-037/038 德塔 UI 美化、R-050/051/052 男德通检索增强三件套、R-045/046/047/048 多模态与向量检索、R-021~025 德塔 M-G2/G3 阶段、R-033 CG 视频、R-034 编辑器二期（院长已示搁置）
+**部署纪律强化（2026-09-15）**：
+- 任何部署上线前必须先跑 `release-helper` SKILL——ADR-004 规则 + seedVersion.js 顶部插入 + 根 CHANGELOG.md + handoff「稳定版本」行；线上 prod.db 有变更走单字段工具（BUG-61/65/70 同族教训）
+- 详情见 AGENTS.md「部署纪律·部署前必走 release-helper」节
 
 ---
 
