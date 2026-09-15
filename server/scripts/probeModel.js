@@ -17,11 +17,25 @@
  */
 import 'dotenv/config'
 
-// llm.js 在模块顶层读取 VOLC_MODEL，故必须先设 env 再动态 import
-const override = process.argv[2]
+// 参数解析：[model-override] 与 --vision <URL> 互不冲突
+// 例：
+//   node scripts/probeModel.js                    # 探测当前 VOLC_MODEL
+//   node scripts/probeModel.js glm-5.3-flash      # 探测指定模型 ID
+//   node scripts/probeModel.js --vision <URL>     # 加跑视觉子项（探明主模型多模态能力）
+//   node scripts/probeModel.js glm-5.3-flash --vision <URL>  # 探测指定模型 + 加视觉
+let override = null
+let visionUrl = null
+const argv = process.argv.slice(2)
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === '--vision') {
+    visionUrl = argv[++i]
+  } else if (!argv[i].startsWith('--')) {
+    override = argv[i]
+  }
+}
 if (override) process.env.VOLC_MODEL = override
 
-const { chatCompletion, chatCompletionStream } = await import('../src/utils/llm.js')
+const { chatCompletion, chatCompletionStream, chatCompletionWithImages } = await import('../src/utils/llm.js')
 
 const model = process.env.VOLC_MODEL || '(llm.js 默认)'
 const baseUrl = process.env.VOLC_BASE_URL || '(默认)'
@@ -100,8 +114,7 @@ try {
 }
 
 // ⑤ 视觉直识图（主模型多模态能力，院长 2026-09-15 视觉链路动态路由规则启用时必跑；默认不跑，需 --vision 参数）
-const visionArgIdx = process.argv.indexOf('--vision')
-const visionUrl = visionArgIdx > -1 ? process.argv[visionArgIdx + 1] : null
+// visionUrl 已在顶部参数解析处提取
 if (visionUrl) {
   try {
     const { chatCompletionWithImages } = await import('../src/utils/llm.js')
