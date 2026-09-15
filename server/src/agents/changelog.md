@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-09-15（白机·遗留清账第二轮：R-055 方案①实施 + 11项裁决归档 + R-056登记）
+
+- [feat] `topicSearchAgent.js`：**R-055 方案①**——rerank 失败兜底宽度 `RERANK_KEEP=5` → 新增 `RERANK_FALLBACK_KEEP=8`。fallback 函数（catch / 解析失败 / id 全幻觉三处共用）从 `chunks.slice(0, RERANK_KEEP)` 改 `chunks.slice(0, RERANK_FALLBACK_KEEP)`，日志同步从「前 5」改「前 8」。**rerank 成功路径与无 question/候选不足路径保留 RERANK_KEEP=5 不动**（院长裁决只放宽兜底宽度，不放宽 rerank 成功输出）。线上 9-10 实测「考公」块 10522 案（keywords 触发 CONTENT_MODERATION 降级丢榜）直接受益
+- [note] 与 R-056（rerank 偶发失败重试设计，已登记需求池）正交：R-056 决定"该不该重试"，本项决定"重试仍失败时兜多宽"。后续 R-056 实施时不必再改 fallback 宽度
+- [verify] 临时脚本实测：`RERANK_FALLBACK_KEEP=8` 常量值正确；fallback 函数在 fetch failed 条件下被 catch 触发，日志正确打印「降级取初排前 8」；空 chunks 与候选=3（<触发线 6）边界正常
+- [流程] 同步归档：`.env.example` 清宝塔面板注释；AGENTS.md 加「需求池常驻引用」+「部署前必走 release-helper」两条默认规则；`pm/需求池.md` 登记 R-056（rerank 偶发失败重试设计）；handoff「遗留清账状态」v2 三待裁三项 + 七关闭
+- [状态] 本地验证通过，**未部署**。commit 待整理后提交
+
+---
+
 ## 2026-09-15（白机·遗留清账：BUG-79 FTS5 特殊字符三层加固）
 
 - [fix] `utils/tokenizer.js` `extractTokens()`：非汉字段切分从按空白改为按非字母数字（`split(/[^a-zA-Z0-9]+/)`），对齐 unicode61 分词器真实行为。含点号昵称（`O.o`）不再产出非法 MATCH token；`@.........` 剥离后无 token。索引侧 `rebuildFtsV2.js` 走同一 `tokenizeZh`，两侧自动一致，**旧索引免重建**（unicode61 本就把 `.` 当分隔符，真实 token 不变）

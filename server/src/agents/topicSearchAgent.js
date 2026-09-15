@@ -14,7 +14,8 @@ const MSG_BUDGET_PER_CHUNK = 10
 
 // ========== R-053 RAG 检索增强（方案 B/C/D）：块选取层精度 ==========
 export const RERANK_CANDIDATES = 20   // 方案B：Level 1 召回上限（原 5），大召回保证不漏
-export const RERANK_KEEP = 5          // 方案B：rerank 保留块数
+export const RERANK_KEEP = 5          // 方案B：rerank 成功时保留块数（注入下游 prompt 的目标宽度）
+export const RERANK_FALLBACK_KEEP = 8 // R-055 院长裁决方案①：rerank 失败兜底放宽到前 8，保召回（考公块 10522 案：keywords 触发输入侧审核 CONTENT_MODERATION，本可排第 7 的块不丢）
 export const RERANK_TRIGGER = 6       // 方案B：候选数 > 此值才触发 rerank（≤5 直接用初排，省一次 LLM）
 
 import prisma from '../lib/prisma.js'
@@ -148,10 +149,12 @@ export async function rerankChunks(question, chunks) {
 【候选块】
 ${lines.join('\n')}`
 
-  // 初排前 5 兜底：LLM 失败 / 输出非法 / id 全幻觉时降级，与旧行为一致
+  // 兜底取前 N 块：LLM 失败 / 输出非法 / id 全幻觉时降级。
+  // R-055 方案①：宽度从 RERANK_KEEP=5 放宽到 RERANK_FALLBACK_KEEP=8，保敏感话题召回质量。
+  // 重试类失败（R-056）仍先重试 3 次（指数退避），仅全部失败才走此兜底。
   const fallback = () => {
-    console.log('[TopicSearch] rerank 失败，降级取初排前 5')
-    return chunks.slice(0, RERANK_KEEP)
+    console.log(`[TopicSearch] rerank 失败，降级取初排前 ${RERANK_FALLBACK_KEEP}`)
+    return chunks.slice(0, RERANK_FALLBACK_KEEP)
   }
 
   try {
@@ -171,8 +174,8 @@ ${lines.join('\n')}`
     if (picked.length === 0) return fallback()
     return picked // 按 LLM 给出的相关性降序
   } catch (err) {
-    console.log('[TopicSearch] rerank 失败，降级取初排前 5:', err.message)
-    return chunks.slice(0, RERANK_KEEP)
+    console.log(`[TopicSearch] rerank 失败，降级取初排前 ${RERANK_FALLBACK_KEEP}:`, err.message)
+    return chunks.slice(0, RERANK_FALLBACK_KEEP)
   }
 }
 
