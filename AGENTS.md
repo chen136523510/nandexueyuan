@@ -154,7 +154,8 @@ cd game-server && node src/index.js  # 游戏服务器 -> localhost:2567
 1. `git fetch origin && git pull origin master`
 2. **先合并对方遗留的 PR**（如有），再开始自己的开发
 3. 阅读以下文件恢复上下文（**按顺序**）：
-   - `.ai/handoff.md` -- 战术级交接（上次做到哪、进行中任务、环境状态）
+   - `.ai/handoff.md` -- 战术级交接（**已瘦身 <200 行，全量可读**；历史产出在 `.ai/handoff-archive.md`，按需查不默认读）
+   - `pm/需求池.md` -- 需求裁决权威（AGENTS「需求池常驻引用」）
    - `pm/ROADMAP.md` -- 战略级路线图（整体往哪走、当前里程碑）
 
 ### 山丘图标注规则（AI 行为约束）
@@ -172,8 +173,8 @@ handoff.md 的"待办"部分也应标注 uphill/downhill。
 ### 会话结束必做
 
 1. `git push` 所有提交到 feature 分支或 master
-2. 更新 `.ai/handoff.md`（当前分支、未完成事项、下一步、环境状态）
-   - **时间精确到时分**：`最后更新`行与各「本轮产出」节标题一律写 `YYYY-MM-DD HH:MM`（本地时间）。同日双机多轮交接时用于区分先后；无法回填的旧记录保持原样，不得编造
+2. 更新 `.ai/handoff.md`（**瘦身纪律 2026-09-15 定**：只更新元信息 + 遗留清单 + 「最近一轮产出摘要」≤10 行；详细产出进各层 changelog/bug-log；**超龄（>2 轮）摘要移入 `.ai/handoff-archive.md`**；禁止恢复长串 ✅「当前阶段」列表——历史里程碑归根 CHANGELOG 与需求池已完成表）
+   - **时间精确到时分**：`最后更新`行与「本轮产出」节标题一律写 `YYYY-MM-DD HH:MM`（本地时间）。同日双机多轮交接时用于区分先后；无法回填的旧记录保持原样，不得编造
 3. 执行 `sync-docs` 技能同步四文档（changelog/bug-log/需求池/handoff）
 4. 若里程碑状态变化，更更新 `pm/ROADMAP.md`（状态+完成日期+产出物）
 
