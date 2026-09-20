@@ -52,7 +52,7 @@
 - **7 块审核拦截的处置**：块 6755/6757/6765（2022-08-02）、6990、7645、10522、11915 返回**输入侧** `SensitiveContentDetected`（块内原文含政治敏感内容），走 ARK 永远跑不通。解法是**让 ARK 不再接触原文**——由 AI 直接读原文、按调研文档 §五 红线第 3 条「政治议题降级」产出中性领域标签，再用 `applyManualChunks.js`（不调 LLM）回写。**非绕过审核，代填内容待院长复核**
 - **验证**：块 10517（原占位块）「司法公正」、块 12034「COCO Park」自身均在 FTS 召回内；块 11577「炒股」全库 103 块命中且自身在索引内；7 个人工块逐块确认在 `message_chunks_fts_v2` 索引内
 - **状态**：✅ **已部署上线（2026-09-10 20:20，院长指示）**——prod.db 437 块 keywords 补齐（`empty_kw` 437→0，走 `applyKeywordsPatch.js` 单字段补丁而非整库覆盖，避免抹掉线上运行期数据）+ FTS v2 重建 + 服务器 `.env` 切 `glm-5.3-flash` + PM2 重启；线上真调验证通过。根因详见 bug-log BUG-77/78；rerank 敏感候选降级见需求池 R-055
-- **关联**：调研文档 [群聊数据挖掘产品调研](../../00-调研/群聊数据挖掘产品调研.md) §1.6；需求池 R-054
+- **关联**：调研文档 [群聊数据挖掘产品调研](../00-调研/03-产品与游戏设计/群聊数据挖掘产品调研.md) §1.6；需求池 R-054
 
 ---
 
@@ -102,7 +102,7 @@
 
 - **时间**：2026-08-20 10:50 ~ 16:30
 - **变更人**：陈梓键（白机）
-- **背景**：院长希望在男德通 AI 中接入多模态能力。调研确认 doubao-seed-2-0-mini-260428 支持图片理解（输入 0.2 元/百万 tokens，一张图约 0.001 元），与现有 coding plan 的 glm-5.2 形成「主 Agent（文本理解+检索+回答）+ 视觉子 Agent（图片描述）」分工。Qwen3.8-27B 能输出视频/图片的说法系误传（该模型仅理解视觉输入，不生成），调研落档 `00-调研/Qwen3.8-27B调研与自部署可行性.md`
+- **背景**：院长希望在男德通 AI 中接入多模态能力。调研确认 doubao-seed-2-0-mini-260428 支持图片理解（输入 0.2 元/百万 tokens，一张图约 0.001 元），与现有 coding plan 的 glm-5.2 形成「主 Agent（文本理解+检索+回答）+ 视觉子 Agent（图片描述）」分工。Qwen3.8-27B 能输出视频/图片的说法系误传（该模型仅理解视觉输入，不生成），调研落档 `00-调研/01-技术/Qwen3.8-27B调研与自部署可行性.md`
 - **变更内容**：
   1. `server/src/utils/llm.js` 新增 `visionChatCompletion()`：走标准按量端点 `/api/v3/chat/completions`（`VOLC_STD_BASE_URL`，与 coding plan `/api/coding/v3` 不同通道），模型 `VOLC_VISION_MODEL || doubao-seed-2-0-mini-260428`，key 支持 `VOLC_VISION_API_KEY || VOLC_API_KEY`，超时 60s，`thinking:{type:'disabled'}` 关闭思考链（2026-08-20 curl 实测同 key 可用且返回正常）
   2. `server/src/agents/visionAgent.js`（新建）第 8 个子 Agent：读 `/uploads/chat/` 图片转 base64 data URL（服务器无公网图片地址，火山 API 访问不到内网，base64 在 dev/prod 行为一致），system prompt 要求 150 字内中文客观描述；多图逐张识别单张失败不炸整体；路径白名单校验（仅 `/uploads/chat/` 前缀 + 防 `..` 穿越）
@@ -124,7 +124,7 @@
   2. `uploads/chat/` 目录需存在（脚本可加 `mkdir -p server/uploads/chat`；已有 `uploads/` 父目录则只需建 chat 子目录）
   3. `.env` 确认 `VOLC_VISION_MODEL=doubao-seed-2-0-mini-260428`（或留空用默认值），`VOLC_STD_BASE_URL=https://ark.cn-beijing.volces.com/api/v3`
   4. 视觉模型按量计费，与 coding plan 分开计费（方舟控制台「账单」可分别查看）
-- **关联文档**：`00-调研/Qwen3.8-27B调研与自部署可行性.md`（视觉模型选型前置调研）；`bug-log.md` BUG-71（success 误用响应 500）
+- **关联文档**：`00-调研/01-技术/Qwen3.8-27B调研与自部署可行性.md`（视觉模型选型前置调研）；`bug-log.md` BUG-71（success 误用响应 500）
 - **踩坑**：
   1. `prisma migrate dev` 在 schema drift 存在时会要求 `prisma migrate reset`（全量删表重建），不能用于已有生产数据的库——53 万条群聊数据面前只能选 `db push` 或手写 ALTER
   2. uploadChatImage 初版误用 `res.json(success({url}))`（`success(res, data)` 第一参是 res 不是 data），上传成功但响应 500，前端 dialog.alert "图片上传失败"——调试时先用浏览器 fetch 在控制台看响应体，再查后端日志定位
@@ -151,13 +151,13 @@
 
 - **时间**：2026-08-15 23:30 ~ 2026-08-16 00:10
 - **变更人**：陈梓键（黑机）
-- **背景**：BUG-68 修复后的复查发现：话题检索命中 5 个块共 505 条消息，但 orchestrator 分析阶段只取前 30 条（slice(0,30)），后 4 个块约 400 条消息完全没被 LLM 看到——"留哪些"全凭位置顺序。院长裁决采用调研报告方案 A（见 `00-调研/RAG检索策略与工程化调研.md`）
+- **背景**：BUG-68 修复后的复查发现：话题检索命中 5 个块共 505 条消息，但 orchestrator 分析阶段只取前 30 条（slice(0,30)），后 4 个块约 400 条消息完全没被 LLM 看到——"留哪些"全凭位置顺序。院长裁决采用调研报告方案 A（见 `00-调研/01-技术/RAG检索策略与工程化调研.md`）
 - **变更内容**：`server/src/agents/topicSearchAgent.js`
   1. 新增 `sampleChunkMessages()` 块内抽样：关键词命中消息优先（按命中词数排序）+ 头尾各 1 条定时间边界 + 顺序补齐，每块预算 `MSG_BUDGET_PER_CHUNK = 10` 条
   2. 命中块返回改为 formattedText 格式：每块一个「摘要头（日期/关键词/块规模）+ 抽样消息」，5 块全覆盖；orchestrator 自动走 formattedText 分支（2 万字符上限仍兜底），messages 仍全量返回供 count/sources 统计
 - **验证**：本地双题对比。同题「群里谁卸载三角洲次数最多」：旧版只引用第 1 块（答案"查无此人，倒是睿哥卸博德3"）；新版挖出丘序明"挑战全网最快卸载"、汪煜坤"卸了装装了卸"循环等多块证据，370 字符完整排行，prompt 仅 2,387 字符（安全范围）。"群里讨论过考研吗"跨 2025-04~2026-07 多块引用正常
 - **状态**：✅ 代码合入（`586bb0e`）
-- **关联文档**：00-调研/RAG检索策略与工程化调研.md（方案A，后续可叠加B/C/D）
+- **关联文档**：00-调研/01-技术/RAG检索策略与工程化调研.md（方案A，后续可叠加B/C/D）
 
 ---
 
@@ -262,7 +262,7 @@
 
 - **时间**：2026-08-10
 - **变更人**：陈梓键（白机）
-- **背景**：GUI 自动化测试三痛点（HTTPS 证书/原生弹窗/图标按钮定位）导致测试代码冗余易错。经调研产出成型方案（见 `00-调研/GUI自动化测试与前端可访问性调研.md`），院长拍板后执行
+- **背景**：GUI 自动化测试三痛点（HTTPS 证书/原生弹窗/图标按钮定位）导致测试代码冗余易错。经调研产出成型方案（见 `00-调研/01-技术/GUI自动化测试与前端可访问性调研.md`），院长拍板后执行
 - **变更内容**：
   1. **Playwright E2E 基建**：`playwright.config.js`（全局 ignoreHTTPSErrors + baseURL 环境变量切换 + webServer 自动起 vite）；`tests/e2e/fixtures.js`（autoAcceptDialogs fixture 自动接受弹窗）；`tests/e2e/utils.js`（clickIconBtn 定位封装 + uploadFiles + dismissNativeDialog）；`tests/e2e/example.spec.js`（4 示例测试）
   2. **a11y 强制扫描脚本**：`scripts/check-a11y.mjs`（零依赖，扫描 src/**/*.vue 图标按钮缺 aria-label/data-testid）；`.a11y-ignore` 白名单（9 个 views/components 待迁移项）
@@ -273,7 +273,7 @@
 - **验证**：`npm run build` 通过；`npm run lint:a11y` 退出码 0（76 button 检查，9 白名单豁免）；`npx playwright test` 4 passed（12.8s）
 - **文件**：`playwright.config.js`、`tests/e2e/*.js`（4 新增）、`scripts/check-a11y.mjs`、`.a11y-ignore`、`src/visualnovel/components/*.vue`（8 改）、`prd/.../技术设计/前端可访问性与测试钩子规范.md`、`CONTRIBUTING.md`、`package.json`
 - **状态**：代码完成，已验证
-- **关联文档**：根 CHANGELOG.md（架构级记录）、`00-调研/GUI自动化测试与前端可访问性调研.md`
+- **关联文档**：根 CHANGELOG.md（架构级记录）、`00-调研/01-技术/GUI自动化测试与前端可访问性调研.md`
 
 ---
 
@@ -320,12 +320,12 @@
 - **变更人**：陈梓键（白机）
 - **背景**：GUI 自动化测试频繁处理 HTTPS 自签名证书、原生弹窗、图标按钮定位，测试代码高度冗余且易错。本轮做完整调研并产出成型方案，未写任何代码
 - **变更内容**：
-  1. **调研文档**：`prd/01-需求文档/00-调研/GUI自动化测试与前端可访问性调研.md`（五段式结构：背景/重点调研对象/横向对比/总结与建议/待确认事项）
+  1. **调研文档**：`prd/01-需求文档/00-调研/01-技术/GUI自动化测试与前端可访问性调研.md`（五段式结构：背景/重点调研对象/横向对比/总结与建议/待确认事项）
   2. **三个事实校正**：①"SVG 图标按钮"实际 src 零 `<svg>`，图标全是 emoji/符号字符；②"频繁处理 HTTPS 证书"本地全链路纯 HTTP，痛点是测线上时遇到；③"测试代码冗余"根因是现有 GUI 测试技能链不支持 `ignoreHTTPSErrors`（插件零命中）
   3. **现状数据**：图标按钮 0 个 aria-label/data-testid/role；76 个 button 全靠 CSS class 定位；views 层 13 处原生 alert/confirm；项目零测试基建（无 playwright/vitest/eslint）
   4. **成型方案两条线**：线1 Playwright e2e 基建+工具集（config 全局 ignoreHTTPSErrors + autoAcceptDialogs fixture + uploadFiles/clickIconBtn utils）；线2 前端 a11y/测试钩子规范（规范文档 + 轻量 check-a11y.mjs 扫描脚本 + 德塔 visualnovel 模块示范改造）
   5. **3 个决策点待院长拍板**：工具集形态(建 e2e 基建 vs 仅模板文档) / 规范强制手段(轻量脚本 vs eslint) / 改造范围(德塔示范 vs 全项目)
-- **文件**：`prd/01-需求文档/00-调研/GUI自动化测试与前端可访问性调研.md`（新增）、`.ai/handoff.md`（更新）
+- **文件**：`prd/01-需求文档/00-调研/01-技术/GUI自动化测试与前端可访问性调研.md`（新增）、`.ai/handoff.md`（更新）
 - **状态**：⛰️ uphill，方案待院长拍板后执行
 - **关联文档**：handoff 2026-08-09 19:06 节
 
@@ -1116,7 +1116,7 @@
   6. `prd/.../剧情设计/序章-*-台词.md`（4份）- 标注为历史创作稿，运行文案以 scripts/ 为准
 - **验证**：Playwright全流程实测通过（四幕通关+命名插值+条件分支+Q&A可重选+热更新验证改文案即生效）
 - **状态**：已验证
-- **关联文档**：[ADR-008 剧本文案与逻辑分离](../../00-调研/decisions/ADR-008-剧本文案与逻辑分离.md)、[文案操作指南](../../../src/visualnovel/data/scripts/README.md)、[院长-形象设计](../02-设计/形象设计/院长-形象设计.md)
+- **关联文档**：[ADR-008 剧本文案与逻辑分离](../00-调研/decisions/ADR-008-剧本文案与逻辑分离.md)、[文案操作指南](../../../src/visualnovel/data/scripts/README.md)、[院长-形象设计](../02-设计/形象设计/院长-形象设计.md)
 
 ### [feat] 存档系统增强 + UI隐藏恢复按钮 + Seedream调研 + 院长形象设计
 
@@ -1253,7 +1253,7 @@
 
 - **时间**：2026-07-27
 - **决策人**：陈梓键（院长）
-- **文档**：[ADR-005](../../00-调研/decisions/ADR-005-德塔世界观承载方式.md)
+- **文档**：[ADR-005](../00-调研/decisions/ADR-005-德塔世界观承载方式.md)
 - **背景**：设定集 v1.3 庞大世界观资产（118年历史/六大势力/四大伏笔）与泰拉瑞亚式 2D 横版 sandbox 叙事承载力存在结构性落差。70% 设定内容是叙事性的，纯打怪探索无法承载；黑机世界观产出面临沉没风险。
 - **核心决策**：
   1. **剧情承载 = CG/漫画演出层**（P0 纯漫画，P1 可选视频增强）：JRPG 式"战斗 sandbox + 独立剧情演出层"分离架构。触发时机=击杀BOSS/首达新地图/关键NPC初遇/主线里程碑。首次自动弹出，可在 HUD 或男德通聊天界面回顾。

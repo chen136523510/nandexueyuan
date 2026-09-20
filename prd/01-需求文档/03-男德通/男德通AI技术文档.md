@@ -526,6 +526,6 @@ doubao-embedding 1024 维，向量化 5,372 分块 keywords+summary → sqlite-v
 | Agents Changelog | `server/src/agents/changelog.md` | Agent 代码变更记录 |
 | Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` | Bug 修复记录 |
 | 需求池 | `pm/需求池.md` | 全局需求排期 |
-| RAG 检索策略调研 | `prd/01-需求文档/00-调研/RAG检索策略与工程化调研.md` | 检索方案对比 |
+| RAG 检索策略调研 | `prd/01-需求文档/00-调研/01-技术/RAG检索策略与工程化调研.md` | 检索方案对比 |
 
 > **注**：《男德通AI产品全览.md》基于 v3.5.0 审计，部分内容已过时（默认人设写 tiwei 实际已改 normal、TASK_TIMEOUT 写 15s 实际已改 60s、SITE_VERSION 写硬编码实际已改动态）。本文档以 v3.6.0 + glm-5.3-flash 线上代码为准，如遇冲突以本文档和源码为准。

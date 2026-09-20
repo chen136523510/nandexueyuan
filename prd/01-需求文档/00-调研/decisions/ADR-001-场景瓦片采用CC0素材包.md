@@ -5,7 +5,7 @@
 
 ## 背景
 
-德塔（NDO）是 2D 像素风俯视角虚拟世界，大厅地图需要大量瓦片（草地、泥土、石墙、木地板、装饰物件等）。原计划（见 `comfyui-pixel-art-generation-workflow.md`）用 SDXL Base + Pixel-Art-XL LoRA 通过 ComfyUI AI 生图。
+德塔（NDO）是 2D 像素风俯视角虚拟世界，大厅地图需要大量瓦片（草地、泥土、石墙、木地板、装饰物件等）。原计划（见 `../04-美术/comfyui-pixel-art-generation-workflow.md`）用 SDXL Base + Pixel-Art-XL LoRA 通过 ComfyUI AI 生图。
 
 ## 决策
 

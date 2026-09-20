@@ -3,7 +3,7 @@
 > 调研时间：2026-09-20 10:34
 > 调研人：AI（黑机）
 > 背景：院长要求阅读学习 GitHub 项目 renezander030/capcut-cli（643 star / 75 fork，MIT，v0.25.0，TypeScript 约 25k 行）。要回答的问题：它是怎么做到「不开 API 就自动化剪映项目」的，实现原理是什么，男德的视频生成链路（video-director / Seedance）能借鉴什么。
-> 关联文档：`提示词工程调研-图片与视频生成.md`、`MiniMax视频生成API使用指南.md`
+> 关联文档：`../01-技术/提示词工程调研-图片与视频生成.md`、`MiniMax视频生成API使用指南.md`
 > 调研方式：`git clone --depth 1` 到临时目录直读源码（一手来源），未运行。
 
 ---
