@@ -57,6 +57,7 @@ flowchart LR
 | 媒体文件 | `public/media/**/*` | 照片等二进制大文件，仅目录结构保留 |
 | 敏感数据 | `prd/01-需求调研/成员分析/` | 含真实聊天记录分析 |
 | 临时文件 | `tmp/*` | 各机器本地临时文件 |
+| 调试截图/过程产物 | `tmp/`、`gui-test-screenshots/`、`.playwright-mcp/` | 调试验证截图统一落这些专区，**禁止落仓库根目录**（`.gitignore` 的 `/*.png` 仅是防入库兜底，不作为存放位置——被忽略的文件 `git status` 不显示，落根目录即成无人发现的残留，案例：`announcement-scrolled.png` 躺了一个月） |
 | 系统文件 | `.DS_Store`、`Thumbs.db` | 操作系统生成 |
 
 **关键区分**：
