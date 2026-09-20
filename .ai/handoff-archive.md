@@ -6,6 +6,23 @@
 
 ---
 
+## 上一轮产出摘要（黑机 2026-09-20 10:50，纯文档轮无代码改动；2026-09-20 18:22 白机迁入归档）
+
+- **capcut-cli 剪映草稿自动化调研落档**（commit `7d7e5ab`）：直读写 draft_content.json 原理 + CJK 字幕规范（16字/行9字/秒）+ 剪映 6.0+ 加密应对（锁 5.9.x 或国际版）；对男德建议先 `npx capcut-cli doctor` 实测院长本机剪映版本再谈集成，未动代码
+- **00-调研 目录四类归类重构**（本轮）：29 篇调研按 `01-技术`/`02-工具与AI服务`/`03-产品与游戏设计`/`04-美术` 归入子目录（decisions/ ADR 不动），新增该目录 README.md 归档规则；全仓库引用同步修正（需求池/changelog×2/技能×2/ADR-001/handoff-archive 等 14 文件，URL 编码变体一并处理，残留检查零命中）
+- 同步 research SKILL.md 纪律五改为分类落档 + 禁止裸文件名互引
+
+## 上一轮产出摘要（白机 2026-09-15，详情查 changelog×2/bug-log/根 CHANGELOG v3.7.0 节；2026-09-20 18:22 白机迁入归档）
+
+- **遗留清账**：BUG-79 + BUG-73 同族修复（commit `3d7b72b`，内存库/Playwright 实测全过）
+- **11 项裁决归档**（commit `e35faa4`）：AGENTS.md 加「需求池常驻引用」+「部署前必走 release-helper」两条默认规则
+- **R-055 方案①**（commit `0859277`）：`RERANK_FALLBACK_KEEP=8`
+- **R-056 设计落档**（commit `734806d`）+ **summary 列重跑材料落档**（commit `c3e4c16`）
+- **视觉链路动态路由实施**（commit `7697289`）：llm.js `chatCompletionWithImages` + visionAgent `tryDirectMultimodal` + orchestrator 三层 fallback + probeModel ⑤ 视觉子项
+- **v3.7.0 发版部署**（commit `7869c12` + `50c50cf`）：deploy.sh 9/9 全过 + 公告 v3.7.0 写入 prod.db + probeModel 5/5 含视觉直识图（glm-5.3-flash 多模态能力实测确认）
+
+---
+
 ## 黑机本轮产出（2026-09-10 19:35）
 
 ### 部署上线（2026-09-10 20:00 ~ 20:20，院长明确指示「部署吧」）

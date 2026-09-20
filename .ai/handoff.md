@@ -1,9 +1,9 @@
 # AI 交接单
 
-> 最后更新：2026-09-20 14:08（白机·调休日：v3.8.0 发版部署上线——LLM 切 DeepSeek 官方 + env 单文件化 + 测测调研/R-057）
+> 最后更新：2026-09-20 18:22（白机·调休日：丘序明 admin 排查确认 + R-058 电子宠物调研落档与技术方案三轮探讨）
 > 所在设备：白机（判定依据：2026-09-20 周日为调休上班日，院长裁决调休日视作工作日→白机；AGENTS 身份判定表未覆盖调休日，以院长当日裁决为准）
-> 稳定版本：**v3.8.0 线上**（commit `5ae6aa0`，2026-09-20 14:05 部署上线，deploy.sh 9/9 全过 + **服务器探针 5/5**：DeepSeek 官方通道 deepseek-flash 文本+识图实测正常，识图 1.6s 准确）
-> 数据规模：prod.db 205M —— message_chunks 5,372 块（keywords 零空缺）/ group_messages 538,915 条 / users 21 / chat_turns 148 / game_saves 1
+> 稳定版本：**v3.8.0 线上**（commit `5ae6aa0`，2026-09-20 14:05 部署上线；最新文档 commit `e6003be` 未发版）
+> 数据规模：prod.db 205M —— message_chunks 5,372 块（keywords 零空缺）/ group_messages 538,915 条 / users 21（**qiuxuming 已于 2026-09-20 14:55 升为 admin**，全站现为 1 super_admin + 1 admin + 19 member）
 
 > ⚠️ **网络环境与部署通道（动手前必查）**：
 > - GitHub SSH 偶发超时（已配 `~/.ssh/config` 走 ssh.github.com:443 备用），push 超时重试即可
@@ -61,26 +61,18 @@
 
 ---
 
-## 最近一轮产出摘要（白机 2026-09-20 14:08·✅ v3.8.0 已上线，火山到期危机解除）
+## 最近一轮产出摘要（白机 2026-09-20 18:22，纯调研文档轮无代码改动）
+
+- **丘序明 admin 排查闭环**：院长记忆中"升过管理员"但显示成员 → 四路核实（线上库/本地库/服务器日志/文档）结论**操作从未落库**（updatedAt 自 2026-07-01 未变，非显示 bug）；院长网页重新操作后已验证线上 `role=admin`（14:55:56 生效），岁月史书 /history 对其可见
+- **R-058 电子宠物登记+调研落档**（commit `48ed042` + `e6003be`）：三路子 Agent 并行调研（Q宠/拓麻/旅蛙玩法考古、MemGPT/Character.ai/星野记忆架构、VPet/Shimeji 源码级互动设计）→ `00-调研/03-产品与游戏设计/电子宠物游戏性与AI设计调研.md`
+- **技术方案三轮探讨已定方向（uphill 进行中，未写码）**：零新依赖架构 / 形象 A 档"部件层伪 Live2D"（DragonBones 停更已核实跳过；真 Live2D 个人授权免费已核实，留三期旗舰）/ 90% 互动零 LLM / 惰性衰减零后台 / 好感度对话驱动+记忆联动 / 待机活人感行为调度器
+- **下一步（黑机接手）**：出 R-058 PRD（数据库 schema + 黑机出图规格清单【部件拆层+差分帧】+ 好感度数值表）；两个待院长裁决项见需求池 R-058 备注（宠物物种统一 vs 多样 / 是否联动德塔世界观）
+
+## 上一轮产出摘要（白机 2026-09-20 14:08·✅ v3.8.0 已上线，火山到期危机解除）
 
 - **✅ P0 已解决**：火山 coding 订阅 2026-09-20 到期致男德通主链路断 → **v3.8.0 切 DeepSeek 官方已部署上线**（commit `5ae6aa0`）：llm.js 双通道（DEEPSEEK_API_KEY 走官方/否则回退火山）+ deepseek-flash 文本识图同模型 + env 单文件化（删根 .env 死文件）。线上 .env 已写 DEEPSEEK 三行（VOLC 保留 4 行作回退），服务器 stash 残留 lock 漂移后 deploy.sh 9/9 全过，**服务器探针 5/5**（识图 1.6s 准确）
 - 后续观察点：DeepSeek 按量计费余额（高峰输出 8 元/M tokens）；线上如有 LLM 报错先跑服务器探针复验；火山通道保留未删，清空线上 DEEPSEEK_API_KEY 即可秒回退
 - 其他本轮：R-057 星河问扩建登记需求池（测测调研落档 `00-调研/03-产品与游戏设计/`）；00-调研四类归类；调试截图专区规则；均已提交
-
-## 上一轮产出摘要（黑机 2026-09-20 10:50，纯文档轮无代码改动）
-
-- **capcut-cli 剪映草稿自动化调研落档**（commit `7d7e5ab`）：直读写 draft_content.json 原理 + CJK 字幕规范（16字/行9字/秒）+ 剪映 6.0+ 加密应对（锁 5.9.x 或国际版）；对男德建议先 `npx capcut-cli doctor` 实测院长本机剪映版本再谈集成，未动代码
-- **00-调研 目录四类归类重构**（本轮）：29 篇调研按 `01-技术`/`02-工具与AI服务`/`03-产品与游戏设计`/`04-美术` 归入子目录（decisions/ ADR 不动），新增该目录 README.md 归档规则；全仓库引用同步修正（需求池/changelog×2/技能×2/ADR-001/handoff-archive 等 14 文件，URL 编码变体一并处理，残留检查零命中）
-- 同步 research SKILL.md 纪律五改为分类落档 + 禁止裸文件名互引
-
-## 上一轮产出摘要（白机 2026-09-15，详情查 changelog×2/bug-log/根 CHANGELOG v3.7.0 节）
-
-- **遗留清账**：BUG-79 + BUG-73 同族修复（commit `3d7b72b`，内存库/Playwright 实测全过）
-- **11 项裁决归档**（commit `e35faa4`）：AGENTS.md 加「需求池常驻引用」+「部署前必走 release-helper」两条默认规则
-- **R-055 方案①**（commit `0859277`）：`RERANK_FALLBACK_KEEP=8`
-- **R-056 设计落档**（commit `734806d`）+ **summary 列重跑材料落档**（commit `c3e4c16`）
-- **视觉链路动态路由实施**（commit `7697289`）：llm.js `chatCompletionWithImages` + visionAgent `tryDirectMultimodal` + orchestrator 三层 fallback + probeModel ⑤ 视觉子项
-- **v3.7.0 发版部署**（commit `7869c12` + `50c50cf`）：deploy.sh 9/9 全过 + 公告 v3.7.0 写入 prod.db + probeModel 5/5 含视觉直识图（glm-5.3-flash 多模态能力实测确认）
 
 ---
 
