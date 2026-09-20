@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-09-20（白机·调休日·LLM 双通道改造：DeepSeek 官方 + 火山 ARK）
+
+- 背景：院长火山引擎 coding plan 订阅 2026-09-20 到期，实测 `ark.cn-beijing.volces.com/api/coding/v3` 返回 `InvalidSubscription: subscription has expired`（账户 2126889078），男德通主对话链路（本地+线上同端点）中断。院长裁决切 DeepSeek 官方 API，模型 ID `deepseek-flash`（DeepSeek-V4.1-Flash，官方文档确认自带图像理解，1M 上下文，OpenAI 兼容端点 https://api.deepseek.com）
+- [新增] `llm.js` 双通道自动选择：配置了 `DEEPSEEK_API_KEY` → 走 DeepSeek 官方（`DEEPSEEK_BASE_URL` 默认 api.deepseek.com，`DEEPSEEK_MODEL` 默认 deepseek-flash，文本+视觉同模型）；未配置 → 原火山 ARK 行为完全不变（向后兼容，已回归验证 PROVIDER=volc/BASE_URL/MODEL 与改造前一致）
+- [改造] `visionChatCompletion` DeepSeek 通道下视觉请求走主端点主模型（flash 自带识图），火山通道保持独立 doubao 标准端点；视觉调用补 thinking:disabled 不支持时的降级重试（此前硬编码 thinking 无兜底）
+- [导出] `PROVIDER / BASE_URL / MODEL` 供探针与运维确认当前通道
+- [改造] `probeModel.js` 头部显示当前通道（DeepSeek 官方/火山 ARK）+ 端点 + 模型；模型 ID override 同时写 DEEPSEEK_MODEL/VOLC_MODEL 兼容两通道
+- [配置] 根 `.env.example` AI 段重写为「DeepSeek 官方（主）+ 火山（回退）」二选一说明
+- 实测（零成本，用现有 ark key）：①ark key 对 api.deepseek.com 鉴权失败（必须官方 sk- key）；②ark key 对火山**标准按量端点 /api/v3 仍有效**，doubao-seed-2-0-mini 探针 4/4 全过（基础连通/thinking降级/JSON/流式，0.5-2s）——留作未拿到官方 key 前的应急路径
+- 待办：院长提供官方 sk- key 后写入 server/.env（不入库）→ `node scripts/probeModel.js --vision <图URL>` 实测五项 → 全过后按部署纪律等院长指示上线（线上 .env 需同步加 DEEPSEEK_API_KEY 并重启 Express）
+- commit: 见本轮
+
+---
+
 ## 2026-09-10（黑机·主模型切 glm-5.3-flash + thinking 参数自动降级）
 
 - [切换] `llm.js` - 主模型默认值 `deepseek-v4-flash-ga-260731` → `glm-5.3-flash`（院长指示统一火山引擎原生多模态模型）。同步 `server/.env` VOLC_MODEL=glm-5.3-flash + 根 `.env.example`

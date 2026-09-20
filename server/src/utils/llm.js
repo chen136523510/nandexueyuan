@@ -1,11 +1,23 @@
 /**
- * LLM 客户端封装（火山引擎方舟 ARK，OpenAI 兼容协议）
- * 通过 fetch 调用，无需额外 SDK 依赖
+ * LLM 客户端封装（OpenAI 兼容协议，fetch 直调无 SDK）
+ * 双通道自动选择（2026-09-20 火山 coding 端点到期，新增 DeepSeek 官方通道）：
+ *   - 配了 DEEPSEEK_API_KEY -> DeepSeek 官方（api.deepseek.com，模型 deepseek-flash，自带图像理解）
+ *   - 否则                  -> 火山方舟 ARK（原有行为，向后兼容）
  */
 
-const BASE_URL = process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3'
-const API_KEY = process.env.VOLC_API_KEY
-const MODEL = process.env.VOLC_MODEL || 'glm-5.3-flash'
+// ========== 通道选择 ==========
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY
+const IS_DEEPSEEK = Boolean(DEEPSEEK_KEY)
+
+const BASE_URL = IS_DEEPSEEK
+  ? (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com')
+  : (process.env.VOLC_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3')
+const API_KEY = DEEPSEEK_KEY || process.env.VOLC_API_KEY
+const MODEL = IS_DEEPSEEK
+  ? (process.env.DEEPSEEK_MODEL || 'deepseek-flash')
+  : (process.env.VOLC_MODEL || 'glm-5.3-flash')
+const PROVIDER = IS_DEEPSEEK ? 'deepseek' : 'volc'
+export { PROVIDER, BASE_URL, MODEL }
 const TIMEOUT_MS = 60000 // 60 秒超时（实测秒级返回，留足余量）
 
 // ========== 温度常量（集中管理，各调用点引用，避免散落硬编码）==========
@@ -17,7 +29,7 @@ export const TEMPS = {
   NPC: 0.8, // 德塔 NPC 对话：俏皮多变
 }
 
-// 视觉模型走标准按量计费端点（与 coding plan 端点不同通道），2026-08-20 实测同 key 可用
+// 视觉模型（仅火山通道使用独立标准端点；DeepSeek 官方 deepseek-flash 自带图像理解，视觉请求直接走主模型）
 const STD_BASE_URL = process.env.VOLC_STD_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
 const VISION_MODEL = process.env.VOLC_VISION_MODEL || 'doubao-seed-2-0-mini-260428'
 const VISION_API_KEY = process.env.VOLC_VISION_API_KEY || API_KEY
@@ -81,7 +93,7 @@ function isThinkingUnsupported(err) {
  */
 export async function chatCompletion(messages, options = {}) {
   if (!API_KEY) {
-    throw new Error('LLM API 错误: VOLC_API_KEY 未配置')
+    throw new Error('LLM API 错误: 未配置 key（DEEPSEEK_API_KEY 或 VOLC_API_KEY）')
   }
 
   const controller = new AbortController()
@@ -121,7 +133,7 @@ export async function chatCompletion(messages, options = {}) {
  */
 export async function* chatCompletionStream(messages, options = {}) {
   if (!API_KEY) {
-    throw new Error('LLM API 错误: VOLC_API_KEY 未配置')
+    throw new Error('LLM API 错误: 未配置 key（DEEPSEEK_API_KEY 或 VOLC_API_KEY）')
   }
 
   const controller = new AbortController()
@@ -177,39 +189,52 @@ export async function* chatCompletionStream(messages, options = {}) {
 
 /**
  * 视觉模型调用（OpenAI 兼容多模态，用于图片理解）
+ * 通道差异：
+ *   - 火山：走标准按量端点 STD_BASE_URL + 独立 doubao 视觉模型（主模型 glm 不识图时的 fallback）
+ *   - DeepSeek 官方：deepseek-flash 自带图像理解，直接走主端点主模型（与 chatCompletionWithImages 同路）
  * @param {Array<{role: string, content: Array<{type: string, text?: string, image_url?: {url: string}}>}>} messages
  * @returns {Promise<string>} 识别描述文本
  * @throws {Error} CONTENT_MODERATION / 超时 / API 错误
  */
 export async function visionChatCompletion(messages) {
   if (!VISION_API_KEY) {
-    throw new Error('LLM API 错误: VOLC_VISION_KEY 未配置')
+    throw new Error('LLM API 错误: 视觉模型 key 未配置')
   }
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS)
 
-  const body = {
-    model: VISION_MODEL,
-    messages,
-    // 视觉描述不需要思考链，直接出结果省时省 token（2026-08-20 实测 thinking disabled 可正常返回）
-    thinking: { type: 'disabled' },
+  // DeepSeek 官方通道：视觉=主模型（自带识图）；火山通道：独立 doubao 视觉模型 + 标准端点
+  const endpoint = IS_DEEPSEEK ? BASE_URL : STD_BASE_URL
+  const model = IS_DEEPSEEK ? MODEL : VISION_MODEL
+  // 视觉描述不需要思考链；火山实测 thinking disabled 可用，DeepSeek 官方若拒绝则下方降级重试
+  const buildBody = (withThinking) => {
+    const body = { model, messages }
+    if (withThinking) body.thinking = { type: 'disabled' }
+    return body
   }
 
-  try {
-    const response = await fetch(`${STD_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${VISION_API_KEY}`,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    })
+  const doPost = (body) => fetch(`${endpoint}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${VISION_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+    signal: controller.signal,
+  })
 
+  try {
+    let response = await doPost(buildBody(true))
     if (!response.ok) {
-      const errText = await response.text()
-      throw makeLlmError(response.status, errText)
+      const err = makeLlmError(response.status, await response.text())
+      if (isThinkingUnsupported(err)) {
+        console.warn('[llm] 视觉模型不支持 thinking:disabled，已降级为默认思考链:', err.message.slice(0, 120))
+        response = await doPost(buildBody(false))
+        if (!response.ok) throw makeLlmError(response.status, await response.text())
+      } else {
+        throw err
+      }
     }
 
     const data = await response.json()
@@ -238,7 +263,7 @@ export async function visionChatCompletion(messages) {
  */
 export async function chatCompletionWithImages(messages, options = {}) {
   if (!API_KEY) {
-    throw new Error('LLM API 错误: VOLC_API_KEY 未配置')
+    throw new Error('LLM API 错误: 未配置 key（DEEPSEEK_API_KEY 或 VOLC_API_KEY）')
   }
 
   const controller = new AbortController()

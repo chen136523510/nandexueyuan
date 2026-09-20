@@ -33,15 +33,18 @@ for (let i = 0; i < argv.length; i++) {
     override = argv[i]
   }
 }
-if (override) process.env.VOLC_MODEL = override
+// 模型 ID 覆盖同时兼容两通道（DeepSeek 官方 / 火山 ARK）
+if (override) {
+  process.env.DEEPSEEK_MODEL = override
+  process.env.VOLC_MODEL = override
+}
 
-const { chatCompletion, chatCompletionStream, chatCompletionWithImages } = await import('../src/utils/llm.js')
+const { chatCompletion, chatCompletionStream, PROVIDER, BASE_URL, MODEL } = await import('../src/utils/llm.js')
 
-const model = process.env.VOLC_MODEL || '(llm.js 默认)'
-const baseUrl = process.env.VOLC_BASE_URL || '(默认)'
 console.log('=== 模型探针 ===')
-console.log('模型:', model)
-console.log('端点:', baseUrl)
+console.log('通道:', PROVIDER === 'deepseek' ? 'DeepSeek 官方 (api.deepseek.com)' : '火山方舟 ARK')
+console.log('模型:', MODEL)
+console.log('端点:', BASE_URL)
 console.log('')
 
 const results = []
