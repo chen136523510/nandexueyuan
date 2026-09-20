@@ -63,10 +63,11 @@
 
 ## 最近一轮产出摘要（白机 2026-09-20 调休日·🔴 男德通主链路中断待恢复）
 
-- **🔴 P0 紧急：火山 coding 订阅 2026-09-20 到期**，实测 `/api/coding/v3` 返回 InvalidSubscription（账户 2126889078），男德通主对话本地+线上**当前全断**；ark key 对火山标准按量端点仍有效（doubao 探针 4/4）
-- 院长裁决切 **DeepSeek 官方**（模型 deepseek-flash，官方文档确认自带识图）；双通道改造已提交 `7b892fd`（配 DEEPSEEK_API_KEY 走官方、不配回退火山）
-- **⏳ 阻塞等院长提供 DeepSeek 官方 sk- key**（platform.deepseek.com 创建+充值）→ 写入 server/.env → probeModel 五项实测（含 --vision 识图）→ 全过后等院长指示部署（线上 .env 也要加 key + 重启 Express）
-- 应急备选（院长若急）：火山标准端点 + doubao-seed-2-0-mini 按量，ark key 现成、探针已 4/4，授权即可部署先救火
+- **🔴 P0 紧急：火山 coding 订阅 2026-09-20 到期**（InvalidSubscription，账户 2126889078），男德通主对话本地+线上**当前全断**；院长裁决切 **DeepSeek 官方**
+- ✅ 双通道改造提交 `7b892fd`；院长已填官方 sk- key 进 server/.env；**探针 5/5 全过**（基础/thinking/JSON/流式 + 视觉直识图：百度 logo 1.8s 识别准确，deepseek-flash 文本+识图同模型确认）
+- **⏳ 唯一剩余：等院长指示部署**（线上 .env 加 DEEPSEEK_API_KEY + pm2 restart nandexueyuan-api；届时按部署纪律先读 docs/account-passwords.md，走 release-helper 判断版本号）
+- 应急备选（若急）：火山标准按量端点 + doubao（ark key 现成、探针 4/4），被 DeepSeek 方案取代暂不需要
+- ✅ env 单文件化治理提交 `8d0b95f`：删根 .env 死文件（0 消费者、含明文线上账号）、server/.env 清死配置、.env.example 重写为"只留真实消费变量+注明消费者"；线上账号信息 docs/account-passwords.md 已有记录无丢失
 - 其他：R-057 星河问扩建登记需求池（测测产品调研落档 `00-调研/03-产品与游戏设计/`）；00-调研四类归类；调试截图专区规则；均已提交
 
 ## 上一轮产出摘要（黑机 2026-09-20 10:50，纯文档轮无代码改动）
