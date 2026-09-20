@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-09-20 v3.8.0 发版：LLM 双通道改造（DeepSeek 官方 + 火山 ARK 回退）+ env 配置单文件化
+
+### 概要
+
+背景：火山引擎 coding plan 订阅 2026-09-20 到期（实测 `InvalidSubscription`，账户 2126889078），男德通主对话链路本地+线上全断。院长裁决切换 DeepSeek 官方 API（模型 `deepseek-flash`）。本次发版包含：①**llm.js 双通道自动选择**——配置 `DEEPSEEK_API_KEY` 即走 DeepSeek 官方（api.deepseek.com，文本+视觉同模型），未配置则回退火山 ARK 原行为（向后兼容零改动上线风险）；②**视觉链路归并**——DeepSeek 通道下识图走主模型（官方文档+实测确认 deepseek-flash 自带图像理解），火山通道保持 doubao 独立端点；③**env 配置单文件化治理**——删除根目录 .env 死文件（实测 0 消费者、含明文线上账号、与 server/.env 同名字段值分叉有误导风险），server/.env 清死配置（CHAT_RATE_LIMIT/VOLC_EMBED_MODEL 均 0 代码引用），.env.example 重写为"只保留真实消费变量+注明消费者"。
+
+### 决策依据
+
+- **双通道而非单通道硬切**：保留火山回退路径，未来若 DeepSeek 官方故障可清空 DEEPSEEK_API_KEY 秒切回（火山标准按量端点实测仍有效，doubao 探针 4/4）。
+- **视觉归并主模型**：deepseek-flash 实测识图 1.8s 准确识别（百度 logo 案例），一个模型扛文本+视觉，链路更简单；探针 5/5 全过（含 --vision）。
+- **删根 .env**：逐变量 grep 验证 0 消费（VITE_PORT/VITE_API_BASE/VITE_ONLINE_*/SERVER_* 全部无人读取，vite 端口写死 4396，限流数字硬编码 api.js，部署信息权威在 docs/account-passwords.md）；删除前保全核查：线上账号信息 account-passwords.md 已有记录，宝塔信息 9-15 已裁决弃用。
+
+### 替代方案
+
+- **方案②火山控制台开 deepseek 接入点**（不换供应商）：需院长手动控制台操作，且火山托管模型列表暴露依赖方舟开通节奏，弃。
+- **方案③doubao 按量应急**（ark key 现成、探针 4/4）：作为 DeepSeek key 未到前的过渡备选保留在 handoff，最终未启用。
+
+### 代码变更
+
+| 文件 | 变更 |
+|------|------|
+| `server/src/utils/llm.js` | 双通道选择（DEEPSEEK_API_KEY 判定）；`visionChatCompletion` 通道分支化+thinking 降级重试；导出 `PROVIDER/BASE_URL/MODEL` |
+| `server/scripts/probeModel.js` | 头部显示当前通道；模型 override 兼容双通道 |
+| `.env.example` | 重写：单文件化说明+真实消费变量清单 |
+| 根 `.env` | 删除（0 消费者死文件） |
+
+### 影响评估
+
+- 男德通主对话/规划/流式/JSON 场景：模型从火山托管 deepseek-v4-flash-ga → DeepSeek 官方 deepseek-flash（V4.1-Flash，1M 上下文），同系升级，探针四项全过（0.6-1.3s）。
+- 多模态识图：主模型直识图（原 glm-5.3-flash 通道已随订阅到期失效），实测 1.8s 识别准确。
+- 成本：官方按量（高峰输出 8 元/M tokens，空闲减半），无包月订阅。
+
+---
+
 ## 2026-09-15 v3.7.0 发版：视觉链路动态路由 + R-055 兜底放宽 + BUG-79/73 同族修复
 
 ### 概要

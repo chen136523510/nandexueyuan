@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v3.8.0',
+    date: new Date('2026-09-20'),
+    summary: '男德通大脑搬家完成：识图更快，还多了颗备用大脑',
+    updates: JSON.stringify([
+      '男德通完成大脑搬家，换成同款升级型号，聊天体验不变',
+      '发图给男德通，现在它亲自看图直接回答，识图更快更稳',
+      '新增备用大脑机制，主大脑打盹时自动顶上，不容易罢工',
+    ], null, 0),
+    plans: JSON.stringify([
+      '星河问扩建——塔罗馆、群友默契测试筹备中',
+      '抽象小剧场——把群聊名场面做成节目',
+      '多人 AI 派对局——AI 当主持人的群友短局',
+    ], null, 0),
+  },
+  {
     version: 'v3.7.0',
     date: new Date('2026-09-15'),
     summary: '男德通更聪明了：发图秒懂、话题问答更准',
