@@ -279,6 +279,30 @@ Steam 版核心循环官方原文："Every time you press a key, Bongo cat will 
 
 AI 分层出图核实：LayerDiffuse（lllyasviel 原版 2223 star，2024-06 停更；ComfyUI 版 1775 star，2025-02 停更）可让黑机 ComfyUI 直接出透明/前中背景组分离图，但**部件级拆层（头/眼/嘴分离）仍需人工**——AI 管线只能减不能免。
 
+### 5.5.1 Live2D 路线三轮核实（2026-09-23 白机，两路子 Agent 并行联网核实）
+
+院长提出针对 Live2D 形式专题讨论，本节为定向补核。**四条关键事实推翻/修正了上表的成本与运行时认知**：
+
+**① C 档运行时选型修正：pixi-live2d-display 已停更，改荐官方 SDK 直渲**
+- guansss/pixi-live2d-display：最后 master 提交 2023-12-15，最新版仍停留在 v0.5.0-beta（2023-12-07），**不支持 PixiJS v8**（issue #135/#166 open），应视为停止维护
+- 替代路线健康：**官方 CubismWebFramework/ CubismWebSamples（TS，MIT 系许可）R5 于 2026-04-02 发布**，WebGL2 直渲零 PIXI 依赖，官方每年 1-2 版稳定维护，兼容 Editor 5.3；社区侧 `untitled-pixi-live2d-engine`（PixiJS v8 + Cubism 2~5 全支持，2026-09-20 仍在更新）、WebGAL 官方维护的 fork（2026-07 push）、`live2d-widget`（11k star，2026-09 仍更新）均活跃
+- 结论：**web 渲染不是阻塞项**，C 档若启动用官方 SDK 直渲，勿再引用 pixi-live2d-display 原库
+
+**② 模型获取成本大幅下修：C 档从"三期旗舰"变为"可低成本试水"**
+- 上表 C 档成本"40-80h 自建 / 外包 2000-8000 元"是 VTuber 精模行情；**Q 版/简单角色外包实际报价：250~980 元/只**（国内画师接单渠道，二手摘要级，平台：米画师/B站工房/触站）；rigging-only（客户供分层立绘）2000-2500 元起
+- **BOOTH 现成模型 500~4,500 日元（约 25-225 元）共 1.6 万件**，但无平台级商用条款，须逐商品读卖家 Terms（通常禁再配布模型本体，能否嵌入 App/游戏因品而异）
+- **官方免费模型 32 个**（Hiyori/Haru/Shizuku 等，Free Material License v1.6）：年销售 <1000 万日元者**可商用可修改可分发**，需署名 "This content uses sample data owned and copyrighted by Live2D Inc."；**Hiyori/Miara 禁止设计改动**（与"毛色差异"待裁决项冲突，若用官方模型则毛色定制不可行）
+- **AI 自动建模 2026-09 不存在**：无任何可商用的"立绘→Live2D"服务，仅有论文阶段研究（Bunraku arXiv:2607.27348 / See-through / CartoonAlive）；人工建模（数周）或外包仍是真实成本
+- Editor FREE 版限制（参数≤30/ArtMesh≤100/变形器≤50/纹理 1 张 2048px）**对 Q 版简单模型够用**——自建也不用买 PRO（PRO for indie 约 750 元/年订阅）
+
+**③ 模型体积与交互 API 全利好**：官方标准全身模型（Haru）moc3 376KB + 贴图 1.46MB ≈ **2MB/只**，20 人社区零压力；程序化触发是标准能力——motion 播放、**hit 命中区域点击事件（摸头交互直接支持）**、参数级控制、自动眨眼/口型内置
+
+**④ B 档（Spine 类）维持跳过，证据更硬**：Spine 网格变形需 Pro（$379）且 `spine-pixi` npm 停在 4.1（4.3 未发包）；DragonBones 编辑器冻结在 5.x；LoongBones 仅 2 star 3 commits 基本停滞；WebGAL 曾因 Spine 运行时许可摩擦移除 pixi-spine（每个用户理论上需自持 license 的条款）
+
+**伪 Live2D（A 档）定位补强**：E-mote（M2 商业产品）即"部件层变形动画"路线的成熟形态，采用作品含猫娘乐园/爱上火车等——A 档效果上限有十余年商业化背书；但**无现成 DOM/CSS 伪 Live2D 开源库**，A 档是自研缩水版 E-mote，2-4h/只估价逻辑成立
+
+**修订结论**：C 档解锁"零成本 PoC 路径"——用官方免费模型（如 Haru）+ 官方 SDK 在 Vue3 内跑通渲染/hit/motion 管线约半天工作量，形象路线可先验证体验再决定是否为专属形象花 250-980 元外包 Q 版。A 档一期起步的原推荐不变（形象自主权在黑机 Seedream 管线），C 档从"三期旗舰"下修为"二期可试水选项"。遗留适配疑点：外包建模师是否接受 Seedream AI 立绘拆层 PSD（Live2D 建模对分层完整度有要求，未调研，走 C 档前须先确认）
+
 ### 5.6 风险与红线
 
 1. **数据安全**：Q宠 2018 停运清档是"一代人青春记忆"级反面教材——宠物数据从第一天就设计备份/导出（prod.db 常规备份覆盖即可，但要有意识地纳入）
