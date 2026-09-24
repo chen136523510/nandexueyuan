@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-09-24（白机·诺诺大脑上线，R-058 自习室一期）
+
+- [feat] 新增 `nonoAgent.js` —— 诺诺大脑核心（三层记忆 + 大脑架构最小闭环）：
+  - **L3 三因子检索** `searchMemories(text, userId)`：0.4×recency(0.995^天数) + 0.3×importance + 0.3×关键词命中率（中文 2-3 字滑窗词片，无分词器的务实做法）；命中刷新 lastAccessedAt；相关性 0 的不注入
+  - **记忆固化** `consolidateMemory(user, userMessage, nonoAnswer)`：回复后异步单遍 LLM 提取（mem0 式 ADD-only，temp0+thinking:disabled），输出 {memories[], profile_update}——逐条去重入库（内容互含判重）+ profile ≤300 字增量合并重写；解析失败有诊断日志（实测踩坑：静默 return 让 saved:0 无迹可查）
+  - **人设** `buildNonoSystemPrompt`：可爱美少女诺诺（自习室常驻）+ 说话风格（≤80 字/（动作）标记约定——3D 阶段映射 VRM 动作库）+ 记忆自然引用规则；实测注意：提取 prompt 需约束"专有词逐字照抄"，否则 LLM 会把外号"蛋哥"写成"业哥"
+- commit: `ee4d025`
+
 ## 2026-09-15（白机·视觉链路动态路由规则实施——院长定"先试主模型直识图，失败 fallback visionAgent"）
 
 - [feat] `llm.js`：新增 `chatCompletionWithImages(messages, options)` —— 走主模型 coding 端点（不是 doubao-seed 标准视觉端点），复用 `buildRequestBody` / `postChat` / `isThinkingUnsupported` / `makeLlmError` 四个内部函数；thinking:disabled 自动降级重试机制一致

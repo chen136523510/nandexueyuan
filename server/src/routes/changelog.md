@@ -4,6 +4,12 @@
 
 ---
 
+## 2026-09-24（白机·诺诺自习室一期，R-058，admin 灰度）
+- [新增] `/api/nono/*` 六路由 — talk(SSE 流式+rateLimit(10))/sessions CRUD/memories 查删，全部 auth + requireRole(admin, super_admin)（开发完全后放开）；api.js 导入 nonoController
+- [修改] `analyticsRouter.js` — MODULES/LABELS 白名单加 studyroom（自习室）
+- ⚠️ 部署注意：线上 prod.db 迁移有**两步特殊操作**——先 `npx prisma migrate resolve --applied 20260924090000_baseline_sync_schema`（baseline 是历史漂移补录，线上已有结构，执行会报重复列），再走常规 migrate deploy（执行 add_nono_tables 建两新表）
+- commit: `ee4d025`
+
 ## 2026-08-20
 - [新增] `POST /api/chat/upload` - 男德通聊天图片上传（auth + rateLimit(10) + multer，多模态一期）；`api.js` 挂载于 `/chat/ask` 之后
 - ⚠️ 部署注意：`chat_turns` 表需新增 `images TEXT` 列（服务器 prod.db 手动执行 `ALTER TABLE chat_turns ADD COLUMN images TEXT;` 后 `pm2 restart`；本地已用 prisma db push 应用到 dev.db。migrate dev 会要求 reset 数据库被拒——53 万群聊数据不能 reset，这是 prisma migrate 的 drift 检测行为，与 BUG-61 教训一致）

@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-09-24（白机·诺诺自习室一期上线，R-058，admin 灰度）
+
+- [新增] `StudyRoomView.vue` — 自习室页面（诺诺 agent 交互形态）：
+  - 座位区（📖 占位形象 + 状态轮播 45s：正在看书/托腮发呆…，黑机建模完成后替换 3D 形象位）
+  - 对话区：SSE 流式打字 + **（动作）标记解析为斜体 emphasis**（parseSegments 正则切分，3D 阶段映射动作库）+ `✦ 记住了` 提示（done 事件 memoriesSaved>0）
+  - 会话侧栏（[自习室] 前缀隔离男德通会话）+ 记忆抽屉（她眼中的你 profile + 记忆列表 kind 徽标/重要度/公共标记/忘记按钮）
+  - 打断生成（AbortController）、移动端侧栏浮层适配
+- [修改] `MainView.vue` — 大厅新增自习室入口卡（v-if isAdmin，一期灰度）+ `isAdmin` computed
+- [修改] `router/index.js` — `/studyroom` 路由（requiresAdmin）
+- [修改] `useModuleTracking.js` — studyroom 埋点白名单
+- 实测：Playwright 全链路（发消息→流式回复→动作渲染→记忆面板→忘记删除）通过；跨会话记忆命中（外号/蛋糕问答）
+- commit: `ee4d025`
+
 ## 2026-08-21（白机·男德通记忆压缩前端展示）
 
 - [修改] `ChatView.vue` - ① 记忆压缩提示条（痛点21）：`sessionSummary`/`showSummaryDetail` ref + SSE `history_compressed` 事件接收 + 消息列表顶部 `<details>` 折叠条"💾 更早对话已自动压缩（点击展开查看摘要）"，不弹窗不打断防误操作；selectSession 恢复会话时读 summary 字段，newChat 清空 ② 配套样式 .summary-banner（虚线边框+主色背景）

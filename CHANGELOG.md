@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-09-24 v4.0.0 发版：自习室新模块上线（R-058 诺诺一期 agent 形态，admin 灰度）
+
+### 概要
+
+男德学院第四模块「自习室」（/studyroom）上线：全站共享 AI 少女「诺诺」的 agent 交互形态（R-058 一期），暂时仅 admin 可见（院长 2026-09-24 裁决灰度上线验证性能，开发完全后放开）。本期核心是**实践三层记忆与大脑架构**（为后续 3D 形态打底）：L1 常驻认知（NonoProfile，每用户 ≤300 字画像增量重写）+ L2 会话上下文（复用男德通 memoryCompress 压缩摘要）+ L3 长期记忆库（NonoMemory，三因子检索：0.4×时间衰减 0.995^天 + 0.3×重要度 + 0.3×关键词命中）；每轮回复后异步跑 mem0 式单遍 LLM 提取做记忆固化（ADD-only + profile 合并）。诺诺回复内嵌（动作）标记（前端渲染为斜体），为 3D 阶段的 VRM 动作库调用预留语义——"动作即工具"的大脑架构第一步。
+
+### 决策依据
+
+- **agent 交互形态先行而非 3D 直播间**（院长 2026-09-24 裁决）：先用简单对话界面实践记忆系统与大脑架构，建模（黑机 VRoid 3D）完成后再接入形象——三层分离（智能层/驱动层/渲染层），换脸不换骨。
+- **复用而非新建会话表**：ChatSession/ChatTurn 加 `[自习室] ` 前缀 + intent='nono' 隔离（talkNpc 同款模式），零共享表迁移；仅新建 NonoMemory/NonoProfile 两张增量表。
+- **三因子纯 SQL 检索而非向量库**：20 人社区记忆量级（≤几百条）内存打分足够，Generative Agents 方案的务实降级。
+- **Prisma 迁移漂移根治**（handoff 遗留清账项）：迁移文件集落后 schema（summary/images/feedbacks/module_visits 历史上靠 db push/手工 SQL 上线从未写成迁移）+ dev.db _prisma_migrations 记录漂移。本次以 baseline 补录迁移（20260924090000，标记不执行）+ 新表迁移（20260924090001）双迁移根治；本地 db push+resolve 对齐，`migrate status` 首次报 "up to date"。**线上部署需先 `migrate resolve --applied` baseline 再 `migrate deploy`**（否则 baseline 会在 prod 报重复列）。
+- **权限灰度**：requireRole(admin/super_admin) + requiresAdmin 路由守卫 + 大厅入口 v-if（照 /history 先例）。
+
+### 实测记录（2026-09-24 白机）
+
+SSE 流式对话 / 跨会话记忆命中（新会话问"我外号"正确引用此前对话） / 记忆固化落库与 profile 增量合并 / member 双接口 403 / Playwright 浏览器全链路（发消息→流式→动作渲染→✦记住了→记忆面板→忘记删除）全部通过。踩坑两枚已修：①记忆提取 JSON 解析失败静默 return（saved:0 无迹可查）→ 补诊断日志；②LLM 提取改写专有词（"蛋哥"→"业哥"）→ prompt 加"逐字照抄"约束。
+
+### 影响评估
+
+- 男德通会话列表不受自习室会话污染（前缀过滤）；诺诺对话成本 ≈ 男德通闲聊 ×1.3（多一次记忆固化轻量调用，temp0 短输出）。
+- 3D 形态接入点：StudyRoomView 座位区（📖 占位）替换 three.js canvas；（动作）标记映射 VRM 动作库；L3 记忆池未来供"直播弹幕回复调度器"复用。
+
+---
+
 ## 2026-09-20 v3.8.0 发版：LLM 双通道改造（DeepSeek 官方 + 火山 ARK 回退）+ env 配置单文件化
 
 ### 概要

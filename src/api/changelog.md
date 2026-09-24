@@ -4,6 +4,10 @@
 
 ---
 
+## 2026-09-24（白机·诺诺自习室一期，R-058）
+- [新增] `nono.js` — 自习室 API 封装：listNonoSessions/getNonoSession/deleteNonoSession（会话 CRUD）+ getNonoMemories/deleteNonoMemory（记忆面板）
+- commit: `ee4d025`
+
 ## 2026-08-07
 - [修改] `visualNovel.js` — 存档快照新增 spaceState 字段（空间状态：currentLocation/currentExploreLocation/visitedLocations/unlockedLocations），R-035 探索态存档恢复
 - commit: `b4c9e68`

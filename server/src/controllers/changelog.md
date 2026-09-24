@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-09-24（白机·诺诺自习室一期，R-058）
+
+- [新增] `nonoController.js` — 诺诺自习室控制器：
+  - `talkNono`：SSE 模式参照 talkNpc——`[自习室] ` 前缀会话隔离（不污染男德通列表）+ intent='nono' + L2 复用 buildHistoryWithSummary/compressIfNeeded + L1/L3 记忆并行检索注入 + 流式回复（TEMPS.NPC）+ 回复后 await consolidateMemory，memoriesSaved 随 done 事件推送（"她记住了"可感知）
+  - 会话 CRUD：前缀 startsWith 过滤；`getNonoMemories`（profile+记忆列表透明化）；`deleteNonoMemory`（仅本人或公共记忆可删）
+- commit: `ee4d025`
+
 ## 2026-08-21（白机·男德通 AI 优化第二批：chatController 记忆压缩 + lastIntent 接入）
 
 - [修改] `chatController.js` askChat - ① 记忆压缩集成（痛点21）：读会话 summary，buildHistoryWithSummary 替换早期轮次，回答后 compressIfNeeded 检查压缩并 SSE `history_compressed` 事件通知前端 ② lastIntent（痛点22）：从会话最后一个 assistant turn 的 intent 读取传入 orchestrate ③ NPC 对话温度改 TEMPS.NPC 引用
