@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-09-24（白机 v4.0.0 部署日：BUG-080 线上历史缺表 + Prisma 迁移漂移根治实操记录）
+
+### BUG-080：线上 prod.db 缺 feedbacks 表——院长信箱线上 500（历史部署漏建，v4.0.0 部署核查中发现并修复）
+
+- **发现时间**：2026-09-24 15:30（v4.0.0 部署后日志核查）
+- **环境**：线上 prod.db
+- **现象**：PM2 error log 出现 `PrismaClientKnownRequestError P2021: The table main.feedbacks does not exist`；curl 线上 `GET /api/feedback` 返回 500。**本地 dev.db 一直正常**（feedbacks 表存在），纯线上问题
+- **根因**：院长信箱（Feedback 模块）当年部署时**漏建线上表**——feedbacks 的建表变更从未以迁移文件形式发布（历史上靠 dev 侧 db push），线上部署脚本 migrate deploy 无此迁移可跑，导致 schema 与 prod.db 长期分叉。因信箱低频使用+错误只进 error log，一直未被发现
+- **修复**（2026-09-24 同轮）：停 `nandexueyuan-api` 释放 SQLite 写锁 → 在 prod.db 执行 feedbacks 建表 SQL（与 schema 完全一致，含 authorId 外键+status/type 索引）→ pm2 start → 线上 `GET /api/feedback` 返回 200
+- **教训**：①schema 变更必须走迁移文件而非 db push，否则线上迁移链永远不知道库该长什么样；②error log 里的 P2021/P2025 类错误要定期巡检（本次潜伏期未知）；③部署后验证不能只看通用探针（deploy.sh 9/9 过但信箱仍坏），要覆盖新表相关接口
+
+### 附：同日 Prisma 迁移漂移根治实操（handoff 2026-09-15 遗留清账项）
+
+- **漂移全貌（两层）**：①迁移文件集落后 schema——chat_sessions.summary / chat_turns.images / feedbacks / module_visits 四项历史变更从未写成迁移；②dev.db 与线上 prod.db 的 _prisma_migrations 记录与文件不一致（migrate dev 一跑就要求 reset）
+- **根治方案**：双迁移——`20260924090000_baseline_sync_schema`（历史差异补录，**resolve --applied 标记而不执行**，因为两库结构大多已有；BUG-080 证明 feedbacks 例外，线上确实没有，已手工补建对齐）+ `20260924090001_add_nono_tables`（正常执行）
+- **关键坑 1**：线上执行 prisma migrate（resolve/deploy）会报 `database is locked`——prod.db 被运行中的 PM2 进程锁住，**必须先 pm2 stop 再操作再 start**
+- **关键坑 2**：dev.db 的 FTS5 虚表（message_chunks_fts_v2 等）会被 `prisma db push` 视为"多余表"要求 drop——**永远不要在线上跑 db push**，新表用 db execute 精确执行 SQL 或 migrate deploy
+- **验证**：本地+线上 `prisma migrate status` 均报 up to date；FTS 虚表无损；nono 两表线上创建成功
+
+
 ## 2026-09-15（白机 遗留清账：BUG-79 修复 + BUG-73 同族实锤修复）
 
 ### BUG-79 修复：FTS5 查询串特殊字符三层加固（tokenizer 对齐 unicode61 + MATCH 空串防御 + LIKE 通配符转义）

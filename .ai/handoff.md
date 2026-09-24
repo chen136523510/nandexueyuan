@@ -1,9 +1,9 @@
 # AI 交接单
 
-> 最后更新：2026-09-24 14:30（白机：R-058 诺诺一期「自习室」开发完成+v4.0.0 发版准备——三层记忆 agent 形态，admin 灰度，待部署）
-> 所在设备：白机（判定依据：2026-09-24 周四 13:39 ∈ 09:00~18:30）
-> 稳定版本：**v3.8.0 线上**（commit `5ae6aa0`，2026-09-20 14:05 部署上线；**v4.0.0 已 commit 待部署**——自习室新模块上线）
-> 数据规模：prod.db 205M —— message_chunks 5,372 块（keywords 零空缺）/ group_messages 538,915 条 / users 21（1 super_admin + 1 admin + 19 member；qiuxuming 2026-09-20 升 admin）
+> 最后更新：2026-09-24 16:05（白机：R-058 诺诺一期「自习室」v4.0.0 开发+部署上线+线上验证完成，含 BUG-080 feedbacks 缺表修复）
+> 所在设备：白机（判定依据：2026-09-24 周四 ∈ 09:00~18:30）
+> 稳定版本：**v4.0.0 线上**（commit `7d69255`，2026-09-24 15:5x 部署，deploy.sh 9/9 + 诺诺线上链路验证通过）
+> 数据规模：prod.db —— message_chunks 5,372 块 / group_messages 538,915 条 / users 21（1 super_admin + 1 admin + 19 member）+ **新增 nono_memories/nono_profiles 表 + 补建 feedbacks 表（BUG-080）**
 
 > ⚠️ **网络环境与部署通道（动手前必查）**：
 > - GitHub SSH 偶发超时（已配 `~/.ssh/config` 走 ssh.github.com:443 备用），push 超时重试即可
@@ -61,7 +61,15 @@
 
 ---
 
-## 最近一轮产出摘要（白机 2026-09-23 17:39，纯文档轮无代码改动）
+## 最近一轮产出摘要（白机 2026-09-24 16:05，v4.0.0 上线轮）
+
+- **R-058 诺诺一期「自习室」开发并部署上线**（commits `ee4d025`+`7d69255`，v3.8.0→v4.0.0 新模块）：/studyroom 页面（admin 灰度，院长裁决"先 agent 交互实践记忆系统和大脑架构，建模出来再接入"）——三层记忆（L1 NonoProfile 认知/L2 复用会话压缩/L3 NonoMemory 三因子检索+mem0 式固化）+（动作）标记（3D 动作库预留语义）+记忆面板透明化+「✦ 记住了」提示
+- **线上验证全过**：SSE 流式/跨会话记忆命中（本地）/401 与 member 403/线上记忆固化 saved:1（注：消息带"（线上验证）"前缀会被 LLM 判定测试内容不提取，非故障）
+- **BUG-080 发现并修复**：线上 prod.db 缺 feedbacks 表（院长信箱线上 500，历史部署漏建，潜伏期未知）——同轮停服补建恢复 200；详见 bug-log
+- **Prisma 迁移漂移根治**（9-15 遗留清账项）：双迁移方案（baseline 补录 resolve 不执行 + nono 新表正常执行），本地+线上 migrate status 均 up to date；两个坑入档：线上迁移须先 pm2 stop（database is locked）、永不可在线上 db push（FTS 虚表会被 drop）
+- **下一步**：①黑机 3D PoC（免费占位 VRM 已核实：pixiv 官方 Twist_Sample 商用免署名）②诺诺 LLM 自主大脑深化③开发完全后放开 admin 限制；院长可线上体验 /studyroom（admin 账号）
+
+## 上一轮产出摘要（白机 2026-09-23 17:39·纯讨论轮）
 
 - **R-058 五轮探讨，形态质变 + 路线转向**（commits `5ea3fd8`/`22d6050`/`5df2fac`/`acdfce7`/`522f6a7`）：产品由"每人养一只 Q宠"重定义为**全站共享「诺诺」虚拟直播间**——可爱美少女 + 弹幕互动 + 30 分钟无互动打瞌睡/看书 + 真实场景（椅子可坐）
 - **技术路线 Live2D → 3D**：核实 VRoid Studio 全免费（VRM 自带骨骼/表情/眨眼/口型/头发物理，全身 1-2 周 vs Live2D 2-4 个月）+ Mixamo 免费动捕动画消灭走路/坐姿卡点（Live2D 走路 4-8 个月无先例）+ three.js/three-vrm Web 渲染 A-（20 人本地 GPU 服务器零负载）；零外包自研
