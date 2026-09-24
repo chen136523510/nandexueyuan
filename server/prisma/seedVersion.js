@@ -5,6 +5,21 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v4.1.0',
+    date: new Date('2026-09-24'),
+    summary: '自习室改成直播间啦：大家共用一条聊天流',
+    updates: JSON.stringify([
+      '自习室改版——现在像直播间一样，大家共用一条聊天流，都能看到彼此和诺诺说了什么',
+      '诺诺回复时能看到她一个字一个字打出来，所有人都同步看到',
+      '顶部导航栏新增自习室入口（管理员可见）',
+    ], null, 0),
+    plans: JSON.stringify([
+      '诺诺的完整形象（3D 化）制作中，敬请期待',
+      '星河问扩建——塔罗馆、群友默契测试筹备中',
+      '抽象小剧场——把群聊名场面做成节目',
+    ], null, 0),
+  },
+  {
     version: 'v4.0.0',
     date: new Date('2026-09-24'),
     summary: '新同学诺诺入住自习室，先和管理员们混个脸熟',
