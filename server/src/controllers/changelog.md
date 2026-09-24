@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-24（白机·自习室 v4.1.0 直播间化）
+
+- [重构] `nonoController.js` — 私聊会话制改**公共直播流**：
+  - EventSource 广播器（进程内 subscribers Set + 25s 心跳 interval）：connected/user_message/nono_typing/nono_token/nono_message 五事件
+  - **串行回复队列**：replying 标志+lastRepliedMsgId 游标，回复期间新消息攒批，回完接一轮（多人同时说话"听完再答"，防 LLM 并发）
+  - L2=最近 30 条公共流（withNicknames 批量附昵称——NonoMessage 不建 Prisma 关联避免 FK 迁移）；记忆按触发者检索固化
+  - 踩坑修复：include user 缺模型关联 500 → 改批量查
+- commit: `c57f4c5`
+
 ## 2026-09-24（白机·诺诺自习室一期，R-058）
 
 - [新增] `nonoController.js` — 诺诺自习室控制器：

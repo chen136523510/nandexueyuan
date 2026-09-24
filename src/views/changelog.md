@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-09-24（白机·自习室 v4.1.0 直播间化）
+
+- [重构] `StudyRoomView.vue` — 院长裁决"做成类似直播间的文字互动"：去掉私人会话侧栏/新的闲聊/会话管理，改为**公共消息流**（EventSource 订阅 `/api/nono/stream?token=`：user_message/nono_typing/nono_token/nono_message 四事件驱动渲染，诺诺逐字流式气泡+✦记住了+座位区说话动效+状态轮播）；进页拉历史（getNonoMessages）+记忆面板保留（开发阶段工具）
+- [修改] `TopBar.vue` — adminItems 加自习室（桌面菜单+移动抽屉共用）
+- [修改] `api/nono.js` — sessions 三接口移除，新增 getNonoMessages/sendNonoMessage
+- commit: `c57f4c5`/`bd6e238`
+
 ## 2026-09-24（白机·诺诺自习室一期上线，R-058，admin 灰度）
 
 - [新增] `StudyRoomView.vue` — 自习室页面（诺诺 agent 交互形态）：

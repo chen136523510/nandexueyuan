@@ -4,6 +4,11 @@
 
 ---
 
+## 2026-09-24（白机·自习室 v4.1.0 直播间化）
+
+- [重构] `/api/nono/*` — sessions 三接口删除；新增 `GET /nono/stream`（EventSource 订阅，token 走 query——auth 中间件既有能力）与 `GET /nono/messages`（before 游标翻页）；talk 改为公共流发消息+广播
+- commit: `c57f4c5`
+
 ## 2026-09-24（白机·诺诺自习室一期，R-058，admin 灰度）
 - [新增] `/api/nono/*` 六路由 — talk(SSE 流式+rateLimit(10))/sessions CRUD/memories 查删，全部 auth + requireRole(admin, super_admin)（开发完全后放开）；api.js 导入 nonoController
 - [修改] `analyticsRouter.js` — MODULES/LABELS 白名单加 studyroom（自习室）
