@@ -128,7 +128,9 @@ export async function chatCompletion(messages, options = {}) {
 /**
  * 流式调用 LLM 对话补全
  * @param {Array<{role: string, content: string}>} messages
- * @param {{temperature?: number, thinking?: 'disabled'}} options thinking:'disabled' 跳过思考链（仅确定性 JSON 输出场景使用）
+ * @param {{temperature?: number, thinking?: 'disabled', onUsage?: Function}} options
+ *   onUsage: 可选回调（u）=> void，流式结束块若携带 usage（DeepSeek 上下文缓存命中统计：
+ *   prompt_cache_hit_tokens / prompt_cache_miss_tokens）时回调，供调用方记录缓存命中率
  * @returns {AsyncGenerator<string>} 逐块 yield 回复内容
  */
 export async function* chatCompletionStream(messages, options = {}) {
@@ -172,6 +174,10 @@ export async function* chatCompletionStream(messages, options = {}) {
           const json = JSON.parse(data)
           const content = json.choices?.[0]?.delta?.content
           if (content) yield content
+          // 流式结束块携带 usage（含缓存命中统计）时回调（缓存结构优化实测用，院长 2026-09-24 要求）
+          if (json.usage && typeof options.onUsage === 'function') {
+            try { options.onUsage(json.usage) } catch { /* 回调失败不影响主流程 */ }
+          }
         } catch {
           // 忽略解析错误
         }

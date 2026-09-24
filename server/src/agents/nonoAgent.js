@@ -39,8 +39,9 @@ const NONO_PERSONA = `你是「诺诺」，男德学院自习室里常驻的可�
 - 安静的氛围里话可以更少，允许只回一个（动作）`
 
 
-/** 构建诺诺 system prompt：人设 + L1 用户认知 + L3 检索命中记忆 */
-export function buildNonoSystemPrompt(user, profile, memories) {
+/** 构建诺诺 system prompt：人设 + L1 用户认知（L3 检索结果不再进 system——缓存结构优化，
+ *  每轮变化的内容由调用方并入 user 消息，保住 system 前缀的 DeepSeek 上下文缓存命中） */
+export function buildNonoSystemPrompt(user, profile) {
   const parts = [NONO_PERSONA]
 
   const nickname = user.nickname || user.username || '同学'
@@ -48,11 +49,6 @@ export function buildNonoSystemPrompt(user, profile, memories) {
 
   if (profile?.summary) {
     parts.push(`【你对 ${nickname} 的了解（长期认知）】\n${profile.summary}`)
-  }
-
-  if (memories?.length) {
-    const lines = memories.map((m) => `- ${m.content}`)
-    parts.push(`【你记住的事（与 ${nickname} 相关或自习室公共记忆，按相关度排序）】\n${lines.join('\n')}`)
   }
 
   return parts.join('\n\n')

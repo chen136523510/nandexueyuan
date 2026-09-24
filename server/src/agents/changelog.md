@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-09-24（白机·诺诺 prompt 缓存结构优化）
+
+- [修改] `llm.js`：`chatCompletionStream` 新增 `options.onUsage(u)` 回调——流式结束块携带 usage 时透出（DeepSeek Context Caching 的 prompt_cache_hit_tokens/prompt_cache_miss_tokens 统计用）；附注：流式 usage 块偶发缺失，尽力而为
+- [修改] `nonoAgent.js`：`buildNonoSystemPrompt(user, profile)` 移除 memories 参数——L3 检索结果不再进 system（每轮变化的内容嵌入 system 中段会砍断后缀缓存），改由调用方并入 user 消息尾部
+- 配套 `nonoController.js`：system=人设+L1+规则（全稳定），user=直播流+L3+新消息（每轮增量）；新增缓存命中率日志。**实测命中率 72%**（384 hit/146 miss，短流场景；院长批准的结构优化）
+- commit: 见本轮
+
 ## 2026-09-24（白机·诺诺大脑上线，R-058 自习室一期）
 
 - [feat] 新增 `nonoAgent.js` —— 诺诺大脑核心（三层记忆 + 大脑架构最小闭环）：

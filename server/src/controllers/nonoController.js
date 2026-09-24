@@ -107,19 +107,36 @@ async function replyOnce() {
   if (!user) return
   const nickname = user.nickname || user.username || '同学'
 
+  // 缓存结构优化（院长 2026-09-24 批准）：DeepSeek Context Caching 按前缀匹配，
+  // 稳定内容（人设+L1+规则）进 system 保命中；每轮必然变化的内容（直播流+L3 检索+新消息）
+  // 挪到 user 消息——避免嵌在 system 中段砍断后缀缓存
   const messages = [
     {
       role: 'system',
-      content: buildNonoSystemPrompt(user, profile, memories)
-        + `\n\n【直播间规则】\n- 这是自习室的公共聊天流，下面是多人的聊天记录（每行"昵称：内容"）\n- 你主要回应最近说话的人（${nickname}），但其他人插话也要自然顾及\n- 你的回复是发进直播流的一条消息，简短（通常 1-3 句），像在自习室里小声说话，不打扰别人\n\n【最近的直播流】\n${flowText}`,
+      content: buildNonoSystemPrompt(user, profile)
+        + '\n\n【直播间规则】\n- 这是自习室的公共聊天流，你在下面的消息里会看到多人的聊天记录（每行"昵称：内容"）\n- 你主要回应最近说话的人（系统会在最后标注），但其他人插话也要自然顾及\n- 你的回复是发进直播流的一条消息，简短（通常 1-3 句），像在自习室里小声说话，不打扰别人',
     },
-    { role: 'user', content: `${nickname}：${triggerMsg.content}` },
+    {
+      role: 'user',
+      content: `【直播流最近记录】\n${flowText}\n\n${memories?.length ? `【你记住的相关记忆】\n${memories.map((m) => `- ${m.content}`).join('\n')}\n\n` : ''}【最新消息】\n${nickname}：${triggerMsg.content}`,
+    },
   ]
 
   broadcast('nono_typing', {})
   let answer = ''
+  let usageLogged = false
   try {
-    for await (const chunk of chatCompletionStream(messages, { temperature: TEMPS.NPC })) {
+    for await (const chunk of chatCompletionStream(messages, {
+      temperature: TEMPS.NPC,
+      onUsage(u) {
+        if (usageLogged) return
+        usageLogged = true
+        const hit = u.prompt_cache_hit_tokens ?? 0
+        const miss = u.prompt_cache_miss_tokens ?? u.prompt_tokens ?? 0
+        const total = hit + miss
+        console.log(`[Nono] 缓存统计: 命中 ${hit} / 未命中 ${miss}（命中率 ${total ? Math.round((hit / total) * 100) : 0}%）`)
+      },
+    })) {
       broadcast('nono_token', { content: chunk })
       answer += chunk
     }
