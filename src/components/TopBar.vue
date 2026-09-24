@@ -62,10 +62,11 @@ const drawerItems = computed(() =>
   isMobile.value ? menuItems.filter((m) => m.to !== '/nde') : menuItems,
 )
 
-// 管理员专属菜单（岁月史书 + 男通讯录）
+// 管理员专属菜单（岁月史书 + 男通讯录 + 自习室灰度）
 const adminItems = [
   { to: '/history', label: '岁月史书' },
   { to: '/admin', label: '男通讯录' },
+  { to: '/studyroom', label: '自习室' },
 ]
 </script>
 

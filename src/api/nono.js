@@ -1,18 +1,15 @@
 import request from './index.js'
 
-// 会话列表（admin）
-export function listNonoSessions() {
-  return request.get('/nono/sessions')
+// 直播流历史消息（admin）：{ messages, hasMore }
+export function getNonoMessages(before, limit = 50) {
+  const params = { limit }
+  if (before) params.before = before
+  return request.get('/nono/messages', { params })
 }
 
-// 会话详情（admin）
-export function getNonoSession(id) {
-  return request.get(`/nono/sessions/${id}`)
-}
-
-// 删除会话（admin）
-export function deleteNonoSession(id) {
-  return request.delete(`/nono/sessions/${id}`)
+// 发消息进直播流（admin）
+export function sendNonoMessage(content) {
+  return request.post('/nono/talk', { content })
 }
 
 // 诺诺的记忆（admin）：{ profile, memories[] }

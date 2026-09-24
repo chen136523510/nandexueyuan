@@ -1,16 +1,14 @@
 <script setup>
 /**
- * 诺诺·自习室（R-058 一期 agent 形态，admin 灰度）
+ * 诺诺·自习室（R-058 v4.1.0 直播间形态，admin 灰度）
  *
- * 体验定位：类似男德通的对话交互，但主角是「诺诺」——安静温柔的自习室常驻少女。
- * 本期核心是实践三层记忆与大脑架构：
- *   - 回复内（动作）标记渲染为高亮斜体（3D 阶段映射为 VRM 动作库）
- *   - done 事件携带 memoriesSaved，「她记住了」可感知
- *   - 记忆面板：诺诺眼中的你 + 她记住的事（可删）
+ * 院长 2026-09-24 裁决：做成类似直播间的文字互动——所有人共享同一条公共消息流，
+ * 无私人会话/会话列表。诺诺在流里回复（EventSource 实时广播，所有在线者看到她逐字说话）。
+ * 记忆面板为开发阶段可视化工具（开放给普通用户时移除，院长裁决红线）。
  */
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listNonoSessions, getNonoSession, deleteNonoSession, getNonoMemories, deleteNonoMemory } from '../api/nono'
+import { getNonoMessages, sendNonoMessage, getNonoMemories, deleteNonoMemory } from '../api/nono'
 import { useDialogStore } from '../stores/dialog'
 import { useAuthStore } from '../stores/auth'
 
@@ -18,14 +16,12 @@ const router = useRouter()
 const dialog = useDialogStore()
 const auth = useAuthStore()
 
+// 消息流（公共）：{ id, role: 'user'|'nono', nickname, content, streaming? }
 const messages = ref([])
-const question = ref('')
-const loading = ref(false)
+const input = ref('')
+const sending = ref(false)
 const chatArea = ref(null)
-const currentSessionId = ref(null)
-const sessions = ref([])
-const abortController = ref(null)
-const sidebarOpen = ref(true)
+const nonoTyping = ref(false)
 
 // 记忆面板
 const memoryPanelOpen = ref(false)
@@ -33,18 +29,22 @@ const memoryProfile = ref('')
 const memoryList = ref([])
 const memoryLoading = ref(false)
 
-// 诺诺状态文案（占位形象阶段的"活人感"由状态语随机给出）
+// 座位区状态
 const nonoStatuses = ['正在看书', '托腮发呆中', '在小本子上写写画画', '翻了一页书', '喝了口麦茶']
 const nonoStatus = ref(nonoStatuses[0])
 let statusTimer = null
 
-function rotateStatus() {
-  statusTimer = setInterval(() => {
-    nonoStatus.value = nonoStatuses[Math.floor(Math.random() * nonoStatuses.length)]
-  }, 45000)
+let es = null // EventSource
+
+function scrollBottom(smooth = false) {
+  nextTick(() => {
+    if (chatArea.value) {
+      chatArea.value.scrollTo({ top: chatArea.value.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+    }
+  })
 }
 
-/** 把回复解析为段落数组：{ type: 'action'|'text', text } ——（动作）整段或行内混合 */
+/** 把诺诺回复解析为段落：{ type: 'action'|'text', text }——（动作）斜体渲染 */
 function parseSegments(content) {
   const segs = []
   const re = /（[^（）]{1,40}）|\([^()]{1,40}\)/g
@@ -59,141 +59,71 @@ function parseSegments(content) {
   return segs
 }
 
-function scrollBottom() {
-  nextTick(() => {
-    if (chatArea.value) chatArea.value.scrollTop = chatArea.value.scrollHeight
+// ========== 直播流订阅 ==========
+function connectStream() {
+  const token = localStorage.getItem('token')
+  es = new EventSource(`/api/nono/stream?token=${encodeURIComponent(token || '')}`)
+
+  es.addEventListener('user_message', (e) => {
+    const d = JSON.parse(e.data)
+    messages.value.push({ id: d.id, role: 'user', nickname: d.nickname, content: d.content })
+    scrollBottom(true)
+  })
+
+  es.addEventListener('nono_typing', () => {
+    nonoTyping.value = true
+    // 占位气泡：逐字填充
+    messages.value.push({ id: `nono-live-${Date.now()}`, role: 'nono', nickname: '诺诺', content: '', streaming: true })
+    scrollBottom(true)
+  })
+
+  es.addEventListener('nono_token', (e) => {
+    const d = JSON.parse(e.data)
+    const live = [...messages.value].reverse().find((m) => m.streaming)
+    if (live) live.content += d.content
+    scrollBottom()
+  })
+
+  es.addEventListener('nono_message', (e) => {
+    const d = JSON.parse(e.data)
+    nonoTyping.value = false
+    // 流式占位替换为正式消息（中途加入的订阅者只有最终条）
+    const idx = messages.value.findIndex((m) => m.streaming)
+    const finalMsg = { id: d.id, role: 'nono', nickname: '诺诺', content: d.content, memoriesSaved: d.memoriesSaved }
+    if (idx >= 0) messages.value.splice(idx, 1, finalMsg)
+    else messages.value.push(finalMsg)
+    // 她刚说完话，随机换个座位区状态
+    nonoStatus.value = nonoStatuses[Math.floor(Math.random() * nonoStatuses.length)]
+    scrollBottom(true)
   })
 }
 
-async function loadSessions() {
+// ========== 历史消息 ==========
+async function loadHistory() {
   try {
-    const res = await listNonoSessions()
-    sessions.value = res.data || []
-  } catch { /* 静默 */ }
-}
-
-function stripPrefix(title) {
-  return (title || '').replace(/^\[自习室\]\s*/, '')
-}
-
-async function openSession(id) {
-  if (loading.value) return
-  try {
-    const res = await getNonoSession(id)
-    const s = res.data
-    currentSessionId.value = s.id
-    messages.value = s.turns.map((t) => ({ role: t.role, content: t.content }))
+    const res = await getNonoMessages()
+    messages.value = res.data.messages || []
     scrollBottom()
   } catch (err) {
-    dialog.alert(err?.message || '会话加载失败')
+    dialog.alert(err?.message || '消息加载失败')
   }
 }
 
-function newSession() {
-  if (loading.value) return
-  currentSessionId.value = null
-  messages.value = []
-}
-
-async function removeSession(id) {
-  const ok = await dialog.confirm('删除这段自习室对话？诺诺不会忘记和你聊过的记忆。')
-  if (!ok) return
-  try {
-    await deleteNonoSession(id)
-    if (currentSessionId.value === id) newSession()
-    await loadSessions()
-  } catch (err) {
-    dialog.alert(err?.message || '删除失败')
-  }
-}
-
+// ========== 发送 ==========
 async function send() {
-  const text = question.value.trim()
-  if (!text || loading.value) return
-
-  question.value = ''
-  loading.value = true
-  messages.value.push({ role: 'user', content: text })
-  const botMsg = { role: 'assistant', content: '' }
-  messages.value.push(botMsg)
-  scrollBottom()
-
+  const text = input.value.trim()
+  if (!text || sending.value) return
+  sending.value = true
+  input.value = ''
   try {
-    const token = localStorage.getItem('token')
-    abortController.value = new AbortController()
-    const response = await fetch('/api/nono/talk', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ question: text, sessionId: currentSessionId.value }),
-      signal: abortController.value.signal,
-    })
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}))
-      botMsg.content = errData.message || `请求失败 (${response.status})`
-      botMsg.error = true
-      return
-    }
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const blocks = buffer.split('\n\n')
-      buffer = blocks.pop()
-
-      for (const block of blocks) {
-        const lines = block.split('\n')
-        let eventType = ''
-        let dataStr = ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) eventType = line.slice(7).trim()
-          else if (line.startsWith('data: ')) dataStr = line.slice(6)
-        }
-        if (!eventType || !dataStr) continue
-
-        try {
-          const data = JSON.parse(dataStr)
-          if (eventType === 'token') {
-            botMsg.content += data.content
-            scrollBottom()
-          } else if (eventType === 'done') {
-            if (data.sessionId) currentSessionId.value = data.sessionId
-            if (data.memoriesSaved > 0) {
-              botMsg.memoriesSaved = data.memoriesSaved
-            }
-            await loadSessions()
-          } else if (eventType === 'error') {
-            botMsg.content = botMsg.content || data.message
-            botMsg.error = true
-          }
-        } catch { /* 忽略解析错误 */ }
-      }
-    }
+    await sendNonoMessage(text)
+    // 消息由 EventSource 广播回来统一渲染（不自加，防重复）
   } catch (err) {
-    if (err.name === 'AbortError') {
-      botMsg.content += '\n（已打断）'
-    } else {
-      botMsg.content = botMsg.content || '连接出了点问题，稍后再试试'
-      botMsg.error = true
-    }
+    dialog.alert(err?.message || '发送失败')
+    input.value = text
   } finally {
-    loading.value = false
-    abortController.value = null
-    scrollBottom()
+    sending.value = false
   }
-}
-
-function stopGenerate() {
-  abortController.value?.abort()
 }
 
 // ========== 记忆面板 ==========
@@ -225,8 +155,16 @@ async function removeMemory(id) {
 const kindLabels = { fact: '事实', event: '事件', preference: '偏好' }
 
 onMounted(() => {
-  loadSessions()
-  rotateStatus()
+  loadHistory()
+  connectStream()
+  statusTimer = setInterval(() => {
+    nonoStatus.value = nonoStatuses[Math.floor(Math.random() * nonoStatuses.length)]
+  }, 45000)
+})
+
+onUnmounted(() => {
+  es?.close()
+  if (statusTimer) clearInterval(statusTimer)
 })
 </script>
 
@@ -236,49 +174,31 @@ onMounted(() => {
     <header class="nono-seat">
       <button class="back-btn" title="回大厅" @click="router.push('/home')">←</button>
       <div class="seat-scene">
-        <div class="nono-avatar">📖</div>
+        <div class="nono-avatar" :class="{ talking: nonoTyping }">📖</div>
         <div class="seat-info">
           <div class="nono-name">诺诺 <span class="nono-tag">自习室</span></div>
-          <div class="nono-status">{{ nonoStatus }}<span class="status-ellipsis">…</span></div>
+          <div class="nono-status">{{ nonoTyping ? '正在回复…' : nonoStatus + '…' }}</div>
         </div>
       </div>
       <div class="seat-actions">
+        <span class="viewer-count" title="直播流消息数">{{ messages.length }} 条</span>
         <button class="seat-btn" @click="openMemoryPanel">📚 她记得</button>
-        <button class="seat-btn" :class="{ active: sidebarOpen }" @click="sidebarOpen = !sidebarOpen">☰</button>
       </div>
     </header>
 
-    <div class="studyroom-body">
-      <!-- 会话侧栏 -->
-      <aside v-show="sidebarOpen" class="session-panel">
-        <button class="new-session-btn" @click="newSession">＋ 新的闲聊</button>
-        <div class="session-list">
-          <div
-            v-for="s in sessions"
-            :key="s.id"
-            class="session-item"
-            :class="{ active: s.id === currentSessionId }"
-            @click="openSession(s.id)"
-          >
-            <div class="session-title">{{ stripPrefix(s.title) || '一段闲聊' }}</div>
-            <div class="session-meta">{{ s._count?.turns || 0 }} 条 · {{ new Date(s.updatedAt).toLocaleDateString() }}</div>
-            <button class="session-del" title="删除" @click.stop="removeSession(s.id)">✕</button>
-          </div>
-          <div v-if="!sessions.length" class="session-empty">还没有和诺诺聊过天</div>
-        </div>
-      </aside>
+    <!-- 公共消息流（直播间聊天区） -->
+    <section class="chat-area" ref="chatArea">
+      <div v-if="!messages.length" class="chat-welcome">
+        <div class="welcome-avatar">📖</div>
+        <p class="welcome-line">（听到脚步声，抬起头）</p>
+        <p class="welcome-line subtle">自习室很安静。想说话直接打在下面——大家共用的聊天流。</p>
+      </div>
 
-      <!-- 对话区 -->
-      <section class="chat-area" ref="chatArea">
-        <div v-if="!messages.length" class="chat-welcome">
-          <div class="welcome-avatar">📖</div>
-          <p class="welcome-line">（听到脚步声，抬起头）</p>
-          <p class="welcome-line subtle">你来了呀。想聊天的话，直接说就好——我记得住重要的事。</p>
-        </div>
-
-        <div v-for="(msg, i) in messages" :key="i" class="msg-row" :class="msg.role">
-          <template v-if="msg.role === 'assistant'">
-            <div class="msg-avatar">📖</div>
+      <div v-for="msg in messages" :key="msg.id" class="msg-row" :class="msg.role">
+        <template v-if="msg.role === 'nono'">
+          <div class="msg-avatar">📖</div>
+          <div class="msg-body">
+            <div class="msg-name">诺诺</div>
             <div class="msg-bubble nono">
               <template v-if="msg.content">
                 <span v-for="(seg, j) in parseSegments(msg.content)" :key="j">
@@ -288,32 +208,32 @@ onMounted(() => {
                 <span v-if="msg.memoriesSaved" class="memory-hint">✦ 记住了</span>
               </template>
               <span v-else class="typing">…</span>
-              <div v-if="msg.error" class="msg-error">↻ 出错了</div>
             </div>
-          </template>
-          <template v-else>
+          </div>
+        </template>
+        <template v-else>
+          <div class="msg-body user-side">
+            <div class="msg-name me">{{ msg.nickname }}</div>
             <div class="msg-bubble user">{{ msg.content }}</div>
-          </template>
-        </div>
-      </section>
-    </div>
+          </div>
+        </template>
+      </div>
+    </section>
 
     <!-- 输入区 -->
     <footer class="input-bar">
       <input
-        v-model="question"
-        class="question-input"
+        v-model="input"
+        class="message-input"
         type="text"
-        placeholder="和诺诺说点什么…（她正在自习，话不多但记得住）"
+        placeholder="在自习室说句话…（大家都能看到，诺诺也会回应）"
         maxlength="500"
-        :disabled="loading"
         @keydown.enter.prevent="send"
       />
-      <button v-if="loading" class="send-btn stop" @click="stopGenerate">打断</button>
-      <button v-else class="send-btn" :disabled="!question.trim()" @click="send">发送</button>
+      <button class="send-btn" :disabled="!input.trim() || sending" @click="send">发送</button>
     </footer>
 
-    <!-- 记忆面板（抽屉） -->
+    <!-- 记忆面板（抽屉，开发阶段可视化工具） -->
     <transition name="drawer">
       <div v-if="memoryPanelOpen" class="memory-mask" @click.self="memoryPanelOpen = false">
         <div class="memory-panel">
@@ -400,6 +320,11 @@ onMounted(() => {
   border: 2px solid var(--md-border);
   flex-shrink: 0;
 }
+.nono-avatar.talking { animation: talk-pulse 1.6s infinite; }
+@keyframes talk-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
 .seat-info { min-width: 0; }
 .nono-name {
   font-family: var(--md-font-display);
@@ -420,9 +345,12 @@ onMounted(() => {
   font-size: 12px;
   color: var(--md-text-secondary, #8a7d78);
 }
-.status-ellipsis { animation: blink 2s infinite; }
-@keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
-.seat-actions { display: flex; gap: 8px; }
+.seat-actions { display: flex; gap: 8px; align-items: center; }
+.viewer-count {
+  font-size: 11px;
+  color: var(--md-text-secondary, #8a7d78);
+  white-space: nowrap;
+}
 .seat-btn {
   border: 1px solid var(--md-border);
   background: transparent;
@@ -433,74 +361,13 @@ onMounted(() => {
   font-size: 13px;
   white-space: nowrap;
 }
-.seat-btn:hover, .seat-btn.active { background: var(--md-border); }
+.seat-btn:hover { background: var(--md-border); }
 
-/* ===== 主体 ===== */
-.studyroom-body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-.session-panel {
-  width: 220px;
-  border-right: 1px solid var(--md-border);
-  background: var(--md-bg-card);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-.new-session-btn {
-  margin: 10px;
-  padding: 8px;
-  border: 1px dashed var(--md-border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--md-text);
-  cursor: pointer;
-}
-.new-session-btn:hover { background: var(--md-border); }
-.session-list { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
-.session-item {
-  position: relative;
-  padding: 8px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-bottom: 4px;
-}
-.session-item:hover { background: var(--md-border); }
-.session-item.active { background: rgba(160, 140, 130, 0.22); }
-.session-title {
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-right: 18px;
-}
-.session-meta { font-size: 11px; color: var(--md-text-secondary, #8a7d78); margin-top: 2px; }
-.session-del {
-  position: absolute;
-  right: 6px;
-  top: 8px;
-  border: none;
-  background: transparent;
-  color: var(--md-text-secondary, #8a7d78);
-  cursor: pointer;
-  font-size: 11px;
-  opacity: 0;
-}
-.session-item:hover .session-del { opacity: 1; }
-.session-empty {
-  text-align: center;
-  font-size: 12px;
-  color: var(--md-text-secondary, #8a7d78);
-  padding: 20px 0;
-}
-
-/* ===== 对话区 ===== */
+/* ===== 公共消息流 ===== */
 .chat-area {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 18px;
+  padding: 18px 16px;
 }
 .chat-welcome {
   text-align: center;
@@ -516,7 +383,7 @@ onMounted(() => {
 
 .msg-row {
   display: flex;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   gap: 8px;
 }
 .msg-row.user { justify-content: flex-end; }
@@ -530,10 +397,17 @@ onMounted(() => {
   justify-content: center;
   font-size: 14px;
   flex-shrink: 0;
+  margin-top: 16px;
 }
+.msg-body { max-width: 72%; }
+.msg-name {
+  font-size: 11px;
+  color: var(--md-text-secondary, #8a7d78);
+  margin-bottom: 3px;
+}
+.msg-name.me { text-align: right; }
 .msg-bubble {
-  max-width: 72%;
-  padding: 9px 13px;
+  padding: 8px 12px;
   border-radius: 14px;
   font-size: 14px;
   line-height: 1.65;
@@ -561,7 +435,7 @@ onMounted(() => {
   color: #a8875f;
 }
 .typing { color: var(--md-text-secondary, #8a7d78); animation: blink 1.2s infinite; }
-.msg-error { margin-top: 4px; font-size: 12px; color: #c07a6a; }
+@keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
 /* ===== 输入区 ===== */
 .input-bar {
@@ -572,7 +446,7 @@ onMounted(() => {
   background: var(--md-bg-card);
   flex-shrink: 0;
 }
-.question-input {
+.message-input {
   flex: 1;
   border: 1px solid var(--md-border);
   border-radius: 10px;
@@ -582,7 +456,7 @@ onMounted(() => {
   font-size: 14px;
   outline: none;
 }
-.question-input:focus { border-color: var(--md-text-secondary, #8a7d78); }
+.message-input:focus { border-color: var(--md-text-secondary, #8a7d78); }
 .send-btn {
   border: none;
   border-radius: 10px;
@@ -593,7 +467,6 @@ onMounted(() => {
   font-size: 14px;
 }
 .send-btn:disabled { opacity: 0.4; cursor: default; }
-.send-btn.stop { background: #b0756a; }
 
 /* ===== 记忆抽屉 ===== */
 .memory-mask {
@@ -698,19 +571,10 @@ onMounted(() => {
 }
 .drawer-enter-active, .drawer-leave-active { transition: transform 0.25s ease; }
 .drawer-enter-from, .drawer-leave-to { transform: translateX(100%); }
-.drawer-enter-active .memory-panel, .drawer-leave-active .memory-panel { transition: none; }
 
 /* ===== 移动端 ===== */
 @media (max-width: 768px) {
-  .session-panel {
-    position: absolute;
-    left: 0;
-    top: 57px;
-    bottom: 62px;
-    z-index: 10;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
-  }
-  .msg-bubble { max-width: 85%; }
-  .seat-btn.book-btn { display: none; }
+  .msg-body { max-width: 85%; }
+  .seat-btn { padding: 6px 8px; }
 }
 </style>

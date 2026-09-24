@@ -20,7 +20,7 @@ import {
   listFeedback, createFeedback, deleteFeedback, updateStatus as updateFeedbackStatus,
 } from '../controllers/feedbackController.js'
 import {
-  talkNono, listNonoSessions, getNonoSession, deleteNonoSession, getNonoMemories, deleteNonoMemory,
+  talkNono, streamNono, listNonoMessages, getNonoMemories, deleteNonoMemory,
 } from '../controllers/nonoController.js'
 import { auth, requireRole } from '../middleware/auth.js'
 import { rateLimit } from '../middleware/rateLimit.js'
@@ -76,10 +76,10 @@ router.get('/chat/sessions/:id', auth, getSession)
 router.delete('/chat/sessions/:id', auth, deleteSession)
 
 // 诺诺·自习室（R-058 一期灰度：仅 admin，开发完全后放开 requireRole）
+// v4.1.0 直播间形态：公共消息流（EventSource 订阅走 ?token= query 认证）
 router.post('/nono/talk', auth, requireRole('admin', 'super_admin'), rateLimit(10), talkNono)
-router.get('/nono/sessions', auth, requireRole('admin', 'super_admin'), listNonoSessions)
-router.get('/nono/sessions/:id', auth, requireRole('admin', 'super_admin'), getNonoSession)
-router.delete('/nono/sessions/:id', auth, requireRole('admin', 'super_admin'), deleteNonoSession)
+router.get('/nono/stream', auth, requireRole('admin', 'super_admin'), streamNono)
+router.get('/nono/messages', auth, requireRole('admin', 'super_admin'), listNonoMessages)
 router.get('/nono/memories', auth, requireRole('admin', 'super_admin'), getNonoMemories)
 router.delete('/nono/memories/:id', auth, requireRole('admin', 'super_admin'), deleteNonoMemory)
 

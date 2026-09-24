@@ -283,6 +283,17 @@ model NonoProfile {
   @@map("nono_profiles")
 }
 
+// 直播间公共消息流（所有人共享同一条流；userId null = 诺诺发言）
+model NonoMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("nono_messages")
+}
+
 // 模块访问埋点（岁月史书·学院数据）：进入模块记一条，离开时回填停留时长
 model ModuleVisit {
   id          Int       @id @default(autoincrement())
