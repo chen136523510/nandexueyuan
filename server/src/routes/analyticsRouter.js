@@ -16,7 +16,7 @@ const prisma = new PrismaClient()
 const router = Router()
 
 // 模块白名单（路由 path -> 模块名），防脏数据
-const MODULES = new Set(['home', 'chat', 'wall', 'mailbox', 'nde', 'history', 'character', 'admin'])
+const MODULES = new Set(['home', 'chat', 'wall', 'mailbox', 'nde', 'history', 'character', 'admin', 'studyroom'])
 
 const MODULE_LABELS = {
   home: '首页·大厅',
@@ -27,6 +27,7 @@ const MODULE_LABELS = {
   history: '岁月史书',
   character: '形象选择',
   admin: '男通讯录',
+  studyroom: '自习室',
 }
 
 /**

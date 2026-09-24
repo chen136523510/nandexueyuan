@@ -44,6 +44,12 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
+    path: '/studyroom',
+    name: 'studyroom',
+    component: () => import('../views/StudyRoomView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }, // R-058 一期灰度：开发完全后放开
+  },
+  {
     path: '/nde',
     name: 'nde',
     component: () => import('../views/NdeVisualNovelView.vue'),

@@ -21,6 +21,7 @@ const ROUTE_MODULE = {
   history: 'history',
   character: 'character',
   admin: 'admin',
+  studyroom: 'studyroom',
 }
 
 const SESSION_KEY = 'nde-visit-tracks'

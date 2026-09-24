@@ -256,6 +256,33 @@ model Feedback {
   @@map("feedbacks")
 }
 
+// ===== 诺诺·自习室（R-058 一期 agent 形态）=====
+
+// L3 长期记忆库：诺诺跨会话记住的事（mem0 式 ADD-only 追加）
+// userId null = 社区共享记忆（自习室公共事件）；非 null = 与该用户相关的记忆
+model NonoMemory {
+  id            Int      @id @default(autoincrement())
+  userId        Int?
+  kind          String   // fact(事实) | event(事件) | preference(用户偏好)
+  content       String   // 一句话记忆（第三人称，诺诺视角）
+  importance    Int      @default(5) // 1-10，检索加权用
+  createdAt     DateTime @default(now())
+  lastAccessedAt DateTime @default(now()) // 检索命中时刷新（时间衰减因子）
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("nono_memories")
+}
+
+// L1 常驻认知：诺诺眼中的某个用户（每用户一条，记忆固化时增量重写，限长）
+model NonoProfile {
+  userId    Int      @id
+  summary   String   @default("") // ≤300 字第三人称摘要
+  updatedAt DateTime @updatedAt
+
+  @@map("nono_profiles")
+}
+
 // 模块访问埋点（岁月史书·学院数据）：进入模块记一条，离开时回填停留时长
 model ModuleVisit {
   id          Int       @id @default(autoincrement())

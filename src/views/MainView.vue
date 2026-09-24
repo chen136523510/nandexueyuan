@@ -14,6 +14,9 @@ import { Bell } from 'lucide-vue-next'
 const router = useRouter()
 const auth = useAuthStore()
 
+// 自习室入口（R-058 一期灰度）：仅 admin 可见
+const isAdmin = computed(() => auth.role === 'admin' || auth.role === 'super_admin')
+
 // 减少动效偏好：命中时所有入场动画直接落位（数字直显、打字机只显示首句）
 const reduceMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -294,6 +297,14 @@ function yearPct(cnt) {
           <span class="entry-arrow" aria-hidden="true">→</span>
         </button>
 
+        <!-- 自习室入口（R-058 诺诺·一期灰度仅 admin 可见，开发完全后放开） -->
+        <button v-if="isAdmin" class="hall-card entry-card studyroom-card" @click="router.push('/studyroom')">
+          <span class="entry-icon">习</span>
+          <h3 class="entry-title">自习室</h3>
+          <p class="entry-desc">诺诺在这里看书。去和她聊聊——她记得住重要的事。</p>
+          <span class="entry-arrow" aria-hidden="true">→</span>
+        </button>
+
         <!-- 公告 -->
         <section class="hall-card ann-card">
           <div class="ann-header">
@@ -365,6 +376,7 @@ function yearPct(cnt) {
 .stats-card { grid-column: span 5; }
 .wall-card { grid-column: span 4; }
 .mailbox-card { grid-column: span 4; }
+.studyroom-card { grid-column: span 4; }
 .ann-card { grid-column: span 4; padding: 0; overflow: hidden; }
 .wc-card { grid-column: span 8; }
 
