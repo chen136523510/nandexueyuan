@@ -185,3 +185,4 @@ server/uploads/avatars/
 server/uploads/wall/
 server/uploads/chat/
 !server/uploads/wall-seed/
+*.blend1
