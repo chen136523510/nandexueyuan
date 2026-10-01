@@ -127,6 +127,7 @@ PoC 阶段只验证 preset 可切换，不做好感度逻辑。
 1. **VRM 跨目录引用**：相对路径被浏览器解析回项目内 → 404 fallback 让 GLTFLoader 拿到 HTML 报 `Unexpected token '<'`。解法：`vite assetsInclude:['**/*.vrm']` + `import vrmUrl from '...*.vrm?url'`（生成 /@fs/ 地址）+ `server.fs.allow:[仓库根]`
 2. **lookAt target 为 null**：VRM1.0 必须先 `vrm.lookAt.target = new THREE.Object3D()` 挂场景，再每帧移动该对象位置；直接 `vrm.lookAt.target.set(...)` 每帧报 undefined.set
 3. **手臂下垂方向**：T-pose 下 leftUpperArm.rotation.z 用**负值**下垂（-0.75），rightUpperArm 用正值（+0.75），写反则手臂上举
+4. **lookAt 上下反转**：pointer.y 屏幕坐标（上=+1）直接映射世界 y 即可；多包一层 `1 -` 反转会导致诺诺看反方向（鼠标下移她抬头）。已修复验证
 4. **npm allow-scripts**：esbuild postinstall 被拦警告，vite 实际运行正常（esbuild 有二进制 fallback），暂不处理
 
 **遗留**：esbuild postinstall 审批警告；灯光/曝光参数后续可调优；OrbitControls 右键平移在手势下无效属 Playwright 合成输入限制（真人鼠标正常）。

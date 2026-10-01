@@ -136,8 +136,8 @@ renderer.setAnimationLoop(() => {
 
   if (vrm) {
     // 验收 3：视线跟随鼠标（移动目标点，lookAt 自动追踪）
-    const px = (pointer.x + 1) / 2; // 0~1 屏幕坐标 → 目标位置
-    const py = 1 - (pointer.y + 1) / 2;
+    const px = (pointer.x + 1) / 2;
+    const py = (pointer.y + 1) / 2; // 鼠标屏幕顶=1 → 目标 y 高=抬头（修复上下反转）
     lookAtTarget.position.set(px * 1.2 - 0.6, 1.25 + py * 0.5, 0.8);
 
     // 验收 4：表情权重（瞬时切换，无过渡——PoC 只验证通路）
