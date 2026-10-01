@@ -111,6 +111,24 @@ PoC 阶段只验证 preset 可切换，不做好感度逻辑。
 
 ---
 
-## 六、实测结果（执行后回填）
+## 六、实测结果（2026-10-01 黑机执行完毕 · **PoC 通过**）
 
-> 待 PoC 完成后填写：验收 7 项逐条结论 + fps 实测值 + 加载时长 + 截图链接 + 踩坑记录
+| 验收项 | 结果 | 实测记录 |
+|---|---|---|
+| 1 模型上屏 | ✅ | MToon 着色完整，贴图/骨骼/材质零异常；ACESFilmic+SRGB 配置下色彩正常不发灰 |
+| 2 待机生命感 | ✅ | 眨眼（3.6s 周期）+ 呼吸（4s 周期 chest 微起伏）运行 |
+| 3 视线互动 | ✅ | `vrm.lookAt.target = Object3D` 绑定后鼠标跟随生效（VRM1.0 需显式赋目标对象，直接读 target 为 null） |
+| 4 表情系统 | ✅ | happy 实测切换成功（闭眼笑+张嘴），expressionManager 通路全通 |
+| 5 头发物理 | ✅ | SpringBone 由 vrm.update(delta) 自动驱动 |
+| 6 性能 | ✅ **200 FPS** | Playwright 窗口实测（Stats 面板），远超 60fps 线 |
+| 7 沉淀 | ✅ | 本节 + 2 张渲染截图（neutral/happy）归档诺诺目录 |
+
+**踩坑记录**（复现必读）：
+1. **VRM 跨目录引用**：相对路径被浏览器解析回项目内 → 404 fallback 让 GLTFLoader 拿到 HTML 报 `Unexpected token '<'`。解法：`vite assetsInclude:['**/*.vrm']` + `import vrmUrl from '...*.vrm?url'`（生成 /@fs/ 地址）+ `server.fs.allow:[仓库根]`
+2. **lookAt target 为 null**：VRM1.0 必须先 `vrm.lookAt.target = new THREE.Object3D()` 挂场景，再每帧移动该对象位置；直接 `vrm.lookAt.target.set(...)` 每帧报 undefined.set
+3. **手臂下垂方向**：T-pose 下 leftUpperArm.rotation.z 用**负值**下垂（-0.75），rightUpperArm 用正值（+0.75），写反则手臂上举
+4. **npm allow-scripts**：esbuild postinstall 被拦警告，vite 实际运行正常（esbuild 有二进制 fallback），暂不处理
+
+**遗留**：esbuild postinstall 审批警告；灯光/曝光参数后续可调优；OrbitControls 右键平移在手势下无效属 Playwright 合成输入限制（真人鼠标正常）。
+
+**结论**：R-058「建模可行性为最高优先级」的裁决**正式闭环**——VRoid 捏模 → VRM 导出 → Web 渲染全链路打通。下一步（集成阶段）：Vue 组件化封装进自习室直播间 + LLM 大脑动作标记联动。
