@@ -195,18 +195,10 @@ for side, d in (("L", data_L), ("R", data_R)):
     hl_c = c + Vector((left_sign, 0, 0)) * r_iris_v * 0.45 + B * r_iris_v * 0.42
     hl = add_disc(f"Highlight_{side}", r_iris_v * 0.22, mat_hl, hl_c, N, iris_off + 0.0025)
 
-    # 枢轴：把球+虹膜+瞳孔+高光挂到 EyePivot，未来 three.js 旋转它即可实现眼球转动
-    bpy.ops.object.empty_add(type="PLAIN_AXES", location=ball_c)
-    pivot = bpy.context.active_object
-    pivot.name = f"EyePivot_{side}"
-    pivot.empty_display_size = 0.01
-    parent_to_head(pivot)
-    bpy.ops.object.select_all(action="DESELECT")
+    # 扁平结构（VRM 导出器会把嵌套在骨骼父级空物体下的子物体双重烘焙，故全部直挂 head 骨，
+    # 枢轴数学由 three.js 运行时绕 ball_c 计算）：
     for part in (ball, iris, pup, hl):
-        part.select_set(True)
-    pivot.select_set(True)
-    bpy.context.view_layer.objects.active = pivot
-    bpy.ops.object.parent_set(type="OBJECT")  # UI 语义保世界坐标
+        parent_to_head(part)
 
     P(f"{side}: r_iris={r_iris:.4f} a_lat={a_lat:.4f} c_dep={c_dep:.4f} ball_c={tuple(round(v,4) for v in ball_c)} iris_off={iris_off:.4f}")
 
