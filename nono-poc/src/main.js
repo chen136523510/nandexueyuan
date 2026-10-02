@@ -153,13 +153,20 @@ scene.add(lookAtTarget);
 // ---------- 3D 眼球驱动（v6 扁平结构：绕 ballC 旋转各部件=lookAt，眨眼=整体后退） ----------
 // 注：VRM 导出器会把嵌套在骨骼父级空物体下的子物体双重烘焙，故眼部件直挂 head 骨、
 // 枢轴变换在运行时计算（v1 教训，登记 nono_build_eyes_v1.py）。
+// v2 修复（院长实测：呼吸头动时眼球周期性穿出眼眶）：v1 的 restPos/ballC/nRest 是加载时的
+// 固定世界坐标——呼吸/动作让头部移动后基准失效，眼部件被钉死在世界空间不跟头。现把全部
+// 静息基准转存为父骨（原始 head 骨）局部坐标，每帧从父骨当前世界矩阵重投影——眼球与眼皮
+// （头部蒙皮）刚性一体，头部怎么动眼球跟怎么动；眨眼眼皮变化+眼球沿法向后退联动不变。
 const _v0 = new THREE.Vector3();
 const _v1 = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _v3 = new THREE.Vector3();
 const _v4 = new THREE.Vector3();
+const _v5 = new THREE.Vector3();
 const _q0 = new THREE.Quaternion();
 const _q1 = new THREE.Quaternion();
+const _q2 = new THREE.Quaternion();
+const _q3 = new THREE.Quaternion();
 
 function setupEyeRig(v) {
   if (!v.scene.getObjectByName('Iris_L')) return null;
@@ -177,9 +184,21 @@ function setupEyeRig(v) {
         restScale: o.scale.clone(),
       });
     }
+    const parent = parts[0].obj.parent; // 眼部件直挂的原始 head 骨（非 normalized 骨）
+    parent.updateWorldMatrix(true, false);
+    const parentQInv0 = parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+    for (const p of parts) {
+      p.restPosLocal = parent.worldToLocal(p.restPos.clone());
+      p.restQuatLocal = parentQInv0.clone().multiply(p.restQuat);
+    }
     const iris = parts.find((x) => x.obj.name.startsWith('Iris'));
     const nRest = new THREE.Vector3(0, 0, 1).applyQuaternion(iris.restQuat).normalize();
-    rig.sides[side] = { parts, ballC: parts[0].restPos.clone(), nRest };
+    rig.sides[side] = {
+      parts,
+      parent,
+      ballCLocal: parent.worldToLocal(parts[0].restPos.clone()),
+      nRestLocal: nRest.applyQuaternion(parentQInv0),
+    };
   }
   return rig;
 }
@@ -188,26 +207,31 @@ function driveEyes(rig, blinkVal) {
   if (!rig) return;
   for (const key of ['L', 'R']) {
     const e = rig.sides[key];
-    const parent = e.parts[0].obj.parent;
+    const parent = e.parent;
     parent.updateWorldMatrix(true, false);
     const parentQInv = parent.getWorldQuaternion(_q1).invert();
+    const parentQ = parent.getWorldQuaternion(_q2);
     const parentPos = _v3.setFromMatrixPosition(parent.matrixWorld);
+    // 静息基准从父骨局部系重投影到当前世界系（跟随头部移动与俯仰）
+    const eyePos = _v0.copy(e.ballCLocal).applyMatrix4(parent.matrixWorld);
+    const nRest = _v5.copy(e.nRestLocal).transformDirection(parent.matrixWorld);
     // 视线方向 → 旋转增量（绕眼球中心）
-    const eyePos = _v0.copy(e.ballC);
     const dir = _v1.copy(lookAtTarget.position).sub(eyePos).normalize();
     // 限位：人眼可达 ~±15°，超出即穿帮（翻白眼/露底）
-    if (e.nRest.angleTo(dir) > 0.26) {
-      const axis = _v4.copy(e.nRest).cross(dir).normalize();
+    if (nRest.angleTo(dir) > 0.26) {
+      const axis = _v4.copy(nRest).cross(dir).normalize();
       if (axis.lengthSq() < 1e-6) axis.set(0, 1, 0);
-      dir.copy(e.nRest).applyAxisAngle(axis, 0.26);
+      dir.copy(nRest).applyAxisAngle(axis, 0.26);
     }
-    const qDelta = _q0.setFromUnitVectors(e.nRest, dir);
-    const recess = _v2.copy(e.nRest).multiplyScalar(-blinkVal * 0.005);
+    const qDelta = _q0.setFromUnitVectors(nRest, dir);
+    const recess = nRest.clone().multiplyScalar(-blinkVal * 0.005);
     for (const part of e.parts) {
+      const restWorld = part.restPosLocal.clone().applyMatrix4(parent.matrixWorld);
       // world = ballC + qΔ*(rest-ballC) + recess
-      const worldPos = part.restPos.clone().sub(e.ballC).applyQuaternion(qDelta).add(e.ballC).add(recess);
+      const worldPos = restWorld.sub(eyePos).applyQuaternion(qDelta).add(eyePos).add(recess);
       part.obj.position.copy(worldPos.sub(parentPos).applyQuaternion(parentQInv));
-      part.obj.quaternion.copy(parentQInv).multiply(qDelta).multiply(part.restQuat);
+      const restQuatWorld = _q3.copy(parentQ).multiply(part.restQuatLocal);
+      part.obj.quaternion.copy(parentQInv).multiply(qDelta).multiply(restQuatWorld);
       const sc = Math.max(0.12, 1 - blinkVal * 0.88);
       part.obj.scale.copy(part.restScale).multiplyScalar(sc);
     }
