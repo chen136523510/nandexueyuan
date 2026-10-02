@@ -1,4 +1,5 @@
-# v7 贴片眼优化 v4：v2（虹膜重染+眉毛前浮）+ 眉毛贴图 alpha 逐列上方雾状裁剪（修复仰视白块穿模）
+# v7 贴片眼优化 v5：v4（虹膜重染+眉毛前浮+alpha 逐列裁剪）+ 表情眉毛上移补偿（Fcl_ALL_Angry/Sorrow
+# 眉毛顶点 deltaZ +16mm——sad/angry 下眉毛被下压 13.4/13.6mm 沉入眼睑被覆盖=中段"截断"，院长裁决上移）
 # 白块根因（2026-10-02 黑机实验定位）：眉毛贴图 alpha 从笔画向外长尾渐变（alpha 0.01~0.5 的
 # 像素是不透明像素的近 3 倍），three-vrm 下眉毛材质为 BLEND 模式（transparent/alphaTest=0/
 # depthWrite=false），低 alpha 棕色像素全部参与渲染；眉毛贴片前浮 1.5mm 后这些像素叠进刘海
@@ -106,6 +107,20 @@ for img in brow_imgs.values():
                 n.image = new_img
                 swapped_nodes += 1
     print(f"brow alpha col-cut: {img.name} {w}x{h} cols_cut={cols_cut}/{w} cut_px={cut_px} nodes:{swapped_nodes}")
+
+# 表情眉毛上移补偿 v5（院长裁决"低落/生气时眉毛往上移一点距离"）：Fcl_ALL_Angry/Sorrow
+# 下眉毛顶点被下压 13.4/13.6mm（最深 -18.9mm），沉入上眼睑被覆盖=眉毛中段"截断"观感
+# （眼皮穿模覆盖，前浮 1.5mm 与 alpha 裁剪均治不了——几何穿插）。补偿：两键的眉毛顶点
+# deltaZ 统一 +16mm——中段净上移 ~2.6mm 浮出眼睑，眉毛倾斜形变（倒八字/八字=情绪感）保留。
+# 注意：VRM 表情 bind 只指 Fcl_ALL_*（Fcl_BRW_* 未被引用），必须改 ALL 键；BRW 键同步改
+# 防未来引用时行为不一致。glTF morphIndex = key_blocks index - 1（Basis 占 0）。
+BROW_LIFT = 0.016
+sk = me.shape_keys.key_blocks
+for kb_name in ('Fcl_ALL_Angry', 'Fcl_ALL_Sorrow', 'Fcl_BRW_Angry', 'Fcl_BRW_Sorrow'):
+    key = sk[kb_name]
+    for vi in brow_verts:
+        key.data[vi].co.z += BROW_LIFT
+print(f"brow lift applied: +{BROW_LIFT*1000:.0f}mm x {len(brow_verts)}verts x 4keys")
 
 r = bpy.ops.export_scene.vrm(filepath=VRM_OUT)
 print("export:", r)
