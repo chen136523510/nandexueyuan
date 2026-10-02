@@ -235,8 +235,8 @@ renderer.setAnimationLoop(() => {
       }
     }
 
-    // 验收 2：呼吸（胸口微起伏，4s 周期）
-    const breath = Math.sin(clock.elapsedTime * (Math.PI * 2 / 4)) * 0.008;
+    // 验收 2：呼吸（胸口微起伏，4s 周期；?breath=0 禁用——眨眼穿模归因调试钩子）
+    const breath = params.get('breath') === '0' ? 0 : Math.sin(clock.elapsedTime * (Math.PI * 2 / 4)) * 0.008;
     const chest = vrm.humanoid.getNormalizedBoneNode('chest');
     if (chest) chest.rotation.x = breath;
 
