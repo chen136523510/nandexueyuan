@@ -166,41 +166,33 @@ for side, d in (("L", data_L), ("R", data_R)):
     T, B = d["T"], d["B"]
     r_iris = (d["w"] + d["h"]) / 4.0
     # 扁椭球巩膜：横向 19.8mm、纵深 10mm，球心后移 7mm → 前极凸出 3mm、平面处可见弦半径 ~14mm
-    a_lat = 0.017                   # 34mm 横向：盖满眼孔且边缘沉入面平面
-    c_dep = 0.005                   # 纵深 5mm，前极凸出仅 1mm（侧面不穿脸）
-    d_center = 0.004                # 球心后移 4mm
-    ball_c = c - N * d_center
+    ball_c = c - N * 0.0008         # v1.3 旋转锚点≈眼孔平面中心
 
     # 暗部衬底（封住孔边缘的缝隙，读作眼窝阴影）
     hole_r = max(d["w"], d["h"]) * 0.52
     back = add_disc(f"EyeSocketBack_{side}", hole_r, mat_back, c, N, -0.003, sx=1.38, sy=1.02)
     parent_to_head(back)
 
-    # 扁椭球巩膜（局部 Z 轴对齐 N，再压扁纵深）
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, radius=a_lat,
-                                         location=ball_c, rotation=align_quat(N).to_euler())
-    ball = bpy.context.active_object
-    ball.name = f"Eyeball_{side}"
-    ball.data.materials.append(mat_sclera)
-    ball.scale = (1.0, 1.0, c_dep / a_lat)
-    bpy.ops.object.shade_smooth()
+    # 巩膜基盘 v1.3：平面白盘填充眼孔（球体方案两面不讨好：大则穿脸、小则黑窝）
+    r_sclera = max(d["w"], d["h"]) * 0.5 * 0.95
+    ball = add_disc(f"Eyeball_{side}", r_sclera, mat_sclera, c, N, -0.0008, sx=1.15, sy=0.95)
     parent_to_head(ball)
 
     # 虹膜/瞳孔/高光：浮在椭球前极上方（未来由 pivot 旋转实现 lookAt）
     r_iris_v = r_iris * 0.82
-    iris_off = (c_dep - d_center) + 0.0005
+    iris_off = 0.0008
     iris = add_disc(f"Iris_{side}", r_iris_v, mat_iris, c, N, iris_off)
     r_pup = r_iris_v * 0.40
-    pup = add_disc(f"Pupil_{side}", r_pup, mat_pupil, c, N, iris_off + 0.0012)
+    pup = add_disc(f"Pupil_{side}", r_pup, mat_pupil, c, N, iris_off + 0.0008)
     hl_c = c + Vector((left_sign, 0, 0)) * r_iris_v * 0.45 + B * r_iris_v * 0.42
-    hl = add_disc(f"Highlight_{side}", r_iris_v * 0.22, mat_hl, hl_c, N, iris_off + 0.0025)
+    hl = add_disc(f"Highlight_{side}", r_iris_v * 0.22, mat_hl, hl_c, N, iris_off + 0.0015)
 
     # 扁平结构（VRM 导出器会把嵌套在骨骼父级空物体下的子物体双重烘焙，故全部直挂 head 骨，
     # 枢轴数学由 three.js 运行时绕 ball_c 计算）：
     for part in (ball, iris, pup, hl):
         parent_to_head(part)
 
-    P(f"{side}: r_iris={r_iris:.4f} a_lat={a_lat:.4f} c_dep={c_dep:.4f} ball_c={tuple(round(v,4) for v in ball_c)} iris_off={iris_off:.4f}")
+    P(f"{side}: r_iris={r_iris:.4f} r_sclera={r_sclera:.4f} ball_c={tuple(round(v,4) for v in ball_c)} iris_off={iris_off:.4f}")
 
 # ---------- 6. 保存 .blend（打包贴图） ----------
 for img in bpy.data.images:

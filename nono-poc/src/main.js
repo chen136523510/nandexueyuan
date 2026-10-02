@@ -158,6 +158,7 @@ const _v0 = new THREE.Vector3();
 const _v1 = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _v3 = new THREE.Vector3();
+const _v4 = new THREE.Vector3();
 const _q0 = new THREE.Quaternion();
 const _q1 = new THREE.Quaternion();
 
@@ -194,6 +195,12 @@ function driveEyes(rig, blinkVal) {
     // 视线方向 → 旋转增量（绕眼球中心）
     const eyePos = _v0.copy(e.ballC);
     const dir = _v1.copy(lookAtTarget.position).sub(eyePos).normalize();
+    // 限位：人眼可达 ~±15°，超出即穿帮（翻白眼/露底）
+    if (e.nRest.angleTo(dir) > 0.26) {
+      const axis = _v4.copy(e.nRest).cross(dir).normalize();
+      if (axis.lengthSq() < 1e-6) axis.set(0, 1, 0);
+      dir.copy(e.nRest).applyAxisAngle(axis, 0.26);
+    }
     const qDelta = _q0.setFromUnitVectors(e.nRest, dir);
     const recess = _v2.copy(e.nRest).multiplyScalar(-blinkVal * 0.005);
     for (const part of e.parts) {
@@ -216,7 +223,7 @@ renderer.setAnimationLoop(() => {
     // 验收 3：视线跟随鼠标（移动目标点，lookAt 自动追踪）
     const px = (pointer.x + 1) / 2;
     const py = (pointer.y + 1) / 2; // 鼠标屏幕顶=1 → 目标 y 高=抬头（修复上下反转）
-    lookAtTarget.position.set(px * 1.2 - 0.6, 1.25 + py * 0.5, 0.8);
+    lookAtTarget.position.set(px * 0.9 - 0.45, 1.45 + py * 0.35, 0.8); // 默认平视：目标基线=眼高 1.45（原 1.25 会让眼球永远朝下=翻白眼根因）
 
     // 验收 4：表情权重（瞬时切换，无过渡——PoC 只验证通路）
     const em = vrm.expressionManager;
