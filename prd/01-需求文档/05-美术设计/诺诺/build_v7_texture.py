@@ -1,9 +1,10 @@
-# v7 贴片眼优化 v3：v2（虹膜重染+眉毛前浮）+ 眉毛贴图 alpha 长尾重映射（修复仰视白块穿模）
+# v7 贴片眼优化 v4：v2（虹膜重染+眉毛前浮）+ 眉毛贴图 alpha 逐列上方雾状裁剪（修复仰视白块穿模）
 # 白块根因（2026-10-02 黑机实验定位）：眉毛贴图 alpha 从笔画向外长尾渐变（alpha 0.01~0.5 的
 # 像素是不透明像素的近 3 倍），three-vrm 下眉毛材质为 BLEND 模式（transparent/alphaTest=0/
 # depthWrite=false），低 alpha 棕色像素全部参与渲染；眉毛贴片前浮 1.5mm 后这些像素叠进刘海
 # 区域，仰视+视线向上时半透明棕叠深发=浅色碎片"白块"。与表情无关（v5 无前浮故永不复现）。
-# 修法：资产端 alpha smoothstep(0.25,0.5) 重映射——雾状长尾全裁、笔画主体保留平滑边缘。
+# 修法演进：v3 全局 smoothstep(0.25,0.5) 把眉毛柔边体量一并裁掉→眉毛"断截"（院长复验否决）；
+# v4 改逐列裁剪——只裁每列笔画核心（alpha>0.5）上缘以上的雾状带，笔画本体/柔边/尾梢原样保留。
 import bpy
 import numpy as np
 import os
@@ -65,8 +66,10 @@ for idx in brow_verts:
     v.co += v.normal * 0.0015
 print("brow verts floated:", len(brow_verts))
 
-# 眉毛贴图 alpha 长尾重映射（v3 新增）：资产端裁掉雾状半透明像素，白块根修
-# （运行时 alphaTest 也可截，但资产端修一次全端受益且边缘平滑无锯齿）
+# 眉毛贴图 alpha 处理 v4：逐列上方雾状裁剪（v3 全局 smoothstep 废弃——把眉毛柔边体量一并
+# 裁掉导致眉毛"断截"，2026-10-02 院长复验发现）。白块肇事区=眉毛笔画上方的雾状带（前浮后
+# 叠进刘海）；笔画本体及柔边是眉毛观感必需（BLEND 下低 alpha 体量缺失=断截），原样保留。
+# 逐列：以 alpha>0.5 核心像素上缘为界，上缘+4px 以上置 0；无核心列不裁（保尾梢淡出段）。
 brow_imgs = {}
 for mi in brow_slots:
     for n in me.materials[mi].node_tree.nodes:
@@ -77,10 +80,21 @@ for img in brow_imgs.values():
     arr = np.zeros(w * h * 4, dtype=np.float32)
     img.pixels.foreach_get(arr)
     px = arr.reshape(-1, 4)
-    a = px[:, 3]
-    t0, t1 = 0.25, 0.5
-    t = np.clip((a - t0) / (t1 - t0), 0.0, 1.0)
-    px[:, 3] = t * t * (3 - 2 * t)  # smoothstep：a<0.25 全透明，a>0.5 全保留，中间平滑
+    a = px[:, 3].reshape(h, w)  # 行 0=图像底部（Blender 像素自下而上），行大=图像上方
+    out = a.copy()
+    margin = 4
+    cols_cut = 0
+    for x in range(w):
+        col = a[:, x]
+        core = np.where(col > 0.5)[0]
+        if len(core) == 0:
+            continue  # 无核心笔画的列不裁（眉毛尾梢淡出段/空白雾状列原样保留）
+        top = core.max()
+        if top + margin < h - 1:
+            out[int(top) + margin:, x] = 0.0  # 笔画上缘以上（额头/刘海方向）雾状全裁
+            cols_cut += 1
+    px[:, 3] = out.reshape(-1)
+    cut_px = int((px[:, 3] < a.reshape(-1)).sum())
     new_img = bpy.data.images.new("brow_alpha_v7_" + img.name, width=w, height=h, alpha=True)
     new_img.pixels.foreach_set(px.reshape(-1))
     new_img.update()
@@ -91,7 +105,7 @@ for img in brow_imgs.values():
             if n.type == "TEX_IMAGE" and n.image == img:
                 n.image = new_img
                 swapped_nodes += 1
-    print(f"brow alpha remapped: {img.name} {w}x{h} cut(<{t0}): {int((a < t0).sum())}px nodes:{swapped_nodes}")
+    print(f"brow alpha col-cut: {img.name} {w}x{h} cols_cut={cols_cut}/{w} cut_px={cut_px} nodes:{swapped_nodes}")
 
 r = bpy.ops.export_scene.vrm(filepath=VRM_OUT)
 print("export:", r)
