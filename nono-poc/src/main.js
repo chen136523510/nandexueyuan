@@ -13,7 +13,7 @@ import vrm7Url from '../../prd/01-需求文档/05-美术设计/诺诺/nonono_v7_
 import vrm6Url from '../../prd/01-需求文档/05-美术设计/诺诺/nonono_v6_eyeball_v1.vrm?url';
 
 const params = new URLSearchParams(location.search);
-const MODEL = { v5: { url: vrm5Url, label: 'v5·原生对照' }, v6: { url: vrm6Url, label: 'v6·3D眼球' }, v7: { url: vrm7Url + '?v=3', label: 'v7·贴片眼优化' } }[params.get('model') ?? 'v7']; // 导出同名 v7 文件时递增 ?v= 参数击穿浏览器缓存
+const MODEL = { v5: { url: vrm5Url, label: 'v5·原生对照' }, v6: { url: vrm6Url, label: 'v6·3D眼球' }, v7: { url: vrm7Url + '?v=4', label: 'v7·贴片眼优化' } }[params.get('model') ?? 'v7']; // 导出同名 v7 文件时递增 ?v= 参数击穿浏览器缓存
 
 const statusEl = document.getElementById('status');
 

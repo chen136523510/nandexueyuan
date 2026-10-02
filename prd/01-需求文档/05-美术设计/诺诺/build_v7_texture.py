@@ -52,6 +52,14 @@ for n in iris_nodes:
 print("swapped:", swapped, "| new image mean RGB (non-white):",
       [round(float(v), 3) for v in px[:, :3][(sat > 0.3)].mean(axis=0)])
 
+# 眉毛前浮 1.5mm：修复 sad/angry 表情眉毛沉入脸内（v5 原生缺陷：眉毛条贴脸过近+捏模眉高-0.1 加剧）
+brow_slots = [i for i, m in enumerate(me.materials) if m and m.name.startswith("N00_000_00_FaceBrow")]
+brow_verts = {vi for p in me.polygons if p.material_index in brow_slots for vi in p.vertices}
+for idx in brow_verts:
+    v = me.vertices[idx]
+    v.co += v.normal * 0.0015
+print("brow verts floated:", len(brow_verts))
+
 r = bpy.ops.export_scene.vrm(filepath=VRM_OUT)
 print("export:", r)
 print("exists:", os.path.exists(VRM_OUT), os.path.getsize(VRM_OUT) // 1024, "KB" if os.path.exists(VRM_OUT) else "")
