@@ -194,6 +194,65 @@ for side, d in (("L", data_L), ("R", data_R)):
 
     P(f"{side}: r_iris={r_iris:.4f} r_sclera={r_sclera:.4f} ball_c={tuple(round(v,4) for v in ball_c)} iris_off={iris_off:.4f}")
 
+# ---------- 5.6 脸部位移式立体化 v1（眼窝凹陷+眼睑重贴合；只动现有顶点，58 形状键全保留） ----------
+P('=== 5.6 face displacement refine ===')
+to_local = MW.inverted().to_3x3()
+for side, d in (('L', data_L), ('R', data_R)):
+    c_w, N_w, B_w = d['center'], d['normal'], d['B']
+    rim_u, rim_l, socket_pts = [], [], []
+    bmesh_ = bmesh.new()
+    bmesh_.from_mesh(me)
+    bmesh_.verts.ensure_lookup_table()
+    for v in bmesh_.verts:
+        w = MW @ v.co
+        r = (w - c_w).length
+        if r >= 0.024:
+            continue
+        if any(e.is_boundary for e in v.link_edges):
+            h = (w - c_w).dot(B_w)
+            (rim_u if h > 0.001 else rim_l).append((v.index, w))
+        else:
+            socket_pts.append((v.index, r))
+    bmesh_.free()
+    P(f'{side}: rim_upper={len(rim_u)} rim_lower={len(rim_l)} socket={len(socket_pts)}')
+    # 上睑缘：前包 0.8mm + 下移 0.8mm（闭眼从眼球前方滑过，立体感+防刮）
+    d_lid = to_local @ (N_w * 0.0008 - B_w * 0.0008)
+    for idx, w in rim_u:
+        me.vertices[idx].co += d_lid
+    # 眼窝凹陷：非边界顶点向 -N 平方衰减后压 2.2mm（睑缘不动，避免撕裂）
+    R_OUT = 0.022
+    d_sock = to_local @ (-N_w * 0.0022)
+    for idx, r in socket_pts:
+        t = max(0.0, 1.0 - (r / R_OUT) ** 2)
+        if t > 0:
+            me.vertices[idx].co += d_sock * t
+
+# ---------- 5.7 闭眼系形状键眼睑面整体前移 1.2mm（重贴合核心：闭合面永远从基盘前方滑过） ----------
+P('=== 5.7 close-key lid surface forward ===')
+CLOSE_KEYS = ('Fcl_EYE_Close', 'Fcl_EYE_Close_L', 'Fcl_EYE_Close_R',
+              'Fcl_EYE_Joy', 'Fcl_EYE_Joy_L', 'Fcl_EYE_Joy_R', 'Fcl_EYE_Fun')
+for side, d in (('L', data_L), ('R', data_R)):
+    c_w, N_w, B_w = d['center'], d['normal'], d['B']
+    d_fwd = to_local @ (N_w * 0.0012)
+    lid_set = set()
+    for v in me.vertices:
+        w = MW @ v.co
+        r = (w - c_w).length
+        h = (w - c_w).dot(B_w)
+        if r < 0.021 and 0.0003 < h < 0.012:
+            lid_set.add(v.index)
+    for kn in CLOSE_KEYS:
+        sk = me.shape_keys.key_blocks.get(kn)
+        if not sk:
+            continue
+        n = 0
+        for idx in lid_set:
+            delta = sk.data[idx].co - me.vertices[idx].co
+            if delta.length > 0.0005:
+                sk.data[idx].co += d_fwd
+                n += 1
+        P(f'{side} {kn}: shifted {n}')
+
 # ---------- 6. 保存 .blend（打包贴图） ----------
 for img in bpy.data.images:
     try:
