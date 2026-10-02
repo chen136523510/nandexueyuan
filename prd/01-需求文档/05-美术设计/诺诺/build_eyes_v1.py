@@ -166,9 +166,9 @@ for side, d in (("L", data_L), ("R", data_R)):
     T, B = d["T"], d["B"]
     r_iris = (d["w"] + d["h"]) / 4.0
     # 扁椭球巩膜：横向 19.8mm、纵深 10mm，球心后移 7mm → 前极凸出 3mm、平面处可见弦半径 ~14mm
-    a_lat = r_iris * 1.35
-    c_dep = a_lat * 0.505
-    d_center = 0.007
+    a_lat = 0.017                   # 34mm 横向：盖满眼孔且边缘沉入面平面
+    c_dep = 0.005                   # 纵深 5mm，前极凸出仅 1mm（侧面不穿脸）
+    d_center = 0.004                # 球心后移 4mm
     ball_c = c - N * d_center
 
     # 暗部衬底（封住孔边缘的缝隙，读作眼窝阴影）
