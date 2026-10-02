@@ -1,4 +1,9 @@
-# v7 贴片眼优化 v2：虹膜重染像素写入全新图像数据块并换绑节点（绕开"已打包图改像素不生效"问题）
+# v7 贴片眼优化 v3：v2（虹膜重染+眉毛前浮）+ 眉毛贴图 alpha 长尾重映射（修复仰视白块穿模）
+# 白块根因（2026-10-02 黑机实验定位）：眉毛贴图 alpha 从笔画向外长尾渐变（alpha 0.01~0.5 的
+# 像素是不透明像素的近 3 倍），three-vrm 下眉毛材质为 BLEND 模式（transparent/alphaTest=0/
+# depthWrite=false），低 alpha 棕色像素全部参与渲染；眉毛贴片前浮 1.5mm 后这些像素叠进刘海
+# 区域，仰视+视线向上时半透明棕叠深发=浅色碎片"白块"。与表情无关（v5 无前浮故永不复现）。
+# 修法：资产端 alpha smoothstep(0.25,0.5) 重映射——雾状长尾全裁、笔画主体保留平滑边缘。
 import bpy
 import numpy as np
 import os
@@ -59,6 +64,34 @@ for idx in brow_verts:
     v = me.vertices[idx]
     v.co += v.normal * 0.0015
 print("brow verts floated:", len(brow_verts))
+
+# 眉毛贴图 alpha 长尾重映射（v3 新增）：资产端裁掉雾状半透明像素，白块根修
+# （运行时 alphaTest 也可截，但资产端修一次全端受益且边缘平滑无锯齿）
+brow_imgs = {}
+for mi in brow_slots:
+    for n in me.materials[mi].node_tree.nodes:
+        if n.type == "TEX_IMAGE" and n.image and n.image.size[0] > 64:  # 跳过 8x8 工具图
+            brow_imgs[n.image.name] = n.image
+for img in brow_imgs.values():
+    w, h = img.size
+    arr = np.zeros(w * h * 4, dtype=np.float32)
+    img.pixels.foreach_get(arr)
+    px = arr.reshape(-1, 4)
+    a = px[:, 3]
+    t0, t1 = 0.25, 0.5
+    t = np.clip((a - t0) / (t1 - t0), 0.0, 1.0)
+    px[:, 3] = t * t * (3 - 2 * t)  # smoothstep：a<0.25 全透明，a>0.5 全保留，中间平滑
+    new_img = bpy.data.images.new("brow_alpha_v7_" + img.name, width=w, height=h, alpha=True)
+    new_img.pixels.foreach_set(px.reshape(-1))
+    new_img.update()
+    new_img.pack()
+    swapped_nodes = 0
+    for mi in brow_slots:
+        for n in me.materials[mi].node_tree.nodes:
+            if n.type == "TEX_IMAGE" and n.image == img:
+                n.image = new_img
+                swapped_nodes += 1
+    print(f"brow alpha remapped: {img.name} {w}x{h} cut(<{t0}): {int((a < t0).sum())}px nodes:{swapped_nodes}")
 
 r = bpy.ops.export_scene.vrm(filepath=VRM_OUT)
 print("export:", r)
