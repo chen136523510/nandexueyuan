@@ -174,8 +174,8 @@ for side, d in (("L", data_L), ("R", data_R)):
     parent_to_head(back)
 
     # 巩膜基盘 v1.3：平面白盘填充眼孔（球体方案两面不讨好：大则穿脸、小则黑窝）
-    r_sclera = max(d["w"], d["h"]) * 0.5 * 0.95
-    ball = add_disc(f"Eyeball_{side}", r_sclera, mat_sclera, c, N, -0.0008, sx=1.15, sy=0.95)
+    r_sclera = max(d["w"], d["h"]) * 0.5   # 基盘=眼孔尺寸：不塞入眼睑皮下（眨眼穿模根因）
+    ball = add_disc(f"Eyeball_{side}", r_sclera, mat_sclera, c, N, -0.0012, sx=1.0, sy=0.85)
     parent_to_head(ball)
 
     # 虹膜/瞳孔/高光：浮在椭球前极上方（未来由 pivot 旋转实现 lookAt）

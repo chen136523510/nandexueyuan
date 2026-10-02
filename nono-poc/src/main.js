@@ -175,6 +175,7 @@ function setupEyeRig(v) {
         obj: o,
         restPos: o.getWorldPosition(new THREE.Vector3()),
         restQuat: o.getWorldQuaternion(new THREE.Quaternion()),
+        restScale: o.scale.clone(),
       });
     }
     const iris = parts.find((x) => x.obj.name.startsWith('Iris'));
@@ -208,6 +209,8 @@ function driveEyes(rig, blinkVal) {
       const worldPos = part.restPos.clone().sub(e.ballC).applyQuaternion(qDelta).add(e.ballC).add(recess);
       part.obj.position.copy(worldPos.sub(parentPos).applyQuaternion(parentQInv));
       part.obj.quaternion.copy(parentQInv).multiply(qDelta).multiply(part.restQuat);
+      const sc = Math.max(0.12, 1 - blinkVal * 0.88);
+      part.obj.scale.copy(part.restScale).multiplyScalar(sc);
     }
   }
 }
@@ -241,6 +244,7 @@ renderer.setAnimationLoop(() => {
     // 验收 2：眨眼（每 ~3.6s 一次，三角波快闭快开 ~0.24s；?blink=1 强制闭眼调试）
     const t = clock.elapsedTime % 3.6;
     let blink = t < 0.24 ? (t < 0.12 ? t / 0.12 : Math.max(0, 1 - (t - 0.12) / 0.12)) : 0;
+    if (currentExpr === 'happy' || currentExpr === 'relaxed') blink = 0; // 闭眼系表情不叠眨眼（院长验收反馈）
     if (params.get('blink') === '1') blink = 1.0;
     if (vrm.expressionManager) vrm.expressionManager.setValue('blink', blink);
 
