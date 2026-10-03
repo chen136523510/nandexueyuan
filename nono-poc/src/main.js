@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { loadMixamoAnimation } from './mixamoAnimation.js';
 import Stats from 'three/addons/libs/stats.module.js';
 // 模型原地引用（不复制进 PoC）：Vite assetsInclude+?url 生成 /@fs/ 资源地址
 // ?model=v5 可对照旧贴片眼版；默认 v6（3D 眼球总成）
@@ -135,6 +136,10 @@ loader.load(
 
     statusEl.textContent = `✅ 诺诺上屏（${MODEL.label}${eyeRig ? ' · EyePivot接管' : ''}）`;
     console.log('[nono-poc] VRM loaded:', vrm.meta?.meta?.name ?? '(unnamed)');
+
+    // 动作管线 PoC（Step 2，方案：07-自习室/诺诺动作管线PoC方案.md）——放在上屏状态之后，
+    // 否则自动播放的"动作播放中"状态会被上屏文案覆盖
+    setupAnimations();
   },
   (progress) => {
     if (progress.total > 0) {
@@ -272,8 +277,8 @@ renderer.setAnimationLoop(() => {
       }
     }
 
-    // 验收 2：呼吸（胸口微起伏，4s 周期；?breath=0 禁用——眨眼穿模归因调试钩子）
-    const breath = params.get('breath') === '0' ? 0 : Math.sin(clock.elapsedTime * (Math.PI * 2 / 4)) * 0.008;
+    // 验收 2：呼吸（胸口微起伏，4s 周期；?breath=0 禁用；动作播放中强制 0=呼吸让位，方案验收 5）
+    const breath = animPlaying || params.get('breath') === '0' ? 0 : Math.sin(clock.elapsedTime * (Math.PI * 2 / 4)) * 0.008;
     const chest = vrm.humanoid.getNormalizedBoneNode('chest');
     if (chest) chest.rotation.x = breath;
 
@@ -284,6 +289,8 @@ renderer.setAnimationLoop(() => {
     if (params.get('blink') === '1') blink = 1.0;
     if (vrm.expressionManager) vrm.expressionManager.setValue('blink', blink);
 
+    // 动作 mixer 先于 vrm.update：骨骼动画 → vrm.update 传播到原始骨+SpringBone/lookAt 模拟
+    if (animMixer && animPlaying) animMixer.update(delta);
     vrm.update(delta);
     driveEyes(eyeRig, blink);
   }
@@ -304,9 +311,102 @@ window.addEventListener('pointermove', (e) => {
 document.querySelectorAll('#hud button[data-model]').forEach((btn) => {
   btn.classList.toggle('on', (params.get('model') ?? 'v6') === btn.dataset.model);
   btn.addEventListener('click', () => {
-    location.search = `?model=${btn.dataset.model}`;
+    const sp = new URLSearchParams(location.search);
+    sp.set('model', btn.dataset.model); // 保留 anim/breath/blink 等其余参数
+    location.search = '?' + sp.toString();
   });
 });
+
+// ---------- 动作管线 PoC（Step 2，方案：07-自习室/诺诺动作管线PoC方案.md） ----------
+// ?anim=builtin    内置"点头"测试 clip（不依赖 Mixamo 资产，验证 mixer 生命周期/呼吸让位/表情共存）
+// ?anim=<url,...>  逗号分隔 Mixamo FBX 地址（运行时重定向），文件放 nono-poc/public/anims/（不入库）
+// ?anim=stop       只显示"停动作"按钮，不加载任何动作；不带参数=旧行为不变
+const animParam = params.get('anim');
+let animMixer = null;
+let animPlaying = false;
+
+function stopAnimation() {
+  if (animMixer) animMixer.stopAllAction();
+  animPlaying = false;
+  if (vrm) {
+    vrm.humanoid.resetNormalizedPose?.(); // 复位归一化静息（mixer 停后骨骼停在最后帧）
+    const l = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+    const r = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+    if (l) l.rotation.set(0, 0, -0.75); // 恢复直播间静息臂姿（收拢下垂）
+    if (r) r.rotation.set(0, 0, 0.75);
+  }
+  document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === 'none'));
+  statusEl.textContent = '⏹ 动作停止，呼吸恢复';
+}
+
+function playClip(name, clip) {
+  if (!animMixer) animMixer = new THREE.AnimationMixer(vrm.scene);
+  animMixer.stopAllAction(); // 切换防残姿：先停旧轨再播新轨
+  animMixer.clipAction(clip).reset().play();
+  animPlaying = true;
+  document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === name));
+  statusEl.textContent = `✅ 动作播放中：${name}`;
+}
+
+// 内置"点头"测试 clip：只动 head（视觉明确、不碰手臂静息），验证管线通路
+function buildBuiltinNodClip() {
+  const bone = vrm.humanoid.getNormalizedBoneNode('head');
+  const times = [0, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2];
+  const angles = [0, 0.22, 0.02, 0.22, 0.02, 0.22, 0.02, 0, 0]; // 低头回正×3（+x=低头）
+  const rest = bone.quaternion.clone();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const values = [];
+  for (const a of angles) {
+    e.set(a, 0, 0);
+    q.setFromEuler(e).premultiply(rest);
+    values.push(q.x, q.y, q.z, q.w);
+  }
+  return new THREE.AnimationClip('builtin_nod', 3.2,
+    [new THREE.QuaternionKeyframeTrack(bone.name + '.quaternion', times, values)]);
+}
+
+function setupAnimations() {
+  const hud = document.getElementById('animHud');
+  const clipCache = new Map(); // name -> AnimationClip
+  let played = false;
+  const tryPlay = (name, clip) => {
+    clipCache.set(name, clip);
+    if (played) return;
+    played = true;
+    playClip(name, clip);
+  };
+  const addBtn = (name, label) => {
+    const b = document.createElement('button');
+    b.dataset.anim = name;
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      if (name === 'none') { stopAnimation(); return; }
+      const clip = clipCache.get(name);
+      if (clip) playClip(name, clip);
+    });
+    hud.appendChild(b);
+  };
+  addBtn('none', '停动作');
+  if (!animParam || animParam === 'stop') return;
+
+  animParam.split(',').forEach((item) => {
+    if (item === 'builtin') {
+      addBtn('builtin', '点头·内置');
+      tryPlay('builtin', buildBuiltinNodClip());
+    } else {
+      const url = item;
+      const label = decodeURIComponent((url.split('/').pop() || 'FBX').replace(/\.(fbx|glb)$/i, ''));
+      addBtn(url, label);
+      loadMixamoAnimation(url, vrm)
+        .then((clip) => tryPlay(url, clip))
+        .catch((err) => {
+          console.error('[anim]', err);
+          statusEl.textContent = '❌ 动作加载失败（看控制台）';
+        });
+    }
+  });
+}
 
 // ---------- 调试钩子（Playwright/控制台验收用） ----------
 window.__poc = {

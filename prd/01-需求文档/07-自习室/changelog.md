@@ -5,6 +5,12 @@
 
 ---
 
+## 2026-10-04（黑机·动作管线 PoC Step 2 代码预埋完成，builtin 盲测全过）
+
+- [新增] **动作管线 Step 2 落地**（院长"可以，先写吧"授权）：`nono-poc/src/mixamoAnimation.js`（官方 loadMixamoAnimation+mixamoVRMRigMap 移植，GitHub 断网下走 API/raw 绕行抓取）；main.js `?anim=` 参数（builtin=内置点头测试 clip/逗号分隔 FBX 列表/stop，不带参数=旧行为不变）+ AnimationMixer 生命周期（切换 stopAllAction 防残姿、停止 resetNormalizedPose+恢复静息臂姿、播放中呼吸强制 0）+ HUD 动作按钮组；index.html 增动作行；模型切换按钮改为保留全部 URL 参数
+- [验证] **盲测全过**（builtin 路径）：动作播放/呼吸让位（chest 恒 0）/表情共存（angry=1 动画不断）/眨眼共存（实测 max 0.67）/停止恢复/旧参数回归；骨架健康与 SpringBone 两项待真实 Mixamo FBX（Step 1 院长下载）后验收
+- [登记] BUG-087：遮挡节流下 rAF≈1fps，低占空比状态（眨眼 0.24s/3.6s）短窗采样假阴性——"循环死了"与"循环被节流"先测 rAF 频率再下结论；采样方法学（monkey-patch 捕获实参/长窗/确定性触发）入档
+
 ## 2026-10-03（黑机·Krita 轮备料 + 动作管线预研 + 动作库规划草案）
 
 - [新增] **Krita 手绘轮备料完成**：`extract_vrm_textures.mjs` 贴图字节级提取（v5/v7 各 24 张入 `诺诺/krita_round/src_*`）；`build_v7_texture.py` 手绘稿换入钩子（handpaint_*.png 存在即换入并跳过程序化步骤，双路径 Blender 回归通过）；`locate_tear_mole.py` 泪痣 UV 定位（角色左眼下 13mm，标注图入 krita_round）；指导单草案 v1 落档（⚖️ 虹膜明度/高光/泪痣变体/分工模式待裁决）
