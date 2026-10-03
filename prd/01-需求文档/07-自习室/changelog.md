@@ -5,6 +5,12 @@
 
 ---
 
+## 2026-10-03（黑机·Krita 轮备料 + 动作管线预研 + 动作库规划草案）
+
+- [新增] **Krita 手绘轮备料完成**：`extract_vrm_textures.mjs` 贴图字节级提取（v5/v7 各 24 张入 `诺诺/krita_round/src_*`）；`build_v7_texture.py` 手绘稿换入钩子（handpaint_*.png 存在即换入并跳过程序化步骤，双路径 Blender 回归通过）；`locate_tear_mole.py` 泪痣 UV 定位（角色左眼下 13mm，标注图入 krita_round）；指导单草案 v1 落档（⚖️ 虹膜明度/高光/泪痣变体/分工模式待裁决）
+- [调研] [Mixamo到VRM动作管线调研](../00-调研/01-技术/Mixamo到VRM动作管线调研.md)：三路线对比——A=Blender 重定向→.vrma 外挂（动作库正解，three-vrm-animation 3.5.5+VRM Add-on 官方支持已确认）/B=内嵌 VRM（否决，资产化灾难）/C=浏览器运行时直载 Mixamo（PoC 快速通道，官方 loadMixamoAnimation 示例有腿部 90° 已知坑）；建议 PoC 走 C 打通、动作库走 A 沉淀
+- [新增] [诺诺动作库规划](诺诺动作库规划.md)草案 v1：P0 验收集（wave/nod/headshake/think）+P1 情绪集（shy/surprised/clap/doze）+P2 场景集；nonoAgent 工具调用 schema 草案（动作=LLM 工具，表情/动作双通道可叠加）；⚖️ P0 选取/wave 收敛幅度/doze 归级/命名双层待裁决
+
 ## 2026-10-03（黑机·BUG-086 表情眉毛被刘海吞没修复 + 眉色纯黑定色）
 
 - [修复] **表情眉毛 +16mm 上移后被刘海整体吞没="眉毛直接不见了"**（院长复验 v7 发现）：运行时数值实测——静息眉毛条 y 1.551~1.576、刘海遮挡线 y≈1.555（平视射线采样 14 点中 7 点被 Hair 先挡），BUG-085 的 +16mm 上移把 sad/angry 眉毛推到 y 至 1.591，整个眉毛条没入刘海后方（昨日"angry 近距复验通过"系强仰视角刘海不遮挡=假阴性）。**修法=动漫画法标准解（眉上发，MyGO/GBC 式）**：main.js 运行时眉毛材质 `depthTest=false` + 眉毛子网格 `renderOrder=10`，眉毛最后画、压在刘海/眼睑之上——BUG-085"眼皮覆盖截断"同根根治；+16mm 上移按院长裁决保留。Playwright 特写三态复验：默认/angry/sad 眉毛完整可见纯黑，强仰视+视线向上无 BUG-083 白块回归
