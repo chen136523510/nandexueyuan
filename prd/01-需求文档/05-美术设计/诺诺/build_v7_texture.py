@@ -1,5 +1,7 @@
-# v7 贴片眼优化 v5：v4（虹膜重染+眉毛前浮+alpha 逐列裁剪）+ 表情眉毛上移补偿（Fcl_ALL_Angry/Sorrow
-# 眉毛顶点 deltaZ +16mm——sad/angry 下眉毛被下压 13.4/13.6mm 沉入眼睑被覆盖=中段"截断"，院长裁决上移）
+# v7 贴片眼优化 v6：v5（虹膜重染+眉毛前浮+alpha 逐列裁剪+表情眉上移补偿）+ 眉毛纯黑染色
+# （2026-10-03 院长裁决"眉毛换纯黑"：眉毛贴图 RGB 全置 0，笔画形状/柔边由 alpha 承载）
+# v5 内容：表情眉毛上移补偿（Fcl_ALL_Angry/Sorrow 眉毛顶点 deltaZ +16mm——sad/angry 下眉毛
+# 被下压 13.4/13.6mm 沉入眼睑被覆盖=中段"截断"，院长裁决上移）
 # 白块根因（2026-10-02 黑机实验定位）：眉毛贴图 alpha 从笔画向外长尾渐变（alpha 0.01~0.5 的
 # 像素是不透明像素的近 3 倍），three-vrm 下眉毛材质为 BLEND 模式（transparent/alphaTest=0/
 # depthWrite=false），低 alpha 棕色像素全部参与渲染；眉毛贴片前浮 1.5mm 后这些像素叠进刘海
@@ -95,6 +97,9 @@ for img in brow_imgs.values():
             out[int(top) + margin:, x] = 0.0  # 笔画上缘以上（额头/刘海方向）雾状全裁
             cols_cut += 1
     px[:, 3] = out.reshape(-1)
+    # 纯黑眉色（2026-10-03 院长裁决）：眉毛贴图 RGB 清零，只保留 alpha 形状——
+    # 后续换色只需改这一行目标 RGB（如深蓝黑 (0.10,0.16,0.30)），与虹膜重染同套路
+    px[:, :3] = 0.0
     cut_px = int((px[:, 3] < a.reshape(-1)).sum())
     new_img = bpy.data.images.new("brow_alpha_v7_" + img.name, width=w, height=h, alpha=True)
     new_img.pixels.foreach_set(px.reshape(-1))

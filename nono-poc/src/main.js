@@ -13,7 +13,7 @@ import vrm7Url from '../../prd/01-需求文档/05-美术设计/诺诺/nonono_v7_
 import vrm6Url from '../../prd/01-需求文档/05-美术设计/诺诺/nonono_v6_eyeball_v1.vrm?url';
 
 const params = new URLSearchParams(location.search);
-const MODEL = { v5: { url: vrm5Url, label: 'v5·原生对照' }, v6: { url: vrm6Url, label: 'v6·3D眼球' }, v7: { url: vrm7Url + '?v=7', label: 'v7·贴片眼优化' } }[params.get('model') ?? 'v7']; // 导出同名 v7 文件时递增 ?v= 参数击穿浏览器缓存（v7=表情眉毛上移补偿版）
+const MODEL = { v5: { url: vrm5Url, label: 'v5·原生对照' }, v6: { url: vrm6Url, label: 'v6·3D眼球' }, v7: { url: vrm7Url + '?v=8', label: 'v7·贴片眼优化' } }[params.get('model') ?? 'v7']; // 导出同名 v7 文件时递增 ?v= 参数击穿浏览器缓存（v8=眉毛纯黑染色）
 
 const statusEl = document.getElementById('status');
 
@@ -105,6 +105,19 @@ loader.load(
         }
       }
     }
+    // 眉毛压刘海画法（BUG-086）：眉毛条静息高度本就在刘海后方，表情 +16mm 上移后整个没入
+    // 刘海（平视 7/14 采样点被 Hair 先挡），院长复验"眉毛直接不见了"。动漫画法标准解（MyGO/GBC
+    // 式眉上发）：眉毛最后画且不测深度，盖过刘海/眼睑——BUG-085 的"眼皮覆盖截断"也同根根治。
+    // 白块雾状带已由贴图 alpha 逐列裁剪移除，此处不会复活 BUG-083。
+    vrm.scene.traverse((obj) => {
+      if (obj.isMesh || obj.isSkinnedMesh) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        if (mats.some((m) => m && m.name.startsWith('N00_000_00_FaceBrow'))) {
+          obj.renderOrder = 10;
+          for (const m of mats) m.depthTest = false;
+        }
+      }
+    });
     VRMUtils.removeUnnecessaryVertices(gltf.scene);
     VRMUtils.combineSkeletons(gltf.scene);
 
@@ -304,6 +317,7 @@ window.__poc = {
   scene,
   lookAtTarget,
   THREE,
+  renderer, // 调试用：窗格被遮挡 rAF 节流时可手动 render 取证
 };
 
 // ---------- 自适应 ----------
