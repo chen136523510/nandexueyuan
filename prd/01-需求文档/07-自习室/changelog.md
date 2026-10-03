@@ -10,6 +10,7 @@
 - [新增] **Krita 手绘轮备料完成**：`extract_vrm_textures.mjs` 贴图字节级提取（v5/v7 各 24 张入 `诺诺/krita_round/src_*`）；`build_v7_texture.py` 手绘稿换入钩子（handpaint_*.png 存在即换入并跳过程序化步骤，双路径 Blender 回归通过）；`locate_tear_mole.py` 泪痣 UV 定位（角色左眼下 13mm，标注图入 krita_round）；指导单草案 v1 落档（⚖️ 虹膜明度/高光/泪痣变体/分工模式待裁决）
 - [调研] [Mixamo到VRM动作管线调研](../00-调研/01-技术/Mixamo到VRM动作管线调研.md)：三路线对比——A=Blender 重定向→.vrma 外挂（动作库正解，three-vrm-animation 3.5.5+VRM Add-on 官方支持已确认）/B=内嵌 VRM（否决，资产化灾难）/C=浏览器运行时直载 Mixamo（PoC 快速通道，官方 loadMixamoAnimation 示例有腿部 90° 已知坑）；建议 PoC 走 C 打通、动作库走 A 沉淀
 - [新增] [诺诺动作库规划](诺诺动作库规划.md)草案 v1：P0 验收集（wave/nod/headshake/think）+P1 情绪集（shy/surprised/clap/doze）+P2 场景集；nonoAgent 工具调用 schema 草案（动作=LLM 工具，表情/动作双通道可叠加）；⚖️ P0 选取/wave 收敛幅度/doze 归级/命名双层待裁决
+- [方案] [诺诺动作管线PoC方案](诺诺动作管线PoC方案.md)（院长批准规划后落档）：7 项验收标准（上屏/骨架健康/SpringBone 共存/表情共存/呼吸让位/多动作切换/FPS≥60）；路线定稿=PoC 走 C（运行时直载 Mixamo FBX，零 Blender 中转）+ 定版走 A（.vrma 沉淀）；Step 1~5 实操清单（Mixamo 下载规格四项/代码预埋改动面/已知坑对策表/验收矩阵/资产条款规避——原始 FBX 不入库只入库自产 .vrma）；⚖️ 项不阻塞 PoC
 
 ## 2026-10-03（黑机·BUG-086 表情眉毛被刘海吞没修复 + 眉色纯黑定色）
 
