@@ -67,6 +67,6 @@
 - **BUG-084 已修**（上轮）：v6 眼球静息基准局部化=眼球眼皮刚性一体，院长复验"闭眼穿模初步解决" ✓
 - **本轮前情**：v7 白块两轮修复（BUG-083 v4 逐列裁剪定版）；补录 BUG-081/082
 - **铁律入档**：①运行时挂骨对象静息基准必须存局部参考系（BUG-084，动作库直接受益）②VRM 表情 bind 只指 Fcl_ALL_* 组合键、glTF morphIndex=key_blocks-1（BUG-085）③几何穿插只能几何解决——贴图层/基座位移都绕不开形状键下压
-- **环境实况**：Blender 5.2.2（E:\blender\，注意 5.x API：shape_keys 在 mesh.data 上）+ Krita 5.3.4（E:\Krita (x64)）；nono-poc dev server 运行中（关机即停，cd nono-poc && npm run dev 重启）
+- **环境实况**：Blender 5.2.2（E:\blender\，注意 5.x API：shape_keys 在 mesh.data 上）+ Krita 5.3.4（E:\Krita (x64)）；nono-poc dev server 运行中（关机即停，cd poc/nono-poc && npm run dev 重启）
 - **下一步**：①院长复验 v7（?model=v7，?v=7）angry/sad 眉毛是否浮出眼睑+白块/断截全项 ②复验通过→Krita 手绘轮（虹膜精修+眉色染深蓝黑）③Step 0 动作管线（Mixamo 账号确认仍开放）
 

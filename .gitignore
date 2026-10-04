@@ -188,4 +188,4 @@ server/uploads/chat/
 *.blend1
 
 # 动作管线 PoC：Mixamo 原始 FBX 测试资产（再配布条款待核不入库，入库的只有自产 .vrma）
-nono-poc/public/anims/
+poc/nono-poc/public/anims/

@@ -2,8 +2,10 @@
 # ①FaceBrow 材质三角形顶点的空间分布 ②眉毛贴图 alpha 分布与顶点 UV 采样
 import bpy
 import numpy as np
+import os
 
-VRM_IN = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_v5.vrm"
+_NONO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VRM_IN = os.path.join(_NONO_ROOT, "模型", "nonono_v5.vrm")
 
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)

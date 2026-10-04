@@ -7,8 +7,9 @@ import io
 import math
 from mathutils import Vector, Quaternion
 
-VRM_PATH = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_v5.vrm"
-BLEND_OUT = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_blender_v1.blend"
+_NONO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VRM_PATH = os.path.join(_NONO_ROOT, "模型", "nonono_v5.vrm")
+BLEND_OUT = os.path.join(_NONO_ROOT, "捏模源文件", "nonono_blender_v1.blend")
 RENDER_DIR = os.path.join(os.environ.get("TEMP", "."), "nono_renders")
 REPORT = os.path.join(os.environ.get("TEMP", "."), "nono_build_report.txt")
 

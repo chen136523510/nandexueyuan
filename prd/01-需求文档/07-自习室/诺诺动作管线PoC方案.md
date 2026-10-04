@@ -46,7 +46,7 @@
 
 1. `?anim=` 调试参数：`builtin`=内置"点头"测试 clip（不依赖 Mixamo 资产，先行验证管线）；逗号分隔 FBX 地址列表=逐个加载生成按钮；`stop`=仅显示停动作按钮；不带参数=旧行为完全不变
 2. `FBXLoader` 引入（`three/addons/loaders/FBXLoader.js`，three 自带 fflate 依赖，**零新增 npm 包**）
-3. 官方示例 `loadMixamoAnimation` + `mixamoVRMRigMap` 已移植入库：`nono-poc/src/mixamoAnimation.js`（抓自 pixiv/three-vrm dev 分支 humanoidAnimation 示例，仅加 hips 节点缺失防御；GitHub 网络靠 API+raw 绕过，见调研文档）
+3. 官方示例 `loadMixamoAnimation` + `mixamoVRMRigMap` 已移植入库：`poc/nono-poc/src/mixamoAnimation.js`（抓自 pixiv/three-vrm dev 分支 humanoidAnimation 示例，仅加 hips 节点缺失防御；GitHub 网络靠 API+raw 绕过，见调研文档）
 4. AnimationMixer 生命周期：单 mixer 复用，切动作 `stopAllAction()` 防残姿；停止时 `resetNormalizedPose()` + 恢复直播间静息臂姿；动画播放中呼吸强制 0（验收 5）
 5. HUD 新增"动作"按钮组（index.html `#animHud` 容器动态生成）；模型切换按钮改为保留全部 URL 参数（此前会丢 anim/breath/blink）
 6. **盲测结果（builtin 路径全过，2026-10-04）**：动作播放（head 位移实测）/呼吸让位（chest 恒 0）/表情共存（angry=1 且动画不断）/眨眼共存（实测 max 0.67——注意遮挡节流下 rAF≈1fps，短窗采样会假阴性，见 bug-log BUG-087）/停止恢复（head 冻结+呼吸复活）/旧参数回归（无 anim 行为不变）。验收 1/4/5/6 的 builtin 部分通过；2/3（骨架健康/SpringBone）与真实 FBX 相关，待 Step 1 资产到位后验收

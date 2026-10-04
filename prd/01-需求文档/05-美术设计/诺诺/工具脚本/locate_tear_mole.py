@@ -6,10 +6,12 @@
 # （v1 教训：Blender 局部系 Z-up，"下"=-z；射线法对曲面易脱靶，最近顶点法更稳）
 import bpy
 import numpy as np
+import os
 
-VRM_IN = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_v5.vrm"
-SRC_TEX = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\krita_round\src_v5\05__04.png"
-OUT_TEX = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\krita_round\泪痣定位标注.png"
+_NONO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VRM_IN = os.path.join(_NONO_ROOT, "模型", "nonono_v5.vrm")
+SRC_TEX = os.path.join(_NONO_ROOT, "手绘轮工作区", "src_v5", "05__04.png")
+OUT_TEX = os.path.join(_NONO_ROOT, "手绘轮工作区", "泪痣定位标注.png")
 
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)

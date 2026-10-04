@@ -14,8 +14,10 @@ import bpy
 import numpy as np
 import os
 
-VRM_IN = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_v5.vrm"
-VRM_OUT = r"G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\nonono_v7_vroid_eye.vrm"
+# 路径以脚本自身定位（2026-10-04 目录收纳后不再依赖仓库绝对路径）
+_NONO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VRM_IN = os.path.join(_NONO_ROOT, "模型", "nonono_v5.vrm")
+VRM_OUT = os.path.join(_NONO_ROOT, "模型", "nonono_v7_vroid_eye.vrm")
 
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
@@ -26,7 +28,7 @@ face_obj = bpy.data.objects["Face"]
 me = face_obj.data
 
 # 手绘稿加载：krita_round/handpaint_*.png 存在则返回打包图（Krita 导出稿即最终态）
-HANDPAINT_DIR = os.path.join(os.path.dirname(VRM_IN), "krita_round")
+HANDPAINT_DIR = os.path.join(_NONO_ROOT, "手绘轮工作区")
 
 def load_handpaint(fname):
     p = os.path.join(HANDPAINT_DIR, fname)

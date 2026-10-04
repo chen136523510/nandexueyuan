@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-10-04（黑机·目录收纳 + AGENTS 瘦身 + 目录管理纪律立规，院长六项指令）
+
+- [ refactor] **诺诺资产库目录收纳**（院长指令 4）：`诺诺/` 28 个条目按语义分装——`模型/`（v5/v6/v7 VRM）、`捏模源文件/`（5 个 .vroid+.blend）、`工具脚本/`（build_*/diagnose/extract/locate 5 个脚本）、`规划文档/`（指导单）、`验收图/`（9 张验收图+4 张根目录收编的 poc_* 调试图，登记制）、`krita_round/` 更名 `手绘轮工作区/`；README 重写为目录索引版
+- [refactor] **nono-poc 迁出根目录**（院长指令 3）：→ `poc/nono-poc/`（poc/ 为实验性 PoC 项目保留位）；vite.config 仓库根上移一层、main.js VRM 导入路径更新、.gitignore 动画资产路径同步；dev server 从新路径重启并实测（页面 200+VRM 加载+动作播放正常）；`locate_tear_mole.py` 端到端验证脚本相对路径（UV 与原跑一致）
+- [refactor] **四脚本路径改脚本相对定位**：build_v7_texture/locate_tear_mole/diagnose_brow/build_eyes_v1 的仓库绝对路径硬编码改为 `__file__` 相对（根治"挪目录就断"的脆弱性）
+- [docs] **AGENTS.md 瘦身 + 全局规则**（院长指令 1/2/5）：立绘制作纪律+美术资产 README 纪律原文外迁 `05-美术设计/美术纪律.md`（处理美术工作时必读，AGENTS 留指针）；新增「目录管理纪律」全局红线——新建文件必须先做目录归属判断/调试过程产物禁入根目录（poc_*.png 多次违例后院长明令）/目录名自解释/不会就调研/移动必须同步引用
+- [chore] 根目录清理：poc_v6_face/face2/live、poc_v7_v3 四张调试图收编入 诺诺/验收图/ 并登记；删除 0 字节事故文件 `数据规模：prod.db`（命令重定向事故）与 __pycache__
+
 ## 2026-10-04（黑机·动作管线 PoC Step 2 代码预埋完成，builtin 盲测全过）
 
 - [新增] **动作管线 Step 2 落地**（院长"可以，先写吧"授权）：`nono-poc/src/mixamoAnimation.js`（官方 loadMixamoAnimation+mixamoVRMRigMap 移植，GitHub 断网下走 API/raw 绕行抓取）；main.js `?anim=` 参数（builtin=内置点头测试 clip/逗号分隔 FBX 列表/stop，不带参数=旧行为不变）+ AnimationMixer 生命周期（切换 stopAllAction 防残姿、停止 resetNormalizedPose+恢复静息臂姿、播放中呼吸强制 0）+ HUD 动作按钮组；index.html 增动作行；模型切换按钮改为保留全部 URL 参数
