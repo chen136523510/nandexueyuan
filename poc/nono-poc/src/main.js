@@ -33,7 +33,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
 
 const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 40);
-// 直播间机位：正面半身（头胸构图）
+// 开发调试机位：正面半身（头胸构图）——产品直播间机位=全景全身出境（院长 2026-10-04 裁决，见 诺诺动作库规划.md）
 camera.position.set(0, 1.35, 1.6);
 camera.lookAt(0, 1.25, 0);
 
