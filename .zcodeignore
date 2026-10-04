@@ -1,0 +1,216 @@
+# 日志文件
+logs/
+*.log
+
+# 敏感文档（账号密码管理，不入库）
+docs/account-passwords.md
+
+# 临时文件
+*.tmp
+*.swp
+*~
+
+# 编辑器配置
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 依赖目录
+node_modules/
+vendor/
+
+# 环境变量
+.env
+.env.local
+# 环境变量备份（部署回滚用，含 API Key/JWT 密钥，切勿入库）
+.env.bak*
+*.env.bak*
+
+# 编译输出
+dist/
+build/
+
+# 数据库文件
+*.db
+*.db-journal
+# 数据库备份（补跑/迁移前的本地副本，切勿入库）
+*.db.bak*
+*.db.bak-*
+
+# 媒体文件（保留目录结构，忽略实际文件）
+public/media/**/*
+!public/media/**/.gitkeep
+!public/media/**/README.md
+
+# pnpm standalone bundle（npm 11 bug 临时方案）
+package/
+pnpm.tgz
+
+# ===== AI 跨机协作（详见 prd/05-开发规范/ai-collab.md）=====
+# 以下为项目级共享，纳入 git 跟踪：
+#   .trae/rules/     - AI 规则集
+#   .trae/skills/    - AI 技能库
+#   .ai/handoff.md   - AI 交接文件
+# 以下为个人级，不跟踪：
+#   .trae/*（除 rules/skills 外）- IDE 个人状态
+#   .ai/local/       - AI 本地状态（各机器独立）
+
+
+# AI 本地状态（各机器独立，不跟踪）
+.ai/local/
+
+# 审核拦截块人工处理（含群聊原文=政治敏感内容，与群聊库同理由不入库）
+.ai/repair/
+
+# ZCode 工程配置
+# 纳入 git 跟踪：
+#   .zcode/skills/   - ZCode 技能库（项目共享）
+#   AGENTS.md        - ZCode 项目指令（项目共享）
+# 不跟踪：
+#   .zcode/plans/    - Plan 模式生成的临时计划草稿（执行完即失效，堆积无价值）
+.zcode/plans/
+
+# ComfyUI 工作流 JSON（黑机专用，不入库）
+.ai/comfyui-workflows/
+
+# 角色发色速查表（黑机美工本地参考，不入库）
+.ai/角色发色速查表.md
+
+# ComfyUI 原始输出图（验证前暂存，不入库；验证通过后移动到 public/game/ 正式入库）
+.ai/comfyui-output/
+
+# Seedream 网页生图测试输出（黑机美工专用；白机不处理任何美工，图片不进白机）
+.ai/seedream-test/
+.ai/scripts/
+
+# 美工过程文件（抠图测试/备份/对比，均不入库）
+.ai/_backup_portraits/
+.ai/_compare/
+.ai/_recover_test/
+.ai/_rembg_batch/
+.ai/_rembg_test/
+.ai/_volc_test/
+.ai/compress-test/
+
+# Trae IDE 内置技能/工具（非项目共享，不跟踪）
+.trae/tool-WeChatMsg-master/
+.trae/rules/directory-rules.md
+.trae/skills/algorithmic-art/
+.trae/skills/brand-guidelines/
+.trae/skills/canvas-design/
+.trae/skills/claude-api/
+.trae/skills/doc-coauthoring/
+.trae/skills/docx/
+.trae/skills/frontend-design/
+.trae/skills/internal-comms/
+.trae/skills/mcp-builder/
+.trae/skills/pdf/
+.trae/skills/pptx/
+.trae/skills/qzone-ui-style/
+.trae/skills/slack-gif-creator/
+.trae/skills/theme-factory/
+.trae/skills/web-artifacts-builder/
+.trae/skills/webapp-testing/
+.trae/skills/xlsx/
+
+# 成员分析报告(含真实聊天记录分析,敏感,不跟踪)
+prd/01-需求调研/成员分析/
+
+# 临时文件目录（保留目录,忽略内容）
+tmp/*
+!tmp/.gitkeep
+
+# ===== 德塔（NDO）游戏模块 =====
+# game-server/.env 各机器独立配置（已在上方 .env 规则中忽略）
+# 游戏资源（保留目录结构，忽略大文件）
+public/game/audio/**/*
+!public/game/audio/**/.gitkeep
+# 游戏运行时美术资源（WebP 压缩后入库，走 GitHub 部署链路）
+# 原因：黑机无法直连服务器，图片必须随代码一起 push 才能部署到服务器
+# VN 资产已全量 WebP q95 压缩（146MB->28MB，省80%），见 R-036 / .ai/scripts/convert-to-webp.cjs
+# 美术资产原始大图（原体积 PNG）不入库，仅保留 WebP 压缩后的游戏资产
+askpass.bat
+
+# 美术资产原始大图/视频（原体积保存，不入库；白机只用压缩后 WebP 游戏资产）
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.png
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.jpg
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.jpeg
+prd/01-需求文档/04-德塔/02-设计/形象设计/美术资产/**/*.mp4
+
+# CC0 素材包原始下载（解压后的源文件，不入库，只保留切片）
+.ai/asset-staging/
+
+# ComfyUI 生图原始输出（大二进制，不入库；精选图在 .ai/comfyui-output/ 也不入库）
+raw/
+
+# Playwright MCP 临时截图/快照
+.playwright-mcp/
+
+# Playwright E2E 测试产物（HTML报告 + 临时结果，不入库）
+playwright-report/
+test-results/
+
+# GUI 测试截图产物（浏览器自动化验证临时输出，不入库）
+gui-test-screenshots/
+
+# 临时测试截图（根目录下的调试截图，不包含 public/ 目录下的游戏资源）
+# /*.png 通配已覆盖所有根目录 png（broadcast/char/deta/e2e/hud/nde 等），下方保留显式规则便于阅读
+/*.png
+/*-test-*.png
+deta-*.png
+broadcast-*.png
+e2e-test.png
+
+# 临时工作目录
+.tmp/
+
+# SQLite WAL 临时文件
+*.db-shm
+*.db-wal
+dist.tar.gz
+__pycache__/
+*.pyc
+.sentry-native/
+
+# 数据库备份文件（db push 前的手动备份，不入库）
+*.db.bak.*
+
+# 服务器运行时上传目录（用户头像/师德墙/聊天图片，生产数据不入库；seed 例外见下）
+server/uploads/avatars/
+server/uploads/wall/
+server/uploads/chat/
+!server/uploads/wall-seed/
+*.blend1
+
+# ===== ↑ 以上同步自 .gitignore（「从 .gitignore 同步」只重写以上部分）=====
+.git/
+.hg/
+.svn/
+bower_components/
+jspm_packages/
+site-packages/
+venv/
+coverage/
+htmlcov/
+lcov-report/
+cmakefiles/
+cmake-build-*/
+bazel-*/
+pods/
+deriveddata/
+storybook-static/
+allure-results/
+allure-report/
+cdk.out/
+*.egg-info/
+*.dist-info/
+eggs/
+pip-wheel-metadata/
+wheels/
+# ----- ↑ 以上为 ZCode 默认排除规则（自定义规则请写在本行下方，不会被同步/恢复改动）-----
+# 自定义规则写在下方（本行提示可删除）
