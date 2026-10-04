@@ -69,6 +69,7 @@
 | nonono_v5_face_front.png | 第 11 步验收·正面全身（捏模完成态）：黑长直侧分及腰发（深蓝黑 #1A2436 带蓝调光泽）+清冷垂眼窄眼距+瘦长脸尖下巴+细平眉+窄肩贫乳收腰——**诺诺素模定稿形象**（表情为默认 NEUTRAL 疏离脸，无泪痣/瞳色棕色待二期贴图层） | 捏模一期验收存档 |
 | nono_poc_render_neutral.png | **Web 渲染管线 PoC 验收·默认脸**：nono-poc（three.js 0.186 + @pixiv/three-vrm 3.5.5）加载 nonono_v5.vrm 的浏览器实拍——黑长直+清冷垂眼+白 T，MToon 渲染 200 FPS，A-pose 手臂自然下垂；VRoid 形象在 Web 端原样呈现 | 渲染管线验收 |
 | nono_poc_render_happy.png | **同上·happy 表情切换实拍**：expressionManager 通路验证（闭眼笑+张嘴），好感度表情体系的前置验证 | 渲染管线验收 |
+| nono_poc_render_lookat_fix.png | **同上·lookAt 上下反转修复实拍**（2026-10-01 PoC 轮）：鼠标屏幕顶部=视线向上、底部=向下，修复后视线方向与鼠标一致（旧 README 漏登记，2026-10-04 补录） | 渲染管线验收 |
 | nono_eyeball_v1_front.png | **眼球总成 v1 验收·正面特写**（Blender Cycles，隐藏头发）：贴片眼区已删除，3D 眼球上屏——白色巩膜椭球+深蓝黑虹膜+瞳孔+高光板+眼窝暗部衬底；高光两眼同侧（世界 +X 来光逻辑） | 眼球 v1 验收 |
 | nono_eyeball_v1_blink.png | **同上·眨眼测试**（Fcl_EYE_Close=1）：眼睑闭合正常，**已知问题**=虹膜盘浮于眼睑皮肤之上（悬浮盘穿帮），v2 眼睑重贴合根治，运行时以"眨眼眼球后移"规避 | 眼球 v1 验收 |
 | nono_eyeball_v1_quarter.png | **同上·3/4 视角**：斜视角下双眼观感自然、无悬浮穿帮，暗缘读作眼影 | 眼球 v1 验收 |
