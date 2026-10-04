@@ -7,7 +7,10 @@
 
 ---
 
-## 一、目标与验收标准（7 项）
+## 一、目标与验收标准（7 项）——✅ 全部通过（2026-10-04 黑机 AI 侧验收）
+
+> 验收记录：Mixamo 三动作（Waving/Agreeing/Thinking，院长下载入 `poc/nono-poc/public/anims/`）经官方 loadMixamoAnimation 运行时重定向播放成功；骨架健康（Issue #1176 腿部 90° 未复现）、SpringBone 共存（发丝骨 700ms 摆动 1.7cm 实测）、表情共存、呼吸让位、三动作按钮切换无残姿、200 FPS（RTX 4070）。验收截图归档 `05-美术设计/诺诺/验收图/`（nono_wave_test / nono_agreeing_test）。**待院长过目定版后，路线 A（.vrma 沉淀）启动。**
+> 已知运维小坑：dev server 运行中往 `public/anims/` 放文件会偶发 vite FSWatcher EBUSY 崩溃（chokidar 监视新文件时文件仍被复制进程占用）——放完文件重启 dev server 即可。
 
 | # | 验收项 | 标准 |
 |---|---|---|

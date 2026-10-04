@@ -77,6 +77,8 @@
 | poc_v6_face.png | **v6 3D 眼球调试·面部特写实拍**（2026-10-02）：眼球总成上屏后的面部观感记录 | 调试过程存档 |
 | poc_v6_face2.png | **v6 3D 眼球调试·面部特写实拍二**（2026-10-02）：同上换角度 | 调试过程存档 |
 | poc_v7_v3.png | **v7 白块 v3 调试实拍**（2026-10-02）：BUG-083 白块修复 v3（全局裁剪被否决版）时期的渲染记录 | 调试过程存档 |
+| nono_wave_test.png | **动作管线 PoC 验收·Waving 实拍**（2026-10-04）：Mixamo Waving.fbx 经 loadMixamoAnimation 运行时重定向播放，骨架健康无翻转、直播间头胸机位（挥手手臂在画面外，全身机位见 agreeing） | 动作管线验收 |
+| nono_agreeing_test.png | **动作管线 PoC 验收·Agreeing 全身实拍**（2026-10-04）：Waving→Agreeing 按钮切换无残姿，直立骨架+头发 SpringBone 自然，200 FPS | 动作管线验收 |
 
 ## 眼球总成 v1（2026-10-02 黑机，commit 待登记）
 
