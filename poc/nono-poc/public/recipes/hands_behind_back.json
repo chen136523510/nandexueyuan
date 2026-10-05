@@ -1,77 +1,23 @@
 {
   "id": "hands_behind_back",
   "label": "背手",
-  "version": 5,
+  "version": 7,
   "intensityDefault": 1.0,
   "hold": true,
   "interruptible": true,
   "mirrorable": true,
-  "channels": {
-    "expression": null,
-    "breath": null
-  },
+  "channels": { "expression": null, "breath": null },
+  "ref": "队列条令·跨立：两手后背，左手握右手腕，手心向后，拇指根部与腰带下沿同高（见 00-调研/01-技术/常见动作执行要领与生物力学调研.md §二）。参数=矩阵探针求解：目标手位(±0.06, 1.08, -0.25)=脊柱旁·腰带高·体后；机制=大内旋(y60°)+垂臂内收(z-42°)+屈肘前臂折向腰后(y50°/z-28°)",
   "sequence": [
-    {
-      "op": "rotate",
-      "bone": "leftUpperArm",
-      "axis": "x",
-      "deg": 38,
-      "dur": 0.5
-    },
-    {
-      "op": "rotate",
-      "bone": "rightUpperArm",
-      "axis": "x",
-      "deg": 38,
-      "dur": 0.5
-    },
-    {
-      "op": "rotate",
-      "bone": "leftUpperArm",
-      "axis": "z",
-      "deg": -6,
-      "dur": 0.4,
-      "delay": 0.25
-    },
-    {
-      "op": "rotate",
-      "bone": "rightUpperArm",
-      "axis": "z",
-      "deg": 6,
-      "dur": 0.4,
-      "delay": 0.25
-    },
-    {
-      "op": "rotate",
-      "bone": "leftUpperArm",
-      "axis": "y",
-      "deg": 14,
-      "dur": 0.4,
-      "delay": 0.45
-    },
-    {
-      "op": "rotate",
-      "bone": "rightUpperArm",
-      "axis": "y",
-      "deg": -14,
-      "dur": 0.4,
-      "delay": 0.45
-    },
-    {
-      "op": "bend",
-      "bone": "leftLowerArm",
-      "axis": "y",
-      "deg": 40,
-      "dur": 0.5,
-      "delay": 0.6
-    },
-    {
-      "op": "bend",
-      "bone": "rightLowerArm",
-      "axis": "y",
-      "deg": -40,
-      "dur": 0.5,
-      "delay": 0.6
-    }
+    { "op": "rotate", "bone": "leftUpperArm",  "axis": "x", "deg": 2,   "dur": 0.5 },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "x", "deg": 2,   "dur": 0.5 },
+    { "op": "rotate", "bone": "leftUpperArm",  "axis": "y", "deg": 60,  "dur": 0.55, "delay": 0.15 },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "y", "deg": -60, "dur": 0.55, "delay": 0.15 },
+    { "op": "rotate", "bone": "leftUpperArm",  "axis": "z", "deg": -42, "dur": 0.5,  "delay": 0.35 },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "z", "deg": 42,  "dur": 0.5,  "delay": 0.35 },
+    { "op": "bend",   "bone": "leftLowerArm",  "axis": "y", "deg": 50,  "dur": 0.5,  "delay": 0.5 },
+    { "op": "bend",   "bone": "rightLowerArm", "axis": "y", "deg": -50, "dur": 0.5,  "delay": 0.5 },
+    { "op": "bend",   "bone": "leftLowerArm",  "axis": "z", "deg": -28, "dur": 0.45, "delay": 0.65 },
+    { "op": "bend",   "bone": "rightLowerArm", "axis": "z", "deg": 28,  "dur": 0.45, "delay": 0.65 }
   ]
 }
