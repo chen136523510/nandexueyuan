@@ -1,0 +1,77 @@
+{
+  "id": "hands_behind_back",
+  "label": "背手",
+  "version": 5,
+  "intensityDefault": 1.0,
+  "hold": true,
+  "interruptible": true,
+  "mirrorable": true,
+  "channels": {
+    "expression": null,
+    "breath": null
+  },
+  "sequence": [
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "x",
+      "deg": 38,
+      "dur": 0.5
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": 38,
+      "dur": 0.5
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "z",
+      "deg": -6,
+      "dur": 0.4,
+      "delay": 0.25
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "z",
+      "deg": 6,
+      "dur": 0.4,
+      "delay": 0.25
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "y",
+      "deg": 14,
+      "dur": 0.4,
+      "delay": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "y",
+      "deg": -14,
+      "dur": 0.4,
+      "delay": 0.45
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerArm",
+      "axis": "y",
+      "deg": 40,
+      "dur": 0.5,
+      "delay": 0.6
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerArm",
+      "axis": "y",
+      "deg": -40,
+      "dur": 0.5,
+      "delay": 0.6
+    }
+  ]
+}

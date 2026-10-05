@@ -1,0 +1,17 @@
+{
+  "id": "shoulder_shrug",
+  "label": "耸肩",
+  "version": 1,
+  "intensityDefault": 1.0,
+  "hold": false,
+  "autoReturn": 0.5,
+  "interruptible": true,
+  "mirrorable": true,
+  "channels": { "expression": null, "breath": null },
+  "sequence": [
+    { "op": "rotate", "bone": "leftShoulder",  "axis": "z", "deg": 12, "dur": 0.35 },
+    { "op": "rotate", "bone": "rightShoulder", "axis": "z", "deg": -12, "dur": 0.35 },
+    { "op": "rotate", "bone": "leftUpperArm",  "axis": "z", "deg": 4,  "dur": 0.35 },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "z", "deg": -4, "dur": 0.35 }
+  ]
+}

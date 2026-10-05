@@ -6,6 +6,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { loadMixamoAnimation } from './mixamoAnimation.js';
+// 小脑 Phase A（施工图：prd/01-需求文档/07-自习室/诺诺小脑架构设计.md）
+import { PoseDriver } from './poseDriver.js';
+import { RecipeExecutor } from './recipeExecutor.js';
+import { computeHeartbeat } from './heartbeat.js';
 import Stats from 'three/addons/libs/stats.module.js';
 // 模型原地引用（不复制进 PoC）：Vite assetsInclude+?url 生成 /@fs/ 资源地址
 // ?model=v5 可对照旧贴片眼版；默认 v6（3D 眼球总成）
@@ -81,6 +85,8 @@ stats.dom.style.left = 'auto';
 // ---------- VRM 加载 ----------
 let vrm = null;
 let eyeRig = null;
+let poseDriver = null;      // 基元层：骨骼补间引擎
+let recipeExecutor = null;  // 配方层：配方执行/打断/安全点
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -133,6 +139,19 @@ loader.load(
     const rightArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
     if (leftArm) leftArm.rotation.z = -0.75;
     if (rightArm) rightArm.rotation.z = 0.75;
+
+    // 小脑（Phase A）：静息臂姿定稿后创建引擎（rest 捕获含双臂 z±0.75=中立姿势）
+    poseDriver = new PoseDriver(vrm);
+    recipeExecutor = new RecipeExecutor(poseDriver);
+    recipeExecutor.onState((state, label) => {
+      document.querySelectorAll('#recipeHud button[data-recipe]').forEach((b) => {
+        b.classList.toggle('on', state === 'playing' && b.dataset.recipe === recipeExecutor.current?.recipe?.id);
+      });
+      if (state === 'playing') statusEl.textContent = `🎬 配方播放中：${label}`;
+      else if (state === 'stopping') statusEl.textContent = '↩ 回归中立…';
+      else if (state === 'idle') statusEl.textContent = '🧠 待命（idle）';
+    });
+    setupRecipeHud();
 
     statusEl.textContent = `✅ 诺诺上屏（${MODEL.label}${eyeRig ? ' · EyePivot接管' : ''}）`;
     console.log('[nono-poc] VRM loaded:', vrm.meta?.meta?.name ?? '(unnamed)');
@@ -277,22 +296,30 @@ renderer.setAnimationLoop(() => {
       }
     }
 
-    // 验收 2：呼吸（胸口微起伏，4s 周期；?breath=0 禁用；动作播放中强制 0=呼吸让位，方案验收 5）
-    const breath = animPlaying || params.get('breath') === '0' ? 0 : Math.sin(clock.elapsedTime * (Math.PI * 2 / 4)) * 0.008;
-    const chest = vrm.humanoid.getNormalizedBoneNode('chest');
-    if (chest) chest.rotation.x = breath;
+    // 小脑 Phase A（施工图 §5）：心跳层 → 配方执行 → 补间 → apply(静息+偏移) → 心跳叠加
+    // Mixamo mixer 播放期间整段让位（mixer 独占骨骼，原方案验收 5 语义保留）
+    const hb = computeHeartbeat(clock.elapsedTime, {
+      breathEnabled: !animPlaying && params.get('breath') !== '0',
+      blinkSuppressed: currentExpr === 'happy' || currentExpr === 'relaxed', // 闭眼系表情不叠眨眼（院长验收反馈）
+      forceBlink: params.get('blink') === '1',
+    });
+    if (vrm.expressionManager) vrm.expressionManager.setValue('blink', hb.blink);
 
-    // 验收 2：眨眼（每 ~3.6s 一次，三角波快闭快开 ~0.24s；?blink=1 强制闭眼调试）
-    const t = clock.elapsedTime % 3.6;
-    let blink = t < 0.24 ? (t < 0.12 ? t / 0.12 : Math.max(0, 1 - (t - 0.12) / 0.12)) : 0;
-    if (currentExpr === 'happy' || currentExpr === 'relaxed') blink = 0; // 闭眼系表情不叠眨眼（院长验收反馈）
-    if (params.get('blink') === '1') blink = 1.0;
-    if (vrm.expressionManager) vrm.expressionManager.setValue('blink', blink);
+    if (!animPlaying) {
+      poseDriver?.update(delta);
+      recipeExecutor?.update();
+      poseDriver?.apply();
+      // 心跳叠加（additive，配方播放期间呼吸继续=诺诺没有静止帧）
+      const chest = vrm.humanoid.getNormalizedBoneNode('chest');
+      if (chest) chest.rotation.x += hb.breath;
+      const hips = vrm.humanoid.getNormalizedBoneNode('hips');
+      if (hips) { hips.rotation.x += hb.swayX; hips.rotation.z += hb.swayZ; }
+    }
 
     // 动作 mixer 先于 vrm.update：骨骼动画 → vrm.update 传播到原始骨+SpringBone/lookAt 模拟
     if (animMixer && animPlaying) animMixer.update(delta);
     vrm.update(delta);
-    driveEyes(eyeRig, blink);
+    driveEyes(eyeRig, hb.blink);
   }
 
   controls.update();
@@ -344,6 +371,7 @@ function playClip(name, clip) {
   animMixer.stopAllAction(); // 切换防残姿：先停旧轨再播新轨
   animMixer.clipAction(clip).reset().play();
   animPlaying = true;
+  recipeExecutor?.stop(); // Mixamo mixer 即将独占骨骼：配方先退场（回归 tween 会被 mixer 覆盖，停止后 apply 接管）
   document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === name));
   statusEl.textContent = `✅ 动作播放中：${name}`;
 }
@@ -408,10 +436,52 @@ function setupAnimations() {
   });
 }
 
+// ---------- 小脑 HUD（Phase A 测试台：配方按钮 + JSON 免刷新即播） ----------
+function setupRecipeHud() {
+  const guard = () => {
+    if (animPlaying) {
+      statusEl.textContent = '⚠️ Mixamo 动作播放中，配方引擎已让位——先点"停动作"';
+      return true;
+    }
+    return false;
+  };
+  document.querySelectorAll('#recipeHud button[data-recipe]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!vrm || !recipeExecutor || guard()) return;
+      const name = btn.dataset.recipe;
+      if (name === '__stop') { recipeExecutor.stop(); return; }
+      // ?t= 击穿缓存：改 JSON 免刷新即生效（调参工作流）
+      fetch(`/recipes/${name}.json?t=${Date.now()}`)
+        .then((r) => r.json())
+        .then((recipe) => {
+          const ret = recipeExecutor.play(recipe);
+          if (!ret.ok) statusEl.textContent = `❌ 配方无效：${ret.msg}`;
+        })
+        .catch((err) => {
+          console.error('[recipe]', err);
+          statusEl.textContent = '❌ 配方加载失败（看控制台）';
+        });
+    });
+  });
+  document.getElementById('recipePlayJson').addEventListener('click', () => {
+    if (!recipeExecutor || guard()) return;
+    try {
+      const recipe = JSON.parse(document.getElementById('recipeJson').value);
+      const ret = recipeExecutor.play(recipe);
+      if (!ret.ok) statusEl.textContent = `❌ 配方无效：${ret.msg}`;
+    } catch (err) {
+      console.error('[recipe]', err);
+      statusEl.textContent = '❌ JSON 解析失败（看控制台）';
+    }
+  });
+}
+
 // ---------- 调试钩子（Playwright/控制台验收用） ----------
 window.__poc = {
   get vrm() { return vrm; },
   get eyeRig() { return eyeRig; },
+  get poseDriver() { return poseDriver; },
+  get recipeExecutor() { return recipeExecutor; },
   camera,
   controls,
   scene,

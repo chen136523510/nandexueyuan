@@ -79,6 +79,11 @@
 | poc_v7_v3.png | **v7 白块 v3 调试实拍**（2026-10-02）：BUG-083 白块修复 v3（全局裁剪被否决版）时期的渲染记录 | 调试过程存档 |
 | nono_wave_test.png | **动作管线 PoC 验收·Waving 实拍**（2026-10-04）：Mixamo Waving.fbx 经 loadMixamoAnimation 运行时重定向播放，骨架健康无翻转、直播间头胸机位（挥手手臂在画面外，全身机位见 agreeing） | 动作管线验收 |
 | nono_agreeing_test.png | **动作管线 PoC 验收·Agreeing 全身实拍**（2026-10-04）：Waving→Agreeing 按钮切换无残姿，直立骨架+头发 SpringBone 自然，200 FPS | 动作管线验收 |
+| nono_recipe_hands_behind_back.png | **小脑 Phase A 验收·背手配方实拍**（2026-10-05）：手写 JSON 配方（upperArm x+38 后摆/y+14 内收/z-6 下沉 + lowerArm y+40 屈肘后卷）经 poseDriver 补间引擎驱动的保持态姿势——手背到腰后侧，基元组合式动作管线打通 | 小脑 Phase A 验收 |
+| nono_recipe_head_tilt.png | **小脑 Phase A 验收·歪头配方实拍**（2026-10-05）：head z+12°+neck z+4° 保持态定格，头部侧倾自然、头发 SpringBone 跟随，表情/眨眼共存 | 小脑 Phase A 验收 |
+| nono_recipe_shoulder_shrug.png | **小脑 Phase A 验收·耸肩配方实拍**（2026-10-05）：shoulder z±14°+upperArm z∓5° 保持态定格，肩胛上抬清晰可见 | 小脑 Phase A 验收 |
+| nono_recipe_json_bench.png | **小脑 Phase A 验收·JSON 测试台实拍**（2026-10-05）：HUD 粘贴任意配方 JSON 免刷新即播（图中小臂抬测试配方），配方引擎调参工作流成立 | 小脑 Phase A 验收 |
+| nono_recipe_interrupt_recovered.png | **小脑 Phase A 验收·打断回归实拍**（2026-10-05）：背手保持态中被歪头打断→手臂 150ms 滑变完全回中立+状态机回 idle——"动作可随时打断、无残姿"核心特性实证 | 小脑 Phase A 验收 |
 
 ## 眼球总成 v1（2026-10-02 黑机，commit 待登记）
 

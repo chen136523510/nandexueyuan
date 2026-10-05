@@ -21,6 +21,11 @@
     #hud button:hover { background: #3d3d6e; }
     #hud button.on { background: #4a6cf7; border-color: #4a6cf7; }
     #status { color: #9f9; }
+    #recipeJson {
+      width: 340px; margin-top: 4px; display: block;
+      background: #101024; color: #9f9; border: 1px solid #444; border-radius: 6px;
+      font: 12px/1.5 monospace; padding: 6px; resize: vertical;
+    }
   </style>
 </head>
 <body>
@@ -41,6 +46,16 @@
       <a href="?blink=1" style="color:#8cf;margin-left:4px;font-size:12px">闭眼定格</a>
     </div>
     <div style="margin-top:6px">动作：<span id="animHud"></span></div>
+    <div style="margin-top:6px">配方：<span id="recipeHud">
+      <button data-recipe="hands_behind_back">背手</button>
+      <button data-recipe="shoulder_shrug">耸肩</button>
+      <button data-recipe="head_tilt">歪头</button>
+      <button data-recipe="__stop">停配方</button>
+    </span></div>
+    <div style="margin-top:6px">小脑测试台（粘贴配方 JSON，免刷新即播）：
+      <button id="recipePlayJson">▶ 播放 JSON</button>
+      <textarea id="recipeJson" rows="5" spellcheck="false" placeholder='{"id":"demo","label":"测试","sequence":[{"op":"rotate","bone":"head","axis":"z","deg":12,"dur":0.5}]}'></textarea>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

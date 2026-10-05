@@ -1,0 +1,15 @@
+{
+  "id": "head_tilt",
+  "label": "歪头",
+  "version": 1,
+  "intensityDefault": 1.0,
+  "hold": false,
+  "autoReturn": 0.9,
+  "interruptible": true,
+  "mirrorable": true,
+  "channels": { "expression": null, "breath": null },
+  "sequence": [
+    { "op": "rotate", "bone": "head", "axis": "z", "deg": 11, "dur": 0.5 },
+    { "op": "rotate", "bone": "neck", "axis": "z", "deg": 4,  "dur": 0.5 }
+  ]
+}
