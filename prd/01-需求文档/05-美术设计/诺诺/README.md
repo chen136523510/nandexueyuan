@@ -79,8 +79,8 @@
 | poc_v7_v3.png | **v7 白块 v3 调试实拍**（2026-10-02）：BUG-083 白块修复 v3（全局裁剪被否决版）时期的渲染记录 | 调试过程存档 |
 | nono_wave_test.png | **动作管线 PoC 验收·Waving 实拍**（2026-10-04）：Mixamo Waving.fbx 经 loadMixamoAnimation 运行时重定向播放，骨架健康无翻转、直播间头胸机位（挥手手臂在画面外，全身机位见 agreeing） | 动作管线验收 |
 | nono_agreeing_test.png | **动作管线 PoC 验收·Agreeing 全身实拍**（2026-10-04）：Waving→Agreeing 按钮切换无残姿，直立骨架+头发 SpringBone 自然，200 FPS | 动作管线验收 |
-| nono_recipe_hands_behind_back.png | **小脑 Phase A 验收·背手配方实拍·正面**（2026-10-05 v7 定版，院长复验反馈"军姿式双手交叠腰后"后按队列条令跨立要领重排）：手臂完全隐入体后、仅指尖在腰侧微露——参数由矩阵探针求解（大内旋 y60°+垂臂内收 z-42°+屈肘折向腰后，手位锚定脊柱旁·腰带高） | 小脑 Phase A 验收 |
-| nono_recipe_hands_behind_back_quarter.png | **同上·3/4 视角**：肘贴身、前臂折向腰后、手在臀腰高度后侧——背手姿态侧面确认 | 小脑 Phase A 验收 |
+| nono_recipe_hands_behind_back.png | **小脑 Phase A 验收·背手配方实拍·正面**（2026-10-05 v8 防穿模定版）：队列条令跨立要领 + 矩阵探针求解（内旋收敛 y25°+垂臂内收 z-50°+肘弯收小 y20°/z-22°），正面手臂完全隐入体后轮廓自然 | 小脑 Phase A 验收 |
+| nono_recipe_hands_behind_back_back.png | **同上·背面实拍（防穿模证据）**：v7 曾被院长复验发现穿模（内旋 60° 过深致双肘顶穿 T 恤背面+指尖戳出体侧，BUG-089）——v8 背面完全干净无穿模；六视角自查（前/后/左右侧/后3-4/手部特写）此后为动作定版硬纪律 | 小脑 Phase A 验收 |
 | nono_recipe_head_tilt.png | **小脑 Phase A 验收·歪头配方实拍**（2026-10-05）：head z+12°+neck z+4° 保持态定格，头部侧倾自然、头发 SpringBone 跟随，表情/眨眼共存 | 小脑 Phase A 验收 |
 | nono_recipe_shoulder_shrug.png | **小脑 Phase A 验收·耸肩配方实拍**（2026-10-05 v2 定版，院长复验反馈"肩带带动整臂上耸、不转肩关节"后重排）：只动 Shoulder 骨（z±10° 微转+translate y 6mm 纯上提），UpperArm 零旋转——肩胛上提的解剖学直译（斜方肌上部/肩胛提肌） | 小脑 Phase A 验收 |
 | nono_recipe_json_bench.png | **小脑 Phase A 验收·JSON 测试台实拍**（2026-10-05）：HUD 粘贴任意配方 JSON 免刷新即播（图中小臂抬测试配方），配方引擎调参工作流成立 | 小脑 Phase A 验收 |
