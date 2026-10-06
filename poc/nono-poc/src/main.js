@@ -198,13 +198,14 @@ loader.load(
     });
     setupRecipeHud();
 
-    // 房间模式：诺诺入房（站位=椅前活动区），?sit=1 白盒坐姿预览（即 Phase B「坐下」配方雏形）
+    // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 吸附椅子坐锚点
     if (ROOM_MODE) {
-      const ch = { x: 1.05, z: -3.25, faceDeg: 205 };
-      vrm.scene.position.set(ch.x, 0, ch.z);
-      const fr = (ch.faceDeg * Math.PI) / 180;
-      vrm.scene.rotation.y = Math.atan2(Math.cos(fr), -Math.sin(fr)); // 面朝 faceDeg（205°=西偏南20°，露侧颜）
-      if (params.get('sit') === '1') playSitPreview();
+      roomApi.setModel(vrm.scene);
+      roomApi.gotoAnchor('room.center');
+      if (params.get('sit') === '1') {
+        roomApi.gotoAnchor('chair.sit');
+        playSitPreview();
+      }
       setupRoomHud();
     }
 
@@ -557,6 +558,24 @@ function setupRoomHud() {
     if (cb) cb.classList.toggle('on', !s.curtainOpen); // 帘合上=高亮
   };
   syncRoomHud();
+  // 交互锚点行：吸附锚点（瞬移+朝向）+ 有配方的自动播放（白盒期瞬移，步态后换行走）
+  const anchorSpan = document.getElementById('anchorHud');
+  if (anchorSpan) {
+    anchorSpan.innerHTML = '';
+    for (const [key, a] of Object.entries(roomApi.anchors)) {
+      const b = document.createElement('button');
+      b.textContent = a.label;
+      b.addEventListener('click', () => {
+        roomApi.gotoAnchor(key);
+        if (a.recipe) {
+          fetch(`/recipes/${a.recipe}.json?t=${Date.now()}`)
+            .then((r) => r.json())
+            .then((rc) => { const ret = recipeExecutor.play(rc); if (!ret.ok) statusEl.textContent = `❌ ${ret.msg}`; });
+        }
+      });
+      anchorSpan.appendChild(b);
+    }
+  }
   document.getElementById('roomHud').style.display = 'block';
   const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn');
   if (lb) lb.addEventListener('click', () => { roomApi.toggleLamp(); syncRoomHud(); });
@@ -585,6 +604,22 @@ function playSitPreview() {
   });
 }
 
+// 穿模体检：采样末端骨骼世界坐标 → 房间碰撞盒检测（白盒版 gate④，调配方时看违例数）
+function roomCheck() {
+  if (!vrm || !roomApi) return null;
+  scene.updateMatrixWorld(true);
+  const V = new THREE.Vector3();
+  const pts = {};
+  for (const n of ['leftHand', 'rightHand', 'leftLowerArm', 'rightLowerArm', 'leftLowerLeg', 'rightLowerLeg', 'leftFoot', 'rightFoot', 'leftToes', 'rightToes']) {
+    const node = vrm.humanoid.getNormalizedBoneNode(n);
+    if (node) {
+      node.getWorldPosition(V);
+      pts[n] = V.clone();
+    }
+  }
+  return roomApi.checkCollisions(pts);
+}
+
 // ---------- 调试钩子（Playwright/控制台验收用） ----------
 window.__poc = {
   get vrm() { return vrm; },
@@ -597,7 +632,8 @@ window.__poc = {
   lookAtTarget,
   THREE,
   renderer, // 调试用：窗格被遮挡 rAF 节流时可手动 render 取证
-  get room() { return roomApi; }, // 房间后台开关：room.toggleLamp()/toggleCurtain()/setProfile('night')/state
+  get room() { return roomApi; }, // 房间后台开关：room.toggleLamp()/toggleCurtain()/setTime('night')/gotoAnchor('chair.sit')/state
+  roomCheck, // 穿模体检：末端骨骼 × 家具碰撞盒违例列表（白盒版 gate④）
 };
 
 // ---------- 自适应 ----------

@@ -377,6 +377,71 @@ export function buildRoom(scene, { posterUrl } = {}) {
 
   setProfile('noon', { instant: true });
 
+  // —— 交互锚点（affordance）：物体声明"可怎么用"，大脑/遥控调用=吸附锚点+播配方 ——
+  // 坐姿锚点数值=场景设计 §二实测推导（椅面 0.556/床沿 0.45），默认姿势零穿模由 checkCollisions 把关
+  const anchors = {
+    'chair.sit':   { label: '椅子坐',   pos: [1.05, 0, -3.25], yawDeg: 205, recipe: 'sit_chair' },
+    'chair.stand': { label: '椅旁站立', pos: [1.62, 0, -2.72], yawDeg: 150 },
+    'bed.sit':     { label: '床沿坐',   pos: [3.50, 0, -3.18], yawDeg: 250, recipe: 'sit_bed' },
+    'room.center': { label: '活动区',   pos: [2.10, 0, -2.05], yawDeg: 180 },
+  };
+
+  // —— 穿模体检（白盒版 gate④：AABB 碰撞盒 + 关键骨骼点穿入检测）——
+  // 检测点=手/肘/膝/脚等"应该悬空"的末端骨骼；点在盒内（缩 1cm 容差）即违例——
+  // 臀部贴座面这类"合法接触"不检测（髋点在座面上方）
+  const colliders = [];
+  function addCollider(name, mesh) {
+    if (!mesh) return;
+    const bx = new THREE.Box3().setFromObject(mesh);
+    bx.expandByScalar(-0.01); // 1cm 容差：贴面接触不算穿入
+    colliders.push({ name, box: bx });
+  }
+  const findMesh = (px, py, pz) => {
+    let best = null, bd = 1e9;
+    g.traverse((m) => {   // 递归遍历：椅子等家具是 Group 嵌套，直接 children 拿不到座面/扶手
+      if (!m.isMesh) return;
+      const c = new THREE.Vector3();
+      m.getWorldPosition(c);
+      const dist = (c.x - px) ** 2 + (c.y - py) ** 2 + (c.z - pz) ** 2;
+      if (dist < bd) { bd = dist; best = m; }
+    });
+    return best;
+  };
+  addCollider('椅座', findMesh(ch.cx, ch.seatH - 0.035, -ch.cy));
+  addCollider('椅底座', findMesh(ch.cx, 0.04, -ch.cy)); // 五星脚圆盘：站立在椅子上=脚趾/踝入盒即违例
+  // 扶手/椅背随椅身旋转（205°）：局部坐标 → 世界坐标后匹配
+  const chRot = Math.atan2(Math.cos((ch.faceDeg * Math.PI) / 180), -Math.sin((ch.faceDeg * Math.PI) / 180));
+  const chLocal = (lx, ly, lz) => new THREE.Vector3(
+    ch.cx + lx * Math.cos(chRot) + lz * Math.sin(chRot),
+    ly,
+    -ch.cy - lx * Math.sin(chRot) + lz * Math.cos(chRot),
+  );
+  for (const sgn of [1, -1]) {
+    const c = chLocal(sgn * 0.265, ch.seatH + 0.12, 0.02);
+    addCollider('扶手', findMesh(c.x, c.y, c.z));
+  }
+  const backC = chLocal(0, ch.seatH + 0.30, -0.245);
+  addCollider('椅背', findMesh(backC.x, backC.y, backC.z));
+  addCollider('桌板', findMesh(dk.cx, dk.h - 0.025, -dk.cy));
+  addCollider('床垫', findMesh(bd.cx, bd.h - 0.05, -bd.cy));
+  addCollider('床箱', findMesh(bd.cx, (bd.h - 0.10) / 2, -bd.cy));
+  addCollider('床头板', findMesh(w - 0.04, bd.headboardH / 2, -bd.cy));
+  addCollider('主机', findMesh(pc.cx, pc.h / 2, -pc.cy));
+
+  // 穿入检测：points = { 骨名: Vector3 }，返回违例列表
+  function checkCollisions(points) {
+    const out = [];
+    for (const [bone, p] of Object.entries(points)) {
+      for (const c of colliders) {
+        if (c.box.containsPoint(p)) out.push({ bone, collider: c.name, at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
+      }
+    }
+    return out;
+  }
+
+  // 模型引用（buildRoom 先于 VRM 加载完成，由 main.js 加载后回填）
+  let modelScene = null;
+
   const api = {
     group: g,
     update,
@@ -388,6 +453,21 @@ export function buildRoom(scene, { posterUrl } = {}) {
     weathers: Object.keys(WEATHERS),
     seasons: Object.keys(SEASONS),
     labels: { time: LIGHTING_PROFILES, weather: WEATHERS, season: SEASONS },
+    anchors,
+    colliders,
+    checkCollisions,
+    setModel(s) { modelScene = s; },
+    gotoAnchor(key, { moveModel = true } = {}) {
+      const a = anchors[key];
+      if (!a) return false;
+      if (moveModel && modelScene) {
+        modelScene.position.set(a.pos[0], a.pos[1], a.pos[2]);
+        const fr2 = (a.yawDeg * Math.PI) / 180;
+        modelScene.rotation.y = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
+        modelScene.updateMatrixWorld(true);
+      }
+      return true;
+    },
     get state() { return { ...state, cur: { ...state.cur } }; },
     switches: [btnLamp, btnCur], // 点击拾取用：0=灯 1=帘
     sea, glass, faceMat, dome, hemiLight: hemi,
