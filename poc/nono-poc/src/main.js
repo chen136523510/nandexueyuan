@@ -92,9 +92,11 @@ if (ROOM_MODE) {
   keyLight.intensity = 0.4;
   fillLight.intensity = 0.22;
   rimLight.intensity = 0.35;
-  // 光效档案：?profile=noon|dusk|evening|night（默认正午）；开关=墙上按钮点击或控制台 API
-  const profile = params.get('profile');
-  if (profile) roomApi.setProfile(profile, { instant: true });
+  // 光效档案：?time/?weather/?season（默认正午·晴·春）；开关=墙上按钮点击或控制台 API
+  const t0 = params.get('time'), w0 = params.get('weather'), se0 = params.get('season');
+  if (t0) roomApi.setTime(t0, { instant: true });
+  if (w0) roomApi.setWeather(w0, { instant: true });
+  if (se0) roomApi.setSeason(se0, { instant: true });
 }
 // 房间开关点击（墙上按钮：灯/帘）
 if (ROOM_MODE) {
@@ -110,6 +112,7 @@ if (ROOM_MODE) {
       ? [roomApi.toggleLamp(), roomApi.state.curtainOpen]
       : [roomApi.state.lampOn, roomApi.toggleCurtain()];
     statusEl.textContent = `🎚 墙上开关：灯=${lampOn ? '开' : '关'} 帘=${curOpen ? '开' : '合'}`;
+    setupRoomHud();
   });
 }
 
@@ -139,6 +142,9 @@ loader.load(
     vrm.scene.traverse((obj) => {
       if (obj.isMesh) {
         obj.castShadow = true;
+        // 蒙皮网格视锥剔除用绑定姿态包围球（BUG-091：坐姿/大位移后头部偏离绑定位 0.4m+，
+        // 近距窄视锥下眼贴片等小包围球出锥=整片消失）——角色直播间常驻画面内，直接关剔除
+        obj.frustumCulled = false;
       }
     });
     // 眼部件关投影：眼球嵌在眼窝里，会被头部投影罩住（PBR 无环境光时纯黑=黑墨镜根因）
@@ -526,22 +532,35 @@ function setupRecipeHud() {
   });
 }
 
-// ---------- 房间 HUD（光效档案 + 灯/帘开关，room 模式） ----------
+// ---------- 房间 HUD（时间/天气/季节 + 灯/帘，room 模式；遥控=宇树式人工代理，Phase C 接大脑） ----------
 function setupRoomHud() {
   if (!roomApi) return;
-  const hud = document.getElementById('roomHudBtns');
-  if (!hud) return;
-  const mk = (label, fn) => {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.addEventListener('click', fn);
-    hud.appendChild(b);
-    return b;
+  const mkRow = (spanId, keys, labels, cur, setFn) => {
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    span.innerHTML = '';
+    for (const key of keys) {
+      const b = document.createElement('button');
+      b.textContent = labels[key]?.label ?? key;
+      b.classList.toggle('on', key === cur);
+      b.addEventListener('click', () => { setFn(key); syncRoomHud(); });
+      span.appendChild(b);
+    }
   };
-  for (const p of roomApi.profiles) mk(p, () => { roomApi.setProfile(p); statusEl.textContent = `💡 光效档案：${p}`; });
-  mk('灯', () => statusEl.textContent = `💡 灯=${roomApi.toggleLamp() ? '开' : '关'}`);
-  mk('帘', () => statusEl.textContent = `🪟 帘=${roomApi.toggleCurtain() ? '开' : '合'}`);
-  hud.style.display = 'block';
+  const syncRoomHud = () => {
+    const s = roomApi.state;
+    mkRow('timeHud', roomApi.profiles, roomApi.labels.time, s.time, (k) => roomApi.setTime(k));
+    mkRow('weatherHud', roomApi.weathers, roomApi.labels.weather, s.weather, (k) => roomApi.setWeather(k));
+    mkRow('seasonHud', roomApi.seasons, roomApi.labels.season, s.season, (k) => roomApi.setSeason(k));
+    const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn');
+    if (lb) lb.classList.toggle('on', s.lampOn);
+    if (cb) cb.classList.toggle('on', !s.curtainOpen); // 帘合上=高亮
+  };
+  syncRoomHud();
+  document.getElementById('roomHud').style.display = 'block';
+  const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn');
+  if (lb) lb.addEventListener('click', () => { roomApi.toggleLamp(); syncRoomHud(); });
+  if (cb) cb.addEventListener('click', () => { roomApi.toggleCurtain(); syncRoomHud(); });
 }
 
 // ---------- 坐姿白盒预览（Phase B「坐下」配方雏形，?sit=1） ----------

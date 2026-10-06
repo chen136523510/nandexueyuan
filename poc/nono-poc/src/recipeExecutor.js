@@ -92,11 +92,10 @@ export class RecipeExecutor {
       const t0 = this.driver.time + delay;
       if (op.op === 'translate') {
         for (const axis of ['x', 'y', 'z']) {
-          const v = ((op[axis] ?? 0)) * intensity; // 平移单位=米，intensity 整体缩放
-          if (Math.abs(v) > 1e-6) {
-            this.driver.tweenPos(op.bone, axis, v, dur, { delay, easing: op.easing });
-            end = Math.max(end, t0 + dur);
-          }
+          if (op[axis] == null) continue; // 未声明的轴跳过；显式 0 也调度（起立=hips 归位目标恰为 0）
+          const v = (op[axis]) * intensity; // 平移单位=米，intensity 整体缩放
+          this.driver.tweenPos(op.bone, axis, v, dur, { delay, easing: op.easing });
+          end = Math.max(end, t0 + dur);
         }
       } else {
         // rotate / bend：deg→rad，intensity 缩放幅度（清冷人格=整体 intensity 上限，施工图 §4.3）

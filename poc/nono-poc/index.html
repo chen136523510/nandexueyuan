@@ -50,13 +50,23 @@
       <button data-recipe="hands_behind_back">背手</button>
       <button data-recipe="shoulder_shrug">耸肩</button>
       <button data-recipe="head_tilt">歪头</button>
+      <button data-recipe="sit_chair">坐下</button>
+      <button data-recipe="stand_up">起立</button>
+      <button data-recipe="doze">打瞌睡</button>
+      <button data-recipe="stretch">伸懒腰</button>
       <button data-recipe="__stop">停配方</button>
     </span></div>
     <div style="margin-top:6px">小脑测试台（粘贴配方 JSON，免刷新即播）：
       <button id="recipePlayJson">▶ 播放 JSON</button>
       <textarea id="recipeJson" rows="5" spellcheck="false" placeholder='{"id":"demo","label":"测试","sequence":[{"op":"rotate","bone":"head","axis":"z","deg":12,"dur":0.5}]}'></textarea>
     </div>
-    <div id="roomHud" style="margin-top:6px;display:none">房间：<span id="roomHudBtns"></span></div>
+    <div id="roomHud" style="margin-top:6px;display:none">
+      时间：<span id="timeHud"></span>
+      <button id="roomLampBtn">灯</button>
+      <button id="roomCurBtn">帘</button><br>
+      天气：<span id="weatherHud"></span><br>
+      季节：<span id="seasonHud"></span>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

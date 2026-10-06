@@ -1,0 +1,17 @@
+{
+  "id": "stretch",
+  "label": "伸懒腰",
+  "version": 1,
+  "hold": false,
+  "autoReturn": 1.4,
+  "interruptible": true,
+  "mirrorable": false,
+  "channels": { "expression": null, "breath": null },
+  "ref": "场景交互配方 #4：双臂高举过头顶（左 z+135/右 z−135，轴约定 z+=上抬）+挺胸仰头，保持 1.4s 后自动回归中立（autoReturn）。站坐皆可",
+  "sequence": [
+    { "op": "rotate", "bone": "leftUpperArm",  "axis": "z", "deg": 135,  "dur": 1.0 },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "z", "deg": -135, "dur": 1.0 },
+    { "op": "rotate", "bone": "chest",         "axis": "x", "deg": -8,   "dur": 1.0, "delay": 0.2 },
+    { "op": "rotate", "bone": "head",          "axis": "x", "deg": -10,  "dur": 1.0, "delay": 0.3 }
+  ]
+}

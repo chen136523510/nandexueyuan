@@ -9,7 +9,7 @@ import * as THREE from 'three';
 export const ROOM = {
   size: { w: 4.5, d: 5.0, h: 2.8 },
   desk: { cx: 0.36, cy: 3.25, w: 0.72, l: 1.40, h: 0.72 },
-  monitor: { cx: 0.30, cy: 3.60, screenW: 0.62, screenH: 0.37, centerY: 1.127, tiltDeg: 15 },
+  monitor: { cx: 0.36, cy: 3.25, screenW: 0.62, screenH: 0.37, centerY: 1.127, tiltDeg: 0 }, // v3：桌面居中正对诺诺
   keyboard: { cx: 0.52, cy: 3.05, w: 0.13, l: 0.32 },
   mouse: { cx: 0.53, cy: 3.42 },
   pc: { cx: 0.27, cy: 2.895, w: 0.26, h: 0.50, d: 0.55 },
@@ -23,12 +23,32 @@ export const ROOM = {
 };
 
 // —— 光效档案（灯位恒定；方法论：院长 idle-game room-lighting-profiles.md §三/§六）——
-// 一态一签名：正午=硬窗格亮白 / 黄昏=蓝橙对撞 / 傍晚=暖光池浮在深蓝 / 深夜=屏幕微光
+// 7 时相全量落地（§三主表）；一态一签名：凌晨=一盏微光/清晨=斜长光斑/正午=硬窗格亮白/下午=金色光斑/
+//   黄昏=蓝橙对撞/傍晚=暖光池浮在深蓝/深夜=屏幕微光
 export const LIGHTING_PROFILES = {
-  noon:    { label: '正午·硬窗光', sun: { i: 1.7, c: 0xfff6e6 }, lamp: { i: 0,  c: 0xffd9a0 }, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, idColor: '#F6F3E7' },
-  dusk:    { label: '黄昏·蓝橙对撞', sun: { i: 1.05, c: 0xffab5e }, lamp: { i: 9,  c: 0xffc088 }, hemi: 0.4,  seaTint: 0xd9a06a, glass: 0.4,  monitor: 0.45, bg: 0x6a5a7a, idColor: '#FF9E4F' },
-  evening: { label: '傍晚·暖光池', sun: { i: 0.22, c: 0x8fa3c8 }, lamp: { i: 14, c: 0xffd9a0 }, hemi: 0.3,  seaTint: 0x5a6c96, glass: 0.5,  monitor: 0.55, bg: 0x24324e, idColor: '#FFB168' },
-  night:   { label: '深夜·屏幕微光', sun: { i: 0.05, c: 0x9db8de }, lamp: { i: 2.5, c: 0xffc890 }, hemi: 0.18, seaTint: 0x2c3d5e, glass: 0.55, monitor: 0.95, bg: 0x0f1524, idColor: '#E9A85B' },
+  dawn:     { label: '凌晨·一盏微光', sun: { i: 0.04, c: 0xa8c0e0 }, lamp: { i: 2.2, c: 0xffc890 }, hemi: 0.12, seaTint: 0x1a2438, glass: 0.60, monitor: 0.25, bg: 0x0d1120, idColor: '#E8B36A' },
+  morning:  { label: '清晨·斜长光斑', sun: { i: 0.95, c: 0xffd9a0 }, lamp: { i: 4.2, c: 0xffd9a0 }, hemi: 0.45, seaTint: 0xc8d8dc, glass: 0.35, monitor: 0.30, bg: 0xa8c0d8, idColor: '#FFD9A0' },
+  noon:     { label: '正午·硬窗光',  sun: { i: 1.70, c: 0xfff6e6 }, lamp: { i: 0,   c: 0xffd9a0 }, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, idColor: '#F6F3E7' },
+  afternoon:{ label: '下午·金色光斑', sun: { i: 1.15, c: 0xffe2b0 }, lamp: { i: 5.6, c: 0xffd9a0 }, hemi: 0.45, seaTint: 0xd8c8a8, glass: 0.35, monitor: 0.35, bg: 0x9fa8b8, idColor: '#F0C489' },
+  dusk:     { label: '黄昏·蓝橙对撞', sun: { i: 1.05, c: 0xffab5e }, lamp: { i: 9,   c: 0xffc088 }, hemi: 0.40, seaTint: 0xd9a06a, glass: 0.40, monitor: 0.45, bg: 0x6a5a7a, idColor: '#FF9E4F' },
+  evening:  { label: '傍晚·暖光池',  sun: { i: 0.22, c: 0x8fa3c8 }, lamp: { i: 14,  c: 0xffd9a0 }, hemi: 0.30, seaTint: 0x5a6c96, glass: 0.50, monitor: 0.55, bg: 0x24324e, idColor: '#FFB168' },
+  night:    { label: '深夜·屏幕微光', sun: { i: 0.05, c: 0x9db8de }, lamp: { i: 2.5, c: 0xffc890 }, hemi: 0.18, seaTint: 0x2c3d5e, glass: 0.55, monitor: 0.95, bg: 0x0f1524, idColor: '#E9A85B' },
+};
+
+// 天气叠层（调研 §四）：窗光倍率 + 全局色偏 + 灯补偿（兜底规则：叠层不得吃掉时相签名）
+export const WEATHERS = {
+  sunny:  { label: '晴', mul: 1.00, tint: null,     k: 0,    hemiMul: 1.00, lampBoost: 0    },
+  cloudy: { label: '阴', mul: 0.35, tint: 0x8fa3b8, k: 0.50, hemiMul: 0.70, lampBoost: 0.25 },
+  rain:   { label: '雨', mul: 0.25, tint: 0x5e7fa6, k: 0.55, hemiMul: 0.55, lampBoost: 0.40 },
+  storm:  { label: '暴雨', mul: 0.12, tint: 0x46584e, k: 0.60, hemiMul: 0.45, lampBoost: 0.80 },
+};
+
+// 季节偏置（调研 §五）：只动两样——窗外的世界（色）与太阳角度（光斑形态），灯位不动
+export const SEASONS = {
+  spring: { label: '春', tint: 0xc9d6a0, k: 0.15, sunY: 2.30, hemiMul: 1.00 },
+  summer: { label: '夏', tint: 0xcfe8e6, k: 0.15, sunY: 2.90, hemiMul: 1.05 },
+  autumn: { label: '秋', tint: 0xd9a05b, k: 0.20, sunY: 1.90, hemiMul: 1.00 },
+  winter: { label: '冬', tint: 0xafc6d9, k: 0.18, sunY: 1.45, hemiMul: 1.08 }, // 低角度=光斑铺到房间中段 + 雪光填充
 };
 
 const M = (color, opts = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.02, ...opts });
@@ -257,11 +277,11 @@ export function buildRoom(scene, { posterUrl } = {}) {
 
   // —— 运行时状态与 API（后台开关功能）——
   const state = {
-    profile: 'noon',
-    lampOn: false,        // 正午默认关灯（档案驱动）
+    time: 'noon', weather: 'sunny', season: 'spring',
+    lampOn: false,        // 灯态（档案切换时按档案默认重置，可手动覆盖）
     curtainOpen: true,    // 帘默认开
     // 当前插值值（向目标 lerp）
-    cur: { sunI: 1.7, sunC: 0xfff6e6, lampI: 0, lampC: 0xffd9a0, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, curtain: 1, sunFactor: 1 },
+    cur: { sunI: 1.7, sunC: 0xfff6e6, lampI: 0, lampC: 0xffd9a0, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, curtain: 1 },
   };
   const target = { ...state.cur };
   const hemi = new THREE.HemisphereLight(0xfff2e2, 0x8a7a66, 0.55);
@@ -269,28 +289,48 @@ export function buildRoom(scene, { posterUrl } = {}) {
   const sceneBg = new THREE.Color(0x9fb8cc);
 
   function applyTargets() {
-    const p = LIGHTING_PROFILES[state.profile];
-    target.sunI = p.sun.i * (state.curtainOpen ? 1 : 0.22); // 帘遮挡：窗光 ×0.22
+    const p = LIGHTING_PROFILES[state.time];
+    const wt = WEATHERS[state.weather];
+    const se = SEASONS[state.season];
+    target.sunI = p.sun.i * wt.mul * (state.curtainOpen ? 1 : 0.22); // 天气叠层 × 帘遮挡
     target.sunC = p.sun.c;
-    target.lampI = state.lampOn ? p.lamp.i : 0;
+    target.lampI = state.lampOn ? p.lamp.i * (1 + wt.lampBoost) : 0; // 兜底规则：天气压光时灯补偿，保签名
     target.lampC = p.lamp.c;
-    target.hemi = p.hemi;
-    target.seaTint = p.seaTint;
+    // 海景/背景：档案基色 → 天气色偏 → 季节色偏
+    cA.set(p.seaTint); if (wt.tint) cA.lerp(cB.set(wt.tint), wt.k); cA.lerp(cB.set(se.tint), se.k);
+    target.seaTint = cA.getHex();
+    cA.set(p.bg); if (wt.tint) cA.lerp(cB.set(wt.tint), wt.k * 0.8); cA.lerp(cB.set(se.tint), se.k * 0.8);
+    target.bg = cA.getHex();
+    target.hemi = p.hemi * wt.hemiMul * (se.hemiMul ?? 1);
     target.glass = p.glass;
     target.monitor = p.monitor;
-    target.bg = p.bg;
     target.curtain = state.curtainOpen ? 1 : 0;
-    target.sunFactor = state.curtainOpen ? 1 : 0.22;
+    sun.position.y = se.sunY; // 季节太阳角度（光斑形态），灯位不动
   }
 
-  function setProfile(name, { instant = false } = {}) {
+  function setTime(name, { instant = false } = {}) {
     if (!LIGHTING_PROFILES[name]) return false;
-    state.profile = name;
-    state.lampOn = LIGHTING_PROFILES[name].lamp.i > 4; // 档案决定默认灯态（可再手动开关）
+    state.time = name;
+    state.lampOn = LIGHTING_PROFILES[name].lamp.i > 0.5; // 档案决定默认灯态（noon 档灯=0 即关；微光档也算开）
     applyTargets();
     if (instant) stepLerp(1);
     return true;
   }
+  function setWeather(name, { instant = false } = {}) {
+    if (!WEATHERS[name]) return false;
+    state.weather = name;
+    applyTargets();
+    if (instant) stepLerp(1);
+    return true;
+  }
+  function setSeason(name, { instant = false } = {}) {
+    if (!SEASONS[name]) return false;
+    state.season = name;
+    applyTargets();
+    if (instant) stepLerp(1);
+    return true;
+  }
+  const setProfile = setTime; // 兼容旧调用
   function toggleLamp() { state.lampOn = !state.lampOn; applyTargets(); return state.lampOn; }
   function toggleCurtain() { state.curtainOpen = !state.curtainOpen; applyTargets(); return state.curtainOpen; }
 
@@ -302,7 +342,6 @@ export function buildRoom(scene, { posterUrl } = {}) {
     c.glass += (t.glass - c.glass) * k;
     c.monitor += (t.monitor - c.monitor) * k;
     c.curtain += (t.curtain - c.curtain) * k;
-    c.sunFactor += (t.sunFactor - c.sunFactor) * k;
     c.sunC = lerpColor(c.sunC, t.sunC, k);
     c.lampC = lerpColor(c.lampC, t.lampC, k);
     c.seaTint = lerpColor(c.seaTint, t.seaTint, k);
@@ -339,9 +378,13 @@ export function buildRoom(scene, { posterUrl } = {}) {
     group: g,
     update,
     setProfile,
-    toggleLamp,
-    toggleCurtain,
+    setTime,
+    setWeather,
+    setSeason,
     profiles: Object.keys(LIGHTING_PROFILES),
+    weathers: Object.keys(WEATHERS),
+    seasons: Object.keys(SEASONS),
+    labels: { time: LIGHTING_PROFILES, weather: WEATHERS, season: SEASONS },
     get state() { return { ...state, cur: { ...state.cur } }; },
     switches: [btnLamp, btnCur], // 点击拾取用：0=灯 1=帘
     sea, glass, faceMat, dome, hemiLight: hemi,

@@ -1,0 +1,18 @@
+{
+  "id": "stand_up",
+  "label": "起立",
+  "version": 1,
+  "hold": false,
+  "autoReturn": 0.3,
+  "interruptible": true,
+  "mirrorable": false,
+  "channels": { "expression": null, "breath": null },
+  "ref": "场景交互配方 #2：坐下（sit_chair）的逆序——补间永远从当前值出发（施工图 §5.1），坐姿偏移直接归 0 即起立。前提=当前处于坐姿",
+  "sequence": [
+    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": 0, "dur": 0.55 },
+    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": 0, "dur": 0.55 },
+    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 0, "dur": 0.55, "delay": 0.1 },
+    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 0, "dur": 0.55, "delay": 0.1 },
+    { "op": "translate", "bone": "hips",          "y": 0,      "dur": 0.7,  "delay": 0.05 }
+  ]
+}
