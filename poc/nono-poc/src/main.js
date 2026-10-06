@@ -75,22 +75,42 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// ---------- 诺诺房间白盒（场景设计 v1.0：?room=1 开启，坐标=场景设计/诺诺房间场景设计方案.md §三） ----------
+// ---------- 诺诺房间白盒（场景设计 v1.1：?room=1 开启，坐标=场景设计/诺诺房间场景设计方案.md §三） ----------
 const ROOM_MODE = params.get('room') === '1';
+let roomApi = null;
 if (ROOM_MODE) {
   ground.visible = false;
-  buildRoom(scene, { posterUrl: 'room/poster_mygo.jpg' });
-  // 全景机位：南墙外上空朝北看（一点透视=上短下长梯形，院长 2026-10-06 裁决语义）
+  roomApi = buildRoom(scene, { posterUrl: 'room/poster_mygo.jpg' });
+  // 全景机位：南墙外上空朝北看（一点透视=上短下长梯形，院长 2026-10-04 裁决语义）
   camera.fov = 55;
   camera.updateProjectionMatrix();
   camera.position.set(2.25, 1.62, 2.55);
   controls.target.set(2.25, 0.95, -2.9);
   controls.maxDistance = 12;
-  // 灯光调和：北窗日光（room 内建）为主，三件套降为补光
-  hemiLight.intensity = 0.4;
-  keyLight.intensity = 0.55;
-  fillLight.intensity = 0.3;
-  rimLight.intensity = 0.45;
+  // 灯光调和：房间档案灯光为主，三件套降为补光
+  hemiLight.intensity = 0.25;
+  keyLight.intensity = 0.4;
+  fillLight.intensity = 0.22;
+  rimLight.intensity = 0.35;
+  // 光效档案：?profile=noon|dusk|evening|night（默认正午）；开关=墙上按钮点击或控制台 API
+  const profile = params.get('profile');
+  if (profile) roomApi.setProfile(profile, { instant: true });
+}
+// 房间开关点击（墙上按钮：灯/帘）
+if (ROOM_MODE) {
+  const raycaster = new THREE.Raycaster();
+  const pv = new THREE.Vector2();
+  window.addEventListener('pointerdown', (e) => {
+    if (!roomApi) return;
+    pv.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    raycaster.setFromCamera(pv, camera);
+    const hits = raycaster.intersectObjects(roomApi.switches, false);
+    if (!hits.length) return;
+    const [lampOn, curOpen] = hits[0].object === roomApi.switches[0]
+      ? [roomApi.toggleLamp(), roomApi.state.curtainOpen]
+      : [roomApi.state.lampOn, roomApi.toggleCurtain()];
+    statusEl.textContent = `🎚 墙上开关：灯=${lampOn ? '开' : '关'} 帘=${curOpen ? '开' : '合'}`;
+  });
 }
 
 // ---------- Stats 性能面板（验收 6） ----------
@@ -179,6 +199,7 @@ loader.load(
       const fr = (ch.faceDeg * Math.PI) / 180;
       vrm.scene.rotation.y = Math.atan2(Math.cos(fr), -Math.sin(fr)); // 面朝 faceDeg（205°=西偏南20°，露侧颜）
       if (params.get('sit') === '1') playSitPreview();
+      setupRoomHud();
     }
 
     statusEl.textContent = `✅ 诺诺上屏（${MODEL.label}${eyeRig ? ' · EyePivot接管' : ''}）`;
@@ -337,6 +358,7 @@ renderer.setAnimationLoop(() => {
       poseDriver?.update(delta);
       recipeExecutor?.update();
       poseDriver?.apply();
+      roomApi?.update(delta, scene.background); // 房间光效档案插值（灯位恒定，只动强度/色温/帘）
       // 心跳叠加（additive，配方播放期间呼吸继续=诺诺没有静止帧）
       const chest = vrm.humanoid.getNormalizedBoneNode('chest');
       if (chest) chest.rotation.x += hb.breath;
@@ -504,6 +526,24 @@ function setupRecipeHud() {
   });
 }
 
+// ---------- 房间 HUD（光效档案 + 灯/帘开关，room 模式） ----------
+function setupRoomHud() {
+  if (!roomApi) return;
+  const hud = document.getElementById('roomHudBtns');
+  if (!hud) return;
+  const mk = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    hud.appendChild(b);
+    return b;
+  };
+  for (const p of roomApi.profiles) mk(p, () => { roomApi.setProfile(p); statusEl.textContent = `💡 光效档案：${p}`; });
+  mk('灯', () => statusEl.textContent = `💡 灯=${roomApi.toggleLamp() ? '开' : '关'}`);
+  mk('帘', () => statusEl.textContent = `🪟 帘=${roomApi.toggleCurtain() ? '开' : '合'}`);
+  hud.style.display = 'block';
+}
+
 // ---------- 坐姿白盒预览（Phase B「坐下」配方雏形，?sit=1） ----------
 // 数值来源：场景设计 §二实测推导——髋关节下降 0.964→0.586（椅面 0.556+臀厚 0.03）、
 // 大腿水平（膝 90°）=上腿 x±90、小腿垂直=下腿反向 ±90，脚掌落地（踝 0.098=站姿实测值）
@@ -537,6 +577,7 @@ window.__poc = {
   lookAtTarget,
   THREE,
   renderer, // 调试用：窗格被遮挡 rAF 节流时可手动 render 取证
+  get room() { return roomApi; }, // 房间后台开关：room.toggleLamp()/toggleCurtain()/setProfile('night')/state
 };
 
 // ---------- 自适应 ----------

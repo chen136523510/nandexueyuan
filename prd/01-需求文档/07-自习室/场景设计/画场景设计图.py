@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 诺诺房间场景设计图生成器 v2（R-058 · 2026-10-06）
-v2 落实院长 11 条裁决：窗北墙(窗台=坐床胸高0.72)/床头东墙/左门西墙南端/右门东墙南端/
+v3 落实院长四轮裁决：落地窗居中(帘可开合)+床南移/床头东墙/左门西墙南端/右门东墙南端/
 海报东墙床头上方/键盘左鼠标右(诺诺右手边=北)/椅面可伸缩/显示屏+机械臂+桌下主机/屏椅微侧。
 数据来源：nonono_v7.vrm 站姿骨骼实测，见《诺诺房间场景设计方案.md》§二
 用法：python 画场景设计图.py → 同目录输出 户型图.png / 立面图-工作区.png / 立面图-北墙东墙.png
@@ -27,8 +27,10 @@ MONITOR = dict(x=0.30, y=3.60, w=0.62, face_deg=165)    # 显示屏：桌面位�
 PC = dict(x0=0.14, y0=2.62, w=0.26, d=0.55, h=0.50)     # 主机机箱：桌下落地
 KEYBOARD = dict(x=0.52, y=3.05, w=0.30, d=0.12)          # 键盘(诺诺正前方)
 MOUSE = dict(x=0.53, y=3.42)                             # 鼠标在键盘右边=诺诺右手边=北
-BED = dict(x0=2.50, y0=3.60, l=2.00, w=1.40, mattress=0.45, headboard_h=1.10)  # 床头贴东墙，沿北墙向西
-WINDOW = dict(x0=2.80, x1=4.20, sill=0.72, top=2.10)     # 北墙（窗台=诺诺坐床胸部高度，可搭窗沿）
+BED = dict(x0=2.50, y0=3.10, l=2.00, w=1.40, mattress=0.45, headboard_h=1.10)  # 床头贴东墙，v3 南移 0.5m（床沿北墙留过道通未来阳台）
+WINDOW = dict(x0=0.65, x1=3.85, top=2.80)                 # v3 落地窗：居中 3.2m，左右各留 0.65m 北墙，落地到顶
+CURTAIN_W = 0.55                                          # 帘片收拢宽度（米），左右展开式
+SWITCH = dict(x=4.12, y=4.62)                             # 墙面开关面板（北墙东段，床头北边，灯/帘两键）
 DOOR_EXIT = dict(y0=0.35, y1=1.25)                       # 左门=西墙南端（出房间）
 DOOR_BATH = dict(y0=0.35, y1=1.25)                       # 右门=东墙南端（独立卫浴）
 POSTER_MYGO = dict(y0=3.90, y1=4.60, z0=1.30, z1=2.10)   # 东墙床头正上方（3:4 竖版）
@@ -87,10 +89,18 @@ ax.add_patch(Rectangle((BED['x0']+0.08, BED['y0']+0.08), BED['l']-0.70, BED['w']
 ax.add_patch(Rectangle((ROOM_W-0.08, BED['y0']-0.05), 0.08, BED['w']+0.10, fc='#6d4c41', zorder=4))
 ax.text(BED['x0']+BED['l']/2, BED['y0']+BED['w']/2-0.30, '床 2.0×1.4 床头朝东\n(无床底·被子枕头)', ha='center', va='center', fontsize=8.5, zorder=5)
 ax.text(ROOM_W-0.28, BED['y0']+BED['w']/2, '床头板', rotation=90, va='center', fontsize=7, color='white', zorder=5)
-# 窗（北墙，窗台=坐床胸高）
-ax.plot([WINDOW['x0'], WINDOW['x1']], [ROOM_D, ROOM_D], color='#4fc3f7', lw=7, solid_capstyle='butt', zorder=4)
-ax.text((WINDOW['x0']+WINDOW['x1'])/2, ROOM_D-0.16, '窗户(北墙)·窗台0.72=坐床胸高·可搭窗沿', ha='center', va='top', fontsize=7.5, color='#01579b', zorder=5,
+# 落地窗（北墙，v3：居中 3.2m 落地到顶，左右各留 0.65m 墙；帘轨+双帘收拢示意）
+ax.plot([WINDOW['x0'], WINDOW['x1']], [ROOM_D, ROOM_D], color='#4fc3f7', lw=8, solid_capstyle='butt', zorder=4)
+for mx in (WINDOW['x0'], (WINDOW['x0']+WINDOW['x1'])/2, WINDOW['x1']):
+    ax.plot([mx, mx], [ROOM_D-0.06, ROOM_D], color='#f5f5f0', lw=2, zorder=5)
+ax.plot([WINDOW['x0']-0.15, WINDOW['x1']+0.15], [ROOM_D+0.06, ROOM_D+0.06], color='#b8a888', lw=2.5, zorder=5)
+ax.plot([WINDOW['x0']+0.10, WINDOW['x0']+0.10+CURTAIN_W], [ROOM_D-0.16, ROOM_D-0.16], color='#e0d5be', lw=5, zorder=5)
+ax.plot([WINDOW['x1']-0.10-CURTAIN_W, WINDOW['x1']-0.10], [ROOM_D-0.16, ROOM_D-0.16], color='#e0d5be', lw=5, zorder=5)
+ax.text((WINDOW['x0']+WINDOW['x1'])/2, ROOM_D-0.30, '落地窗(v3)·居中3.2m·帘左右展开(开合可由诺诺/后台控制)\n未来开窗通阳台(现阶段不做)', ha='center', va='top', fontsize=7.2, color='#01579b', zorder=5,
         bbox=dict(fc='white', ec='none', alpha=0.85, pad=0.8))
+# 开关面板（北墙东段）
+ax.add_patch(Rectangle((SWITCH['x']-0.05, SWITCH['y']-0.04), 0.10, 0.08, fc='#f5f5f0', ec='#999', zorder=5))
+ax.text(SWITCH['x']-0.09, SWITCH['y'], '开关\n灯/帘', ha='right', va='center', fontsize=6.5, color='#555', zorder=5)
 # 海报（东墙床头正上方——俯视以粗线示意）
 ax.plot([ROOM_W, ROOM_W], [POSTER_MYGO['y0'], POSTER_MYGO['y1']], color='#8e24aa', lw=5, alpha=0.8, zorder=4)
 ax.text(ROOM_W-0.14, (POSTER_MYGO['y0']+POSTER_MYGO['y1'])/2, 'MyGO海报(床头正上方)', rotation=90, ha='right', va='center', fontsize=6.8, color='#6a1b9a', zorder=5)
@@ -111,13 +121,13 @@ dim(ax, (0, -0.35), (ROOM_W, -0.35), '房间东西 4.5m', offset=(0, -0.18))
 dim(ax, (-0.42, 0), (-0.42, ROOM_D), '房间南北 5.0m', offset=(-0.30, 0), fs=9)
 dim(ax, (BED['x0'], ROOM_D+0.15), (ROOM_W, ROOM_D+0.15), '床长 2.0', offset=(0, 0.12))
 dim(ax, (ROOM_W+0.18, BED['y0']), (ROOM_W+0.18, ROOM_D), '床宽 1.4\n(床头贴东墙)', offset=(0.36, 0), fs=8)
-dim(ax, (WINDOW['x0'], ROOM_D), (WINDOW['x1'], ROOM_D), '窗 1.4m', offset=(0, 0.16), fs=8)
+dim(ax, (WINDOW['x0'], ROOM_D), (WINDOW['x1'], ROOM_D), '落地窗 3.2m', offset=(0, 0.24), fs=8)
 ax.text(-0.34, DESK['y0']+DESK['l']/2, '桌长 1.4', rotation=90, va='center', ha='center', color='#c62828', fontsize=8.5,
         bbox=dict(fc='white', ec='none', alpha=0.85, pad=0.5))
-dim(ax, (BED['x0'], BED['y0']+0.3), (CHAIR['cx'], CHAIR['cy']), '床尾-椅 ≈1.6m\n(“两三个人”)', offset=(0.15, -0.38), fs=8)
+dim(ax, (BED['x0'], BED['y0']+0.3), (CHAIR['cx'], CHAIR['cy']), '床尾-椅 ≈1.5m\n(“两三个人”)', offset=(0.15, -0.38), fs=8)
 ax.set_xlim(-0.85, ROOM_W+0.9); ax.set_ylim(-1.25, ROOM_D+0.55)
 ax.set_aspect('equal'); ax.axis('off')
-ax.set_title('诺诺房间 · 户型图 v2（俯视·单位米·红字=待比对）', fontsize=13, pad=10)
+ax.set_title('诺诺房间 · 户型图 v3（俯视·单位米·红字=待比对）', fontsize=13, pad=10)
 fig.tight_layout()
 fig.savefig(os.path.join(os.path.dirname(__file__), '户型图.png'), dpi=160)
 plt.close(fig)
@@ -180,20 +190,21 @@ plt.close(fig)
 
 # ================= 图三：北墙 + 东墙立面 =================
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 5.5))
-# 北墙（窗，下方是床侧影）
+# 北墙立面（v3 落地窗+双帘+开关面板；床南移后不贴此墙）
 ax1.add_patch(Rectangle((0, 0), ROOM_W, ROOM_H, fc=FLOOR, ec='none'))
-ax1.add_patch(Rectangle((WINDOW['x0'], WINDOW['sill']), WINDOW['x1']-WINDOW['x0'], WINDOW['top']-WINDOW['sill'],
+ax1.add_patch(Rectangle((WINDOW['x0'], 0), WINDOW['x1']-WINDOW['x0'], WINDOW['top'],
                         fc='#b3e5fc', ec='#0277bd', lw=2))
-ax1.text((WINDOW['x0']+WINDOW['x1'])/2, (WINDOW['sill']+WINDOW['top'])/2, '窗→沙滩大海\n(二楼海景)', ha='center', va='center', fontsize=9, color='#01579b')
-ax1.plot([0, ROOM_W], [BED['mattress'], BED['mattress']], color='#ad1457', lw=3)
-ax1.text(BED['x0']+0.1, BED['mattress']+0.06, '床垫顶 0.45（床沿北墙，坐此搭窗沿）', fontsize=8, color='#ad1457', ha='left')
-for h, name in ((WINDOW['sill'], f'窗台 {WINDOW["sill"]}=坐床胸高'), (WINDOW['top'], f'窗顶 {WINDOW["top"]}')):
-    ax1.plot([-0.15, ROOM_W+0.15], [h, h], color='#0277bd', lw=0.7, ls=':')
-    ax1.text(-0.18, h+0.04, name, fontsize=7.5, color='#0277bd', ha='right')
-ax1.annotate('', xy=(WINDOW['x0'], WINDOW['sill']-0.12), xytext=(WINDOW['x0'], 0.45),
-             arrowprops=dict(arrowstyle='-', color='#0277bd', lw=0.8, ls=':'))
+for mx in (WINDOW['x0'], (WINDOW['x0']+WINDOW['x1'])/2, WINDOW['x1']):
+    ax1.plot([mx, mx], [0, WINDOW['top']], color='#f5f5f0', lw=3)
+ax1.plot([WINDOW['x0']+0.08, WINDOW['x0']+0.08+CURTAIN_W], [0.4, ROOM_H-0.15], color='#e0d5be', lw=6)
+ax1.plot([WINDOW['x1']-0.08-CURTAIN_W, WINDOW['x1']-0.08], [0.4, ROOM_H-0.15], color='#e0d5be', lw=6)
+ax1.text((WINDOW['x0']+WINDOW['x1'])/2, ROOM_H/2, '落地窗→沙滩大海\n(二楼海景·未来通阳台)', ha='center', va='center', fontsize=9, color='#01579b')
+ax1.add_patch(Rectangle((SWITCH['x']-0.05, 1.08), 0.10, 0.16, fc='#f5f5f0', ec='#999'))
+ax1.text(SWITCH['x']-0.09, 1.16, '开关面板\n(灯/帘·与吊灯同区)', ha='right', va='center', fontsize=7.5, color='#555')
+ax1.axhline(BED['mattress'], xmin=(BED['x0'])/ROOM_W, color='#ad1457', lw=2, ls=':')
+ax1.text(BED['x0']+0.1, BED['mattress']+0.06, '床垫顶 0.45（床已南移，留 0.5m 过道）', fontsize=8, color='#ad1457', ha='left')
 ax1.set_xlim(-0.85, ROOM_W+0.2); ax1.set_ylim(0, ROOM_H+0.15); ax1.set_aspect('equal'); ax1.axis('off')
-ax1.set_title('北墙立面（窗+床沿，坐床可搭窗沿）', fontsize=12)
+ax1.set_title('北墙立面（v3 落地窗+双帘+开关面板）', fontsize=12)
 # 东墙（床头板+MyGO海报+右门卫浴）
 ax2.add_patch(Rectangle((0, 0), ROOM_D, ROOM_H, fc=FLOOR, ec='none'))
 ax2.add_patch(Rectangle((ROOM_D-BED['w'], 0), BED['w'], BED['headboard_h'], fc='#6d4c41', ec='#4e342e'))
@@ -206,7 +217,7 @@ ax2.add_patch(Rectangle((DOOR_BATH['y0'], 0), DOOR_BATH['y1']-DOOR_BATH['y0'], 2
 ax2.text((DOOR_BATH['y0']+DOOR_BATH['y1'])/2, 1.0, '右门\n独立卫浴', ha='center', va='center', fontsize=9, color='#1b5e20')
 ax2.set_xlim(-0.3, ROOM_D+0.2); ax2.set_ylim(0, ROOM_H+0.15); ax2.set_aspect('equal'); ax2.axis('off')
 ax2.set_title('东墙立面（床头贴此墙·MyGO海报·右门=卫浴）', fontsize=12)
-fig.suptitle('诺诺房间 · 墙面立面图 v2（单位米）· 孤独摇滚海报(横版)位置待定未画', fontsize=13)
+fig.suptitle('诺诺房间 · 墙面立面图 v3（单位米）· 孤独摇滚海报(横版)位置待定未画', fontsize=13)
 fig.tight_layout()
 fig.savefig(os.path.join(os.path.dirname(__file__), '立面图-北墙东墙.png'), dpi=160)
 plt.close(fig)
