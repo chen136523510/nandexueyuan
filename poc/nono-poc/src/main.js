@@ -10,6 +10,7 @@ import { loadMixamoAnimation } from './mixamoAnimation.js';
 import { PoseDriver } from './poseDriver.js';
 import { RecipeExecutor } from './recipeExecutor.js';
 import { computeHeartbeat } from './heartbeat.js';
+import { buildRoom } from './room.js';
 import Stats from 'three/addons/libs/stats.module.js';
 // 模型原地引用（不复制进 PoC）：Vite assetsInclude+?url 生成 /@fs/ 资源地址
 // ?model=v5 可对照旧贴片眼版；默认 v6（3D 眼球总成）
@@ -73,6 +74,24 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
+
+// ---------- 诺诺房间白盒（场景设计 v1.0：?room=1 开启，坐标=场景设计/诺诺房间场景设计方案.md §三） ----------
+const ROOM_MODE = params.get('room') === '1';
+if (ROOM_MODE) {
+  ground.visible = false;
+  buildRoom(scene, { posterUrl: 'room/poster_mygo.jpg' });
+  // 全景机位：南墙外上空朝北看（一点透视=上短下长梯形，院长 2026-10-06 裁决语义）
+  camera.fov = 55;
+  camera.updateProjectionMatrix();
+  camera.position.set(2.25, 1.62, 2.55);
+  controls.target.set(2.25, 0.95, -2.9);
+  controls.maxDistance = 12;
+  // 灯光调和：北窗日光（room 内建）为主，三件套降为补光
+  hemiLight.intensity = 0.4;
+  keyLight.intensity = 0.55;
+  fillLight.intensity = 0.3;
+  rimLight.intensity = 0.45;
+}
 
 // ---------- Stats 性能面板（验收 6） ----------
 const stats = new Stats();
@@ -152,6 +171,15 @@ loader.load(
       else if (state === 'idle') statusEl.textContent = '🧠 待命（idle）';
     });
     setupRecipeHud();
+
+    // 房间模式：诺诺入房（站位=椅前活动区），?sit=1 白盒坐姿预览（即 Phase B「坐下」配方雏形）
+    if (ROOM_MODE) {
+      const ch = { x: 1.05, z: -3.25, faceDeg: 205 };
+      vrm.scene.position.set(ch.x, 0, ch.z);
+      const fr = (ch.faceDeg * Math.PI) / 180;
+      vrm.scene.rotation.y = Math.atan2(Math.cos(fr), -Math.sin(fr)); // 面朝 faceDeg（205°=西偏南20°，露侧颜）
+      if (params.get('sit') === '1') playSitPreview();
+    }
 
     statusEl.textContent = `✅ 诺诺上屏（${MODEL.label}${eyeRig ? ' · EyePivot接管' : ''}）`;
     console.log('[nono-poc] VRM loaded:', vrm.meta?.meta?.name ?? '(unnamed)');
@@ -473,6 +501,27 @@ function setupRecipeHud() {
       console.error('[recipe]', err);
       statusEl.textContent = '❌ JSON 解析失败（看控制台）';
     }
+  });
+}
+
+// ---------- 坐姿白盒预览（Phase B「坐下」配方雏形，?sit=1） ----------
+// 数值来源：场景设计 §二实测推导——髋关节下降 0.964→0.586（椅面 0.556+臀厚 0.03）、
+// 大腿水平（膝 90°）=上腿 x±90、小腿垂直=下腿反向 ±90，脚掌落地（踝 0.098=站姿实测值）
+function playSitPreview() {
+  if (!vrm || !recipeExecutor) return;
+  recipeExecutor.play({
+    id: 'sit_chair_whitebox',
+    label: '坐(白盒预览)',
+    version: 1,
+    hold: true,
+    interruptible: true,
+    sequence: [
+      { op: 'translate', bone: 'hips', y: -0.378, dur: 0.6 },
+      { op: 'rotate', bone: 'leftUpperLeg',  axis: 'x', deg: -90, dur: 0.5, delay: 0.15 },
+      { op: 'rotate', bone: 'rightUpperLeg', axis: 'x', deg: -90, dur: 0.5, delay: 0.15 },
+      { op: 'bend', bone: 'leftLowerLeg',  axis: 'x', deg: 90, dur: 0.5, delay: 0.3 },
+      { op: 'bend', bone: 'rightLowerLeg', axis: 'x', deg: 90, dur: 0.5, delay: 0.3 },
+    ],
   });
 }
 
