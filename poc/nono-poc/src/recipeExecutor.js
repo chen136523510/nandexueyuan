@@ -1,8 +1,10 @@
-// 诺诺小脑 · 配方层：配方执行器（Phase A 施工）
+// 诺诺小脑 · 配方层：配方执行器（Phase A 施工 / Phase B 场景化修订）
 // 施工图：prd/01-需求文档/07-自习室/诺诺小脑架构设计.md §4.2（配方 schema）/§5.2（中断机制）
-// 配方 = 可取消的程序：打断=旧配方独占骨短滑变回中立，新旧交集由新 tween 从当前值接管；
+// 配方 = 可取消的程序：打断=旧配方**自己 touched 的骨**短滑变回中立，新旧交集由新 tween 从当前值接管；
+//   （2026-10-06 院长修订：动作分层——姿态层（坐下/起立，layer:'posture'）与手势层（歪头/伸懒腰…）可叠加，
+//    打断/自动回归只清当前配方自己的骨，姿态不被手势打断抹掉）
 // 安全点 = 关键过渡的中断保护（未到安全点的打断请求排队，到点执行）；
-// hold = 保持型配方（背手等姿态，播完保持直到打断）；hold=false 播完 autoReturn 秒后自动回归中立。
+// hold = 保持型配方（背手/坐下等，播完保持直到打断）；hold=false 播完 autoReturn 秒后自动回归。
 // 大脑自中断在本 Phase 由 HUD/控制台代理（Phase C 接 nonoAgent）。
 import { clampBendDeg } from './poseDriver.js';
 
@@ -38,7 +40,7 @@ export class RecipeExecutor {
     for (const cb of this.listeners) cb(this.state, this.current?.recipe?.label ?? '', detail);
   }
 
-  // 播放配方。recipe = 施工图 §4.2 schema 的 JSON 对象
+  // 播放配方。recipe = 施工图 §4.2 schema 的 JSON 对象（可选 layer:'posture' 声明姿态层）
   play(recipe, opts = {}) {
     if (!recipe || !Array.isArray(recipe.sequence) || recipe.sequence.length === 0) {
       return { ok: false, msg: '配方缺少非空 sequence 数组' };
@@ -56,25 +58,31 @@ export class RecipeExecutor {
         this._emit('queued');
         return { ok: true, queued: true };
       }
-      // 打断：旧配方碰过的所有轴短滑变回中立（同骨异轴的残留偏移也一并清掉），
-      // 新配方要写的轴随后由 tweenTo 按骨+轴接管——从当前值出发，无残姿
-      this.driver.blendBonesTo(new Map(this.driver.touched), this.blend);
+      // 打断（动作分层修订）：只把旧配方**自己 touched 的骨**滑回中立——
+      // 旧配方若是姿态层（坐下），其骨不归位=坐姿保持，新配方手势直接从当前值叠加；
+      // 旧配方若是手势层，只清它的手势骨，不波及姿态
+      if (c.layer !== 'posture') this.driver.blendBonesTo(c.touchedBones, this.blend);
     } else if (this.state === 'stopping') {
-      // 回归途中接新配方：清回归 tween（当前值保留），为旧骨重新排回归 tween，
+      // 回归途中接新配方：清回归 tween（当前值保留），为旧骨重排回归 tween，
       // 再让新配方 tween 按骨+轴覆盖——两路各管各骨，互不抢写
       this.driver.cancelAllTweens();
-      this.driver.blendBonesTo(new Map(this.driver.touched), this.blend);
+      if (this.current && this.current.layer !== 'posture') {
+        this.driver.blendBonesTo(this.current.touchedBones, this.blend);
+      }
     }
 
     const intensity = opts.intensity ?? recipe.intensityDefault ?? 1;
     const mirror = !!opts.mirror && recipe.mirrorable !== false;
-    const seqEnd = this._schedule(recipe.sequence, { intensity, mirror });
+    const touchedBones = new Map(); // 本配方自己碰的骨（打断/回归只清这里，动作分层的关键）
+    const seqEnd = this._schedule(recipe.sequence, { intensity, mirror, touchedBones });
     this.current = {
       recipe,
       startedAt: now,
       seqEnd,
       hold: recipe.hold === true,
       autoReturn: recipe.autoReturn ?? 0.6,
+      layer: recipe.layer ?? 'gesture',
+      touchedBones,
     };
     this.state = 'playing';
     this.pending = null;
@@ -83,8 +91,14 @@ export class RecipeExecutor {
   }
 
   // 基元序列 → 补间队列，返回序列结束时刻（引擎时钟）
-  _schedule(sequence, { intensity, mirror }) {
+  _schedule(sequence, { intensity, mirror, touchedBones }) {
     let end = this.driver.time;
+    const touch = (name, axis = null, pos = false) => {
+      if (!touchedBones.has(name)) touchedBones.set(name, { axes: new Set(), pos: false });
+      const t = touchedBones.get(name);
+      if (axis) t.axes.add(axis);
+      if (pos) t.pos = true;
+    };
     for (const raw of sequence) {
       const op = mirror ? mirrorOp(raw) : raw;
       const dur = op.dur ?? 0.5;
@@ -95,19 +109,22 @@ export class RecipeExecutor {
           if (op[axis] == null) continue; // 未声明的轴跳过；显式 0 也调度（起立=hips 归位目标恰为 0）
           const v = (op[axis]) * intensity; // 平移单位=米，intensity 整体缩放
           this.driver.tweenPos(op.bone, axis, v, dur, { delay, easing: op.easing });
+          touch(op.bone, null, true);
           end = Math.max(end, t0 + dur);
         }
       } else {
         // rotate / bend：deg→rad，intensity 缩放幅度（清冷人格=整体 intensity 上限，施工图 §4.3）
         let deg = (op.deg ?? 0) * intensity;
         if (op.op === 'bend') deg = clampBendDeg(op.bone, deg);
+        const axis = op.axis ?? 'x';
         const loop = op.loop;
-        this.driver.tweenTo(op.bone, op.axis ?? 'x', deg * DEG, dur, {
+        this.driver.tweenTo(op.bone, axis, deg * DEG, dur, {
           delay,
           easing: op.easing,
           pingPong: loop != null,
           until: loop != null ? t0 + dur * 2 * (loop === -1 ? 1e9 : loop) : Infinity,
         });
+        touch(op.bone, axis);
         end = Math.max(end, t0 + dur * (loop != null && loop !== -1 ? 2 * loop : 1));
       }
     }
@@ -125,12 +142,23 @@ export class RecipeExecutor {
         return;
       }
     }
+    if (c && c.layer === 'posture') {
+      // 姿态层停 = 冻结当前姿态（坐姿保持），不再滑回中立——起立配方负责姿态切换
+      this.driver.cancelAllTweens();
+      this.current = null;
+      this.state = 'idle';
+      this.driver.touched.clear();
+      this.pending = null;
+      this._emit('idle');
+      return;
+    }
     this._blendAllBack();
     this.pending = null;
   }
 
   _blendAllBack() {
-    this.driver.blendBonesTo(new Map(this.driver.touched), this.blend);
+    // 只回归当前配方自己碰的骨（动作分层）：手势结束归手势位，姿态保持
+    if (this.current) this.driver.blendBonesTo(this.current.touchedBones, this.blend);
     this.current = null;
     this.state = 'stopping';
     this._emit('stopping');

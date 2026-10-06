@@ -1,19 +1,15 @@
 {
   "id": "doze",
   "label": "打瞌睡",
-  "version": 2,
+  "version": 3,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
+  "layer": "gesture",
   "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #3：坐姿打瞌睡。v2=自包含（内嵌坐下序列）——打断机制会把旧配方 touched 骨滑回中立（若只写低头，从坐姿打断会先站起来），故坐下+低头一体编排：髋下降/腿 90° 后头低 25° 进入慢点头循环（loop -1 pingPong）。表情闭眼待 Phase C 表情通道接入（channels 预留）",
+  "ref": "场景交互配方 #3：打瞌睡=手势层（只动头）。v3 回归纯手势——动作分层修订后（打断只清当前配方自己的骨），坐姿/站姿下均可叠加打盹，不再需要 v2 的自包含坐下内嵌。低头 25° 后进入慢点头循环（loop -1 pingPong 25°↔30°，1.7s 周期），任意打断即醒（150ms 滑变）。表情闭眼待 Phase C 表情通道接入（channels 预留）",
   "sequence": [
-    { "op": "translate", "bone": "hips",          "y": -0.378, "dur": 0.6 },
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -90, "dur": 0.5,  "delay": 0.15 },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -90, "dur": 0.5,  "delay": 0.15 },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 90,  "dur": 0.5,  "delay": 0.3 },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 90,  "dur": 0.5,  "delay": 0.3 },
-    { "op": "bend",      "bone": "head",          "axis": "x", "deg": 25,  "dur": 0.9,  "delay": 0.9 },
-    { "op": "bend",      "bone": "head",          "axis": "x", "deg": 30,  "dur": 1.7,  "loop": -1, "delay": 1.8 }
+    { "op": "bend", "bone": "head", "axis": "x", "deg": 25, "dur": 0.9 },
+    { "op": "bend", "bone": "head", "axis": "x", "deg": 30, "dur": 1.7, "loop": -1, "delay": 0.9 }
   ]
 }

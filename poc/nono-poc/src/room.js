@@ -22,20 +22,23 @@ export const ROOM = {
   lamp: { cx: 2.25, cy: 2.50 },
 };
 
-// —— 光效档案（灯位恒定；方法论：院长 idle-game room-lighting-profiles.md §三/§六）——
-// 7 时相全量落地（§三主表）；一态一签名：凌晨=一盏微光/清晨=斜长光斑/正午=硬窗格亮白/下午=金色光斑/
-//   黄昏=蓝橙对撞/傍晚=暖光池浮在深蓝/深夜=屏幕微光
+// —— 光效档案 v3（2026-10-06 院长纠偏后的本项目自有理解）——
+// 纪律一：**主光=窗口天光**，一天的情绪由太阳的强度/色温/角度自然变化承担——房间主调慵懒随意，
+//   靠灯营造氛围太刻意不自然；吸顶灯从全部档案退出（默认关），只作为"生活动作"由 HUD/大脑手动开关。
+// 纪律二：深夜是"舒服的暗"不是黑屋——月光+屏幕微光够看清轮廓（屏幕微光=深夜签名）。
+// 纪律三：调研文档只作美学指导（时相划分/识别色思路），数值按本项目重推；过渡放慢（2~4s）像自然变化。
+// 一态一签名：凌晨=月色与屏光/清晨=初阳长斑/正午=白昼硬光/下午=斜阳金色/黄昏=蜜橙天光/傍晚=蓝调残光/深夜=月与屏
 export const LIGHTING_PROFILES = {
-  dawn:     { label: '凌晨·一盏微光', sun: { i: 0.04, c: 0xa8c0e0 }, lamp: { i: 2.2, c: 0xffc890 }, hemi: 0.12, seaTint: 0x1a2438, glass: 0.60, monitor: 0.25, bg: 0x0d1120, idColor: '#E8B36A' },
-  morning:  { label: '清晨·斜长光斑', sun: { i: 0.95, c: 0xffd9a0 }, lamp: { i: 4.2, c: 0xffd9a0 }, hemi: 0.45, seaTint: 0xc8d8dc, glass: 0.35, monitor: 0.30, bg: 0xa8c0d8, idColor: '#FFD9A0' },
-  noon:     { label: '正午·硬窗光',  sun: { i: 1.70, c: 0xfff6e6 }, lamp: { i: 0,   c: 0xffd9a0 }, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, idColor: '#F6F3E7' },
-  afternoon:{ label: '下午·金色光斑', sun: { i: 1.15, c: 0xffe2b0 }, lamp: { i: 5.6, c: 0xffd9a0 }, hemi: 0.45, seaTint: 0xd8c8a8, glass: 0.35, monitor: 0.35, bg: 0x9fa8b8, idColor: '#F0C489' },
-  dusk:     { label: '黄昏·蓝橙对撞', sun: { i: 1.05, c: 0xffab5e }, lamp: { i: 9,   c: 0xffc088 }, hemi: 0.40, seaTint: 0xd9a06a, glass: 0.40, monitor: 0.45, bg: 0x6a5a7a, idColor: '#FF9E4F' },
-  evening:  { label: '傍晚·暖光池',  sun: { i: 0.22, c: 0x8fa3c8 }, lamp: { i: 14,  c: 0xffd9a0 }, hemi: 0.30, seaTint: 0x5a6c96, glass: 0.50, monitor: 0.55, bg: 0x24324e, idColor: '#FFB168' },
-  night:    { label: '深夜·屏幕微光', sun: { i: 0.05, c: 0x9db8de }, lamp: { i: 2.5, c: 0xffc890 }, hemi: 0.18, seaTint: 0x2c3d5e, glass: 0.55, monitor: 0.95, bg: 0x0f1524, idColor: '#E9A85B' },
+  dawn:      { label: '凌晨·月色',   sun: { i: 0.040, c: 0xa8c4e8 }, sunY: 2.40, hemi: 0.10, seaTint: 0x141d30, glass: 0.55, monitor: 0.85, bg: 0x0c1018, idColor: '#E8B36A' },
+  morning:   { label: '清晨·初阳',   sun: { i: 0.850, c: 0xffd9a0 }, sunY: 1.50, hemi: 0.42, seaTint: 0xd8d2c0, glass: 0.35, monitor: 0.30, bg: 0xa8c0d8, idColor: '#FFD9A0' },
+  noon:      { label: '正午·白昼',   sun: { i: 1.700, c: 0xfff6e6 }, sunY: 2.90, hemi: 0.55, seaTint: 0xdfe8e2, glass: 0.32, monitor: 0.25, bg: 0x9fb8cc, idColor: '#F6F3E7' },
+  afternoon: { label: '下午·斜阳',   sun: { i: 1.150, c: 0xffe0a8 }, sunY: 2.10, hemi: 0.45, seaTint: 0xd8c8a0, glass: 0.35, monitor: 0.35, bg: 0x9fa8b8, idColor: '#F0C489' },
+  dusk:      { label: '黄昏·蜜橙',   sun: { i: 0.850, c: 0xff9e50 }, sunY: 1.40, hemi: 0.32, seaTint: 0xd98a50, glass: 0.42, monitor: 0.55, bg: 0x5a4a6a, idColor: '#FF9E4F' },
+  evening:   { label: '傍晚·蓝调',   sun: { i: 0.160, c: 0x7a8cc0 }, sunY: 1.10, hemi: 0.20, seaTint: 0x3d4c78, glass: 0.50, monitor: 0.70, bg: 0x1a2438, idColor: '#6E6FA3' },
+  night:     { label: '深夜·月与屏', sun: { i: 0.045, c: 0x9db8de }, sunY: 2.50, hemi: 0.13, seaTint: 0x223052, glass: 0.55, monitor: 0.95, bg: 0x0e1322, idColor: '#E9A85B' },
 };
 
-// 天气叠层（调研 §四）：窗光倍率 + 全局色偏 + 灯补偿（兜底规则：叠层不得吃掉时相签名）
+// 天气叠层（调研 §四 美学指导）：作用于天光——窗光倍率 + 全局色偏 + 手动灯的补偿系数
 export const WEATHERS = {
   sunny:  { label: '晴', mul: 1.00, tint: null,     k: 0,    hemiMul: 1.00, lampBoost: 0    },
   cloudy: { label: '阴', mul: 0.35, tint: 0x8fa3b8, k: 0.50, hemiMul: 0.70, lampBoost: 0.25 },
@@ -43,13 +46,14 @@ export const WEATHERS = {
   storm:  { label: '暴雨', mul: 0.12, tint: 0x46584e, k: 0.60, hemiMul: 0.45, lampBoost: 0.80 },
 };
 
-// 季节偏置（调研 §五）：只动两样——窗外的世界（色）与太阳角度（光斑形态），灯位不动
+// 季节偏置（调研 §五 美学指导）：只动两样——窗外的世界（色）与太阳高度角增量（光斑形态）
 export const SEASONS = {
-  spring: { label: '春', tint: 0xc9d6a0, k: 0.15, sunY: 2.30, hemiMul: 1.00 },
-  summer: { label: '夏', tint: 0xcfe8e6, k: 0.15, sunY: 2.90, hemiMul: 1.05 },
-  autumn: { label: '秋', tint: 0xd9a05b, k: 0.20, sunY: 1.90, hemiMul: 1.00 },
-  winter: { label: '冬', tint: 0xafc6d9, k: 0.18, sunY: 1.45, hemiMul: 1.08 }, // 低角度=光斑铺到房间中段 + 雪光填充
+  spring: { label: '春', tint: 0xc9d6a0, k: 0.15, sunYDelta: 0.00, hemiMul: 1.00 },
+  summer: { label: '夏', tint: 0xcfe8e6, k: 0.15, sunYDelta: 0.40, hemiMul: 1.05 },
+  autumn: { label: '秋', tint: 0xd9a05b, k: 0.20, sunYDelta: -0.20, hemiMul: 1.00 },
+  winter: { label: '冬', tint: 0xafc6d9, k: 0.18, sunYDelta: -0.70, hemiMul: 1.08 }, // 低角度=光斑铺到房间中段 + 雪光填充
 };
+const LAMP_MANUAL_I = 11; // 手动开灯时的吸顶灯强度（生活动作，非氛围机器）
 
 const M = (color, opts = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.02, ...opts });
 const box = (w, h, d, mat, x, y, z, ry = 0) => {
@@ -294,8 +298,8 @@ export function buildRoom(scene, { posterUrl } = {}) {
     const se = SEASONS[state.season];
     target.sunI = p.sun.i * wt.mul * (state.curtainOpen ? 1 : 0.22); // 天气叠层 × 帘遮挡
     target.sunC = p.sun.c;
-    target.lampI = state.lampOn ? p.lamp.i * (1 + wt.lampBoost) : 0; // 兜底规则：天气压光时灯补偿，保签名
-    target.lampC = p.lamp.c;
+    target.lampI = state.lampOn ? LAMP_MANUAL_I * (1 + wt.lampBoost) : 0; // 灯=手动生活动作，雨夜开灯更亮合理
+    target.lampC = 0xffd9a0;
     // 海景/背景：档案基色 → 天气色偏 → 季节色偏
     cA.set(p.seaTint); if (wt.tint) cA.lerp(cB.set(wt.tint), wt.k); cA.lerp(cB.set(se.tint), se.k);
     target.seaTint = cA.getHex();
@@ -305,13 +309,12 @@ export function buildRoom(scene, { posterUrl } = {}) {
     target.glass = p.glass;
     target.monitor = p.monitor;
     target.curtain = state.curtainOpen ? 1 : 0;
-    sun.position.y = se.sunY; // 季节太阳角度（光斑形态），灯位不动
+    sun.position.y = p.sunY + se.sunYDelta; // 太阳高度角=时相基线+季节增量（光斑形态），灯位不动
   }
 
   function setTime(name, { instant = false } = {}) {
     if (!LIGHTING_PROFILES[name]) return false;
-    state.time = name;
-    state.lampOn = LIGHTING_PROFILES[name].lamp.i > 0.5; // 档案决定默认灯态（noon 档灯=0 即关；微光档也算开）
+    state.time = name; // 天光主导：灯态不随档案变化（纯手动生活动作）
     applyTargets();
     if (instant) stepLerp(1);
     return true;
@@ -348,9 +351,9 @@ export function buildRoom(scene, { posterUrl } = {}) {
     c.bg = lerpColor(c.bg, t.bg, k);
   }
 
-  // 每帧：把当前值写到对象上（0.5~2s 混合过渡 → k≈dt*3.5）
+  // 每帧：把当前值写到对象上（2~4s 混合过渡 → k≈dt*1.6，光像自然变化不像切开关）
   function update(dt, bg) {
-    stepLerp(Math.min(1, dt * 3.5));
+    stepLerp(Math.min(1, dt * 1.6));
     sun.intensity = state.cur.sunI;
     sun.color.set(state.cur.sunC);
     lampLight.intensity = state.cur.lampI;

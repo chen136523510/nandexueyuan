@@ -574,6 +574,7 @@ function playSitPreview() {
     version: 1,
     hold: true,
     interruptible: true,
+    layer: 'posture', // 姿态层：手势（歪头/伸懒腰/打瞌睡）可叠加，打断不清坐姿
     sequence: [
       { op: 'translate', bone: 'hips', y: -0.378, dur: 0.6 },
       { op: 'rotate', bone: 'leftUpperLeg',  axis: 'x', deg: -90, dur: 0.5, delay: 0.15 },
