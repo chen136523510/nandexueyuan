@@ -26,6 +26,10 @@ const EASINGS = {
   linear: (t) => t,
   easeOutQuad: (t) => t * (2 - t),
   easeInOutQuad: (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+  // 坐立运动学耦合专用（BUG-092）：腿匀速弯 (α=90t) 时髋高必须按 1-cos(α) 走才贴地——
+  // 下落用 easeInSine（=1-cos(πt/2)），起升用 easeOutSine（=sin(πt/2)），二者互为时间反演
+  easeInSine: (t) => 1 - Math.cos((Math.PI / 2) * t),
+  easeOutSine: (t) => Math.sin((Math.PI / 2) * t),
 };
 
 export class PoseDriver {

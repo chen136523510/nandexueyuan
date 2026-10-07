@@ -1,18 +1,18 @@
 {
   "id": "sit_chair",
   "label": "坐下",
-  "version": 1,
+  "version": 2,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
   "layer": "posture",
   "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #1（Phase B 场景化清单）。姿态层（layer=posture）：切换站↔坐状态，手势层（歪头/伸懒腰/打瞌睡…）可在坐姿上叠加，打断与自动回归不清姿态骨（动作分层修订 2026-10-06）。数值=场景设计 §二实测推导：髋关节下降 0.964→0.586（椅面 0.556+臀厚 0.03）、大腿水平（膝 90°）=上腿 x−90、小腿垂直=下腿 x+90，踝 0.098=站姿值（脚掌贴地）。前提=诺诺位于椅子锚点（房间模式自动就位）；白盒实测四点全吻合",
+  "ref": "场景交互配方 #1（Phase B 场景化清单）v2。姿态层（layer=posture）：切换站↔坐状态，手势层（歪头/伸懒腰/打瞌睡…）可在坐姿上叠加，打断与自动回归不清姿态骨（动作分层修订 2026-10-06）。v2 修订（BUG-092，院长复验：坐下/起立过程脚穿地板）：废除 v1 的延迟错峰（髋先降腿后弯=直腿入地 0.14m），改运动学耦合——腿匀速弯（α=90t）时髋高必须按 1-cos(α) 走才贴地，easeInSine 的原函数恰为 1-cos(πt/2)，故髋用 easeInSine、腿用 linear、同时长同起点；踝点全程在站立/落座两端点间单调插值，数学上不可能入地。数值不变（场景设计 §二实测）：椅面 0.556+臀厚 0.03 → 髋偏移 -0.378（0.964→0.586）、大腿 x-90 水平、小腿 x+90 垂直、踝 0.098 贴地。前提=诺诺位于椅子锚点（交互行自动编排就位）",
   "sequence": [
-    { "op": "translate", "bone": "hips",          "y": -0.378, "dur": 0.6 },
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -90, "dur": 0.5, "delay": 0.15 },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -90, "dur": 0.5, "delay": 0.15 },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 90,  "dur": 0.5, "delay": 0.3 },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 90,  "dur": 0.5, "delay": 0.3 }
+    { "op": "translate", "bone": "hips",          "y": -0.378, "dur": 0.7, "easing": "easeInSine" },
+    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -90, "dur": 0.7, "easing": "linear" },
+    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -90, "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 90,  "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 90,  "dur": 0.7, "easing": "linear" }
   ]
 }

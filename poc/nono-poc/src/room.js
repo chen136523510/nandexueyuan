@@ -22,20 +22,26 @@ export const ROOM = {
   lamp: { cx: 2.25, cy: 2.50 },
 };
 
-// —— 光效档案 v3（2026-10-06 院长纠偏后的本项目自有理解）——
+// —— 光效档案 v4（2026-10-07 院长问题清单：变化不明显 → 连续时间轴 + 对比度增强）——
 // 纪律一：**主光=窗口天光**，一天的情绪由太阳的强度/色温/角度自然变化承担——房间主调慵懒随意，
 //   靠灯营造氛围太刻意不自然；吸顶灯从全部档案退出（默认关），只作为"生活动作"由 HUD/大脑手动开关。
 // 纪律二：深夜是"舒服的暗"不是黑屋——月光+屏幕微光够看清轮廓（屏幕微光=深夜签名）。
-// 纪律三：调研文档只作美学指导（时相划分/识别色思路），数值按本项目重推；过渡放慢（2~4s）像自然变化。
+// 纪律三：调研文档只作美学指导；过渡放慢像自然变化。
+// v4 关键变化（院长 2026-10-07 两问）：
+//   ①【离散→连续】24h 时间轴关键帧插值，7 时相降级为「验收采样点」（院长裁决：只针对几个时间验收，
+//     中间视为过渡态）——state.hours 连续取值，相邻关键帧线性混合，天气/季节仍作乘法叠层。
+//   ②【维度可感】新增太阳方位角 sunX（光斑东→西扫过地板=最直观的维度变化）+ studio 系数
+//     （主.js 棚灯三件套随档案缩放——v3 恒定补光把昼夜差稀释掉了，是"变化不明显"的主因之一）；
+//     对比度整体加大（正午更亮/深夜更暗/黄昏更橙/太阳更低=长影）。
 // 一态一签名：凌晨=月色与屏光/清晨=初阳长斑/正午=白昼硬光/下午=斜阳金色/黄昏=蜜橙天光/傍晚=蓝调残光/深夜=月与屏
 export const LIGHTING_PROFILES = {
-  dawn:      { label: '凌晨·月色',   sun: { i: 0.040, c: 0xa8c4e8 }, sunY: 2.40, hemi: 0.10, seaTint: 0x141d30, glass: 0.55, monitor: 0.85, bg: 0x0c1018, idColor: '#E8B36A' },
-  morning:   { label: '清晨·初阳',   sun: { i: 0.850, c: 0xffd9a0 }, sunY: 1.50, hemi: 0.42, seaTint: 0xd8d2c0, glass: 0.35, monitor: 0.30, bg: 0xa8c0d8, idColor: '#FFD9A0' },
-  noon:      { label: '正午·白昼',   sun: { i: 1.700, c: 0xfff6e6 }, sunY: 2.90, hemi: 0.55, seaTint: 0xdfe8e2, glass: 0.32, monitor: 0.25, bg: 0x9fb8cc, idColor: '#F6F3E7' },
-  afternoon: { label: '下午·斜阳',   sun: { i: 1.150, c: 0xffe0a8 }, sunY: 2.10, hemi: 0.45, seaTint: 0xd8c8a0, glass: 0.35, monitor: 0.35, bg: 0x9fa8b8, idColor: '#F0C489' },
-  dusk:      { label: '黄昏·蜜橙',   sun: { i: 0.850, c: 0xff9e50 }, sunY: 1.40, hemi: 0.32, seaTint: 0xd98a50, glass: 0.42, monitor: 0.55, bg: 0x5a4a6a, idColor: '#FF9E4F' },
-  evening:   { label: '傍晚·蓝调',   sun: { i: 0.160, c: 0x7a8cc0 }, sunY: 1.10, hemi: 0.20, seaTint: 0x3d4c78, glass: 0.50, monitor: 0.70, bg: 0x1a2438, idColor: '#6E6FA3' },
-  night:     { label: '深夜·月与屏', sun: { i: 0.045, c: 0x9db8de }, sunY: 2.50, hemi: 0.13, seaTint: 0x223052, glass: 0.55, monitor: 0.95, bg: 0x0e1322, idColor: '#E9A85B' },
+  dawn:      { label: '凌晨·月色',   hour: 2.5,  sun: { i: 0.040, c: 0xa8c4e8 }, sunY: 2.40, sunX: 3.0,  hemi: 0.10, seaTint: 0x141d30, glass: 0.55, monitor: 0.85, bg: 0x0c1018, studio: 0.15, idColor: '#E8B36A' },
+  morning:   { label: '清晨·初阳',   hour: 7.0,  sun: { i: 1.000, c: 0xffd9a0 }, sunY: 1.50, sunX: 4.6,  hemi: 0.48, seaTint: 0xd8d2c0, glass: 0.35, monitor: 0.30, bg: 0xa8c0d8, studio: 0.85, idColor: '#FFD9A0' },
+  noon:      { label: '正午·白昼',   hour: 12.5, sun: { i: 2.000, c: 0xfff6e6 }, sunY: 2.90, sunX: 2.25, hemi: 0.62, seaTint: 0xdfe8e2, glass: 0.32, monitor: 0.25, bg: 0x9fb8cc, studio: 1.00, idColor: '#F6F3E7' },
+  afternoon: { label: '下午·斜阳',   hour: 15.5, sun: { i: 1.150, c: 0xffe0a8 }, sunY: 2.10, sunX: 0.4,  hemi: 0.45, seaTint: 0xd8c8a0, glass: 0.35, monitor: 0.35, bg: 0x9fa8b8, studio: 0.80, idColor: '#F0C489' },
+  dusk:      { label: '黄昏·蜜橙',   hour: 18.0, sun: { i: 0.850, c: 0xff8438 }, sunY: 1.15, sunX: -1.6, hemi: 0.32, seaTint: 0xd98a50, glass: 0.42, monitor: 0.55, bg: 0x5a4a6a, studio: 0.50, idColor: '#FF9E4F' },
+  evening:   { label: '傍晚·蓝调',   hour: 19.5, sun: { i: 0.160, c: 0x7a8cc0 }, sunY: 1.10, sunX: -2.4, hemi: 0.20, seaTint: 0x3d4c78, glass: 0.50, monitor: 0.70, bg: 0x1a2438, studio: 0.30, idColor: '#6E6FA3' },
+  night:     { label: '深夜·月与屏', hour: 23.0, sun: { i: 0.045, c: 0x9db8de }, sunY: 2.50, sunX: 3.2,  hemi: 0.10, seaTint: 0x223052, glass: 0.55, monitor: 0.95, bg: 0x0a0e1c, studio: 0.15, idColor: '#E9A85B' },
 };
 
 // 天气叠层（调研 §四 美学指导）：作用于天光——窗光倍率 + 全局色偏 + 手动灯的补偿系数
@@ -282,22 +288,51 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // —— 运行时状态与 API（后台开关功能）——
   const state = {
     time: 'noon', weather: 'sunny', season: 'spring',
-    lampOn: false,        // 灯态（档案切换时按档案默认重置，可手动覆盖）
+    hours: 12.5,          // v4 连续时间轴：0~24 浮点小时（7 时相=关键帧验收点）
+    timePlay: false,      // 时间流动开关（HUD ▶：一小时约 2 秒，一昼夜 48s）
+    timeSpeed: 0.5,       // 小时/秒
+    lampOn: false,        // 灯态（生活动作，纯手动）
     curtainOpen: true,    // 帘默认开
-    // 当前插值值（向目标 lerp）
-    cur: { sunI: 1.7, sunC: 0xfff6e6, lampI: 0, lampC: 0xffd9a0, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, curtain: 1 },
+    // 当前插值值（向目标 lerp；sunX/sunY=太阳方位/高度角也走混合，影子扫掠连续）
+    cur: { sunI: 1.7, sunC: 0xfff6e6, lampI: 0, lampC: 0xffd9a0, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, curtain: 1, studio: 1, sunX: 2.25, sunY: 2.9 },
   };
   const target = { ...state.cur };
   const hemi = new THREE.HemisphereLight(0xfff2e2, 0x8a7a66, 0.55);
   g.add(hemi);
   const sceneBg = new THREE.Color(0x9fb8cc);
 
+  // —— 24h 时间轴采样（v4 核心）：相邻关键帧线性混合，环形处理跨午夜 ——
+  const TIMELINE = Object.entries(LIGHTING_PROFILES)
+    .map(([name, p]) => ({ name, hour: p.hour, p }))
+    .sort((a, b) => a.hour - b.hour);
+  function sampleTimeline(hours) {
+    const h = ((hours % 24) + 24) % 24;
+    let a = TIMELINE[TIMELINE.length - 1], b = TIMELINE[0], end = TIMELINE[0].hour + 24;
+    for (let i = 0; i < TIMELINE.length; i++) {
+      const cur = TIMELINE[i], nxt = TIMELINE[(i + 1) % TIMELINE.length];
+      const segEnd = i === TIMELINE.length - 1 ? nxt.hour + 24 : nxt.hour;
+      if (h >= cur.hour && h < segEnd) { a = cur; b = nxt; end = segEnd; break; }
+    }
+    const k = Math.min(1, Math.max(0, (((h - a.hour) % 24) + 24) % 24 / (end - a.hour)));
+    const pa = a.p, pb = b.p;
+    const lerp = (x, y) => x + (y - x) * k;
+    return {
+      name: k < 0.5 ? a.name : b.name, // 就近签名（HUD 高亮用）
+      sunI: lerp(pa.sun.i, pb.sun.i), sunC: lerpColor(pa.sun.c, pb.sun.c, k),
+      sunY: lerp(pa.sunY, pb.sunY), sunX: lerp(pa.sunX, pb.sunX),
+      hemi: lerp(pa.hemi, pb.hemi), seaTint: lerpColor(pa.seaTint, pb.seaTint, k),
+      glass: lerp(pa.glass, pb.glass), monitor: lerp(pa.monitor, pb.monitor),
+      bg: lerpColor(pa.bg, pb.bg, k), studio: lerp(pa.studio ?? 1, pb.studio ?? 1),
+    };
+  }
+
   function applyTargets() {
-    const p = LIGHTING_PROFILES[state.time];
+    const p = sampleTimeline(state.hours);
     const wt = WEATHERS[state.weather];
     const se = SEASONS[state.season];
-    target.sunI = p.sun.i * wt.mul * (state.curtainOpen ? 1 : 0.22); // 天气叠层 × 帘遮挡
-    target.sunC = p.sun.c;
+    state.time = p.name; // 就近时相签名（兼容 state.time 旧读取方）
+    target.sunI = p.sunI * wt.mul * (state.curtainOpen ? 1 : 0.22); // 天气叠层 × 帘遮挡
+    target.sunC = p.sunC;
     target.lampI = state.lampOn ? LAMP_MANUAL_I * (1 + wt.lampBoost) : 0; // 灯=手动生活动作，雨夜开灯更亮合理
     target.lampC = 0xffd9a0;
     // 海景/背景：档案基色 → 天气色偏 → 季节色偏
@@ -309,12 +344,20 @@ export function buildRoom(scene, { posterUrl } = {}) {
     target.glass = p.glass;
     target.monitor = p.monitor;
     target.curtain = state.curtainOpen ? 1 : 0;
-    sun.position.y = p.sunY + se.sunYDelta; // 太阳高度角=时相基线+季节增量（光斑形态），灯位不动
+    target.studio = p.studio; // 主.js 棚灯三件套系数（v3 恒定补光稀释昼夜差的根因修复）
+    target.sunX = p.sunX;     // 方位角（光斑东西扫掠）——走 cur 混合，影子移动连续
+    target.sunY = p.sunY + se.sunYDelta; // 高度角=时相基线+季节增量
   }
 
+  function setTimeHours(h, { instant = false } = {}) {
+    state.hours = ((h % 24) + 24) % 24;
+    applyTargets();
+    if (instant) stepLerp(1);
+    return true;
+  }
   function setTime(name, { instant = false } = {}) {
     if (!LIGHTING_PROFILES[name]) return false;
-    state.time = name; // 天光主导：灯态不随档案变化（纯手动生活动作）
+    state.hours = LIGHTING_PROFILES[name].hour; // 时相名 → 验收点小时
     applyTargets();
     if (instant) stepLerp(1);
     return true;
@@ -336,6 +379,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
   const setProfile = setTime; // 兼容旧调用
   function toggleLamp() { state.lampOn = !state.lampOn; applyTargets(); return state.lampOn; }
   function toggleCurtain() { state.curtainOpen = !state.curtainOpen; applyTargets(); return state.curtainOpen; }
+  function toggleTimePlay() { state.timePlay = !state.timePlay; return state.timePlay; }
 
   function stepLerp(k) {
     const c = state.cur, t = target;
@@ -345,17 +389,28 @@ export function buildRoom(scene, { posterUrl } = {}) {
     c.glass += (t.glass - c.glass) * k;
     c.monitor += (t.monitor - c.monitor) * k;
     c.curtain += (t.curtain - c.curtain) * k;
+    c.studio += (t.studio - c.studio) * k;
+    c.sunX += (t.sunX - c.sunX) * k;
+    c.sunY += (t.sunY - c.sunY) * k;
     c.sunC = lerpColor(c.sunC, t.sunC, k);
     c.lampC = lerpColor(c.lampC, t.lampC, k);
     c.seaTint = lerpColor(c.seaTint, t.seaTint, k);
     c.bg = lerpColor(c.bg, t.bg, k);
   }
 
-  // 每帧：把当前值写到对象上（2~4s 混合过渡 → k≈dt*1.6，光像自然变化不像切开关）
+  // 每帧：时间流动推进 + 把当前值写到对象上（2~4s 混合过渡 → k≈dt*1.6，光像自然变化不像切开关）
+  let elapsed = 0;   // 房间内部时钟（秒）
+  let moveAnim = null; // 锚点滑步动画 { fromPos, toPos, fromYaw, dYaw, t0, dur, onDone }
   function update(dt, bg) {
+    elapsed += dt;
+    if (state.timePlay) {
+      state.hours = (state.hours + dt * state.timeSpeed) % 24;
+      applyTargets();
+    }
     stepLerp(Math.min(1, dt * 1.6));
     sun.intensity = state.cur.sunI;
     sun.color.set(state.cur.sunC);
+    sun.position.set(state.cur.sunX, state.cur.sunY, -9);
     lampLight.intensity = state.cur.lampI;
     lampLight.color.set(state.cur.lampC);
     dome.material.emissiveIntensity = state.cur.lampI > 1 ? 0.85 : 0.08;
@@ -373,6 +428,19 @@ export function buildRoom(scene, { posterUrl } = {}) {
     curtainR.scale.x = curtainL.scale.x;
     curtainL.position.x = closedL + (openL - closedL) * openK;
     curtainR.position.x = 2 * winCx - curtainL.position.x;
+    // 锚点滑步移动（v4：白盒期瞬移废除——根位置+朝向缓动，配方在到位回调里接力）
+    if (moveAnim && modelScene) {
+      const e = Math.min(1, (elapsed - moveAnim.t0) / moveAnim.dur);
+      const s = e < 0.5 ? 2 * e * e : -1 + (4 - 2 * e) * e; // easeInOutQuad
+      modelScene.position.lerpVectors(moveAnim.fromPos, moveAnim.toPos, s);
+      modelScene.rotation.y = moveAnim.fromYaw + moveAnim.dYaw * s;
+      modelScene.updateMatrixWorld(true);
+      if (e >= 1) {
+        const done = moveAnim.onDone;
+        moveAnim = null;
+        done?.();
+      }
+    }
   }
 
   setProfile('noon', { instant: true });
@@ -447,24 +515,50 @@ export function buildRoom(scene, { posterUrl } = {}) {
     update,
     setProfile,
     setTime,
+    setTimeHours,
     setWeather,
     setSeason,
+    toggleLamp,   // v3 曾遗漏导出：HUD/墙上开关的灯按钮一直 TypeError（BUG-094）
+    toggleCurtain,
+    toggleTimePlay,
     profiles: Object.keys(LIGHTING_PROFILES),
     weathers: Object.keys(WEATHERS),
     seasons: Object.keys(SEASONS),
     labels: { time: LIGHTING_PROFILES, weather: WEATHERS, season: SEASONS },
+    timeHours: Object.fromEntries(Object.entries(LIGHTING_PROFILES).map(([k, p]) => [k, p.hour])),
     anchors,
     colliders,
     checkCollisions,
     setModel(s) { modelScene = s; },
-    gotoAnchor(key, { moveModel = true } = {}) {
+    // 滑步移动：根位置+朝向缓动（v4 白盒期瞬移废除；步态=Phase B，行走 clip 接力后本函数降级为位移跟随）
+    moveTo(pos, yawDeg, { dur = 0.9, onDone } = {}) {
+      if (!modelScene) return false;
+      const fromYaw = modelScene.rotation.y;
+      const fr2 = (yawDeg * Math.PI) / 180;
+      const toYaw = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
+      let d = toYaw - fromYaw;
+      d = ((d + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; // 最短路径
+      moveAnim = {
+        fromPos: modelScene.position.clone(),
+        toPos: new THREE.Vector3(pos[0], pos[1] ?? 0, pos[2]),
+        fromYaw, dYaw: d, t0: elapsed, dur, onDone,
+      };
+      return true;
+    },
+    gotoAnchor(key, { moveModel = true, smooth = false, dur = 0.9, onArrive } = {}) {
       const a = anchors[key];
       if (!a) return false;
       if (moveModel && modelScene) {
+        if (smooth) {
+          this.moveTo(a.pos, a.yawDeg, { dur, onDone: onArrive });
+          return true;
+        }
         modelScene.position.set(a.pos[0], a.pos[1], a.pos[2]);
         const fr2 = (a.yawDeg * Math.PI) / 180;
         modelScene.rotation.y = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
         modelScene.updateMatrixWorld(true);
+        moveAnim = null; // 瞬移接管：进行中的滑步作废
+        onArrive?.();
       }
       return true;
     },

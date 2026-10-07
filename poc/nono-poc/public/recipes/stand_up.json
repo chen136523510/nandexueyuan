@@ -1,19 +1,19 @@
 {
   "id": "stand_up",
   "label": "起立",
-  "version": 1,
+  "version": 2,
   "hold": false,
   "autoReturn": 0.3,
   "interruptible": true,
   "mirrorable": false,
   "layer": "posture",
   "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #2：姿态层（layer=posture）——坐下（sit_chair）的逆序，补间永远从当前值出发（施工图 §5.1），坐姿偏移直接归 0 即起立。前提=当前处于坐姿",
+  "ref": "场景交互配方 #2 v2：姿态层（layer=posture）——坐下的逆序，补间永远从当前值出发（施工图 §5.1），坐姿偏移直接归 0 即起立；对 sit_chair/sit_bed 通用（起点角度/深度自动捕获）。v2 修订（BUG-092，院长复验：起立过程脚穿地板 0.14m）：v1 腿先伸直髋后升=伸长的腿撑不起低位髋→脚插地；改运动学耦合——腿匀速伸（α=90(1-t)）时髋高按 1-cos(α) 走，easeOutSine（sin(πt/2)=1-cos(90(1-t))）恰为该曲线，故髋用 easeOutSine、腿用 linear、同时长同起点，踝点全程单调从落座高度升到站立高度，不可能入地。前提=当前处于坐姿",
   "sequence": [
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": 0, "dur": 0.55 },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": 0, "dur": 0.55 },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 0, "dur": 0.55, "delay": 0.1 },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 0, "dur": 0.55, "delay": 0.1 },
-    { "op": "translate", "bone": "hips",          "y": 0,      "dur": 0.7,  "delay": 0.05 }
+    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
+    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
+    { "op": "translate", "bone": "hips",          "y": 0,      "dur": 0.7, "easing": "easeOutSine" }
   ]
 }

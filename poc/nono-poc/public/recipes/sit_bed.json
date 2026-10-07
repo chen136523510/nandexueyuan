@@ -1,18 +1,18 @@
 {
   "id": "sit_bed",
   "label": "床沿坐",
-  "version": 1,
+  "version": 2,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
   "layer": "posture",
   "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #5（bed.sit 锚点）。姿态层：床垫 0.45+臀厚 0.03 → 髋关节 0.48（下降 0.964−0.48=0.484）；膝 90° 腿垂前，小腿 0.458 → 踝 0.02 贴地自然垂坐。面向房内（锚点朝向 250°）",
+  "ref": "场景交互配方 #5（bed.sit 锚点）v2。姿态层。v2 修订（BUG-093，院长复验：床沿坐脚穿地板）：v1 大腿水平+小腿垂直是「椅高几何」——床垫 0.45 太低，髋 0.48 时踝=髋−小腿长≈0.03，足底悬空量整个没入地（实测脚趾 -0.053）。重推：低座面的正确坐姿=大腿高于水平（膝略高于髋，如坐矮凳）——大腿 x-100（水平上抬 10°）、小腿 x+100 保持垂直（γ=α，脚掌全程贴平），膝 0.59 → 踝 0.10 足底贴地。髋偏移 -0.484（0.964→0.48）不变=臀部真实落在床垫。过渡与 sit_chair v2 同款运动学耦合（髋 easeInSine + 腿 linear 同时长，BUG-092）。面向房内（锚点朝向 250°）",
   "sequence": [
-    { "op": "translate", "bone": "hips",          "y": -0.484, "dur": 0.6 },
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -90, "dur": 0.5, "delay": 0.15 },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -90, "dur": 0.5, "delay": 0.15 },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 90,  "dur": 0.5, "delay": 0.3 },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 90,  "dur": 0.5, "delay": 0.3 }
+    { "op": "translate", "bone": "hips",          "y": -0.484, "dur": 0.7, "easing": "easeInSine" },
+    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -100, "dur": 0.7, "easing": "linear" },
+    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -100, "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 100,  "dur": 0.7, "easing": "linear" },
+    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 100,  "dur": 0.7, "easing": "linear" }
   ]
 }

@@ -92,9 +92,10 @@ if (ROOM_MODE) {
   keyLight.intensity = 0.4;
   fillLight.intensity = 0.22;
   rimLight.intensity = 0.35;
-  // 光效档案：?time/?weather/?season（默认正午·晴·春）；开关=墙上按钮点击或控制台 API
-  const t0 = params.get('time'), w0 = params.get('weather'), se0 = params.get('season');
+  // 光效档案：?time=时相名 / ?hours=0~24 连续小时（v4）/ ?weather / ?season（默认正午·晴·春）；开关=墙上按钮点击或控制台 API
+  const t0 = params.get('time'), h0 = params.get('hours'), w0 = params.get('weather'), se0 = params.get('season');
   if (t0) roomApi.setTime(t0, { instant: true });
+  if (h0) roomApi.setTimeHours(parseFloat(h0), { instant: true });
   if (w0) roomApi.setWeather(w0, { instant: true });
   if (se0) roomApi.setSeason(se0, { instant: true });
 }
@@ -129,6 +130,19 @@ let vrm = null;
 let eyeRig = null;
 let poseDriver = null;      // 基元层：骨骼补间引擎
 let recipeExecutor = null;  // 配方层：配方执行/打断/安全点
+let sitState = null;        // 当前坐姿配方 id（'sit_chair'/'sit_bed'）——交互锚点编排用：跨锚点先起立再滑步（BUG-093）
+
+// 统一播放入口：维护坐姿状态（配方 HUD / 交互锚点 / ?sit=1 三路共用）
+function playRecipe(rc) {
+  if (!recipeExecutor) return { ok: false, msg: '引擎未就绪' };
+  const ret = recipeExecutor.play(rc);
+  if (ret.ok) {
+    if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) sitState = rc.id;
+    else if (rc?.id === 'stand_up') sitState = null;
+  }
+  return ret;
+}
+const fetchRecipe = (name) => fetch(`/recipes/${name}.json?t=${Date.now()}`).then((r) => r.json());
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -198,13 +212,12 @@ loader.load(
     });
     setupRecipeHud();
 
-    // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 吸附椅子坐锚点
+    // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 滑步到椅子坐锚点后坐下
     if (ROOM_MODE) {
       roomApi.setModel(vrm.scene);
       roomApi.gotoAnchor('room.center');
       if (params.get('sit') === '1') {
-        roomApi.gotoAnchor('chair.sit');
-        playSitPreview();
+        roomApi.gotoAnchor('chair.sit', { smooth: true, onArrive: () => fetchRecipe('sit_chair').then(playRecipe).catch(console.error) });
       }
       setupRoomHud();
     }
@@ -366,6 +379,14 @@ renderer.setAnimationLoop(() => {
       recipeExecutor?.update();
       poseDriver?.apply();
       roomApi?.update(delta, scene.background); // 房间光效档案插值（灯位恒定，只动强度/色温/帘）
+      // 棚灯三件套随档案 studio 系数缩放（院长问题①"变化不明显"主因之一：v3 恒定补光把昼夜差稀释掉了）
+      if (roomApi) {
+        const st = roomApi.state.cur.studio;
+        hemiLight.intensity = 0.25 * st;
+        keyLight.intensity = 0.4 * st;
+        fillLight.intensity = 0.22 * st;
+        rimLight.intensity = 0.35 * st;
+      }
       // 心跳叠加（additive，配方播放期间呼吸继续=诺诺没有静止帧）
       const chest = vrm.humanoid.getNormalizedBoneNode('chest');
       if (chest) chest.rotation.x += hb.breath;
@@ -380,6 +401,7 @@ renderer.setAnimationLoop(() => {
   }
 
   controls.update();
+  updateRoomClock();
   renderer.render(scene, camera);
   stats.end();
 });
@@ -508,10 +530,9 @@ function setupRecipeHud() {
       const name = btn.dataset.recipe;
       if (name === '__stop') { recipeExecutor.stop(); return; }
       // ?t= 击穿缓存：改 JSON 免刷新即生效（调参工作流）
-      fetch(`/recipes/${name}.json?t=${Date.now()}`)
-        .then((r) => r.json())
+      fetchRecipe(name)
         .then((recipe) => {
-          const ret = recipeExecutor.play(recipe);
+          const ret = playRecipe(recipe);
           if (!ret.ok) statusEl.textContent = `❌ 配方无效：${ret.msg}`;
         })
         .catch((err) => {
@@ -524,7 +545,7 @@ function setupRecipeHud() {
     if (!recipeExecutor || guard()) return;
     try {
       const recipe = JSON.parse(document.getElementById('recipeJson').value);
-      const ret = recipeExecutor.play(recipe);
+      const ret = playRecipe(recipe);
       if (!ret.ok) statusEl.textContent = `❌ 配方无效：${ret.msg}`;
     } catch (err) {
       console.error('[recipe]', err);
@@ -558,51 +579,62 @@ function setupRoomHud() {
     if (cb) cb.classList.toggle('on', !s.curtainOpen); // 帘合上=高亮
   };
   syncRoomHud();
-  // 交互锚点行：吸附锚点（瞬移+朝向）+ 有配方的自动播放（白盒期瞬移，步态后换行走）
+  // 交互锚点行：滑步移动+朝向（v4 白盒期瞬移废除），有配方的到位自动播放；
+  // 编排（BUG-093）：坐姿状态下切其他锚点=先起立→滑步→再落座，杜绝"坐着瞬移/姿势悬空"
   const anchorSpan = document.getElementById('anchorHud');
   if (anchorSpan) {
     anchorSpan.innerHTML = '';
     for (const [key, a] of Object.entries(roomApi.anchors)) {
       const b = document.createElement('button');
       b.textContent = a.label;
-      b.addEventListener('click', () => {
-        roomApi.gotoAnchor(key);
-        if (a.recipe) {
-          fetch(`/recipes/${a.recipe}.json?t=${Date.now()}`)
-            .then((r) => r.json())
-            .then((rc) => { const ret = recipeExecutor.play(rc); if (!ret.ok) statusEl.textContent = `❌ ${ret.msg}`; });
+      b.addEventListener('click', async () => {
+        if (animPlaying) { statusEl.textContent = '⚠️ Mixamo 动作播放中，先点"停动作"'; return; }
+        const rc = a.recipe ? await fetchRecipe(a.recipe).catch(() => null) : null;
+        if (sitState && (!rc || rc.id !== sitState)) {
+          playRecipe(await fetchRecipe('stand_up')); // 姿态残留清除：起立到站姿再移动
+          await new Promise((r) => setTimeout(r, 850)); // 等起立序列走完（0.7s+缓冲）
         }
+        if (rc && rc.id === sitState) return; // 已处于目标坐姿
+        roomApi.gotoAnchor(key, { smooth: true, onArrive: () => { if (rc) playRecipe(rc); } });
       });
       anchorSpan.appendChild(b);
     }
   }
   document.getElementById('roomHud').style.display = 'block';
-  const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn');
+  const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn'), pb = document.getElementById('roomPlayBtn');
   if (lb) lb.addEventListener('click', () => { roomApi.toggleLamp(); syncRoomHud(); });
   if (cb) cb.addEventListener('click', () => { roomApi.toggleCurtain(); syncRoomHud(); });
-}
-
-// ---------- 坐姿白盒预览（Phase B「坐下」配方雏形，?sit=1） ----------
-// 数值来源：场景设计 §二实测推导——髋关节下降 0.964→0.586（椅面 0.556+臀厚 0.03）、
-// 大腿水平（膝 90°）=上腿 x±90、小腿垂直=下腿反向 ±90，脚掌落地（踝 0.098=站姿实测值）
-function playSitPreview() {
-  if (!vrm || !recipeExecutor) return;
-  recipeExecutor.play({
-    id: 'sit_chair_whitebox',
-    label: '坐(白盒预览)',
-    version: 1,
-    hold: true,
-    interruptible: true,
-    layer: 'posture', // 姿态层：手势（歪头/伸懒腰/打瞌睡）可叠加，打断不清坐姿
-    sequence: [
-      { op: 'translate', bone: 'hips', y: -0.378, dur: 0.6 },
-      { op: 'rotate', bone: 'leftUpperLeg',  axis: 'x', deg: -90, dur: 0.5, delay: 0.15 },
-      { op: 'rotate', bone: 'rightUpperLeg', axis: 'x', deg: -90, dur: 0.5, delay: 0.15 },
-      { op: 'bend', bone: 'leftLowerLeg',  axis: 'x', deg: 90, dur: 0.5, delay: 0.3 },
-      { op: 'bend', bone: 'rightLowerLeg', axis: 'x', deg: 90, dur: 0.5, delay: 0.3 },
-    ],
+  if (pb) pb.addEventListener('click', () => {
+    const on = roomApi.toggleTimePlay();
+    pb.classList.toggle('on', on);
+    pb.textContent = on ? '⏸ 流动中' : '▶ 流动';
   });
 }
+
+// 时钟显示（rAF 每帧刷新；流动模式下跟着走）+ 高亮轻量同步（API setTime 不走 syncRoomHud， classes 每 10 帧对齐一次）
+let hudSyncCounter = 0;
+function updateRoomClock() {
+  if (!roomApi) return;
+  const el = document.getElementById('roomClock');
+  if (el) {
+    const h = roomApi.state.hours;
+    const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+    el.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+  if (++hudSyncCounter % 10 === 0) {
+    const s = roomApi.state;
+    const mark = (spanId, keys, cur) => {
+      const span = document.getElementById(spanId);
+      if (span) [...span.children].forEach((b, i) => b.classList.toggle('on', keys[i] === cur));
+    };
+    mark('timeHud', roomApi.profiles, s.time);
+    mark('weatherHud', roomApi.weathers, s.weather);
+    mark('seasonHud', roomApi.seasons, s.season);
+  }
+}
+
+// ---------- 坐姿白盒预览（?sit=1）----------
+// v4：数值统一走 sit_chair.json（v2 运动学耦合版），滑步到位后播放——旧内联副本删除（双源易漂移）
 
 // 穿模体检：采样末端骨骼世界坐标 → 房间碰撞盒检测（白盒版 gate④，调配方时看违例数）
 function roomCheck() {
