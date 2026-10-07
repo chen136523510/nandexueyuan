@@ -153,7 +153,10 @@ if hp_face:
     for m in me.materials:
         if m and m.name.startswith("N00_000_00_Face_00"):
             for n in m.node_tree.nodes:
-                if n.type == "TEX_IMAGE" and n.image and n.image.size[0] > 64:
+                if (n.type == "TEX_IMAGE" and n.image and n.image.size[0] > 64
+                        and n.image.name.startswith("_04")):
+                    # 只换基色 _04：同材质树还挂着 _05 着色图与 Face_00_out 描边遮罩，
+                    # 整树换入会让着色/描边全部错乱（2026-10-07 手绘轮接入前排查修正）
                     n.image = hp_face
                     swapped_nodes += 1
     print(f"face skin: 手绘稿换入 x{swapped_nodes}（泪痣等）")

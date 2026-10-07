@@ -1,0 +1,16 @@
+=== 诺诺手绘轮 round1 无头生成 === handpaint_generate.py
+iris src: 1024 x 512
+disk: 259.2 291.7 R_core= 92.0 opaque_area= 26381
+disk: 763.8 291.7 R_core= 92.0 opaque_area= 26381
+png written: handpaint_iris.png 1024 x 512 63 KB
+png written: iris_preview.png 1266 x 630 52 KB
+face src: 1024 x 1024
+mole area skin RGB: [0.98, 0.922, 0.871]
+png written: mole_variant_A.png 1024 x 1024 85 KB
+variant A A_基准 built
+png written: mole_variant_B.png 1024 x 1024 85 KB
+variant B B_大而深 built
+png written: mole_variant_C.png 1024 x 1024 85 KB
+variant C C_小而淡偏外 built
+png written: 泪痣变体对比.png 352 x 1076 4 KB
+=== ROUND1 HEADLESS DONE ===
