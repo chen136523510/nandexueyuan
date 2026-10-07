@@ -72,11 +72,11 @@ export class PoseDriver {
   }
 
   // 低层原语：某骨某轴补间到目标偏移（rad）。from 在启动瞬间从当前值捕获——打断平滑性的来源。
-  // 同骨同轴的旧 tween 先清除（新目标接管），pos tween 不受影响
-  tweenTo(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity } = {}) {
+  // 显式传 from（rad）则跳过捕获=pingPong 两侧振荡的起点（步态腿摆 +18↔−26 用）；同骨同轴旧 tween 先清除
+  tweenTo(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity, from = null } = {}) {
     if (!this._bone(name)) return false;
     this._dropTweens(name, { axis, pos: false });
-    this.tweens.push({ name, axis, pos: false, from: null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until });
+    this.tweens.push({ name, axis, pos: false, from: from !== null ? from : null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until });
     this._touch(name, axis);
     return true;
   }
@@ -134,7 +134,8 @@ export class PoseDriver {
       let val;
       if (tw.pingPong) {
         const c = p % 2;
-        val = tw.from + (tw.to - tw.from) * (c < 1 ? tw.ease(c) : tw.ease(2 - c));
+        const osc = tw.from + (tw.to - tw.from) * (c < 1 ? tw.ease(c) : tw.ease(2 - c));
+        val = osc * Math.min(1, p / 2); // 首周期振幅渐入：从静息平滑起摆（显式 from 振荡起步无跳变）
       } else if (p >= 1) {
         val = tw.to;
       } else {

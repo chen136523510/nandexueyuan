@@ -120,6 +120,7 @@ export class RecipeExecutor {
         }
       } else {
         // rotate / bend：deg→rad，intensity 缩放幅度（清冷人格=整体 intensity 上限，施工图 §4.3）
+        // from=显式振荡起点（度，pingPong 两侧摆用：步态腿摆 +18↔−26 而非 0↔−26 单边踢）
         let deg = (op.deg ?? 0) * intensity;
         if (op.op === 'bend') deg = clampBendDeg(op.bone, deg);
         const axis = op.axis ?? 'x';
@@ -129,6 +130,7 @@ export class RecipeExecutor {
           easing: op.easing,
           pingPong: loop != null,
           until: loop != null ? t0 + dur * 2 * (loop === -1 ? 1e9 : loop) : Infinity,
+          from: op.from != null ? op.from * DEG * intensity : null,
         });
         touch(op.bone, axis);
         end = Math.max(end, t0 + dur * (loop != null && loop !== -1 ? 2 * loop : 1));
