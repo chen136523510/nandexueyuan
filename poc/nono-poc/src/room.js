@@ -428,11 +428,13 @@ export function buildRoom(scene, { posterUrl } = {}) {
     curtainR.scale.x = curtainL.scale.x;
     curtainL.position.x = closedL + (openL - closedL) * openK;
     curtainR.position.x = 2 * winCx - curtainL.position.x;
-    // 锚点滑步移动（v4：白盒期瞬移废除——根位置+朝向缓动，配方在到位回调里接力）
+    // 锚点滑步移动（落座短滑/起立离位：缓动直线，距离 ≤0.7m 不经过家具；arc=正弦抬弧）
     if (moveAnim && modelScene) {
       const e = Math.min(1, (elapsed - moveAnim.t0) / moveAnim.dur);
       const s = e < 0.5 ? 2 * e * e : -1 + (4 - 2 * e) * e; // easeInOutQuad
-      modelScene.position.lerpVectors(moveAnim.fromPos, moveAnim.toPos, s);
+      modelScene.position.x = moveAnim.fromPos.x + (moveAnim.toPos.x - moveAnim.fromPos.x) * s;
+      modelScene.position.z = moveAnim.fromPos.z + (moveAnim.toPos.z - moveAnim.fromPos.z) * s;
+      modelScene.position.y = moveAnim.fromPos.y + (moveAnim.toPos.y - moveAnim.fromPos.y) * s + Math.sin(e * Math.PI) * (moveAnim.arc ?? 0);
       modelScene.rotation.y = moveAnim.fromYaw + moveAnim.dYaw * s;
       modelScene.updateMatrixWorld(true);
       if (e >= 1) {
@@ -441,28 +443,52 @@ export function buildRoom(scene, { posterUrl } = {}) {
         done?.();
       }
     }
+    // 行走（BUG-095 导航层）：恒速逐段推进+朝向滑向路段方向；配 walk_loop 步态循环食用
+    if (walkAnim && modelScene && !moveAnim) {
+      let step = WALK_SPEED * dt;
+      while (step > 0 && walkAnim.queue.length) {
+        const tgt = walkAnim.queue[0];
+        const dx = tgt.x - modelScene.position.x, dz = tgt.z - modelScene.position.z;
+        const remain = Math.hypot(dx, dz);
+        if (remain <= step) { // 本段走完：落点、出队、下一段朝向
+          modelScene.position.x = tgt.x; modelScene.position.z = tgt.z;
+          walkAnim.queue.shift();
+          step -= remain;
+        } else {
+          modelScene.position.x += (dx / remain) * step;
+          modelScene.position.z += (dz / remain) * step;
+          walkAnim.faceYaw = Math.atan2(dx, dz); // 朝行进方向（+z 前向基准）
+          step = 0;
+        }
+        if (walkAnim.queue.length) {
+          const n = walkAnim.queue[0];
+          const ndx = n.x - modelScene.position.x, ndz = n.z - modelScene.position.z;
+          if (Math.hypot(ndx, ndz) > 1e-4) walkAnim.faceYaw = Math.atan2(ndx, ndz);
+        }
+      }
+      // 朝向滑变（最短路径，k=dt*10≈180ms 转完 90°）
+      const dYaw = ((walkAnim.faceYaw - modelScene.rotation.y + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+      modelScene.rotation.y += dYaw * Math.min(1, dt * 10);
+      modelScene.updateMatrixWorld(true);
+      if (!walkAnim.queue.length) {
+        const done = walkAnim.onArrive;
+        walkAnim = null;
+        done?.();
+      }
+    }
   }
 
   setProfile('noon', { instant: true });
-
-  // —— 交互锚点（affordance）：物体声明"可怎么用"，大脑/遥控调用=吸附锚点+播配方 ——
-  // 坐姿锚点数值=场景设计 §二实测推导（椅面 0.556/床沿 0.45），默认姿势零穿模由 checkCollisions 把关
-  const anchors = {
-    'chair.sit':   { label: '椅子坐',   pos: [1.05, 0, -3.25], yawDeg: 205, recipe: 'sit_chair' },
-    'chair.stand': { label: '椅旁站立', pos: [1.62, 0, -2.72], yawDeg: 150 },
-    'bed.sit':     { label: '床沿坐',   pos: [3.50, 0, -3.18], yawDeg: 250, recipe: 'sit_bed' },
-    'room.center': { label: '活动区',   pos: [2.10, 0, -2.05], yawDeg: 180 },
-  };
 
   // —— 穿模体检（白盒版 gate④：AABB 碰撞盒 + 关键骨骼点穿入检测）——
   // 检测点=手/肘/膝/脚等"应该悬空"的末端骨骼；点在盒内（缩 1cm 容差）即违例——
   // 臀部贴座面这类"合法接触"不检测（髋点在座面上方）
   const colliders = [];
-  function addCollider(name, mesh) {
+  function addCollider(name, mesh, group = null) {
     if (!mesh) return;
     const bx = new THREE.Box3().setFromObject(mesh);
     bx.expandByScalar(-0.01); // 1cm 容差：贴面接触不算穿入
-    colliders.push({ name, box: bx });
+    colliders.push({ name, group, box: bx });
   }
   const findMesh = (px, py, pz) => {
     let best = null, bd = 1e9;
@@ -475,8 +501,8 @@ export function buildRoom(scene, { posterUrl } = {}) {
     });
     return best;
   };
-  addCollider('椅座', findMesh(ch.cx, ch.seatH - 0.035, -ch.cy));
-  addCollider('椅底座', findMesh(ch.cx, 0.04, -ch.cy)); // 五星脚圆盘：站立在椅子上=脚趾/踝入盒即违例
+  addCollider('椅座', findMesh(ch.cx, ch.seatH - 0.035, -ch.cy), 'chair');
+  addCollider('椅底座', findMesh(ch.cx, 0.04, -ch.cy), 'chair'); // 五星脚圆盘：站立在椅子上=脚趾/踝入盒即违例
   // 扶手/椅背随椅身旋转（205°）：局部坐标 → 世界坐标后匹配
   const chRot = Math.atan2(Math.cos((ch.faceDeg * Math.PI) / 180), -Math.sin((ch.faceDeg * Math.PI) / 180));
   const chLocal = (lx, ly, lz) => new THREE.Vector3(
@@ -486,15 +512,15 @@ export function buildRoom(scene, { posterUrl } = {}) {
   );
   for (const sgn of [1, -1]) {
     const c = chLocal(sgn * 0.265, ch.seatH + 0.12, 0.02);
-    addCollider('扶手', findMesh(c.x, c.y, c.z));
+    addCollider('扶手', findMesh(c.x, c.y, c.z), 'chair');
   }
   const backC = chLocal(0, ch.seatH + 0.30, -0.245);
-  addCollider('椅背', findMesh(backC.x, backC.y, backC.z));
-  addCollider('桌板', findMesh(dk.cx, dk.h - 0.025, -dk.cy));
-  addCollider('床垫', findMesh(bd.cx, bd.h - 0.05, -bd.cy));
-  addCollider('床箱', findMesh(bd.cx, (bd.h - 0.10) / 2, -bd.cy));
-  addCollider('床头板', findMesh(w - 0.04, bd.headboardH / 2, -bd.cy));
-  addCollider('主机', findMesh(pc.cx, pc.h / 2, -pc.cy));
+  addCollider('椅背', findMesh(backC.x, backC.y, backC.z), 'chair');
+  addCollider('桌板', findMesh(dk.cx, dk.h - 0.025, -dk.cy), 'desk');
+  addCollider('床垫', findMesh(bd.cx, bd.h - 0.05, -bd.cy), 'bed');
+  addCollider('床箱', findMesh(bd.cx, (bd.h - 0.10) / 2, -bd.cy), 'bed');
+  addCollider('床头板', findMesh(w - 0.04, bd.headboardH / 2, -bd.cy), 'bed');
+  addCollider('主机', findMesh(pc.cx, pc.h / 2, -pc.cy), 'pc');
 
   // 穿入检测：points = { 骨名: Vector3 }，返回违例列表
   function checkCollisions(points) {
@@ -509,6 +535,109 @@ export function buildRoom(scene, { posterUrl } = {}) {
 
   // 模型引用（buildRoom 先于 VRM 加载完成，由 main.js 加载后回填）
   let modelScene = null;
+
+  // —— 交互锚点（affordance）：物体声明"可怎么用"，大脑/遥控调用=走到锚点+播配方 ——
+  // 坐姿锚点数值=场景设计 §二实测推导（椅面 0.556/床沿 0.45），默认姿势零穿模由 checkCollisions 把关
+  // v4.1 字段：group=所属家具碰撞组（寻路豁免：走向该家具的最后一程允许贴近）；
+  //   approachWay=下车站点（行走终点，落座时再短滑上座面）；standExit=起立离位滑步点（避免站进家具里）
+  const anchors = {
+    'chair.sit':   { label: '椅子坐',   pos: [1.05, 0, -3.25], yawDeg: 205, recipe: 'sit_chair', group: 'chair', approachWay: 'chairNear', standExit: [0.95, 0, -2.90] },
+    'chair.stand': { label: '椅旁站立', pos: [1.62, 0, -2.72], yawDeg: 150 },
+    'bed.sit':     { label: '床沿坐',   pos: [3.50, 0, -3.18], yawDeg: 250, recipe: 'sit_bed',   group: 'bed',   approachWay: 'bedSide',   standExit: [3.50, 0, -2.72] },
+    'room.center': { label: '活动区',   pos: [2.10, 0, -2.05], yawDeg: 180 },
+  };
+
+  // —— 导航路点图（BUG-095：滑步直线穿越家具——白盒导航层：手铺路点 + 线段×膨胀盒 clearance 校验 + Dijkstra）——
+  // Phase B 可平滑升级 navmesh：routeTo 接口不变只换实现；行走视觉=walkTo（恒速逐段+朝向滑向路段方向）
+  const BODY_R = 0.20;    // 体半径：碰撞盒膨胀量（行走擦边留隙）
+  const WALK_SPEED = 1.05; // m/s（与步幅匹配，减小滑步感）
+  const WAYPOINTS = {
+    center:     { pos: [2.10, -2.05] },
+    southMid:   { pos: [2.25, -1.30] },
+    chairNear:  { pos: [0.95, -2.90] }, // 下车站点=椅西南侧（椅背西侧绕入：东侧是椅背、正面是桌板，仅西南可进人），落座短滑上座面
+    bedSide:    { pos: [3.50, -2.72] }, // 床沿下车站点（床缘外 0.38m）
+    westDoor:   { pos: [0.70, -0.80] },
+    eastDoor:   { pos: [3.80, -0.80] },
+  };
+  const WAYPOINT_EDGES = [
+    ['center', 'southMid'], ['center', 'chairNear'], ['center', 'bedSide'],
+    ['southMid', 'westDoor'], ['southMid', 'eastDoor'], ['southMid', 'chairNear'],
+    ['bedSide', 'eastDoor'], ['bedSide', 'chairNear'], ['bedSide', 'southMid'],
+    ['chairNear', 'westDoor'],
+  ];
+  // 线段是否全程避开碰撞盒（逐 5cm 采样点对膨胀盒做 containsPoint；exemptGroups=目的地家具豁免）
+  function segClear(ax, az, bx, bz, exemptGroups) {
+    const dx = bx - ax, dz = bz - az;
+    const len = Math.hypot(dx, dz);
+    const steps = Math.max(2, Math.ceil(len / 0.05));
+    const p = new THREE.Vector3();
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      p.set(ax + dx * t, 0.5, az + dz * t); // y=0.5：躯干高度扫一遍（家具全在 0~1.3m 高）
+      for (const c of colliders) {
+        if (exemptGroups?.includes(c.group)) continue;
+        const e = c.box.clone().expandByScalar(BODY_R);
+        if (e.containsPoint(p)) return false;
+      }
+    }
+    return true;
+  }
+  // 寻路：虚拟起点（诺诺当前位置）→ 路点图 Dijkstra → 目标 approach 点；返回途经点数组（不含起点，空数组=原地）
+  // 豁免策略（v4.1 教训：整条路线豁免目的地家具会让路径擦着床沿走）：
+  //   最后一程（进 goal）豁免目的地家具组；首段豁免"起点所站家具组"（从椅/床边起身离开）；
+  //   中间段一律不豁免——路点图的存在意义就是绕开家具
+  function routeTo(key) {
+    const a = anchors[key];
+    if (!a || !modelScene) return null;
+    const start = [modelScene.position.x, modelScene.position.z];
+    const goal = a.approachWay ? WAYPOINTS[a.approachWay].pos : [a.pos[0], a.pos[2]];
+    if (Math.hypot(goal[0] - start[0], goal[1] - start[1]) < 0.08) return []; // 已在原地
+    // 起点所站家具组（起点在膨胀盒内=刚从该家具起身/站位贴着它）
+    const startGroups = [];
+    const sp = new THREE.Vector3(start[0], 0.5, start[1]);
+    for (const c of colliders) {
+      if (!c.group || startGroups.includes(c.group)) continue;
+      if (c.box.clone().expandByScalar(BODY_R).containsPoint(sp)) startGroups.push(c.group);
+    }
+    const directExempt = [...new Set([...startGroups, ...(a.group ? [a.group] : [])])];
+    if (segClear(start[0], start[1], goal[0], goal[1], directExempt)) return [goal]; // 直达可见
+    // Dijkstra（7 节点暴力足够）：起点/终点作虚拟节点挂进图
+    const startKey = '__start', goalKey = a.approachWay ?? '__goal';
+    const adj = new Map([[startKey, []], [goalKey, []]]);
+    for (const k of Object.keys(WAYPOINTS)) adj.set(k, []);
+    adj.get(startKey).push(goalKey); adj.get(goalKey).push(startKey);
+    for (const [u, v] of WAYPOINT_EDGES) { adj.get(u).push(v); adj.get(v).push(u); }
+    const pt = (k) => (k === startKey ? start : k === goalKey ? goal : WAYPOINTS[k].pos);
+    const edgeExempt = (u, v) => {
+      if (u === goalKey || v === goalKey) return a.group ? [a.group] : null;
+      if (u === startKey || v === startKey) return startGroups.length ? startGroups : null;
+      return null;
+    };
+    const dist = new Map(), prev = new Map(), visit = new Set();
+    for (const k of adj.keys()) dist.set(k, Infinity);
+    dist.set(startKey, 0);
+    while (true) {
+      let cur = null, cd = Infinity;
+      for (const [k, dv] of dist) if (!visit.has(k) && dv < cd) { cur = k; cd = dv; }
+      if (cur === null || cd === Infinity) break;
+      visit.add(cur);
+      if (cur === goalKey) break;
+      for (const v of adj.get(cur)) {
+        if (visit.has(v)) continue;
+        const pu = pt(cur), pv = pt(v);
+        if (!segClear(pu[0], pu[1], pv[0], pv[1], edgeExempt(cur, v))) continue;
+        const nd = cd + Math.hypot(pv[0] - pu[0], pv[1] - pu[1]);
+        if (nd < dist.get(v)) { dist.set(v, nd); prev.set(v, cur); }
+      }
+    }
+    if (!visit.has(goalKey) || dist.get(goalKey) === Infinity) return [goal]; // 图不通兜底直走（白盒期可接受）
+    const path = [];
+    for (let k = goalKey; k !== startKey; k = prev.get(k)) path.unshift(k === goalKey ? [...goal] : [...WAYPOINTS[k].pos]);
+    return path;
+  }
+
+  // 行走动画状态：逐段线性推进（恒速）+ 朝向每帧滑向路段方向（转弯自然）
+  let walkAnim = null; // { queue:[{x,z}...], faceYaw, onArrive }
 
   const api = {
     group: g,
@@ -530,18 +659,22 @@ export function buildRoom(scene, { posterUrl } = {}) {
     colliders,
     checkCollisions,
     setModel(s) { modelScene = s; },
-    // 滑步移动：根位置+朝向缓动（v4 白盒期瞬移废除；步态=Phase B，行走 clip 接力后本函数降级为位移跟随）
-    moveTo(pos, yawDeg, { dur = 0.9, onDone } = {}) {
+    // 滑步移动：根位置+朝向缓动（落座短滑/起立离位专用，距离 ≤0.7m 不经过家具）；yawDeg=null=保持当前朝向；
+    // arc=中途抬升高度（米，正弦弧）——椅子落座滑步时脚部抬过 8cm 底盘边缘（不抬=脚穿盘，实测 toe 入盘 70 采样）
+    moveTo(pos, yawDeg, { dur = 0.9, onDone, arc = 0 } = {}) {
       if (!modelScene) return false;
+      walkAnim = null; // 滑步接管：进行中的行走作废（互斥）
       const fromYaw = modelScene.rotation.y;
-      const fr2 = (yawDeg * Math.PI) / 180;
-      const toYaw = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
-      let d = toYaw - fromYaw;
-      d = ((d + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; // 最短路径
+      let dYaw = 0;
+      if (yawDeg != null) {
+        const fr2 = (yawDeg * Math.PI) / 180;
+        const toYaw = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
+        dYaw = ((toYaw - fromYaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; // 最短路径
+      }
       moveAnim = {
         fromPos: modelScene.position.clone(),
         toPos: new THREE.Vector3(pos[0], pos[1] ?? 0, pos[2]),
-        fromYaw, dYaw: d, t0: elapsed, dur, onDone,
+        fromYaw, dYaw, t0: elapsed, dur, onDone, arc,
       };
       return true;
     },
@@ -562,6 +695,24 @@ export function buildRoom(scene, { posterUrl } = {}) {
       }
       return true;
     },
+    // 行走（导航层入口）：寻路→恒速逐段走→到位回调。main.js 配 walk_loop 步态循环：onDepart 起步/onArrive 收势
+    walkTo(key, { onDepart = null, onArrive = null } = {}) {
+      const a = anchors[key];
+      if (!a || !modelScene) return false;
+      const path = routeTo(key);
+      if (path === null) return false;
+      moveAnim = null; // 行走接管：进行中的滑步作废
+      if (path.length === 0) { onArrive?.(); return true; } // 已在原地
+      walkAnim = {
+        queue: path.map((p) => ({ x: p[0], z: p[1] })),
+        faceYaw: modelScene.rotation.y,
+        onArrive,
+      };
+      onDepart?.();
+      return true;
+    },
+    cancelWalk() { walkAnim = null; },
+    routeTo, // 调试：查看寻路结果（途经点数组）
     get state() { return { ...state, cur: { ...state.cur } }; },
     switches: [btnLamp, btnCur], // 点击拾取用：0=灯 1=帘
     sea, glass, faceMat, dome, hemiLight: hemi,

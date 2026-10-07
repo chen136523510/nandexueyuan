@@ -81,10 +81,10 @@ export class PoseDriver {
     return true;
   }
 
-  tweenPos(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad' } = {}) {
+  tweenPos(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity } = {}) {
     if (!this._bone(name)) return false;
     this._dropTweens(name, { pos: true });
-    this.tweens.push({ name, axis, pos: true, from: null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong: false, until: Infinity });
+    this.tweens.push({ name, axis, pos: true, from: null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until });
     this._touch(name, null, true);
     return true;
   }

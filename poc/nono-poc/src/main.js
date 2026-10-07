@@ -130,7 +130,10 @@ let vrm = null;
 let eyeRig = null;
 let poseDriver = null;      // 基元层：骨骼补间引擎
 let recipeExecutor = null;  // 配方层：配方执行/打断/安全点
-let sitState = null;        // 当前坐姿配方 id（'sit_chair'/'sit_bed'）——交互锚点编排用：跨锚点先起立再滑步（BUG-093）
+let sitState = null;        // 当前坐姿配方 id（'sit_chair'/'sit_bed'）——交互锚点编排用
+let sitAnchorKey = null;    // 坐在哪个锚点上（起立离位滑步取该锚点 standExit，避免站进家具里）
+let walkSeq = 0;            // 锚点任务序号（新点击作废旧异步链，防双击竞态）
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 统一播放入口：维护坐姿状态（配方 HUD / 交互锚点 / ?sit=1 三路共用）
 function playRecipe(rc) {
@@ -138,11 +141,56 @@ function playRecipe(rc) {
   const ret = recipeExecutor.play(rc);
   if (ret.ok) {
     if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) sitState = rc.id;
-    else if (rc?.id === 'stand_up') sitState = null;
+    else if (rc?.id === 'stand_up') { sitState = null; sitAnchorKey = null; }
   }
   return ret;
 }
 const fetchRecipe = (name) => fetch(`/recipes/${name}.json?t=${Date.now()}`).then((r) => r.json());
+
+// 交互锚点编排（BUG-095，院长："移动不要平移，搞一点正常的行走动作"+"切换交互选项身体穿过家具"）：
+//   坐姿 → 先起立+离位滑步（standExit）→ 寻路行走（路点图绕家具 + walk_loop 步态循环）→ 到位收势：
+//   坐姿锚点=短滑上座面+播落座配方；站立锚点=转向锚点朝向。Phase B 正式步态 clip 只需替换 walk_loop 的播放源
+function goToAnchor(key) {
+  if (!roomApi || animPlaying || !recipeExecutor) return Promise.resolve(false);
+  const a = roomApi.anchors[key];
+  if (!a) return Promise.resolve(false);
+  const seq = ++walkSeq;
+  const whenRc = a.recipe ? fetchRecipe(a.recipe).catch(() => null) : Promise.resolve(null);
+  return whenRc.then((rc) => {
+    if (seq !== walkSeq || !roomApi) return false;
+    if (rc && rc.id === sitState && sitAnchorKey === key) return true; // 已坐在目标位
+    const depart = () => {
+      if (seq !== walkSeq) return;
+      fetchRecipe('walk_loop').then(playRecipe).catch(() => {}); // 起步：步态循环（姿态层不受影响）
+    };
+    const arrive = () => {
+      if (seq !== walkSeq) return;
+      recipeExecutor.stop(); // 收势：步态骨 150ms 滑变回中立
+      if (rc) {
+        // 落座短滑：下车站点→座面（≤0.5m）；椅子组带抬弧=脚部跨过 8cm 底盘边缘（不抬=脚穿盘）
+        roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.5, arc: a.group === 'chair' ? 0.09 : 0 });
+        playRecipe(rc);
+        sitAnchorKey = key;
+      } else {
+        roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.35 }); // 原地转向锚点朝向
+      }
+    };
+    if (sitState) {
+      // 先起立+离位滑步（从座面滑到 standExit 站点，避免起立后站进椅盘/床箱）
+      // 注意：必须先捕获当前锚点——playRecipe(stand_up) 会把 sitAnchorKey 清空（BUG-095 排障发现：读序反了→离位滑步从未执行）
+      fetchRecipe('stand_up').then((su) => {
+        if (seq !== walkSeq) return;
+        const cur = roomApi.anchors[sitAnchorKey];
+        playRecipe(su);
+        const exit = cur?.standExit ?? cur?.pos;
+        if (exit) roomApi.moveTo(exit, null, { dur: 0.55, arc: cur?.group === 'chair' ? 0.09 : 0 });
+      }).catch(() => {});
+      return sleepMs(950).then(() => { if (seq !== walkSeq) return false; roomApi.walkTo(key, { onDepart: depart, onArrive: arrive }); return true; });
+    }
+    roomApi.walkTo(key, { onDepart: depart, onArrive: arrive });
+    return true;
+  });
+}
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -212,13 +260,11 @@ loader.load(
     });
     setupRecipeHud();
 
-    // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 滑步到椅子坐锚点后坐下
+    // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 走完整编排（行走去椅子落座）
     if (ROOM_MODE) {
       roomApi.setModel(vrm.scene);
       roomApi.gotoAnchor('room.center');
-      if (params.get('sit') === '1') {
-        roomApi.gotoAnchor('chair.sit', { smooth: true, onArrive: () => fetchRecipe('sit_chair').then(playRecipe).catch(console.error) });
-      }
+      if (params.get('sit') === '1') goToAnchor('chair.sit');
       setupRoomHud();
     }
 
@@ -579,23 +625,16 @@ function setupRoomHud() {
     if (cb) cb.classList.toggle('on', !s.curtainOpen); // 帘合上=高亮
   };
   syncRoomHud();
-  // 交互锚点行：滑步移动+朝向（v4 白盒期瞬移废除），有配方的到位自动播放；
-  // 编排（BUG-093）：坐姿状态下切其他锚点=先起立→滑步→再落座，杜绝"坐着瞬移/姿势悬空"
+  // 交互锚点行：行走编排入口（模块级 goToAnchor：起立离位→寻路行走→到位收势落座）
   const anchorSpan = document.getElementById('anchorHud');
   if (anchorSpan) {
     anchorSpan.innerHTML = '';
     for (const [key, a] of Object.entries(roomApi.anchors)) {
       const b = document.createElement('button');
       b.textContent = a.label;
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', () => {
         if (animPlaying) { statusEl.textContent = '⚠️ Mixamo 动作播放中，先点"停动作"'; return; }
-        const rc = a.recipe ? await fetchRecipe(a.recipe).catch(() => null) : null;
-        if (sitState && (!rc || rc.id !== sitState)) {
-          playRecipe(await fetchRecipe('stand_up')); // 姿态残留清除：起立到站姿再移动
-          await new Promise((r) => setTimeout(r, 850)); // 等起立序列走完（0.7s+缓冲）
-        }
-        if (rc && rc.id === sitState) return; // 已处于目标坐姿
-        roomApi.gotoAnchor(key, { smooth: true, onArrive: () => { if (rc) playRecipe(rc); } });
+        goToAnchor(key);
       });
       anchorSpan.appendChild(b);
     }
