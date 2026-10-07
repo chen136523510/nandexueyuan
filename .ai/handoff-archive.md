@@ -2780,3 +2780,9 @@ cd .. && bash deploy.sh                           # 构建前端+重启 PM2
 - **BUG-091**（`b8d339c`）：眼球贴片近距消失=SkinnedMesh 绑定姿态包围球剔除，frustumCulled=false 修复
 - **配方遥控包 7 键**：坐下/起立/打瞌睡/伸懒腰+原三配方（宇树式人工代理，Phase C 同批交大脑）
 - **运维沉淀**：遮挡 rAF 完全挂起→验证须手动时钟+手动 vrm.update 传播；vite evaluate 须 IIFE；dev server 起后 curl+浏览器双验
+
+---
+
+## 2026-10-06（黑机 23:26~23:40·文档核查轮，无代码改动）——自 handoff.md 归档（2026-10-07 超 2 轮纪律）
+
+- 核实前轮四文档同步正确 + 补三处跨窗口文档债（ROADMAP R-058 并行线阶段表/根 CHANGELOG 补 10-06 架构条目/需求池 R-058 标注 uphill→downhill）
