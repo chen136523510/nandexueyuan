@@ -541,7 +541,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // v4.1 字段：group=所属家具碰撞组（寻路豁免：走向该家具的最后一程允许贴近）；
   //   approachWay=下车站点（行走终点，落座时再短滑上座面）；standExit=起立离位滑步点（避免站进家具里）
   const anchors = {
-    'chair.sit':   { label: '椅子坐',   pos: [1.05, 0, -3.25], yawDeg: 205, recipe: 'sit_chair', group: 'chair', approachWay: 'chairNear', standExit: [0.95, 0, -2.90] },
+    'chair.sit':   { label: '椅子坐',   pos: [1.05, 0, -3.25], yawDeg: 205, recipe: 'sit_chair', group: 'chair', approachWay: 'chairNear', standExit: [1.05, 0, -2.72] },
     'chair.stand': { label: '椅旁站立', pos: [1.62, 0, -2.72], yawDeg: 150 },
     'bed.sit':     { label: '床沿坐',   pos: [3.50, 0, -3.18], yawDeg: 250, recipe: 'sit_bed',   group: 'bed',   approachWay: 'bedSide',   standExit: [3.50, 0, -2.72] },
     'room.center': { label: '活动区',   pos: [2.10, 0, -2.05], yawDeg: 180 },
@@ -554,7 +554,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
   const WAYPOINTS = {
     center:     { pos: [2.10, -2.05] },
     southMid:   { pos: [2.25, -1.30] },
-    chairNear:  { pos: [0.95, -2.90] }, // 下车站点=椅西南侧（椅背西侧绕入：东侧是椅背、正面是桌板，仅西南可进人），落座短滑上座面
+    chairNear:  { pos: [1.05, -2.72] }, // 下车站点=椅正南（滑座线 x 恒 1.05 全程椅背西缘外 9cm——垂落手臂包络不擦椅背；离位同点北出）
     bedSide:    { pos: [3.50, -2.72] }, // 床沿下车站点（床缘外 0.38m）
     westDoor:   { pos: [0.70, -0.80] },
     eastDoor:   { pos: [3.80, -0.80] },

@@ -168,7 +168,7 @@ function goToAnchor(key) {
       recipeExecutor.stop(); // 收势：步态骨 150ms 滑变回中立
       if (rc) {
         // 落座短滑：下车站点→座面（≤0.5m）；椅子组带抬弧=脚部跨过 8cm 底盘边缘（不抬=脚穿盘）
-        roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.5, arc: a.group === 'chair' ? 0.09 : 0 });
+        roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.5, arc: a.group === 'chair' ? 0.10 : 0 });
         playRecipe(rc);
         sitAnchorKey = key;
       } else {
@@ -241,11 +241,12 @@ loader.load(
     // 视线目标绑定（验收 3）
     vrm.lookAt.target = lookAtTarget;
 
-    // 直播间初始姿态：双手自然下垂（左臂负角度/右臂正角度=从 T-pose 收拢）
+    // 直播间初始姿态：双手自然垂落体侧（BUG-096：v1 z±0.75=从 T-pose 只压 43°→手臂斜 45° 非自然体态；
+    // ±1.40=离垂直 10° 自然间隙防穿体；手臂配方 z 偏移已按净角守恒同步补偿）
     const leftArm = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
     const rightArm = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-    if (leftArm) leftArm.rotation.z = -0.75;
-    if (rightArm) rightArm.rotation.z = 0.75;
+    if (leftArm) leftArm.rotation.z = -1.40;
+    if (rightArm) rightArm.rotation.z = 1.40;
 
     // 小脑（Phase A）：静息臂姿定稿后创建引擎（rest 捕获含双臂 z±0.75=中立姿势）
     poseDriver = new PoseDriver(vrm);
@@ -484,8 +485,8 @@ function stopAnimation() {
     vrm.humanoid.resetNormalizedPose?.(); // 复位归一化静息（mixer 停后骨骼停在最后帧）
     const l = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
     const r = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-    if (l) l.rotation.set(0, 0, -0.75); // 恢复直播间静息臂姿（收拢下垂）
-    if (r) r.rotation.set(0, 0, 0.75);
+    if (l) l.rotation.set(0, 0, -1.40); // 恢复自然垂落静息臂姿（BUG-096 同步）
+    if (r) r.rotation.set(0, 0, 1.40);
   }
   document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === 'none'));
   statusEl.textContent = '⏹ 动作停止，呼吸恢复';

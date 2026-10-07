@@ -1,21 +1,78 @@
 {
   "id": "hands_behind_back",
   "label": "背手",
-  "version": 10,
+  "version": 11,
   "intensityDefault": 1.0,
   "hold": true,
   "interruptible": true,
   "mirrorable": true,
-  "channels": { "expression": null, "breath": null },
-  "ref": "队列条令·跨立要领（见 00-调研/01-技术/常见动作执行要领与生物力学调研.md §二）。v10=院长复验反馈（前臂需再内收实现两手交叠）：upper 不动（y50/z-15），lower y35→55 / z-14→-26；实测手位(±0.034, 1.05, -0.19)两手交叠于腰带高、肘(±0.16, 1.18, -0.11)贴体侧不变；矩阵探针 48 组合扫描+真实播放路径采样 44 帧 0 违例。历史：v9=双约束数值求解（手在体后+肘贴身+路径不出体）；v8 教训：z_net 过垂直太深(>30°)会把整只手埋进腹腔且外面看不见（BUG-090）",
+  "channels": {
+    "expression": null,
+    "breath": null
+  },
+  "ref": "队列条令·跨立要领（见 00-调研/01-技术/常见动作执行要领与生物力学调研.md §二）。v10=院长复验反馈（前臂需再内收实现两手交叠）：upper 不动（y50/z-15），lower y35→55 / z-14→-26；实测手位(±0.034, 1.05, -0.19)两手交叠于腰带高、肘(±0.16, 1.18, -0.11)贴体侧不变；矩阵探针 48 组合扫描+真实播放路径采样 44 帧 0 违例。历史：v9=双约束数值求解（手在体后+肘贴身+路径不出体）；v8 教训：z_net 过垂直太深(>30°)会把整只手埋进腹腔且外面看不见（BUG-090）；BUG-096 静息臂姿 ±0.75→±1.40 rad：仅 upperArm z 偏移净角守恒补偿（+22.2/−22.2，lowerArm rest 未变不动），终态与 v10 一致",
   "sequence": [
-    { "op": "rotate", "bone": "leftUpperArm",  "axis": "y", "deg": 50,  "dur": 0.45 },
-    { "op": "rotate", "bone": "rightUpperArm", "axis": "y", "deg": -50, "dur": 0.45 },
-    { "op": "rotate", "bone": "leftUpperArm",  "axis": "z", "deg": -15, "dur": 0.45, "delay": 0.2 },
-    { "op": "rotate", "bone": "rightUpperArm", "axis": "z", "deg": 15,  "dur": 0.45, "delay": 0.2 },
-    { "op": "bend",   "bone": "leftLowerArm",  "axis": "y", "deg": 55,  "dur": 0.4,  "delay": 0.4 },
-    { "op": "bend",   "bone": "rightLowerArm", "axis": "y", "deg": -55, "dur": 0.4,  "delay": 0.4 },
-    { "op": "bend",   "bone": "leftLowerArm",  "axis": "z", "deg": -26, "dur": 0.35, "delay": 0.55 },
-    { "op": "bend",   "bone": "rightLowerArm", "axis": "z", "deg": 26,  "dur": 0.35, "delay": 0.55 }
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "y",
+      "deg": 50,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "y",
+      "deg": -50,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "z",
+      "deg": 22.2,
+      "dur": 0.45,
+      "delay": 0.2
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "z",
+      "deg": -22.2,
+      "dur": 0.45,
+      "delay": 0.2
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerArm",
+      "axis": "y",
+      "deg": 55,
+      "dur": 0.4,
+      "delay": 0.4
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerArm",
+      "axis": "y",
+      "deg": -55,
+      "dur": 0.4,
+      "delay": 0.4
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerArm",
+      "axis": "z",
+      "deg": -26.0,
+      "dur": 0.35,
+      "delay": 0.55
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerArm",
+      "axis": "z",
+      "deg": 26.0,
+      "dur": 0.35,
+      "delay": 0.55
+    }
   ]
 }

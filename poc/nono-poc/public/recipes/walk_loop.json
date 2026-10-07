@@ -1,23 +1,106 @@
 {
   "id": "walk_loop",
   "label": "行走",
-  "version": 3,
+  "version": 4,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
   "layer": "gesture",
-  "channels": { "expression": null, "breath": null },
-  "ref": "白盒步态循环 v3（BUG-095 院长'移动不要平移'+复验'走路姿势怪怪的/手臂一直默认姿势'）：v2 单边踢（0↔−26，腿只向前不后摆=行进感怪）→ v3 **from 显式振荡起点=两侧摆**（引擎 tween 支持 from + 首周期振幅渐入无起步跳变）——腿 +18(后摆)↔−26(前摆)、摆臂反相 −20(前)↔+16(后)、肘随步频屈伸 −24(前折)、膝前摆中段屈 36°、髋部每步起浮、躯干微前倾。相位：左腿前摆=右臂前摆（对侧协调）。正式步态 clip（Blender 手调/Mixamo/GVHMR，Phase B）到位后由 mixer 路径替换本配方（walkTo 接口不变）。步幅≈2×0.408×sin26°≈0.36m/步×2步/0.7s≈1.03m/s 与 WALK_SPEED 1.05 匹配",
+  "channels": {
+    "expression": null,
+    "breath": null
+  },
+  "ref": "白盒步态循环 v4（BUG-096 静息臂姿改自然垂落+院长指示'摆臂数值去调研'）：摆臂数值=步态生物力学调研（Collins 2009 Proc R Soc B / Bailey 2023 Gait&Posture / Kang 2023：放松步行肩屈伸约 ±20~25° 随速度增大、肘恒屈 20~30°、与对侧腿反相）——肩摆 前22°(from −22)/后12°(+12)、肘恒屈 14↔26° 泵动、与同侧腿反相。v3 双向跨步（腿 +18↔−26）/膝前摆中段屈 36°/髋起浮/躯干前倾不变。静息臂姿 z±0.75→±1.40 rad（离垂直 10° 自然间隙），手臂配方 z 偏移净角守恒补偿（背手 v10 终态逐骨不变）。正式步态 clip（Blender 手调，Phase B）到位后由 mixer 路径替换本配方（walkTo 接口不变）",
   "sequence": [
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -26, "from": 18,  "dur": 0.35, "loop": -1 },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -26, "from": 18,  "dur": 0.35, "loop": -1, "delay": 0.35 },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 36,  "from": 6,   "dur": 0.175, "loop": -1 },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 36,  "from": 6,   "dur": 0.175, "loop": -1, "delay": 0.35 },
-    { "op": "rotate",    "bone": "leftUpperArm",  "axis": "x", "deg": 16,  "from": -20, "dur": 0.35, "loop": -1, "delay": 0.35 },
-    { "op": "rotate",    "bone": "rightUpperArm", "axis": "x", "deg": 16,  "from": -20, "dur": 0.35, "loop": -1 },
-    { "op": "rotate",    "bone": "leftLowerArm",  "axis": "x", "deg": -24, "dur": 0.175, "loop": -1, "delay": 0.35 },
-    { "op": "rotate",    "bone": "rightLowerArm", "axis": "x", "deg": -24, "dur": 0.175, "loop": -1 },
-    { "op": "translate", "bone": "hips", "y": -0.016, "dur": 0.175, "loop": -1 },
-    { "op": "rotate",    "bone": "chest", "axis": "x", "deg": 3, "dur": 0.2 }
+    {
+      "op": "rotate",
+      "bone": "leftUpperLeg",
+      "axis": "x",
+      "deg": -26,
+      "from": 18,
+      "dur": 0.35,
+      "loop": -1
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperLeg",
+      "axis": "x",
+      "deg": -26,
+      "from": 18,
+      "dur": 0.35,
+      "loop": -1,
+      "delay": 0.35
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerLeg",
+      "axis": "x",
+      "deg": 36,
+      "from": 6,
+      "dur": 0.175,
+      "loop": -1
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerLeg",
+      "axis": "x",
+      "deg": 36,
+      "from": 6,
+      "dur": 0.175,
+      "loop": -1,
+      "delay": 0.35
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "x",
+      "deg": 12,
+      "from": -22,
+      "dur": 0.35,
+      "loop": -1,
+      "delay": 0.35
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": 12,
+      "from": -22,
+      "dur": 0.35,
+      "loop": -1
+    },
+    {
+      "op": "rotate",
+      "bone": "leftLowerArm",
+      "axis": "x",
+      "deg": -26,
+      "from": -14,
+      "dur": 0.175,
+      "loop": -1,
+      "delay": 0.35
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLowerArm",
+      "axis": "x",
+      "deg": -26,
+      "from": -14,
+      "dur": 0.175,
+      "loop": -1
+    },
+    {
+      "op": "translate",
+      "bone": "hips",
+      "y": -0.016,
+      "dur": 0.175,
+      "loop": -1
+    },
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 3,
+      "dur": 0.2
+    }
   ]
 }
