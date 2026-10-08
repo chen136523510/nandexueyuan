@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-10-08 22:10（黑机：**Blender 步态 clip v1 轮（Phase B 首件）——①自研授权行走循环（解析 IK + 足部三段滚动模型 + 上体曲线，参数区可调）②产出**自产 `.vrma`**（VRMC_vrm_animation 1.0，官方 VRM Blender 扩展 4.7.2 导出）并上屏替换配方步态（walkTo 接口不变、配方保留兜底）③固有步速 0.88 m/s，`WALK_SPEED` 1.05→0.88 同步防滑步 ④起步淡入/收势 slerp 过渡（BUG-100）⑤FK 六项自检全绿 + 世界系足部静止采样无滑步（贴地相 0.14~0.24mm/帧）；本轮已提交推送**；**步态 v1 待院长复验观感**）
+> 最后更新：2026-10-08 22:10（黑机：**Blender 步态 clip v1 轮（Phase B 首件）——①自研授权行走循环（解析 IK + 足部三段滚动模型 + 上体曲线，参数区可调）②产出**自产 `.vrma`**（VRMC_vrm_animation 1.0，官方 VRM Blender 扩展 4.7.2 导出）并上屏替换配方步态（walkTo 接口不变、配方保留兜底）③固有步速 0.88 m/s，`WALK_SPEED` 1.05→0.88 同步防滑步 ④起步淡入/收势 slerp 过渡（BUG-100）⑤FK 六项自检全绿 + 世界系足部静止采样无滑步（贴地相 0.14~0.24mm/帧）；本轮已提交推送（`fb93c38` 代码资产 + `b413c05` 文档）**；**步态 v1 待院长复验观感**）
 > 所在设备：黑机（RTX 4070 主力机；**Blender 5.2.2 LTS + 官方 VRM 扩展 4.7.2 / Krita 5.3.4 / 系统 Python 3.11(numpy+PIL) 齐备**——美术与动作加工链全在本机；白机=公司荣耀本，无 Blender/Krita/Python）
 > 稳定版本：**v4.1.0 线上**（commit `bd6e238`；本地缓存结构优化未部署——攒至下轮功能改动一起发）。本地最新=步态 clip v1（R-058 线；nono-poc 属本地 PoC 不涉主站部署）
 > 数据规模：prod.db —— message_chunks 5,372 块 / group_messages 538,915 条 / users 21（1 super_admin + 1 admin + 19 member）+ nono 两表 + feedbacks 表（BUG-080 补建）
