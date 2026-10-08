@@ -189,3 +189,13 @@ server/uploads/chat/
 
 # 动作管线 PoC：Mixamo 原始 FBX 测试资产（再配布条款待核不入库，入库的只有自产 .vrma）
 poc/nono-poc/public/anims/
+
+# ===== 诺诺美术源文件出库（2026-10-08 院长裁决：白机用不到的不上 GitHub，两机仓库允许不一致）=====
+# 分级规则见 prd/01-需求文档/05-美术设计/美术纪律.md §三
+# 注意：gitignore 只拦新增——已跟踪文件的出库 commit 必须由黑机执行 git rm --cached（白机执行会物理删除黑机本地源文件）
+# 捏模源文件（VRoid 节点存档+Blender 工作文件，仅黑机可打开；历史中 v1~v5 可寻回）
+prd/01-需求文档/05-美术设计/诺诺/捏模源文件/
+# 手绘轮贴图提取中间产物（extract_vrm_textures.mjs 可重新生成，约 12MB/两套）
+prd/01-需求文档/05-美术设计/诺诺/手绘轮工作区/src_v*/
+# 场景参考图（院长供图：MyGO/孤独摇滚海报/主机/布局/窗户；MyGO 运行时副本 poc/nono-poc/public/room/ 不受影响）
+prd/01-需求文档/07-自习室/场景设计/资源/
