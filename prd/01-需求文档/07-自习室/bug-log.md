@@ -11,6 +11,7 @@
 
 | 编号 | 一句话 | 日期 |
 |---|---|---|
+| BUG-099 | 备料的 Krita Scripter 脚本**从未真正跑过**（内置 Python 无 numpy）→ 首次实跑全崩，四坑入档 | 10-08 |
 | BUG-098 | 手写 PNG 解码器静默产出坏像素→弃用改 PIL + 领域先验断言自检 | 10-07 |
 | BUG-097 | 坐姿手掌穿入椅/床 + 手掌恒绷直——**未修复**，禁逐家具硬编码，另窗通用解 | 10-07 |
 | BUG-096 | 静息臂恒斜 45°→±1.40rad 自然垂落 + 净角守恒补偿 + 摆臂数值调研 | 10-07 |
@@ -25,6 +26,24 @@
 | BUG-087 | 遮挡节流下的采样假阴性（动作管线盲测眨眼误报） | 10-04 |
 | BUG-086 | 表情眉毛被刘海吞没→depthTest=false 眉上发画法 + 眉色纯黑定色 | 10-03 |
 | BUG-081~085 | 眉毛五连：缓存假阴性/眉毛沉脸/仰视白块 alpha 长尾/v6 眼球不跟头/表情眉沉入眼睑 | 10-02 |
+
+---
+
+## 2026-10-08（黑机 BUG-099 Krita Scripter 脚本从未真正跑过——内置 Python 无 numpy，备料"写完即算备好"的教训）
+
+### BUG-099：备料的 Krita Scripter 脚本（krita_handpaint_round1.py）首次实跑即崩——四个未验证假设一次性暴露
+
+- **发现时间**：2026-10-08（黑机 Krita 首次实战，院长"绘制优先 Krita"裁决后实跑 round2 脚本）
+- **环境**：Krita 5.3.4（内置 Python 3.13.5 / PyQt5 5.15.7），Windows；nono 手绘轮工具脚本
+- **现象**：round1 备料的 `krita_handpaint_round1.py`（"Krita Scripter 版留作 GUI 备选路径"）实跑直接崩，日志都写不出来；按此脚本思路写的 round2 首版同样崩，逐步暴露四个问题：
+  1. `ModuleNotFoundError: No module named 'numpy'` —— **Krita 内置 Python 不带 numpy**，脚本顶层 `import numpy` 即死
+  2. `ImportError: cannot import name 'Info' from 'krita'` —— 5.3.4 无此类；`Document.saveDocument` 同样不存在（正解 `doc.saveAs`）
+  3. 自检 `print(s, flush=True)` 崩：Scripter 把 `sys.stdout` 换成 `DocWrapper`（只有 `write`，无 `flush`）→ 异常把日志一起带走
+  4. 写入约定无法用"写进去再读回来"判定：`setPixelData`/`pixelData` 字节透明，四种候选（RGBA/BGRA × 直通/预乘）读回**全等**；最终判据只能是导出图与参考图比对 → 实测 **BGRA 序 + 直通 alpha** 正确（均差 0.0013；预乘整体偏暗、RGBA 序 R/B 互换）
+  另有两处流程坑：`exportImage(path)` 不带 InfoObject 会报"not enough arguments"，带上则**弹 PNG 选项框阻塞 GUI 线程**（需人工点确定）；Scripter 在 exec 模块后会**再调用一次 `main()`**，脚本里定义 `main` 会导致整脚本跑两遍（两轮导出两个框）
+- **根因**：**备料阶段的"写完了"被当成了"验证过了"**——round1 的 Krita 脚本从未被实跑（当时的实际产物全部由无头 PIL 脚本 `handpaint_generate.py` 生成，日志文件也只有 PIL 那份），文档却把它记为可用备选路径；对外部宿主环境（Krita 内置解释器的依赖与 API 版本）的假设没有一条经过实测
+- **修复**：round2 重写为零第三方依赖（数组计算全在系统 Python 完成，落 `.raw` 缓冲；Krita 侧只做开稿/建层/导出）；导入改防御式 + **任何异常前先落盘日志**；写入约定写死实测胜出值并在注释里留证；`.kra` 改用 `doc.saveAs`；导出弹框按流程点确认
+- **教训**：①**"备料"的完成定义 = 至少成功跑通一次**，不是文件写完——未实测的脚本必须在文档里显式标注"未验证"，不能让后续窗口误当可用资产；②**宿主环境的解释器能力必须先探针后写码**（依赖清单、API 是否存在都要实测，参考 BUG-097/090"探针先校准"同族）；③**日志要能活过异常**——先写盘再做事，别把证据和错误一起丢；④**字节透明≠语义透明**：底层读写全等不代表约定正确，跨库传递像素必须以"渲染/导出结果"为判据
 
 ---
 
