@@ -1,19 +1,199 @@
 {
   "id": "stand_up",
   "label": "起立",
-  "version": 2,
+  "version": 4,
   "hold": false,
   "autoReturn": 0.3,
   "interruptible": true,
   "mirrorable": false,
   "layer": "posture",
-  "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #2 v2：姿态层（layer=posture）——坐下的逆序，补间永远从当前值出发（施工图 §5.1），坐姿偏移直接归 0 即起立；对 sit_chair/sit_bed 通用（起点角度/深度自动捕获）。v2 修订（BUG-092，院长复验：起立过程脚穿地板 0.14m）：v1 腿先伸直髋后升=伸长的腿撑不起低位髋→脚插地；改运动学耦合——腿匀速伸（α=90(1-t)）时髋高按 1-cos(α) 走，easeOutSine（sin(πt/2)=1-cos(90(1-t))）恰为该曲线，故髋用 easeOutSine、腿用 linear、同时长同起点，踝点全程单调从落座高度升到站立高度，不可能入地。前提=当前处于坐姿",
+  "channels": {
+    "expression": null,
+    "breath": null
+  },
+  "ref": "场景交互配方 #2 v4：姿态层。v2（BUG-092）：运动学耦合（腿 easeLinear / 髋 easeOutSine 同步，踝点单调不入地）。v3（院长复验③'起身不协调'）：三段重排——①前倾预备（chest+12/spine+7/neck-7，0~0.25s）②重心前移+蹬起（髋 z+0.045 于 0~0.3s；腿伸+髋升 0.2s 起 dur 0.7，耦合同步延后）③直回直立（0.25~0.7s）。**v4（2026-10-08 二修）**：①腿角目标按 BUG-104 修复后重标（与 sit 配方同一套标定：站立=0 即真静息）；②补脚部 op 归零（sit_bed 加了脚角补偿）；③修正引擎 BUG-103（位移补间按骨清除→髋升降被 z 补间吞掉，腿伸而髋不升致脚穿地 0.38m）后髋/腿耦合才真正生效。总时长 0.9s。",
   "sequence": [
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 0, "dur": 0.7, "easing": "linear" },
-    { "op": "translate", "bone": "hips",          "y": 0,      "dur": 0.7, "easing": "easeOutSine" }
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 12,
+      "dur": 0.25,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "spine",
+      "axis": "x",
+      "deg": 7,
+      "dur": 0.25,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "neck",
+      "axis": "x",
+      "deg": -7,
+      "dur": 0.25,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "translate",
+      "bone": "hips",
+      "z": 0.045,
+      "dur": 0.3,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperLeg",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperLeg",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerLeg",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerLeg",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftFoot",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightFoot",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "linear"
+    },
+    {
+      "op": "translate",
+      "bone": "hips",
+      "y": 0,
+      "dur": 0.7,
+      "delay": 0.2,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.45,
+      "delay": 0.25,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "spine",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.45,
+      "delay": 0.25,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "neck",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.45,
+      "delay": 0.25,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "translate",
+      "bone": "hips",
+      "z": 0,
+      "dur": 0.45,
+      "delay": 0.3,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "z",
+      "deg": 0,
+      "dur": 0.45,
+      "delay": 0.1,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "z",
+      "deg": 0,
+      "dur": 0.45,
+      "delay": 0.1,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "x",
+      "deg": 6,
+      "dur": 0.25,
+      "delay": 0.1,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.4,
+      "delay": 0.4,
+      "easing": "easeInOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": 6,
+      "dur": 0.25,
+      "delay": 0.1,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.4,
+      "delay": 0.4,
+      "easing": "easeInOutQuad"
+    }
   ]
 }

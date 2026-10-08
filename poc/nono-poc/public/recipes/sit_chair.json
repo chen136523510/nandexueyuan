@@ -1,18 +1,88 @@
 {
   "id": "sit_chair",
   "label": "坐下",
-  "version": 2,
+  "version": 4,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
   "layer": "posture",
-  "channels": { "expression": null, "breath": null },
-  "ref": "场景交互配方 #1（Phase B 场景化清单）v2。姿态层（layer=posture）：切换站↔坐状态，手势层（歪头/伸懒腰/打瞌睡…）可在坐姿上叠加，打断与自动回归不清姿态骨（动作分层修订 2026-10-06）。v2 修订（BUG-092，院长复验：坐下/起立过程脚穿地板）：废除 v1 的延迟错峰（髋先降腿后弯=直腿入地 0.14m），改运动学耦合——腿匀速弯（α=90t）时髋高必须按 1-cos(α) 走才贴地，easeInSine 的原函数恰为 1-cos(πt/2)，故髋用 easeInSine、腿用 linear、同时长同起点；踝点全程在站立/落座两端点间单调插值，数学上不可能入地。数值不变（场景设计 §二实测）：椅面 0.556+臀厚 0.03 → 髋偏移 -0.378（0.964→0.586）、大腿 x-90 水平、小腿 x+90 垂直、踝 0.098 贴地。前提=诺诺位于椅子锚点（交互行自动编排就位）",
+  "channels": {
+    "expression": null,
+    "breath": null
+  },
+  "ref": "场景交互配方 #1（Phase B 场景化清单）v4。姿态层（layer=posture）。v2（BUG-092）：废除延迟错峰改运动学耦合——腿匀速弯时髋高按 1-cos(α) 走（髋 easeInSine + 腿 linear 同时长），踝点单调插值不入地。v3（2026-10-08 院长复验②'坐着的时候手和腿穿模'）：坐姿手臂外展 8°避让（上臂 z±8）。**v4（2026-10-08 步态轮二修，BUG-104 根因修复后重新标定）**：原 v2 角度（腿 -90/+90）是在 poseDriver「懒捕获 rest」缺陷下试出来的——rest 被污染时角度含义漂移（实测全零偏移下踝高 0.169 而非 0.099），导致坐姿整体偏高/偏低。修 BUG-104 后按实测重标：**腿 -88/+90**（椅面 0.556 几何：髋关节 0.586 → 踝 0.104、足底 +6mm、脚掌倾斜 3mm）；落座前倾 7°（真人重心前压，同时把肩/手带前再拉净空）；手臂 0.35s 先于腿完成避让。",
   "sequence": [
-    { "op": "translate", "bone": "hips",          "y": -0.378, "dur": 0.7, "easing": "easeInSine" },
-    { "op": "rotate",    "bone": "leftUpperLeg",  "axis": "x", "deg": -90, "dur": 0.7, "easing": "linear" },
-    { "op": "rotate",    "bone": "rightUpperLeg", "axis": "x", "deg": -90, "dur": 0.7, "easing": "linear" },
-    { "op": "bend",      "bone": "leftLowerLeg",  "axis": "x", "deg": 90,  "dur": 0.7, "easing": "linear" },
-    { "op": "bend",      "bone": "rightLowerLeg", "axis": "x", "deg": 90,  "dur": 0.7, "easing": "linear" }
+    {
+      "op": "translate",
+      "bone": "hips",
+      "y": -0.378,
+      "dur": 0.7,
+      "easing": "easeInSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperLeg",
+      "axis": "x",
+      "deg": -88,
+      "dur": 0.7,
+      "easing": "linear"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperLeg",
+      "axis": "x",
+      "deg": -88,
+      "dur": 0.7,
+      "easing": "linear"
+    },
+    {
+      "op": "bend",
+      "bone": "leftLowerLeg",
+      "axis": "x",
+      "deg": 90,
+      "dur": 0.7,
+      "easing": "linear"
+    },
+    {
+      "op": "bend",
+      "bone": "rightLowerLeg",
+      "axis": "x",
+      "deg": 90,
+      "dur": 0.7,
+      "easing": "linear"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
+      "axis": "z",
+      "deg": 8,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "z",
+      "deg": -8,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 7,
+      "dur": 0.3,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 0,
+      "dur": 0.4,
+      "delay": 0.3,
+      "easing": "easeInOutQuad"
+    }
   ]
 }

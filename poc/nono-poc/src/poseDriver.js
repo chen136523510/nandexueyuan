@@ -32,6 +32,19 @@ const EASINGS = {
   easeOutSine: (t) => Math.sin((Math.PI / 2) * t),
 };
 
+// 引擎构造时一次性注册的全部人形骨（2026-10-08 步态轮修 BUG-104）：
+// 原实现 rest 为**懒捕获**（首次 _bone() 时记录当前值）——若首次触摸发生在走路/坐姿过程中，
+// 捕获到的是"被摆过的姿态"而非真静息，此后所有姿势都带固定偏差（实测：全零偏移下踝高 0.169 而非
+// 0.099，坐姿腿角整体漂移 12~16cm，是"坐下手腿穿模"报告的真根因）。构造时统一注册=rest 必为静息。
+export const DEFAULT_BONES = [
+  'hips', 'spine', 'chest', 'upperChest', 'neck', 'head',
+  'leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand',
+  'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand',
+  'leftUpperLeg', 'leftLowerLeg', 'leftFoot', 'leftToes',
+  'rightUpperLeg', 'rightLowerLeg', 'rightFoot', 'rightToes',
+  'leftEye', 'rightEye',
+];
+
 export class PoseDriver {
   constructor(vrm) {
     this.vrm = vrm;
@@ -39,8 +52,9 @@ export class PoseDriver {
     this.bones = new Map(); // name -> { node, rest:{x,y,z}, restPos, off:{x,y,z}, offPos }
     this.tweens = [];       // 活跃补间（含 delay 排队中）
     this.touched = new Map(); // name -> { axes:Set, pos:bool }——配方碰过的骨，stop/interrupt 归位范围
+    this.batch = 0;         // 补间批次（每次配方 play 递增；同批 op 共存，跨批同频道互清——BUG-103/105）
     // 心跳层每帧对 chest/hips 叠加（+=），若不被 apply 每帧复位会累积漂移——创建时先注册
-    for (const n of ['hips', 'chest']) this._bone(n);
+    for (const n of DEFAULT_BONES) this._bone(n);
   }
 
   _bone(name) {
@@ -58,6 +72,14 @@ export class PoseDriver {
     return this.bones.get(name);
   }
 
+  // 注册骨骼为"常驻静息骨"（rest 捕获当前姿态）：apply() 每帧写回 rest+offset，
+  // 于是 resetNormalizedPose() 之后也能自动恢复——自然手型层用（2026-10-08 步态轮）
+  register(names) {
+    let n = 0;
+    for (const name of names) if (this._bone(name)) n++;
+    return n;
+  }
+
   _touch(name, axis = null, pos = false) {
     if (!this.touched.has(name)) this.touched.set(name, { axes: new Set(), pos: false });
     const t = this.touched.get(name);
@@ -65,26 +87,39 @@ export class PoseDriver {
     if (pos) t.pos = true;
   }
 
-  _dropTweens(name, { axis = null, pos = null } = {}) {
+  _dropTweens(name, { axis = null, pos = null, batch = null } = {}) {
     this.tweens = this.tweens.filter(
-      (tw) => !(tw.name === name && (axis === null || tw.axis === axis) && (pos === null || tw.pos === pos)),
+      (tw) => !(tw.name === name
+        && (axis === null || tw.axis === axis)
+        && (pos === null || tw.pos === pos)
+        && (batch === null || tw.batch !== batch)), // batch：保留本批（同一次 play 的 op 共存，按推入顺序覆盖）
     );
   }
 
+  // 批次：每次配方 play 前调用，同批 op 互不吞噬（脉冲两段式），跨批同频道才互清（BUG-103/105 修复）
+  beginBatch() {
+    this.batch = (this.batch ?? 0) + 1;
+    return this.batch;
+  }
+
   // 低层原语：某骨某轴补间到目标偏移（rad）。from 在启动瞬间从当前值捕获——打断平滑性的来源。
-  // 显式传 from（rad）则跳过捕获=pingPong 两侧振荡的起点（步态腿摆 +18↔−26 用）；同骨同轴旧 tween 先清除
-  tweenTo(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity, from = null } = {}) {
+  // 显式传 from（rad）则跳过捕获=pingPong 两侧振荡的起点（步态腿摆 +18↔−26 用）。
+  // 清除范围＝同骨同轴**其他批次**的补间（2026-10-08 步态轮 BUG-103/105：原按骨/按骨+轴无批次清除，
+  // 使同一次 play 内的两段式脉冲（前倾 0→12°→0、髋 y 升+z 前移）互相吞噬，前倾从未生效）
+  tweenTo(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity, from = null, batch = null } = {}) {
     if (!this._bone(name)) return false;
-    this._dropTweens(name, { axis, pos: false });
-    this.tweens.push({ name, axis, pos: false, from: from !== null ? from : null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until });
+    const b = batch ?? this.batch ?? 0;
+    this._dropTweens(name, { axis, pos: false, batch: b });
+    this.tweens.push({ name, axis, pos: false, from: from !== null ? from : null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until, batch: b });
     this._touch(name, axis);
     return true;
   }
 
-  tweenPos(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity } = {}) {
+  tweenPos(name, axis, target, dur, { delay = 0, easing = 'easeInOutQuad', pingPong = false, until = Infinity, batch = null } = {}) {
     if (!this._bone(name)) return false;
-    this._dropTweens(name, { pos: true });
-    this.tweens.push({ name, axis, pos: true, from: null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until });
+    const b = batch ?? this.batch ?? 0;
+    this._dropTweens(name, { axis, pos: true, batch: b });
+    this.tweens.push({ name, axis, pos: true, from: null, to: target, t0: this.time + delay, dur, ease: EASINGS[easing] ?? EASINGS.easeInOutQuad, pingPong, until, batch: b });
     this._touch(name, null, true);
     return true;
   }
@@ -98,7 +133,7 @@ export class PoseDriver {
         this._dropTweens(name, { axis, pos: false });
         const cur = b.off[axis];
         if (Math.abs(cur) > 1e-4) {
-          this.tweens.push({ name, axis, pos: false, from: cur, to: 0, t0: this.time, dur, ease: EASINGS.easeOutQuad, pingPong: false, until: Infinity });
+          this.tweens.push({ name, axis, pos: false, from: cur, to: 0, t0: this.time, dur, ease: EASINGS.easeOutQuad, pingPong: false, until: Infinity, batch: null });
         } else {
           b.off[axis] = 0;
         }
@@ -106,7 +141,7 @@ export class PoseDriver {
       if (t.pos && b.offPos.lengthSq() > 1e-8) {
         this._dropTweens(name, { pos: true });
         for (const axis of ['x', 'y', 'z']) {
-          this.tweens.push({ name, axis, pos: true, from: b.offPos[axis], to: 0, t0: this.time, dur, ease: EASINGS.easeOutQuad, pingPong: false, until: Infinity });
+          this.tweens.push({ name, axis, pos: true, from: b.offPos[axis], to: 0, t0: this.time, dur, ease: EASINGS.easeOutQuad, pingPong: false, until: Infinity, batch: null });
         }
       }
     }

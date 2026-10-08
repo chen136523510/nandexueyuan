@@ -71,6 +71,7 @@ export class RecipeExecutor {
       }
     }
 
+    this.driver.beginBatch(); // 同批 op 共存（脉冲两段式），跨批同频道互清（BUG-103/105）
     const intensity = opts.intensity ?? recipe.intensityDefault ?? 1;
     const mirror = !!opts.mirror && recipe.mirrorable !== false;
     const touchedBones = new Map(); // 本配方自己碰的骨（打断/回归只清这里，动作分层的关键）

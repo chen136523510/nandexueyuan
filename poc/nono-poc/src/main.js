@@ -11,6 +11,7 @@ import { loadMixamoAnimation } from './mixamoAnimation.js';
 import { PoseDriver } from './poseDriver.js';
 import { RecipeExecutor } from './recipeExecutor.js';
 import { computeHeartbeat } from './heartbeat.js';
+import { applyHandPose, handPoseBoneNames } from './handPose.js';
 import { buildRoom } from './room.js';
 import Stats from 'three/addons/libs/stats.module.js';
 // 模型原地引用（不复制进 PoC）：Vite assetsInclude+?url 生成 /@fs/ 资源地址
@@ -332,8 +333,14 @@ loader.load(
     if (leftArm) leftArm.rotation.z = -1.40;
     if (rightArm) rightArm.rotation.z = 1.40;
 
-    // 小脑（Phase A）：静息臂姿定稿后创建引擎（rest 捕获含双臂 z±0.75=中立姿势）
+    // 自然手型（院长复验②"手掌不要一直绷住"）：手指放松微屈，作为静息姿态的一部分；
+    // 必须先写入再建引擎——PoseDriver 在首次注册时捕获当前值为 rest（与静息臂姿同套路）
+    const handBones = applyHandPose(vrm);
+    console.log(`[hand] 自然手型已应用：${handBones} 骨`);
+
+    // 小脑（Phase A）：静息臂姿/手型定稿后创建引擎（rest 捕获含双臂 z±1.40=中立姿势 + 手型）
     poseDriver = new PoseDriver(vrm);
+    poseDriver.register(handPoseBoneNames()); // 手指骨纳入常驻静息（每帧保持 / reset 后可恢复）
     recipeExecutor = new RecipeExecutor(poseDriver);
     recipeExecutor.onState((state, label) => {
       document.querySelectorAll('#recipeHud button[data-recipe]').forEach((b) => {
@@ -589,6 +596,7 @@ function stopAnimation({ quiet = false } = {}) {
     const r = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
     if (l) l.rotation.set(0, 0, -1.40); // 恢复自然垂落静息臂姿（BUG-096 同步）
     if (r) r.rotation.set(0, 0, 1.40);
+    applyHandPose(vrm); // 恢复自然手型（resetNormalizedPose 会把手指打回 T-pose 摊平手）
   }
   document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === 'none'));
   if (!quiet) statusEl.textContent = '⏹ 动作停止，呼吸恢复';
