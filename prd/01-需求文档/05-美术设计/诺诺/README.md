@@ -12,7 +12,8 @@
 ├─ README.md          本文件：目录索引 + 全部资产登记
 ├─ 模型/              VRM 交付物（v5 基线 / v6 封存 / v7 当前最优）
 ├─ 捏模源文件/        VRoid 节点存档 + Blender 工作文件
-├─ 工具脚本/          构建/诊断/提取脚本（Blender headless + node）
+├─ 动作源文件/        Blender 步态/动画工作文件（.blend，黑机本地级）
+├─ 工具脚本/          构建/诊断/提取/授权脚本（Blender headless + node + 系统 Python）
 ├─ 规划文档/          手绘轮指导单等操作规划
 ├─ 验收图/            验收截图与过程调试图（登记制，见下表）
 └─ 手绘轮工作区/      Krita 贴图源稿 + handpaint 画稿交接区
@@ -58,6 +59,10 @@
 | `patch_vrm_expressions.py` | **VRM 表情绑定后处理**：开心/放松重绑（分件权重即参数）；GLB JSON 块原地重写（保持 4 字节对齐） | ✅ 工具 |
 | `mole_r3_generate.py` | 泪痣贴图生成（C 形态，中心坐标作参数 `[cx] [cy]`），输出 `handpaint_face_skin.png` + 落点核对图 | ✅ 工具 |
 | `render_mole_accept.py` | 泪痣上脸验收渲染（Blender headless 确定性机位：虹膜顶点定眼位→眼下 13mm→正对正交 8.5cm） | ✅ 工具 |
+| `blender_walk_probe.py` | **步态轮探针①·骨架测量**（2026-10-08）：纯 glTF 路径导入 VRM（无扩展依赖）→ 打印骨架/骨骼静息矩阵/网格足底范围。产出本机实测几何（髋 0.9642/膝 0.5557/踝 0.0980/趾球 0.0366，L1 0.4086/L2 0.4585）——`blender_walk_gait.py` 参数推导的依据；日志 `blender_walk_probe_log.txt` | ✅ 工具 |
+| `blender_vrma_probe.py` | **步态轮探针②·VRMA 链路**（2026-10-08）：验证官方 VRM 扩展导入 + 人形骨映射（`arm.data.vrm_addon_extension.vrm1.humanoid.human_bones`，54 骨）+ 最小 `.vrma` 导出；含 `--factory-startup` 下扩展启用姿势（先 `read_factory_settings` 再 `addon_enable`）；日志 `blender_vrma_probe_log.txt` | ✅ 工具 |
+| `blender_gait_conv_probe.py` | **步态轮探针③·端到端口径**（2026-10-08）：导出"已知姿态"最小 `.vrma`（左腿前摆 25°+屈膝 45°+髋抬 3cm）并与浏览器采样逐毫米对照——**Blender→.vrma→three-vrm 坐标/符号约定的验证基准** | ✅ 工具 |
+| `blender_walk_gait.py` | **步态授权主脚本（步态 v1 定版）**：导入 v7 → 解析 IK（下肢）+ 足部三段滚动轨迹 + 上体曲线 → 逐帧世界轴增量授权 → **FK 六项自检**（踝误差/足底贴地/接触点速度/膝反张/IK 触顶/摆动离地）→ `export_scene.vrma`；`--blend` 存工作文件、`--render` 出预览图。参数区在文件顶部（改值重跑 ~40s 出新 clip） | ✅ 主力脚本 |
 
 ## 规划文档/
 
@@ -81,6 +86,20 @@
 | `r2三版眼睛对比.png` / `r3眼睛三版对比.png` / `r2虹膜贴图预览.png` | 虹膜三版渲染对比（v7 现版 / v9 round1 / round2 及 r3 提亮版） | ✅ 验收材料 |
 | `开心表情改前改后.png` | 开心表情对照（默认脸 / 改前 Fcl_ALL_Joy 张口大笑 / 改后闭口微笑） | ✅ 验收材料 |
 | `handpaint_brow.png` | 交接区余位（build 检测即换入）——brow 本轮未画 | 🎨 待走 |
+
+## 动作源文件/（黑机本地级，git 不跟踪）
+
+> 2026-10-08 新增（步态轮）。Blender 工作文件（`.blend`，含 VRM 骨架 + 步态关键帧，仅黑机可打开）；交付物 `.vrma` 不入本目录，直接落 `poc/nono-poc/public/anims/`（入库级）。
+
+| 文件 | 说明 | 状态 |
+|---|---|---|
+| nono_gait_v1.blend | **步态 v1 工作文件**（10MB，v7 模型导入 + 30 帧步态动作 + 场景帧区间 1~31 已设）：改参数→`blender_walk_gait.py` 重跑覆盖，或在本文件里手动微调关键帧后 `export_scene.vrma` | ✅ 黑机本地持有 |
+
+## 动作资产（.vrma，入库级）
+
+| 文件 | 说明 | 状态 |
+|---|---|---|
+| `poc/nono-poc/public/anims/walk_loop.vrma` | **步态 v1 交付物**（55KB，VRMC_vrm_animation 1.0，55 节点/35 通道/21 骨）：Blender 授权行走循环，固有步速 0.88 m/s（步长 0.44m × 2 / 周期 1.0s）；由 `工具脚本/blender_walk_gait.py` 一键重出；消费方 `main.js` 经 `@pixiv/three-vrm-animation` 载入为归一化骨轨道，`walkTo` 起步/收势调用（加载失败自动回退配方步态 `walk_loop.json`） | ✅ **v1 定版（待院长复验观感）** |
 
 ## 验收图/（登记制：入库一张登记一张）
 
@@ -111,6 +130,9 @@
 | nono_v9_iris_selfcheck_default.png | **v9 手绘虹膜白机自查·默认机位**（2026-10-08）：v7 模型加载 `?v=9` 缓存确认（resource 实测 14.6MB 200），全身自然垂臂（BUG-096 体态保持），上屏无异常 | 眼睛 v9 院长验收前置自查 |
 | nono_v9_iris_selfcheck_closeup.png | **同上·半身特写**：手绘虹膜深蓝黑（#1A2436 家族）+limbal ring 上屏观感，眉上发画法正常（BUG-086 无回归），面部渲染无异常 | 眼睛 v9 院长验收前置自查 |
 | nono_v9_iris_selfcheck_macro.png | **同上·近距怼脸**：近距下眼贴片完整渲染（BUG-091 无回归）、无白块（BUG-083 无回归）；虹膜双高光可见（主上右/副下左）；**泪痣正确缺席**（v9 未含泪痣——A/B/C 挑版后 v10 二次构建才有）；Playwright 受控环境 48FPS 属环境降速非产品回归（真机 rAF 实测 202） | 眼睛 v9 院长验收前置自查 |
+| poc_walk_clip_blender_side_20261008.png | **步态 clip 验收·Blender 授权侧视八帧接触表**（2026-10-08）：步态 v1 一个完整周期（8 等分）侧视渲染——触地→过渡→支撑→摆动→再触地，双腿交替/足部滚动/摆臂节奏可逐帧核对；左侧为前向 | 步态授权验收 |
+| poc_walk_clip_room_20261008.png | **步态 clip 验收·房间内行走四帧（床沿路线）**（2026-10-08）：`?room=1&model=v7` 起始→绕椅→床沿，四点时刻截帧——落地脚平贴、摆动脚离地抬起、躯干直立、手臂自然垂摆（无"僵尸臂"）；背景家具有遮挡属取景非穿模 | 步态上屏验收 |
+| poc_walk_clip_room_b_20261008.png | **同上·朝相机方向行走四帧（椅旁路线）**：正面视角的步行节奏记录（本组用于核对左右交替与步幅对称性） | 步态上屏验收 |
 
 ## 眼球总成 v1（2026-10-02 黑机，commit 待登记）
 
