@@ -1,0 +1,17 @@
+=== krita_handpaint_round2 BOOT ===
+Info 可用: True
+=== krita_handpaint_round2 START ===
+Krita 5.3.4 (git c5b23e3)
+待建层: ['基底_蓝黑重染', 'limbal ring', '眼睑投影', '光池_下缘', '瞳孔', '纤维_径向', '主高光_上右38', '副高光_下左215']
+doc 1024 x 512 03__02.png
+  probe bgra__0: 不同字节 0 / 256
+  probe bgra__1: 不同字节 0 / 256
+  probe rgba__0: 不同字节 0 / 256
+  probe rgba__1: 不同字节 0 / 256
+校准胜出: bgra__0 (差异 0)
+写入约定: bgra__0（校准读回不可判，判据=导出比对）
+  exportImage(no-info) 失败: exportImage(self, filename: Optional[str], exportConfiguration: InfoObject): not enough arguments
+  exported: handpaint_iris.png 140 KB
+Document 保存相关方法: ['autosave', 'save', 'saveAs', 'setAutosave']
+.kra 已保存 via doc.saveAs -> handpaint_iris_r2.kra
+=== ROUND2 DONE ===

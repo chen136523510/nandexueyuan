@@ -1,0 +1,46 @@
+=== krita_r2_probe v2 START ===
+python: 3.13.5 (tags/v3.13.5:6cb20a2, Jun 11 2025, 16:15:46) [MSC v.1943 64 bit (AMD64)]
+cwd: E:\Krita (x64)
+Krita version: 5.3.4 (git c5b23e3)
+PyQt6 FAIL: This version of Krita is not compatible with PyQt6!
+PyQt5 OK, Qt 5.15.7
+
+===== Krita.instance() 方法 =====
+['action', 'actions', 'activeDocument', 'activeWindow', 'addDockWidgetFactory', 'addExtension', 'addProfile', 'batchmode', 'blockSignals', 'childEvent', 'children', 'colorDepths', 'colorModels', 'connectNotify', 'createDocument', 'customEvent', 'deleteLater', 'destroyed', 'disconnect', 'disconnectNotify', 'dockers', 'documents', 'dumpObjectInfo', 'dumpObjectTree', 'dynamicPropertyNames', 'event', 'eventFilter', 'extensions', 'filter', 'filterStrategies', 'filters', 'findChild', 'findChildren', 'fromVariant', 'getAppDataLocation', 'icon', 'inherits', 'installEventFilter', 'instance', 'isSignalConnected', 'isWidgetType', 'isWindowType', 'killTimer', 'krita_i18n', 'krita_i18nc', 'metaObject', 'moveToThread', 'notifier', 'objectName', 'objectNameChanged', 'openDocument', 'openWindow', 'parent', 'profiles', 'property', 'pyqtConfigure', 'readSetting', 'receivers', 'recentDocuments', 'removeEventFilter', 'resources', 'sender', 'senderSignalIndex', 'setActiveDocument', 'setBatchmode', 'setObjectName', 'setParent', 'setProperty', 'signalsBlocked', 'startTimer', 'staticMetaObject', 'thread', 'timerEvent', 'tr', 'version', 'views', 'windows', 'writeSetting']
+
+===== 已打开文档 =====
+[]
+
+===== filters() =====
+['asc-cdl', 'autocontrast', 'blur', 'burn', 'colorbalance', 'colortoalpha', 'colortransfer', 'crosschannel', 'desaturate', 'dodge', 'edge detection', 'emboss', 'emboss all directions', 'emboss horizontal and vertical', 'emboss horizontal only', 'emboss laplascian', 'emboss vertical only', 'fastcoloroverlay', 'gaussian blur', 'gaussianhighpass', 'gaussiannoisereducer', 'gradientmap', 'halftone', 'height to normal', 'hsvadjustment', 'indexcolors', 'invert', 'lens blur', 'levels', 'maximize', 'mean removal', 'minimize', 'motion blur', 'noise', 'normalize', 'oilpaint', 'palettize', 'perchannel', 'phongbumpmap', 'pixelize', 'posterize', 'propagatecolors', 'raindrops', 'randompick', 'resettransparent', 'roundcorners', 'sharpen', 'smalltiles', 'threshold', 'unsharp', 'wave', 'waveletnoisereducer']
+
+===== paintop 探针（笔刷预设） =====
+has paintop attr: False
+
+===== Node/Document 方法 =====
+Node 类方法: ['addChildNode', 'alphaLocked', 'animated', 'blendingMode', 'blockSignals', 'bounds', 'channels', 'childEvent', 'childNodes', 'children', 'clone', 'collapsed', 'colorDepth', 'colorLabel', 'colorModel', 'colorProfile', 'connectNotify', 'cropNode', 'customEvent', 'deleteLater', 'destroyed', 'disconnect', 'disconnectNotify', 'dumpObjectInfo', 'dumpObjectTree', 'duplicate', 'dynamicPropertyNames', 'enableAnimation', 'event', 'eventFilter', 'findChild', 'findChildNodes', 'findChildren', 'hasExtents', 'hasKeyframeAtTime', 'icon', 'index', 'inheritAlpha', 'inherits', 'installEventFilter', 'isSignalConnected', 'isWidgetType', 'isWindowType', 'killTimer', 'layerStyleToAsl', 'locked', 'mergeDown', 'metaObject', 'move', 'moveToThread', 'name', 'objectName', 'objectNameChanged', 'opacity', 'paintAbility', 'paintEllipse', 'paintLine', 'paintPath', 'paintPolygon', 'paintRectangle', 'parent', 'parentNode', 'pixelData', 'pixelDataAtTime', 'position', 'projectionPixelData', 'property', 'pyqtConfigure', 'receivers', 'remove', 'removeChildNode', 'removeEventFilter', 'rotateNode', 'save', 'scaleNode', 'sender', 'senderSignalIndex', 'setAlphaLocked', 'setBlendingMode', 'setChildNodes', 'setCollapsed', 'setColorLabel', 'setColorProfile', 'setColorSpace', 'setInheritAlpha', 'setLayerStyleFromAsl', 'setLocked', 'setName', 'setObjectName', 'setOpacity', 'setParent', 'setPixelData', 'setProperty', 'setVisible', 'shearNode', 'signalsBlocked', 'startTimer', 'staticMetaObject', 'thread', 'thumbnail', 'timerEvent', 'tr', 'type', 'uniqueId', 'visible']
+（无打开文档，Document 方法待开文档后再探）
+
+===== 目标滤镜可用性 =====
+gaussianblur         -
+hsvadjustment        YES
+levels               YES
+colortransfer        YES
+unsharp              YES
+noise                YES
+wavelet              -
+indexcolors          YES
+fastcolortransfer    -
+normalize            YES
+curve                -
+gradientmap          YES
+photocopy            -
+reducecolors         -
+threshold            YES
+blur                 YES
+colorbalance         YES
+
+===== 层创建/滤镜层能力 =====
+skip: 无文档
+
+=== PROBE v2 DONE ===
