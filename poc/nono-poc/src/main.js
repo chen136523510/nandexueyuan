@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
 import { loadMixamoAnimation } from './mixamoAnimation.js';
 // 小脑 Phase A（施工图：prd/01-需求文档/07-自习室/诺诺小脑架构设计.md）
 import { PoseDriver } from './poseDriver.js';
@@ -138,6 +139,7 @@ const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 // 统一播放入口：维护坐姿状态（配方 HUD / 交互锚点 / ?sit=1 三路共用）
 function playRecipe(rc) {
   if (!recipeExecutor) return { ok: false, msg: '引擎未就绪' };
+  walkSettle = null; // 配方接管：取消步态收势过渡（骨架写入互斥）
   const ret = recipeExecutor.play(rc);
   if (ret.ok) {
     if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) sitState = rc.id;
@@ -161,11 +163,19 @@ function goToAnchor(key) {
     if (rc && rc.id === sitState && sitAnchorKey === key) return true; // 已坐在目标位
     const depart = () => {
       if (seq !== walkSeq) return;
-      fetchRecipe('walk_loop').then(playRecipe).catch(() => {}); // 起步：步态循环（姿态层不受影响）
+      if (walkClip && walkClipStatus === 'ready') {
+        playWalkClip(); // mixer 路径：循环播放 + 淡入（骨骼由 clip 独占）
+        walkSource = 'clip';
+      } else {
+        fetchRecipe('walk_loop').then(playRecipe).catch(() => {}); // 回退：配方步态（姿态层不受影响）
+        walkSource = 'recipe';
+      }
     };
     const arrive = () => {
       if (seq !== walkSeq) return;
-      recipeExecutor.stop(); // 收势：步态骨 150ms 滑变回中立
+      if (walkSource === 'clip') settleWalkToRest(); // 收势：slerp 回静息（0.25s），防定格跳变
+      else recipeExecutor.stop(); // 收势：步态骨 150ms 滑变回中立
+      walkSource = null;
       if (rc) {
         // 落座短滑：下车站点→座面（≤0.5m）；椅子组带抬弧=脚部跨过 8cm 底盘边缘（不抬=脚穿盘）
         roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.5, arc: a.group === 'chair' ? 0.10 : 0 });
@@ -193,6 +203,80 @@ function goToAnchor(key) {
 }
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
+loader.register((parser) => new VRMAnimationLoaderPlugin(parser)); // .vrma 步态 clip
+
+// ---------- 步态 clip（.vrma · Blender 授权 → 替换 walk_loop 播放源，walkTo 接口不变） ----------
+// 路线（R-058 黑机 2026-10-08）：Blender 手调步态 → export_scene.vrma（VRMC_vrm_animation 1.0）
+//   → createVRMAnimationClip 生成归一化骨轨道 → mixer 播放（走同理 Mixamo 路径，独占骨骼）
+// 加载失败自动回退配方步态（walk_loop.json），两种源对外都只是 walkTo 的 onDepart/onArrive 回调
+const WALK_CLIP_URL = params.get('walkclip') ?? 'anims/walk_loop.vrma';
+let walkClip = null;
+let walkClipStatus = 'idle'; // idle | loading | ready | failed
+let walkSource = null;       // 本轮行走实际使用的源：'clip' | 'recipe'
+let walkClipNodes = [];      // 步态 clip 覆盖的归一化骨节点（收势过渡用）
+let walkSettle = null;       // 收势过渡：{ items:[{node,from,to,fromP,toP}], t, dur }
+
+function loadWalkClip() {
+  if (walkClipStatus !== 'idle') return;
+  walkClipStatus = 'loading';
+  loader.load(
+    WALK_CLIP_URL,
+    (gltf) => {
+      const va = gltf.userData.vrmAnimations?.[0];
+      if (!va) {
+        walkClipStatus = 'failed';
+        console.warn('[walk] .vrma 里没有 vrmAnimations（回退配方步态）');
+        return;
+      }
+      walkClip = createVRMAnimationClip(va, vrm);
+      const names = new Set(walkClip.tracks.map((t) => t.name.split('.')[0]));
+      walkClipNodes = [...names].map((n) => vrm.scene.getObjectByName(n)).filter(Boolean);
+      walkClipStatus = 'ready';
+      console.log(`[walk] 步态 clip 就绪：${WALK_CLIP_URL} · ${walkClip.duration.toFixed(3)}s · ${walkClip.tracks.length} tracks · ${walkClipNodes.length} bones`);
+    },
+    undefined,
+    (err) => {
+      walkClipStatus = 'failed';
+      console.warn('[walk] .vrma 加载失败（回退配方步态）', err);
+    },
+  );
+}
+
+// 步态起步：mixer 循环播放 + 权重淡入（从当前静息姿态滑入，避免"立正→触地"硬切跳变）
+const WALK_FADE_IN = 0.18;
+function playWalkClip() {
+  if (!walkClip || !vrm) return false;
+  if (!animMixer) animMixer = new THREE.AnimationMixer(vrm.scene);
+  walkSettle = null;
+  animMixer.stopAllAction();
+  const action = animMixer.clipAction(walkClip);
+  action.reset().play();
+  action.fadeIn(WALK_FADE_IN);
+  animPlaying = true;
+  recipeExecutor?.stop(); // mixer 独占骨骼：配方退场（同 Mixamo 路径）
+  document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', false));
+  statusEl.textContent = `🚶 步态 clip 播放中（${(walkClip.duration).toFixed(2)}s 循环）`;
+  return true;
+}
+
+// 步态收势：mixer 停用瞬间从当前帧姿态 slerp 回静息（0.25s），避免"定格帧→立正"跳变
+// 做法：先捕获当前骨姿态 → stopAnimation 复位并读取目标姿态 → 用捕获值覆盖回去 → 渲染循环逐帧 slerp
+function settleWalkToRest(dur = 0.25) {
+  if (!vrm || walkClipNodes.length === 0) { stopAnimation({ quiet: true }); return; }
+  const items = walkClipNodes.map((node) => ({
+    node,
+    from: node.quaternion.clone(),
+    fromP: node.position.clone(),
+  }));
+  stopAnimation({ quiet: true });
+  for (const it of items) {
+    it.to = it.node.quaternion.clone();
+    it.toP = it.node.position.clone();
+    it.node.quaternion.copy(it.from);
+    it.node.position.copy(it.fromP);
+  }
+  walkSettle = { items, t: 0, dur };
+}
 
 loader.load(
   MODEL.url,
@@ -260,6 +344,9 @@ loader.load(
       else if (state === 'idle') statusEl.textContent = '🧠 待命（idle）';
     });
     setupRecipeHud();
+
+    // 步态 clip 预载（.vrma；加载失败自动回退配方步态，不阻塞上屏）
+    loadWalkClip();
 
     // 房间模式：诺诺入房——默认站位=中央活动区锚点（不与家具重叠）；?sit=1 走完整编排（行走去椅子落座）
     if (ROOM_MODE) {
@@ -425,20 +512,35 @@ renderer.setAnimationLoop(() => {
       poseDriver?.update(delta);
       recipeExecutor?.update();
       poseDriver?.apply();
-      roomApi?.update(delta, scene.background); // 房间光效档案插值（灯位恒定，只动强度/色温/帘）
-      // 棚灯三件套随档案 studio 系数缩放（院长问题①"变化不明显"主因之一：v3 恒定补光把昼夜差稀释掉了）
-      if (roomApi) {
-        const st = roomApi.state.cur.studio;
-        hemiLight.intensity = 0.25 * st;
-        keyLight.intensity = 0.4 * st;
-        fillLight.intensity = 0.22 * st;
-        rimLight.intensity = 0.35 * st;
-      }
       // 心跳叠加（additive，配方播放期间呼吸继续=诺诺没有静止帧）
       const chest = vrm.humanoid.getNormalizedBoneNode('chest');
       if (chest) chest.rotation.x += hb.breath;
       const hips = vrm.humanoid.getNormalizedBoneNode('hips');
       if (hips) { hips.rotation.x += hb.swayX; hips.rotation.z += hb.swayZ; }
+    }
+
+    // 房间光效档案插值（灯位恒定，只动强度/色温/帘）——mixer 播放（步态 clip）期间也必须继续，
+    // 否则走路几十秒里昼夜/帘灯全部冻结（2026-10-08 步态轮：原被 !animPlaying 一并挡掉）
+    roomApi?.update(delta, scene.background);
+    if (roomApi) {
+      // 棚灯三件套随档案 studio 系数缩放（院长问题①"变化不明显"主因之一：v3 恒定补光把昼夜差稀释掉了）
+      const st = roomApi.state.cur.studio;
+      hemiLight.intensity = 0.25 * st;
+      keyLight.intensity = 0.4 * st;
+      fillLight.intensity = 0.22 * st;
+      rimLight.intensity = 0.35 * st;
+    }
+
+    // 步态收势过渡（覆盖式写入：在配方/心跳之后、mixer 之前——0.25s slerp 回静息）
+    if (walkSettle) {
+      walkSettle.t += delta;
+      const p = Math.min(1, walkSettle.t / walkSettle.dur);
+      const e = p * p * (3 - 2 * p);
+      for (const it of walkSettle.items) {
+        it.node.quaternion.slerpQuaternions(it.from, it.to, e);
+        it.node.position.lerpVectors(it.fromP, it.toP, e);
+      }
+      if (p >= 1) walkSettle = null;
     }
 
     // 动作 mixer 先于 vrm.update：骨骼动画 → vrm.update 传播到原始骨+SpringBone/lookAt 模拟
@@ -478,7 +580,7 @@ const animParam = params.get('anim');
 let animMixer = null;
 let animPlaying = false;
 
-function stopAnimation() {
+function stopAnimation({ quiet = false } = {}) {
   if (animMixer) animMixer.stopAllAction();
   animPlaying = false;
   if (vrm) {
@@ -489,17 +591,17 @@ function stopAnimation() {
     if (r) r.rotation.set(0, 0, 1.40);
   }
   document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === 'none'));
-  statusEl.textContent = '⏹ 动作停止，呼吸恢复';
+  if (!quiet) statusEl.textContent = '⏹ 动作停止，呼吸恢复';
 }
 
-function playClip(name, clip) {
+function playClip(name, clip, label = name) {
   if (!animMixer) animMixer = new THREE.AnimationMixer(vrm.scene);
   animMixer.stopAllAction(); // 切换防残姿：先停旧轨再播新轨
   animMixer.clipAction(clip).reset().play();
   animPlaying = true;
-  recipeExecutor?.stop(); // Mixamo mixer 即将独占骨骼：配方先退场（回归 tween 会被 mixer 覆盖，停止后 apply 接管）
+  recipeExecutor?.stop(); // mixer 即将独占骨骼：配方先退场（回归 tween 会被 mixer 覆盖，停止后 apply 接管）
   document.querySelectorAll('#animHud button').forEach((b) => b.classList.toggle('on', b.dataset.anim === name));
-  statusEl.textContent = `✅ 动作播放中：${name}`;
+  statusEl.textContent = `✅ 动作播放中：${label}`;
 }
 
 // 内置"点头"测试 clip：只动 head（视觉明确、不碰手臂静息），验证管线通路
@@ -706,6 +808,24 @@ window.__poc = {
   renderer, // 调试用：窗格被遮挡 rAF 节流时可手动 render 取证
   get room() { return roomApi; }, // 房间后台开关：room.toggleLamp()/toggleCurtain()/setTime('night')/gotoAnchor('chair.sit')/state
   roomCheck, // 穿模体检：末端骨骼 × 家具碰撞盒违例列表（白盒版 gate④）
+  // 步态 clip 调试（2026-10-08 步态轮）：验收脚本采样用
+  get walkClip() { return walkClip; },
+  get walkInfo() { return { status: walkClipStatus, url: WALK_CLIP_URL, source: walkSource, duration: walkClip?.duration ?? null }; },
+  get walkPlaying() { return walkSource === 'clip' && animPlaying; },
+  playWalkClip() { return playWalkClip(); },
+  stopWalk() { walkSettle = null; stopAnimation(); walkSource = null; },
+  settleWalk: (dur) => settleWalkToRest(dur),
+  goAnchor: (key) => goToAnchor(key), // 行走全流程编排（起立/寻路/落座）单一入口
+  get animPlaying() { return animPlaying; },
+  get mixer() { return animMixer; },
+  boneWorld(name) { // 骨骼世界坐标（归一化骨；验收采样）
+    const n = vrm?.humanoid.getNormalizedBoneNode(name);
+    if (!n) return null;
+    scene.updateMatrixWorld(true);
+    const v = new THREE.Vector3();
+    n.getWorldPosition(v);
+    return v;
+  },
 };
 
 // ---------- 自适应 ----------

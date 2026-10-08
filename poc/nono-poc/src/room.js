@@ -550,7 +550,9 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // —— 导航路点图（BUG-095：滑步直线穿越家具——白盒导航层：手铺路点 + 线段×膨胀盒 clearance 校验 + Dijkstra）——
   // Phase B 可平滑升级 navmesh：routeTo 接口不变只换实现；行走视觉=walkTo（恒速逐段+朝向滑向路段方向）
   const BODY_R = 0.20;    // 体半径：碰撞盒膨胀量（行走擦边留隙）
-  const WALK_SPEED = 1.05; // m/s（与步幅匹配，减小滑步感）
+  // 行走速度 = 步态 clip 固有速度（Blender 步态 v1：步长 0.44m × 2 / 周期 1.0s = 0.88 m/s，见 blender_walk_gait.py）
+  // 两者必须一致，否则脚底打滑（配方步态时代 1.05 为近似值，2026-10-08 步态 clip 轮按几何精确值定）
+  const WALK_SPEED = 0.88; // m/s
   const WAYPOINTS = {
     center:     { pos: [2.10, -2.05] },
     southMid:   { pos: [2.25, -1.30] },

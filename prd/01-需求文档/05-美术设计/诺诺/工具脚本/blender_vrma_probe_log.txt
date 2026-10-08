@@ -1,0 +1,97 @@
+Error in bpy.app.handlers.load_post[2]:
+Traceback (most recent call last):
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\common\writable_context.py", line 64, in load_post
+    trigger_writable_context_becomes_available_once_handlers(context, load_post=True)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\common\writable_context.py", line 53, in trigger_writable_context_becomes_available_once_handlers
+    handler(context, load_post=load_post)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\registration.py", line 650, in setup_once_when_writable_context_becomes_available
+    if preferences.get_preferences(context).add_mtoon_shader_node_group:
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\common\preferences.py", line 353, in get_preferences
+    raise AssertionError(message)
+AssertionError: No add-on preferences for bl_ext.user_default.vrm
+=== blender_vrma_probe ===
+BLENDER 5.2.2 LTS
+manual register OK
+ops: import_scene.vrm= True export_scene.vrma= True import_scene.vrma= True
+Warning: addon-module bl_ext.user_default.vrm found module but without '__addon_enabled__' field, possible name collision from file: 'C:\\Users\\13652\\AppData\\Roaming\\Blender Foundation\\Blender\\5.2\\extensions\\user_default\\vrm\\__init__.py'
+21:20:12 | INFO: Data are loaded, start creating Blender stuff
+21:20:12 | INFO: Blender create Mesh node Body (merged)
+21:20:12 | INFO: Blender create Mesh node Face (merged)
+21:20:12 | INFO: Blender create Mesh node Hair001 (merged)
+21:20:12 | INFO: Blender create Mesh node BlenderVrmAddonImport563431728274772Temp_25_
+21:20:12 | INFO: Blender create Mesh node BlenderVrmAddonImport563431728274772Temp_28_
+21:20:12 | INFO: glTF import finished in 0.15s
+Traceback (most recent call last):
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 134, in execute
+    return import_vrm(
+        filepath,
+    ...<2 lines>...
+        license_validation=True,
+    )
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 403, in import_vrm
+    vrm_importer.import_vrm()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\abstract_base_vrm_importer.py", line 205, in import_vrm
+    self.load_materials(progress.partial_progress(0.9))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\vrm1_importer.py", line 451, in load_materials
+    self.make_mtoon1_material(index, material_dict)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\vrm1_importer.py", line 384, in make_mtoon1_material
+    mtoon.enable_outline_preview = get_preferences(
+                                   ~~~~~~~~~~~~~~~^
+        self._context
+        ^^^^^^^^^^^^^
+    ).enable_mtoon_outline_preview
+    ^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\common\preferences.py", line 353, in get_preferences
+    raise AssertionError(message)
+AssertionError: No add-on preferences for bl_ext.user_default.vrm
+00:01.438  bpy.rna          | ERROR Python script error in IMPORT_SCENE_OT_vrm.execute
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+Error: Python: Traceback (most recent call last):
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 134, in execute
+    return import_vrm(
+        filepath,
+    ...<2 lines>...
+        license_validation=True,
+    )
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 403, in import_vrm
+    vrm_importer.import_vrm()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\abstract_base_vrm_importer.py", line 205, in import_vrm
+    self.load_materials(progress.partial_progress(0.9))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\vrm1_importer.py", line 451, in load_materials
+    self.make_mtoon1_material(index, material_dict)
+    ~~~~~~~~~~... truncatedVRM_IMPORT_FAIL RuntimeError Error: Python: Traceback (most recent call last):
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 134, in execute
+    return import_vrm(
+        filepath,
+    ...<2 lines>...
+        license_validation=True,
+    )
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\import_scene.py", line 403, in import_vrm
+    vrm_importer.import_vrm()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\abstract_base_vrm_importer.py", line 205, in import_vrm
+    self.load_materials(progress.partial_progress(0.9))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\vrm1_importer.py", line 451, in load_materials
+    self.make_mtoon1_material(index, material_dict)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\importer\vrm1_importer.py", line 384, in make_mtoon1_material
+    mtoon.enable_outline_preview = get_preferences(
+                                   ~~~~~~~~~~~~~~~^
+        self._context
+        ^^^^^^^^^^^^^
+    ).enable_mtoon_outline_preview
+    ^
+  File "C:\Users\13652\AppData\Roaming\Blender Foundation\Blender\5.2\extensions\user_default\vrm\common\preferences.py", line 353, in get_preferences
+    raise AssertionError(message)
+AssertionError: No add-on preferences for bl_ext.user_default.vrm
+Location: G:\UGit\nandexueyuan\prd\01-需求文档\05-美术设计\诺诺\工具脚本\blender_vrma_probe.py:32
+
