@@ -63,6 +63,8 @@
 | `blender_vrma_probe.py` | **步态轮探针②·VRMA 链路**（2026-10-08）：验证官方 VRM 扩展导入 + 人形骨映射（`arm.data.vrm_addon_extension.vrm1.humanoid.human_bones`，54 骨）+ 最小 `.vrma` 导出；含 `--factory-startup` 下扩展启用姿势（先 `read_factory_settings` 再 `addon_enable`）；日志 `blender_vrma_probe_log.txt` | ✅ 工具 |
 | `blender_gait_conv_probe.py` | **步态轮探针③·端到端口径**（2026-10-08）：导出"已知姿态"最小 `.vrma`（左腿前摆 25°+屈膝 45°+髋抬 3cm）并与浏览器采样逐毫米对照——**Blender→.vrma→three-vrm 坐标/符号约定的验证基准** | ✅ 工具 |
 | `blender_walk_gait.py` | **步态授权主脚本（步态 v1 定版）**：导入 v7 → 解析 IK（下肢）+ 足部三段滚动轨迹 + 上体曲线 → 逐帧世界轴增量授权 → **FK 六项自检**（踝误差/足底贴地/接触点速度/膝反张/IK 触顶/摆动离地）→ `export_scene.vrma`；`--blend` 存工作文件、`--render` 出预览图。参数区在文件顶部（改值重跑 ~40s 出新 clip） | ✅ 主力脚本 |
+| `blender_roundtrip_probe.py` | **手部资产前置·VRM 往返基线探针**（2026-10-09）：导入 → 不改 → 导出 → 重导入，逐项对比（人形骨/157 骨名/表情 preset+morph bind 权重/弹簧骨 spring·joint·collider·参数·碰撞组关联/MToon 参数/贴图/网格）——**手部施工规程第一条，改网格前后各跑一次**；日志 `blender_roundtrip_probe_log.txt`。**存量结论：v7 + 插件 4.7.2 全绿**，唯二微差=Body +1/Hair +8 顶点（glTF 接缝拆点，面数一致）。**API 备忘**：弹簧骨在扩展根 `arm.data.vrm_addon_extension.spring_bone1`（不在 vrm1 下）、骨引用读 `.bone_name`、表情绑定读 `.morph_target_binds`、扩展须 `addon_enable`（手动 register 无 preferences → MToon 导入 AssertionError） | ✅ 已跑基线（全绿） |
+| `blender_hand_probe.py` | **手部网格勘测探针**（2026-10-09）：按顶点组（Hand/Thumb/Index/Middle/Ring/Little）统计手部区域顶点/三角数、左右分侧、按指分布、材质、UV 范围、世界包围盒——**改网格后的对比基线**；日志 `blender_hand_probe_log.txt`。存量读数：Body 7585v/12405tri 中手部 **2234 tri（左右各 1117，对称）**，单手 ~1117 tri（目标特写级数千） | ✅ 工具 |
 
 ## 规划文档/
 
