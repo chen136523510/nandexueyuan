@@ -19,20 +19,29 @@
 //   v1 四指合计 ~90° 微屈实测形态是"手指微弯但掌心仍摊开"的半摊手；按条目修复方向蜷一档到
 //   合计 150~180° 的轻握拳 + 拇指跨掌搭向食指近节（y 内收一档 + 新增绕局部 x 的沿掌面转向，
 //   x 轴左右不镜像故 TWIST 同号）。
+// v3（2026-10-09 白机二轮，院长"手部依旧有问题，去看看具体人的手，尤其是女孩子的手来做比对"）：
+//   联网比对真人放松手解剖域——MCP 屈曲 20~40°/PIP 30~50°/DIP 10~25°（小指侧略多），拇指自然
+//   内收、指尖对食指/中指侧而非贴掌心。v1 各值恰在域内偏松（观感半摊），v2(55/60/38) 全维超域
+//   =用力握拳非放松态。v3=取域上沿（100~119°）"微微抱拳"：蜷而不握、指尖朝掌心不触掌；拇指
+//   回调（y 内收 20°+TWIST 20°，v2 的 30/35 过拧成"拧拳"）。要"再松/再紧"仍只改本表。
 
 const HAND_POSE = {
-  // 四指：近节/中节/远节逐步蜷曲（轻握拳：食指略少、小指略多；单指合计 153~174°）
-  Index: { Proximal: 55, Intermediate: 60, Distal: 38 },
-  Middle: { Proximal: 58, Intermediate: 64, Distal: 40 },
-  Ring: { Proximal: 60, Intermediate: 66, Distal: 42 },
-  Little: { Proximal: 62, Intermediate: 68, Distal: 44 },
-  // 拇指：跨掌搭在食指近节侧（Metacarpal/Proximal y 内收 + THUMB_TWIST 腹面转向）
-  Thumb: { Metacarpal: 14, Proximal: 30, Distal: 18 },
+  // 四指：真人放松手参照域（MCP 20~40°/PIP 30~50°/DIP 10~25°）取上沿="微微抱拳"——
+  // v1(30/35/18) 偏松被判"半摊手"，v2(55/60/38) 超域成"用力握拳"，v3=域上沿 100~119°
+  Index: { Proximal: 35, Intermediate: 45, Distal: 20 },
+  Middle: { Proximal: 38, Intermediate: 48, Distal: 22 },
+  Ring: { Proximal: 40, Intermediate: 50, Distal: 23 },
+  Little: { Proximal: 42, Intermediate: 52, Distal: 25 },
+  // 拇指：自然内收微屈，指尖对向食指中节侧（真人放松拇指不贴掌心不跨掌）
+  // v3 定版 45°=off 通道扫描实证（Proximal y 45° 时拇指端距食指中节 ~50mm=轻搭侧面的自然距离）
+  Thumb: { Metacarpal: 10, Proximal: 45, Distal: 12 },
 };
-// 拇指沿掌面转向（绕局部 x，度；左右手同号不镜像）——拇指腹从朝侧方转向掌内/食指方向
-const THUMB_TWIST = 35;
+// 拇指沿掌面转向（绕局部 x，度；左右手同号不镜像）
+// ⚠️ v3 实测：绕 x 正向=拇指**外张**方向——放松手应为 0（v2 的 35° 与 y 内收互相打架，
+//    "又收又拧"的净效果=拇指翘在外面，正是院长二轮看到的形态问题之一）
+const THUMB_TWIST = 0;
 // 指间轻微并拢（z 轴；食指朝中指为 +，小指朝中指为 −，中指/无名指居中）
-const HAND_FAN = { Index: 4, Middle: 0, Ring: -3, Little: -5 };
+const HAND_FAN = { Index: 3, Middle: 0, Ring: -2, Little: -4 };
 
 const DEG = Math.PI / 180;
 

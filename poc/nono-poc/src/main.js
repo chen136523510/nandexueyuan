@@ -141,10 +141,22 @@ const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 function playRecipe(rc) {
   if (!recipeExecutor) return { ok: false, msg: '引擎未就绪' };
   walkSettle = null; // 配方接管：取消步态收势过渡（骨架写入互斥）
+  // BUG-107 二修（院长复验三终态图：站在床上/站在椅子座面里）：起立语义自带离位——
+  // 离位滑步此前只挂在锚点编排里，HUD/大脑直接调 stand_up 就是原地从座面起立=站在
+  // 家具里（椅盘 pen 0.22m / 床沿）。统一在播放入口挂钩：清 sitAnchorKey 前先取
+  // standExit，起立即自动滑到该坐姿锚点的离位站点。
+  let exitAfter = null;
+  if (rc?.id === 'stand_up' && sitAnchorKey && roomApi) {
+    const cur = roomApi.anchors[sitAnchorKey];
+    if (cur?.standExit) exitAfter = { pos: cur.standExit, group: cur.group };
+  }
   const ret = recipeExecutor.play(rc);
   if (ret.ok) {
     if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) sitState = rc.id;
-    else if (rc?.id === 'stand_up') { sitState = null; sitAnchorKey = null; }
+    else if (rc?.id === 'stand_up') {
+      if (exitAfter) roomApi.moveTo(exitAfter.pos, null, { dur: 0.55, arc: exitAfter.group === 'chair' ? 0.09 : 0 });
+      sitState = null; sitAnchorKey = null;
+    }
   }
   return ret;
 }
@@ -189,14 +201,11 @@ function goToAnchor(key) {
       }
     };
     if (sitState) {
-      // 先起立+离位滑步（从座面滑到 standExit 站点，避免起立后站进椅盘/床箱）
-      // 注意：必须先捕获当前锚点——playRecipe(stand_up) 会把 sitAnchorKey 清空（BUG-095 排障发现：读序反了→离位滑步从未执行）
+      // 先起立再寻路。离位滑步已由 playRecipe 统一挂钩（BUG-107 二修：stand_up 自动滑向
+      // 该坐姿锚点的 standExit——此处不再重复 moveTo，避免双重滑步）
       fetchRecipe('stand_up').then((su) => {
         if (seq !== walkSeq) return;
-        const cur = roomApi.anchors[sitAnchorKey];
         playRecipe(su);
-        const exit = cur?.standExit ?? cur?.pos;
-        if (exit) roomApi.moveTo(exit, null, { dur: 0.55, arc: cur?.group === 'chair' ? 0.09 : 0 });
       }).catch(() => {});
       return sleepMs(950).then(() => { if (seq !== walkSeq) return false; roomApi.walkTo(key, { onDepart: depart, onArrive: arrive }); return true; });
     }
