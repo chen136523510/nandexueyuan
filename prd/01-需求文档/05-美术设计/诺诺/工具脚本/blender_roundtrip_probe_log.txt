@@ -1,0 +1,189 @@
+=== blender_roundtrip_probe ===
+BLENDER 5.2.2 LTS PYTHON 3.13.13
+addon enabled: bl_ext.user_default.vrm
+addon manifest version = "4.7.2"
+ops: import_scene.vrm= True export_scene.vrm= True export_scene.vrma= True
+export_scene.vrm props: ['filepath', 'check_existing', 'filter_glob', 'use_addon_preferences', 'export_invisibles', 'export_only_selections', 'enable_advanced_preferences', 'export_all_influences', 'export_lights', 'export_gltf_animations', 'export_try_sparse_sk', 'errors', 'armature_object_name', 'ignore_warning']
+export_scene.vrm defaults: {'check_existing': True, 'use_addon_preferences': False, 'export_invisibles': False, 'export_only_selections': False, 'enable_advanced_preferences': False, 'export_all_influences': False, 'export_lights': False, 'export_gltf_animations': False, 'export_try_sparse_sk': False, 'armature_object_name': '', 'ignore_warning': False}
+IMPORT G:/UGit/nandexueyuan/prd/01-需求文档/05-美术设计/诺诺/模型/nonono_v7_vroid_eye.vrm 14978348 bytes
+19:10:08 | INFO: Data are loaded, start creating Blender stuff
+19:10:08 | INFO: Blender create Mesh node Body (merged)
+19:10:08 | INFO: Blender create Mesh node Face (merged)
+19:10:08 | INFO: Blender create Mesh node Hair001 (merged)
+19:10:08 | INFO: Blender create Mesh node BlenderVrmAddonImport296084452459893Temp_25_
+19:10:08 | INFO: Blender create Mesh node BlenderVrmAddonImport296084452459893Temp_28_
+19:10:08 | INFO: glTF import finished in 0.15s
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HIPS"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.SPINE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.UPPER_CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.NECK"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HEAD"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_EYE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_EYE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_TOES"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_TOES"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_DISTAL"
+VRM_IMPORT_OK
+INFO Draco is available, use library at E:\blender\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_draco_bridge.dll
+INFO MeshOptimizer is available, use library at E:\blender\5.2\scripts\addons_core\io_scene_gltf2\bf_intern_meshopt_bridge.dll
+19:10:15 | INFO: Starting glTF 2.0 export
+19:10:15 | INFO: Starting glTF 2.0 export
+19:10:15 | INFO: Extracting primitive: Body (merged)
+19:10:15 | INFO: Extracting primitive: Body (merged)
+19:10:15 | INFO: Primitives created: 5
+19:10:15 | INFO: Primitives created: 5
+19:10:15 | INFO: Extracting primitive: Face (merged)
+19:10:15 | INFO: Extracting primitive: Face (merged)
+19:10:16 | INFO: Primitives created: 8
+19:10:16 | INFO: Primitives created: 8
+19:10:16 | INFO: Extracting primitive: Hair001 (merged)
+19:10:16 | INFO: Extracting primitive: Hair001 (merged)
+19:10:16 | INFO: Primitives created: 1
+19:10:16 | INFO: Primitives created: 1
+19:10:16 | INFO: Finished glTF 2.0 export in 0.5014340877532959 s
+19:10:16 | INFO: Finished glTF 2.0 export in 0.5014340877532959 s
+
+VRM_EXPORT_OK C:\Users\13652\AppData\Local\Temp\tmp.7o15w7ph2D/nonono_v7_roundtrip.vrm 14979704 bytes
+19:10:16 | INFO: Data are loaded, start creating Blender stuff
+19:10:16 | INFO: Data are loaded, start creating Blender stuff
+19:10:16 | INFO: Blender create Mesh node Body (merged)
+19:10:16 | INFO: Blender create Mesh node Body (merged)
+19:10:16 | INFO: Blender create Mesh node Face (merged)
+19:10:16 | INFO: Blender create Mesh node Face (merged)
+19:10:16 | INFO: Blender create Mesh node Hair001 (merged)
+19:10:16 | INFO: Blender create Mesh node Hair001 (merged)
+19:10:16 | INFO: Blender create Mesh node BlenderVrmAddonImport361044998939932Temp_25_
+19:10:16 | INFO: Blender create Mesh node BlenderVrmAddonImport361044998939932Temp_25_
+19:10:16 | INFO: Blender create Mesh node BlenderVrmAddonImport361044998939932Temp_28_
+19:10:16 | INFO: Blender create Mesh node BlenderVrmAddonImport361044998939932Temp_28_
+19:10:16 | INFO: glTF import finished in 0.15s
+19:10:16 | INFO: glTF import finished in 0.15s
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HIPS"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.SPINE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.UPPER_CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.NECK"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HEAD"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_EYE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_EYE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_TOES"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_TOES"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_THUMB_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_INDEX_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_MIDDLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_RING_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LITTLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_THUMB_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_INDEX_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_MIDDLE_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_RING_DISTAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_PROXIMAL"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_INTERMEDIATE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LITTLE_DISTAL"
+ROUNDTRIP_IMPORT_OK
+
+=== 往返对比（source → roundtrip）===
+spec_version: 1.0 → 1.0   vrm1 keys 数=6→6
+meta.name: 璇鸿 → 璇鸿
+file size: 14978348 → 14979704 (+1356)
+bone_count: 157 → 157
+bone names: 缺失=[] 新增=[]
+humanoid assigned: 54 → 54  missing=['allow_non_humanoid_rig', 'filter_by_human_bone_hierarchy', 'initial_automatic_bone_assignment', 'jaw', 'name']
+expressions preset keys: 19 → 19
+expressions 非空 preset: 14 → 14
+   preset morph bind 总数: 16 → 16；绑定差异项: 0
+expressions custom: 0 → 0
+springs: 27 → 27  joints: 102 → 102
+colliders: 28 → 28  groups: 12 → 12
+   spring 结构+参数（名称/中心骨/关节链骨名/stiffness/drag/gravity/hit_radius/碰撞组关联）逐条一致 ✓
+   collider（骨/形状/球偏移半径/胶囊）一致 ✓
+meshes: 3 → 3
+   Body: verts 7585→7586 polys 12405→12405 shapekeys 0→0  <<< 差异
+   Face: verts 4106→4106 polys 7187→7187 shapekeys 58→58
+   Hair: verts 24806→24814 polys 31384→31384 shapekeys 0→0  <<< 差异
+images: 24 → 24
+materials: 19 → 19
+   MToon 参数一致 ✓
+
+=== JSON 关键字段 ===
+report saved: C:\Users\13652\AppData\Local\Temp\tmp.7o15w7ph2D/roundtrip_report.json 132915 bytes
+=== probe done ===
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+
+Blender quit

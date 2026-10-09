@@ -1,0 +1,15 @@
+=== blender_hand_probe ===
+BLENDER 5.2.2 LTS
+IMPORT nonono_v7_vroid_eye.vrm 14978348 bytes
+[Body] 总 7585 v / 12405 tri；手部 1510 v / 2234 tri
+   左右分侧（x 符号）: {'x>0': 1117, 'x<0': 1117}
+   手部材质面分布: {'N00_000_00_Body_00_SKIN (Instance)': 2234}
+   手部 UV 范围: [0.007, 0.0073, 0.993, 0.9927]
+   手部 bbox 尺寸(m): [1.2799, 0.1147, 0.042]
+   按组前 8: [('J_Bip_L_Hand', 218), ('J_Bip_R_Hand', 218), ('J_Bip_L_Little3', 82), ('J_Bip_L_Thumb3', 82), ('J_Bip_R_Little3', 82), ('J_Bip_R_Thumb3', 82), ('J_Bip_R_Index3', 82), ('J_Bip_R_Middle3', 82)]
+--- 注：hand_tris=左右手合计；side_split 按三角面心 x 符号分侧（VRM 惯例 +x=角色左）---
+report saved: C:\Users\13652\AppData\Local\Temp\tmp.7o15w7ph2D/hand_report.json 2306 bytes
+=== probe done ===
+Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
+
+Blender quit

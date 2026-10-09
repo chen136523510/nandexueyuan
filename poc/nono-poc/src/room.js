@@ -535,6 +535,10 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // 穿入检测：points = { 骨名: Vector3 }，返回违例列表。
   // BUG-107 修复方向③（半径膨胀）：roomCheck 检测点=末端骨心，腿/手网格半径未计入时"点净空充足"
   // 但网格仍可能相交。检测端按骨分档补半径（腿 60mm/脚 45mm/手与前臂 40mm），pen=膨胀后穿透深度。
+  // BUG-110（2026-10-09 黑机）：圆盘碰撞体（椅底座）此前只做"骨点入盘"判定、未叠加骨半径——
+  //   与 AABB 分支口径不一致，脚网格边缘搭上盘缘 ≤4.5cm 的接触漏报。改球-实心圆柱相交
+  //   （水平超出 hEx + 垂直超出 vEx 合成距离 < 骨半径），两分支同口径；AABB 角区假阳性不会回归
+  //   （旧假阳性点距盘心 0.47m，hEx=0.15m > 任何骨半径）。
   const BONE_RADIUS = { UpperLeg: 0.06, LowerLeg: 0.05, Foot: 0.045, Toes: 0.04, Hand: 0.04, LowerArm: 0.04 };
   const boneRadius = (bone) => { for (const k in BONE_RADIUS) if (bone.endsWith(k)) return BONE_RADIUS[k]; return 0; };
   function checkCollisions(points) {
@@ -544,8 +548,10 @@ export function buildRoom(scene, { posterUrl } = {}) {
       for (const c of colliders) {
         if (c.circle) {
           const dRz = Math.hypot(p.x - c.circle.cx, p.z - c.circle.cz);
-          const inY = p.y >= c.circle.y0 && p.y <= c.circle.y1;
-          if (inY && dRz <= c.circle.r) out.push({ bone, collider: c.name, pen: +(c.circle.r - dRz).toFixed(3), at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
+          const hEx = Math.max(0, dRz - c.circle.r);
+          const vEx = Math.max(0, c.circle.y0 - p.y, p.y - c.circle.y1);
+          const gap = Math.hypot(hEx, vEx);
+          if (gap < r) out.push({ bone, collider: c.name, pen: +(r - gap).toFixed(3), at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
         } else {
           const d = c.box.distanceToPoint(p);
           if (d < r) out.push({ bone, collider: c.name, pen: +(r - d).toFixed(3), at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });

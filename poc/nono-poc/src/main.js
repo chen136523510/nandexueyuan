@@ -22,6 +22,10 @@ import vrm6Url from '../../../prd/01-需求文档/05-美术设计/诺诺/模型/
 
 const params = new URLSearchParams(location.search);
 const MODEL = { v5: { url: vrm5Url, label: 'v5·原生对照' }, v6: { url: vrm6Url, label: 'v6·3D眼球' }, v7: { url: vrm7Url + '?v=14', label: 'v7·贴片眼优化' } }[params.get('model') ?? 'v7']; // 导出同名 v7 文件时递增 ?v= 参数击穿浏览器缓存（v9=虹膜round1，v10=round2 Krita 轮，v11=远距可读性提亮+开心表情收敛·均待院长定版）
+// ?vrm=<URL>：任意 VRM 直接加载（美术资产回归测试入口——手部/贴图迭代产物免改代码上屏；例 /xxx.vrm 或 /@fs/绝对路径）
+const customVrm = params.get('vrm');
+const VRM_URL = customVrm ?? MODEL.url;
+const VRM_LABEL = customVrm ? `自定义·${customVrm.split('/').pop()}` : MODEL.label;
 
 const statusEl = document.getElementById('status');
 
@@ -291,7 +295,7 @@ function settleWalkToRest(dur = 0.25) {
 }
 
 loader.load(
-  MODEL.url,
+  VRM_URL,
   (gltf) => {
     vrm = gltf.userData.vrm;
     scene.add(vrm.scene);
@@ -374,7 +378,7 @@ loader.load(
       setupRoomHud();
     }
 
-    statusEl.textContent = `✅ 诺诺上屏（${MODEL.label}${eyeRig ? ' · EyePivot接管' : ''}）`;
+    statusEl.textContent = `✅ 诺诺上屏（${VRM_LABEL}${eyeRig ? ' · EyePivot接管' : ''}）`;
     console.log('[nono-poc] VRM loaded:', vrm.meta?.meta?.name ?? '(unnamed)');
 
     // 动作管线 PoC（Step 2，方案：07-自习室/诺诺动作管线PoC方案.md）——放在上屏状态之后，
