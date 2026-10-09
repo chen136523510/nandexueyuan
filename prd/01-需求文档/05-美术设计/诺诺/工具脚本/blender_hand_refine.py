@@ -126,10 +126,23 @@ def hand_frame(side):
     return axis, c, spread
 
 
-def dorsal_dir(side):
-    """背（指甲）侧方向 = 薄轴 × DORSAL_SIGN"""
+def dorsal_sign_of(side):
+    """逐手标定掌法向符号（v6 教训：两手薄轴互为镜像，用同一全局符号 → 右手翻到掌侧，
+    院长 PoC 验收"两只手指甲朝同一方向"即此 bug）。判据：拇指 MCP 在掌侧 → 该侧为掌。"""
     axis, _, _ = hand_frame(side)
-    return (axis * DORSAL_SIGN).normalized()
+    hb = arm.data.bones.get(f'J_Bip_{side}_Hand')
+    tb = arm.data.bones.get(f'J_Bip_{side}_Thumb1')
+    if hb is None or tb is None:
+        return DORSAL_SIGN
+    hmid = (arm.matrix_world @ hb.head_local + arm.matrix_world @ hb.tail_local) / 2
+    thumb_mcp = arm.matrix_world @ tb.head_local
+    return -1 if (thumb_mcp - hmid).dot(axis) > 0 else 1
+
+
+def dorsal_dir(side):
+    """背（指甲）侧方向 = 薄轴 × 逐手符号"""
+    axis, _, _ = hand_frame(side)
+    return (axis * dorsal_sign_of(side)).normalized()
 
 
 def finger_dorsal(side, finger):
@@ -209,8 +222,10 @@ for side in SIDES:
     hmid = (arm.matrix_world @ hb.head_local + arm.matrix_world @ hb.tail_local) / 2
     thumb_mcp = arm.matrix_world @ arm.data.bones[f'J_Bip_{side}_Thumb1'].head_local
     tm = (thumb_mcp - hmid)
-    print(f'   [{side}] 薄轴=({axis.x:+.2f},{axis.y:+.2f},{axis.z:+.2f}) 三轴展布(m)={[round(x,4) for x in spread]}  '
-          f'薄轴×拇指偏移={tm.dot(axis):+.4f}（拇指在掌侧→该值应与 DORSAL_SIGN 反号）')
+    d_side = dorsal_dir(side)
+    print(f'   [{side}] 薄轴=({axis.x:+.2f},{axis.y:+.2f},{axis.z:+.2f}) 展布(m)={[round(x,4) for x in spread]} '
+          f'符号={dorsal_sign_of(side):+d} 背侧向=({d_side.x:+.2f},{d_side.y:+.2f},{d_side.z:+.2f}) '
+          f'·世界+Z={d_side.dot(Vector((0,0,1))):+.3f}（T-pose 掌心朝下 → 两手都应≈+1）')
     for name in FINGERS:
         d = finger_dorsal(side, name)
         if d:
@@ -291,7 +306,7 @@ if DO_NAILS:
     me.materials.append(nail_mat)
     nail_slot = len(me.materials) - 1
 
-    NAIL_TA0, NAIL_TA1 = 0.18, 1.00        # 甲区轴向范围（占远端骨长比：甲根≈DIP 皱褶 → 自由缘抵指尖）
+    NAIL_TA0, NAIL_TA1 = 0.25, 0.97        # 甲区轴向范围（占远端骨长比：甲根≈DIP 皱褶 → 自由缘抵指尖）
     NAIL_ANG_WIN = math.radians(35)        # 甲区角向窗口（相对该指自标定基准 θmin）
     NAIL_H = 0.22 / 1000.0                 # 甲面隆起量
     NAIL_POW = 2.4
@@ -353,9 +368,11 @@ if DO_NAILS:
     # ③ 面指派：最近指 + 轴向范围 + （法向角 − θmin）≤ 窗口 → Nail 材质
     face_n = 0
     per_finger = {}
+    frame_of_group = {fr['gname']: fr for fr in finger_frames}
+    fg_after = dominant_groups(me, None)   # 细分后重算（面 → 主导顶点组）
     for poly in me.polygons:
         pw = body.matrix_world @ poly.center
-        fr = nearest_frame(pw)
+        fr = frame_of_group.get(fg_after[poly.index] if poly.index < len(fg_after) else '')
         if fr is None:
             continue
         rel = pw - fr['head']
@@ -369,6 +386,18 @@ if DO_NAILS:
             face_n += 1
             per_finger[fr['gname']] = per_finger.get(fr['gname'], 0) + 1
     print(f'   θmin(deg)=' + str({fr['gname']: round(math.degrees(fr['theta_min']), 1) for fr in finger_frames}))
+    # 甲区轴向实测（诊断：相对 DIP 与指尖的毫米数，用于核对甲长是否压到近端关节）
+    for fr in finger_frames:
+        hit = [poly.center for poly in me.polygons
+               if poly.material_index == nail_slot and nearest_frame(body.matrix_world @ poly.center) is fr]
+        if not hit:
+            print(f'   [甲区 {fr["gname"]}] 空'); continue
+        tas = []
+        for c in hit:
+            rel = (body.matrix_world @ c) - fr['head']
+            tas.append(rel.dot(fr['axis']))
+        print(f'   [甲区 {fr["gname"]}] 甲长 {min(tas)*1000:.1f}~{max(tas)*1000:.1f}mm（相对 DIP）；'
+              f'远端骨长 {fr["L"]*1000:.1f}mm；甲占远端骨 {min(tas)/fr["L"]*100:.0f}%~{max(tas)/fr["L"]*100:.0f}%')
     print(f'   每指甲面数: {dict(sorted(per_finger.items()))}')
     me.update()
     me.calc_loop_triangles()
