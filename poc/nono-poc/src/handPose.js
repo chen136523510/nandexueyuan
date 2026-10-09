@@ -25,7 +25,7 @@ const DEG = Math.PI / 180;
 export const HAND_POSE = {
   // 四指蜷曲（度）：MCP=掌指关节主值；PIP/DIP 按自然屈曲耦合比联动
   //   （PIP≈MCP×1.3 / DIP≈MCP×0.6，Kapandji 抓握弧简化比）。图 1/2 半握拳基准 MCP≈62。
-  fingerCurl: { MCP: 62, PIP_RATIO: 1.3, DIP_RATIO: 0.6 },
+  fingerCurl: { MCP: 88, PIP_RATIO: 1.25, DIP_RATIO: 0.7 }, // 院长指令：直接握拳（MCP88/PIP110/DIP62）
   // 食→小指梯度倍率（掌弓斜形：小指侧更蜷、食指略少）
   fingerScale: { index: 0.92, middle: 1.0, ring: 1.06, little: 1.12 },
   // 拇指（图 1/2 横搭）：inner=绕蜷曲轴向食指收（内收）；curl=向掌心屈
@@ -34,7 +34,7 @@ export const HAND_POSE = {
   HAND_FAN: { index: 3, middle: 0, ring: -2, little: -4 },
   // 掌向翻转（度，hand 骨绕局部 x=掌骨轴。right 180°=双掌心翻朝大腿内侧；
   //   ⚠️ 唯一掌向入口，同轴勿叠加——超 180° 腕裂）
-  palmFlip: { left: 0, right: 180 },
+  palmFlip: { left: 0, right: 0 }, // ⚠️ 已撤：绕掌骨轴翻转 180°=手指从朝下反折成朝上（垂手位错误，院长截图实证）；掌向改由 forearmSupinate（绕 lowerArm 局部 x=前臂长轴，生理旋前旋后）承担
 };
 
 // 各手指三节角度（由 fingerCurl 耦合比 + 梯度展开，改 fingerCurl 即整体调松紧）
