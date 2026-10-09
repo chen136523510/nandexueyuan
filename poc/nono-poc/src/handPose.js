@@ -15,6 +15,18 @@
 //
 // 调参入口：HAND_POSE 表（角度=度，蜷曲为正）。要"再放松/再收一点"只改这张表。
 //
+// —— 解剖依据（v4 精细建模，2026-10-09 院长"调研人类手掌手指关节，进行手部精细建模"）——
+// 手指三关节（表键=解剖关节）：MCP=掌指关节 / PIP=近侧指间 / DIP=远侧指间。
+// 【自然屈曲耦合】真人屈指时三关节非独立，沿"抓握弧"按近似比联动：
+//   PIP ≈ MCP × 1.25，DIP ≈ MCP × 0.55（Kapandji《关节生理学》抓握弧的简化比；
+//   本表 v3 定版值即落在此比上：35→44/19、38→48/21 ✓）——手动改值时建议保持比例。
+// 【静息域】放松手各关节屈曲：MCP 20~40°/PIP 30~50°/DIP 10~25°（康复医学 functional
+//   resting position 共识域；本表取域上沿="微微握拳"）。食→小指梯度递增（掌弓斜形）。
+// 【拇指】CMC 腕掌关节（鞍状）对掌在 VRM 无独立骨，以内收(y)+旋前(x)近似——Proximal 45°
+//   为 off 通道扫描实证（拇指端距食指中节 ~50mm=轻搭侧面）。
+// 【腕】functional position：背伸 ~20°+尺偏 ~10°——垂手位取背伸 15°（WRIST.extend）。
+// 【来源说明】数值=公认康复医学参照 + 本模型浏览器实测标定双重来源；最终以院长对照真人验收为准。
+//
 // v2（2026-10-09 白机，BUG-106：院长复验二轮"手掌的形态不太正常，正常应该是微微抱拳的放松态"）：
 //   v1 四指合计 ~90° 微屈实测形态是"手指微弯但掌心仍摊开"的半摊手；按条目修复方向蜷一档到
 //   合计 150~180° 的轻握拳 + 拇指跨掌搭向食指近节（y 内收一档 + 新增绕局部 x 的沿掌面转向，
@@ -40,6 +52,18 @@ const HAND_POSE = {
 // ⚠️ v3 实测：绕 x 正向=拇指**外张**方向——放松手应为 0（v2 的 35° 与 y 内收互相打架，
 //    "又收又拧"的净效果=拇指翘在外面，正是院长二轮看到的形态问题之一）
 const THUMB_TWIST = 0;
+
+// 掌向与腕位（v4，2026-10-09 院长三轮"微微握拳，掌心朝向身体内侧而不是后方"）：
+//   垂手位掌法向实测（raw 骨，世界系，模型面朝 -x）：左掌 (0,-0.17,-0.98)=恰朝大腿 ✓，
+//   右掌 (0,+0.17,-0.98)=朝外侧 ✗——两手掌向相同未镜像（四指蜷曲轴镜像不保证掌向镜像），
+//   从常见机位看右手即"掌心朝后"。VRM 无桡尺关节，以 hand 骨绕局部 x（掌骨轴）旋转近似前臂
+//   旋后（supinate）。⚠️ 轴实测：hand 局部 y≈掌法向轴（绕之掌向不变），翻掌轴=x。
+//   supinate=翻掌（右 180° 后掌法向翻转至与左镜像对称，双掌均朝大腿）；extend=腕背伸
+//   （functional position ~15°，垂手更自然）。写入 applyHandPose、PoseDriver 构造捕获进 rest。
+const WRIST = {
+  left:  { supinate: 0, extend: 15 },
+  right: { supinate: 180, extend: 15 },
+};
 // 指间轻微并拢（z 轴；食指朝中指为 +，小指朝中指为 −，中指/无名指居中）
 const HAND_FAN = { Index: 3, Middle: 0, Ring: -2, Little: -4 };
 
@@ -90,6 +114,18 @@ export function applyHandPose(vrm, { scale = 1 } = {}) {
         bone.quaternion.set(q[0], q[1], q[2], q[3]);
         applied++;
       }
+    }
+  }
+  // 掌向与腕位：hand 骨绕局部 x（掌骨轴）附加旋后+背伸——必须在 PoseDriver 构造前生效，
+  // rest 捕获即含掌向，apply() 每帧保持（与手型同套路）
+  for (const side of ['left', 'right']) {
+    const w = WRIST[side] ?? { supinate: 0, extend: 0 };
+    const deg = (w.supinate ?? 0) + (w.extend ?? 0);
+    if (!deg) continue;
+    const node = vrm.humanoid.getNormalizedBoneNode(`${side}Hand`);
+    if (node) {
+      node.rotation.x += deg * DEG;
+      applied++;
     }
   }
   return applied;
