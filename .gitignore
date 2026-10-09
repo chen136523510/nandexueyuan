@@ -191,6 +191,8 @@ server/uploads/chat/
 # 注：目录级忽略（尾部带 /）会让 git 不下钻、`!*.vrma` 例外失效——必须写成 `anims/*` 形式
 poc/nono-poc/public/anims/*
 !poc/nono-poc/public/anims/*.vrma
+# 手部/资产迭代候选（本地复验用临时上屏副本，黑机本地级；定版才入 诺诺/模型/）
+poc/nono-poc/public/__*.vrm
 
 # ===== 诺诺美术源文件出库（2026-10-08 院长裁决：白机用不到的不上 GitHub，两机仓库允许不一致）=====
 # 分级规则见 prd/01-需求文档/05-美术设计/美术纪律.md §〇
