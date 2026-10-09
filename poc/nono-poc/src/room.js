@@ -490,6 +490,16 @@ export function buildRoom(scene, { posterUrl } = {}) {
     bx.expandByScalar(-0.01); // 1cm 容差：贴面接触不算穿入
     colliders.push({ name, group, box: bx });
   }
+  // 圆盘碰撞体（BUG-107 修复方向②补充）：五星脚底盘是圆柱而非方块——AABB 会把"盒角区"误报成
+  // 穿入（实测坐姿脚趾 (0.66,-2.99) 距盘心 0.47m > 盘半径 0.32m，AABB 却报在盒内）。圆盘判定消除该假阳性。
+  // box 字段=盘的 AABB，仅供寻路膨胀（segClear/routeTo 消费 .box）；穿入检测走 circle 精确判定
+  function addCircleCollider(name, group, cx, cz, r, y0, y1) {
+    colliders.push({
+      name, group,
+      circle: { cx, cz, r, y0, y1 },
+      box: new THREE.Box3(new THREE.Vector3(cx - r, y0, cz - r), new THREE.Vector3(cx + r, y1, cz + r)),
+    });
+  }
   const findMesh = (px, py, pz) => {
     let best = null, bd = 1e9;
     g.traverse((m) => {   // 递归遍历：椅子等家具是 Group 嵌套，直接 children 拿不到座面/扶手
@@ -502,7 +512,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
     return best;
   };
   addCollider('椅座', findMesh(ch.cx, ch.seatH - 0.035, -ch.cy), 'chair');
-  addCollider('椅底座', findMesh(ch.cx, 0.04, -ch.cy), 'chair'); // 五星脚圆盘：站立在椅子上=脚趾/踝入盒即违例
+  addCircleCollider('椅底座', 'chair', ch.cx, -ch.cy, 0.32, 0.0, 0.06); // 五星脚圆盘：r=盘半径（0.30~0.32 锥），y=盘厚区间
   // 扶手/椅背随椅身旋转（205°）：局部坐标 → 世界坐标后匹配
   const chRot = Math.atan2(Math.cos((ch.faceDeg * Math.PI) / 180), -Math.sin((ch.faceDeg * Math.PI) / 180));
   const chLocal = (lx, ly, lz) => new THREE.Vector3(
@@ -522,12 +532,24 @@ export function buildRoom(scene, { posterUrl } = {}) {
   addCollider('床头板', findMesh(w - 0.04, bd.headboardH / 2, -bd.cy), 'bed');
   addCollider('主机', findMesh(pc.cx, pc.h / 2, -pc.cy), 'pc');
 
-  // 穿入检测：points = { 骨名: Vector3 }，返回违例列表
+  // 穿入检测：points = { 骨名: Vector3 }，返回违例列表。
+  // BUG-107 修复方向③（半径膨胀）：roomCheck 检测点=末端骨心，腿/手网格半径未计入时"点净空充足"
+  // 但网格仍可能相交。检测端按骨分档补半径（腿 60mm/脚 45mm/手与前臂 40mm），pen=膨胀后穿透深度。
+  const BONE_RADIUS = { UpperLeg: 0.06, LowerLeg: 0.05, Foot: 0.045, Toes: 0.04, Hand: 0.04, LowerArm: 0.04 };
+  const boneRadius = (bone) => { for (const k in BONE_RADIUS) if (bone.endsWith(k)) return BONE_RADIUS[k]; return 0; };
   function checkCollisions(points) {
     const out = [];
     for (const [bone, p] of Object.entries(points)) {
+      const r = boneRadius(bone);
       for (const c of colliders) {
-        if (c.box.containsPoint(p)) out.push({ bone, collider: c.name, at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
+        if (c.circle) {
+          const dRz = Math.hypot(p.x - c.circle.cx, p.z - c.circle.cz);
+          const inY = p.y >= c.circle.y0 && p.y <= c.circle.y1;
+          if (inY && dRz <= c.circle.r) out.push({ bone, collider: c.name, pen: +(c.circle.r - dRz).toFixed(3), at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
+        } else {
+          const d = c.box.distanceToPoint(p);
+          if (d < r) out.push({ bone, collider: c.name, pen: +(r - d).toFixed(3), at: [+p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3)] });
+        }
       }
     }
     return out;

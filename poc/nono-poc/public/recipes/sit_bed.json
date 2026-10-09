@@ -1,7 +1,7 @@
 {
   "id": "sit_bed",
   "label": "床沿坐",
-  "version": 4,
+  "version": 5,
   "hold": true,
   "interruptible": true,
   "mirrorable": false,
@@ -10,7 +10,7 @@
     "expression": null,
     "breath": null
   },
-  "ref": "场景交互配方 #5（bed.sit 锚点）v4。姿态层。v2（BUG-093）：低座面重推为大腿高于水平（膝略高于髋）；v3：坐姿手臂外展 8°避让。**v4（2026-10-08 步态轮二修，BUG-104 根因修复后重新标定）**：原 -100/+100 是在 rest 污染下标定的——修 BUG-104 后实测该组会让足底入地 ~15mm 且无脚掌补偿；重标定：**腿 -102/+90 + 脚 +10**（髋 0.484 时：膝 0.54 → 踝 0.101、足底 +3mm、脚掌贴平；正脚角补偿小腿世界倾角）。面向房内（锚点朝向 250°）。",
+  "ref": "场景交互配方 #5（bed.sit 锚点）v5。姿态层。v4（BUG-104 修复后重标）：腿 -102/+90 + 脚 +10（髋 0.484：膝 0.54 → 踝 0.101、足底 +3mm 贴平）。**v5（2026-10-09 白机，BUG-108）**：撤 v3 外展 8°垂手，改手放大腿近端上外侧——角度组与 sit_chair v5 同源（上臂 x 前抬 30 + z 内收 2 + 前臂 y 屈肘 30，白机浏览器实测标定：腕骨距大腿轴线 71mm、掌心朝下贴腿面；床沿坐大腿前倾更多，手位同样落在大腿近端，落座后待逐帧复核）。手臂 0.35s 先于腿完成。面向房内（锚点朝向 250°）。",
   "sequence": [
     {
       "op": "translate",
@@ -70,8 +70,32 @@
     {
       "op": "rotate",
       "bone": "leftUpperArm",
+      "axis": "x",
+      "deg": -30,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftUpperArm",
       "axis": "z",
-      "deg": 8,
+      "deg": -2,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "leftLowerArm",
+      "axis": "y",
+      "deg": 30,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": -30,
       "dur": 0.35,
       "easing": "easeOutQuad"
     },
@@ -79,7 +103,15 @@
       "op": "rotate",
       "bone": "rightUpperArm",
       "axis": "z",
-      "deg": -8,
+      "deg": 2,
+      "dur": 0.35,
+      "easing": "easeOutQuad"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLowerArm",
+      "axis": "y",
+      "deg": -30,
       "dur": 0.35,
       "easing": "easeOutQuad"
     },

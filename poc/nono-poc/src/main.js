@@ -158,7 +158,9 @@ function goToAnchor(key) {
   const a = roomApi.anchors[key];
   if (!a) return Promise.resolve(false);
   const seq = ++walkSeq;
-  const whenRc = a.recipe ? fetchRecipe(a.recipe).catch(() => null) : Promise.resolve(null);
+  const whenRc = a.recipe
+    ? fetchRecipe(a.recipe).catch((err) => { console.warn(`[anchor] 配方 ${a.recipe} 加载失败（落座降级为仅行走）`, err); statusEl.textContent = `⚠️ 配方 ${a.recipe} 加载失败（看控制台）`; return null; })
+    : Promise.resolve(null);
   return whenRc.then((rc) => {
     if (seq !== walkSeq || !roomApi) return false;
     if (rc && rc.id === sitState && sitAnchorKey === key) return true; // 已坐在目标位

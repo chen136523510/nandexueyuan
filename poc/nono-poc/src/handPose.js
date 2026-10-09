@@ -3,7 +3,7 @@
 // 问题：VRM 静息手是 T-pose 的平摊手（手指伸直张开）——所有配方/动作都不碰手指骨，
 //   于是站/走/坐全程都是"绷直摊开"的僵尸手（BUG-097 的另一半）。
 // 方案：把手指骨纳入**静息姿态**的一部分（不用配方、不用 clip）——在 PoseDriver 创建前
-//   写入放松手型并注册骨骼，rest 捕获即为手型，之后每帧 apply 保持、resetNormalizedPose 后也能自动恢复；
+//   写入放松手型并注册骨骼，rest 捕获即为手型，之后每帧 apply 保持、reset 后也能自动恢复；
 //   走路 clip 不含手指轨道故手型不受影响；Mixamo 动作自带手指轨道时会覆盖（合理：外来动作的手型优先）。
 //
 // 轴与符号（2026-10-08 浏览器实测，T-pose 基准）：
@@ -14,18 +14,25 @@
 //   判据：左臂恢复 T-pose（掌心朝 -Z）后指尖应向 -Z 移动且远离指轴——实测 y 轴唯一满足。
 //
 // 调参入口：HAND_POSE 表（角度=度，蜷曲为正）。要"再放松/再收一点"只改这张表。
+//
+// v2（2026-10-09 白机，BUG-106：院长复验二轮"手掌的形态不太正常，正常应该是微微抱拳的放松态"）：
+//   v1 四指合计 ~90° 微屈实测形态是"手指微弯但掌心仍摊开"的半摊手；按条目修复方向蜷一档到
+//   合计 150~180° 的轻握拳 + 拇指跨掌搭向食指近节（y 内收一档 + 新增绕局部 x 的沿掌面转向，
+//   x 轴左右不镜像故 TWIST 同号）。
 
 const HAND_POSE = {
-  // 四指：近节/中节/远节逐步蜷曲（真人放松手 ≈ 近 30°/中 35°/远 18°；小指略多、食指略少）
-  Index: { Proximal: 30, Intermediate: 35, Distal: 18 },
-  Middle: { Proximal: 33, Intermediate: 38, Distal: 20 },
-  Ring: { Proximal: 34, Intermediate: 39, Distal: 20 },
-  Little: { Proximal: 36, Intermediate: 42, Distal: 22 },
-  // 拇指：轻度内收（靠向食指侧）+ 指节微屈——"搭在拳侧"而非贴死或张开
-  Thumb: { Metacarpal: 10, Proximal: 16, Distal: 12 },
+  // 四指：近节/中节/远节逐步蜷曲（轻握拳：食指略少、小指略多；单指合计 153~174°）
+  Index: { Proximal: 55, Intermediate: 60, Distal: 38 },
+  Middle: { Proximal: 58, Intermediate: 64, Distal: 40 },
+  Ring: { Proximal: 60, Intermediate: 66, Distal: 42 },
+  Little: { Proximal: 62, Intermediate: 68, Distal: 44 },
+  // 拇指：跨掌搭在食指近节侧（Metacarpal/Proximal y 内收 + THUMB_TWIST 腹面转向）
+  Thumb: { Metacarpal: 14, Proximal: 30, Distal: 18 },
 };
+// 拇指沿掌面转向（绕局部 x，度；左右手同号不镜像）——拇指腹从朝侧方转向掌内/食指方向
+const THUMB_TWIST = 35;
 // 指间轻微并拢（z 轴；食指朝中指为 +，小指朝中指为 −，中指/无名指居中）
-const HAND_FAN = { Index: 3, Middle: 0, Ring: -2, Little: -4 };
+const HAND_FAN = { Index: 4, Middle: 0, Ring: -3, Little: -5 };
 
 const DEG = Math.PI / 180;
 
@@ -45,29 +52,33 @@ export function handPoseBoneNames() {
  * @param {{scale?: number}} [opts] scale=整体放松度（0=摊平原状，1=表内定版值）
  */
 export function applyHandPose(vrm, { scale = 1 } = {}) {
+  // 四元数哈密顿积 a∘b（分量序 [x,y,z,w]）
+  const qMul = ([ax, ay, az, aw], [bx, by, bz, bw]) => [
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ];
+  const half = (rad) => rad / 2;
   let applied = 0;
   for (const side of ['left', 'right']) {
-    const sign = side === 'left' ? 1 : -1; // 蜷曲：左正右负（镜像实测）
+    const sign = side === 'left' ? 1 : -1; // 蜷曲/并拢：左正右负（镜像实测）
     for (const [finger, joints] of Object.entries(HAND_POSE)) {
       for (const [joint, deg] of Object.entries(joints)) {
         const bone = vrm.humanoid.getNormalizedBoneNode(`${side}${finger}${joint}`);
         if (!bone) continue;
         const pitch = deg * scale * sign * DEG; // 绕局部 y：蜷曲
         const fan = (finger === 'Thumb' ? 0 : (HAND_FAN[finger] ?? 0)) * scale * sign * DEG; // 绕局部 z：并拢
-        // q = Ry(pitch) * Rz(fan)（先并拢再蜷曲；角度小，次序影响可忽略）
-        const cy = Math.cos(pitch / 2), sy = Math.sin(pitch / 2);
-        const cz = Math.cos(fan / 2), sz = Math.sin(fan / 2);
-        const qy = [0, sy, 0, cy];
-        const qz = [0, 0, sz, cz];
-        // qy ∘ qz
-        const [x1, y1, z1, w1] = qy;
-        const [x2, y2, z2, w2] = qz;
-        bone.quaternion.set(
-          w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
-          w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
-          w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
-          w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2,
-        );
+        // q = Ry(pitch) ∘ Rz(fan)（先并拢再蜷曲；角度小，次序影响可忽略）
+        const qy = [0, Math.sin(half(pitch)), 0, Math.cos(half(pitch))];
+        const qz = [0, 0, Math.sin(half(fan)), Math.cos(half(fan))];
+        let q = qMul(qy, qz);
+        // 拇指腹转向：绕局部 x（左右同号，不乘 sign）——拇指腹搭向食指近节（BUG-106）
+        if (finger === 'Thumb') {
+          const tw = THUMB_TWIST * scale * DEG;
+          q = qMul(q, [Math.sin(half(tw)), 0, 0, Math.cos(half(tw))]);
+        }
+        bone.quaternion.set(q[0], q[1], q[2], q[3]);
         applied++;
       }
     }
