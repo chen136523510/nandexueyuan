@@ -110,6 +110,118 @@ for o in bpy.data.objects:
         report['hands'][o.name] = {'hand_tris': hand_tris, 'hand_verts': len(v_hand)}
 
 # 每侧手部三角形数（用 x 坐标分左右：模型坐标 x>0 侧）
+# ---------- 区域分布 / 每指分段 / 手部 UV 岛（2026-10-09 深勘测） ----------
+REGION_RULES = [
+    ('face', ('Face', 'Eye', 'Brow', 'Eyelash')),
+    ('hair', ('Hair',)),
+    ('head_neck', ('Head', 'Neck', 'Jaw')),
+    ('torso', ('Chest', 'Spine', 'Hips', 'Shoulder', 'Breast')),
+    ('hand', ('Hand', 'Thumb', 'Index', 'Middle', 'Ring', 'Little')),
+    ('forearm', ('LowerArm',)), ('upperarm', ('UpperArm',)),
+    ('thigh', ('UpperLeg',)), ('shin', ('LowerLeg',)),
+    ('foot', ('Foot',)), ('toe', ('Toes',)),
+]
+FINGER_KEYS = ('Thumb', 'Index', 'Middle', 'Ring', 'Little')
+
+
+def region_of(name):
+    for reg, keys in REGION_RULES:
+        for k in keys:
+            if k in name:
+                return reg
+    return 'other:' + name
+
+
+report['regions'] = {}
+report['finger_segments'] = {}
+report['hand_uv_islands'] = {}
+
+
+def uv_islands_of(me, face_ids):
+    """面集合内按 UV 连通性分岛（同顶点且 UV 近似=连通；接缝断开）"""
+    uvl = me.uv_layers.active
+    if not uvl or not face_ids:
+        return []
+    parent = {}
+
+    def find(a):
+        r = a
+        while parent.get(r, r) != r:
+            r = parent[r]
+        while parent.get(a, a) != a:
+            parent[a], a = r, parent[a]
+        return r
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    loops_by_vert = {}
+    tri_of_loop = {}
+    for ti in face_ids:
+        tri = me.loop_triangles[ti]
+        ls = list(tri.loops)
+        for li in ls:
+            parent.setdefault(li, li)
+            v = me.loops[li].vertex_index
+            loops_by_vert.setdefault(v, []).append(li)
+            tri_of_loop[li] = ti
+        union(ls[0], ls[1])
+        union(ls[1], ls[2])
+    for v, ls in loops_by_vert.items():
+        for i in range(1, len(ls)):
+            a, b = ls[0], ls[i]
+            ua, ub = uvl.data[a].uv, uvl.data[b].uv
+            if abs(ua.x - ub.x) < 1e-4 and abs(ua.y - ub.y) < 1e-4:
+                union(a, b)
+    islands = {}
+    for li in parent:
+        root = find(li)
+        islands.setdefault(root, {'tris': set(), 'u0': 9, 'v0': 9, 'u1': -9, 'v1': -9})
+        cell = islands[root]
+        cell['tris'].add(tri_of_loop[li])
+        uv = uvl.data[li].uv
+        cell['u0'] = min(cell['u0'], uv.x); cell['v0'] = min(cell['v0'], uv.y)
+        cell['u1'] = max(cell['u1'], uv.x); cell['v1'] = max(cell['v1'], uv.y)
+    out = [{'tris': len(c['tris']), 'uv_bbox': [round(c['u0'], 4), round(c['v0'], 4), round(c['u1'], 4), round(c['v1'], 4)]}
+           for c in islands.values()]
+    return sorted(out, key=lambda d: -d['tris'])
+
+
+for o in bpy.data.objects:
+    if o.type != 'MESH':
+        continue
+    me = o.data
+    me.calc_loop_triangles()
+    gi2name = {vg.index: vg.name for vg in o.vertex_groups}
+    regions, fingers, hand_face_ids = {}, {}, []
+    for ti, tri in enumerate(me.loop_triangles):
+        votes = {}
+        for vi in tri.vertices:
+            for g in me.vertices[vi].groups:
+                nm = gi2name.get(g.group)
+                if nm:
+                    votes[nm] = votes.get(nm, 0.0) + g.weight
+        if not votes:
+            continue
+        top = max(votes, key=votes.get)
+        reg = region_of(top)
+        regions[reg] = regions.get(reg, 0) + 1
+        if reg == 'hand':
+            hand_face_ids.append(ti)
+            if any(k in top for k in FINGER_KEYS):
+                fingers[top] = fingers.get(top, 0) + 1
+    report['regions'][o.name] = dict(sorted(regions.items(), key=lambda kv: -kv[1]))
+    print(f"[{o.name}] 区域面数: {report['regions'][o.name]}")
+    if fingers:
+        report['finger_segments'][o.name] = dict(sorted(fingers.items()))
+        print(f"[{o.name}] 每指分段面数: {report['finger_segments'][o.name]}")
+    if hand_face_ids:
+        isl = uv_islands_of(me, hand_face_ids)
+        report['hand_uv_islands'][o.name] = isl
+        print(f"[{o.name}] 手部 UV 岛 {len(isl)} 个；前 6 大: {isl[:6]}")
+
 print('--- 注：hand_tris=左右手合计；side_split 按三角面心 x 符号分侧（VRM 惯例 +x=角色左）---')
 if JSON_OUT:
     with open(JSON_OUT, 'w', encoding='utf-8') as f:

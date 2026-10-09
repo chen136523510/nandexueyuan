@@ -7,8 +7,13 @@ IMPORT nonono_v7_vroid_eye.vrm 14978348 bytes
    手部 UV 范围: [0.007, 0.0073, 0.993, 0.9927]
    手部 bbox 尺寸(m): [1.2799, 0.1147, 0.042]
    按组前 8: [('J_Bip_L_Hand', 218), ('J_Bip_R_Hand', 218), ('J_Bip_L_Little3', 82), ('J_Bip_L_Thumb3', 82), ('J_Bip_R_Little3', 82), ('J_Bip_R_Thumb3', 82), ('J_Bip_R_Index3', 82), ('J_Bip_R_Middle3', 82)]
+[Body] 区域面数: {'head_neck': 2486, 'torso': 2217, 'hand': 2170, 'shin': 1256, 'thigh': 1140, 'foot': 1010, 'forearm': 902, 'upperarm': 756, 'other:J_Bip_R_ToeBase': 193, 'other:J_Bip_L_ToeBase': 193, 'other:J_Sec_L_Bust1': 41, 'other:J_Sec_R_Bust1': 41}
+[Body] 每指分段面数: {'J_Bip_L_Index1': 68, 'J_Bip_L_Index2': 35, 'J_Bip_L_Index3': 82, 'J_Bip_L_Little1': 62, 'J_Bip_L_Little2': 36, 'J_Bip_L_Little3': 82, 'J_Bip_L_Middle1': 54, 'J_Bip_L_Middle2': 36, 'J_Bip_L_Middle3': 82, 'J_Bip_L_Ring1': 58, 'J_Bip_L_Ring2': 36, 'J_Bip_L_Ring3': 82, 'J_Bip_L_Thumb1': 35, 'J_Bip_L_Thumb2': 69, 'J_Bip_L_Thumb3': 82, 'J_Bip_R_Index1': 68, 'J_Bip_R_Index2': 35, 'J_Bip_R_Index3': 82, 'J_Bip_R_Little1': 62, 'J_Bip_R_Little2': 36, 'J_Bip_R_Little3': 82, 'J_Bip_R_Middle1': 54, 'J_Bip_R_Middle2': 36, 'J_Bip_R_Middle3': 82, 'J_Bip_R_Ring1': 58, 'J_Bip_R_Ring2': 36, 'J_Bip_R_Ring3': 82, 'J_Bip_R_Thumb1': 35, 'J_Bip_R_Thumb2': 69, 'J_Bip_R_Thumb3': 82}
+[Body] 手部 UV 岛 32 个；前 6 大: [{'tris': 313, 'uv_bbox': [0.5769, 0.7998, 0.6854, 0.9927]}, {'tris': 313, 'uv_bbox': [0.3146, 0.7998, 0.4231, 0.9927]}, {'tris': 130, 'uv_bbox': [0.6912, 0.0073, 0.7578, 0.054]}, {'tris': 130, 'uv_bbox': [0.2422, 0.0073, 0.3088, 0.054]}, {'tris': 130, 'uv_bbox': [0.2422, 0.0622, 0.3088, 0.1089]}, {'tris': 130, 'uv_bbox': [0.2422, 0.117, 0.3088, 0.1637]}]
+[Face] 区域面数: {'head_neck': 6748, 'face': 439}
+[Hair] 区域面数: {'head_neck': 16490, 'hair': 14894}
 --- 注：hand_tris=左右手合计；side_split 按三角面心 x 符号分侧（VRM 惯例 +x=角色左）---
-report saved: C:\Users\13652\AppData\Local\Temp\tmp.7o15w7ph2D/hand_report.json 2306 bytes
+report saved: C:\Users\13652\AppData\Local\Temp\tmp.7o15w7ph2D/hand_report2.json 7136 bytes
 === probe done ===
 Blender 5.2.2 LTS (hash d13f752e3b9c built 2026-09-15 01:37:04)
 
