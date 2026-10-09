@@ -288,28 +288,17 @@ if KNUCKLE_MM > 0:
 
 # ---------------- 3) 立体指甲板 ----------------
 if DO_NAILS:
-    # 指甲：位移指尖背侧原网格（甲面微鼓 + 超椭圆平滑收敛），面指派 Nail 材质
-    # 路线选择（2026-10-09 黑机）：先试"生成弧形甲板"两版（r=甲宽绕带 / 逐站半径小帽）均不理想
-    #   —— 甲板与指面贴合靠圆柱近似，半径估计稍有偏差即漂浮或埋入；改为直接位移原网格：
-    #   形状天然贴合指形、无漂浮/无环带，甲形由超椭圆区域控制（宽窄/长短/圆头），
-    #   表面细节（甲根新月/自由缘线/高光）留给 Krita 贴图层。
-    nail_mat = bpy.data.materials.new('Nail')
-    nail_mat.use_nodes = True
-    bsdf = next((n for n in nail_mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
-    if bsdf:
-        # 贴近肤色的甲色（只留一点冷调与光泽差；白亮会像贴胶布——v4 实测教训）
-        bsdf.inputs['Base Color'].default_value = (0.90, 0.845, 0.845, 1.0)
-        if 'Roughness' in bsdf.inputs:
-            bsdf.inputs['Roughness'].default_value = 0.34
-        if 'Specular IOR Level' in bsdf.inputs:
-            bsdf.inputs['Specular IOR Level'].default_value = 0.45
-    me.materials.append(nail_mat)
-    nail_slot = len(me.materials) - 1
-
-    NAIL_TA0, NAIL_TA1 = 0.25, 0.97        # 甲区轴向范围（占远端骨长比：甲根≈DIP 皱褶 → 自由缘抵指尖）
-    NAIL_ANG_WIN = math.radians(35)        # 甲区角向窗口（相对该指自标定基准 θmin）
-    NAIL_H = 0.22 / 1000.0                 # 甲面隆起量
+    # 指甲 v11 路线（2026-10-09 院长验收两条后定版）：
+    #   ① 长度减半（院长指令）② 隆起压到 0.10mm ③ **改贴图着色、不建独立材质**——
+    #   原因（院长"为什么能穿模"的答案）：VRM 每个皮肤材质都带一份 "(Outline)" 孪生面（同几何、沿法线外扩的深色壳）；
+    #   独立 Nail 材质不在描边体系内，甲面只抬 0.22mm < 描边壳外扩量 → 描边(深色)盖在甲面上 = 深灰锯齿块；
+    #   改走皮肤贴图后甲与皮肤同材质同描边，壳不再打架。
+    NAIL_TA0, NAIL_TA1 = 0.62, 0.97        # 甲区轴向范围（占远端骨长比；半长版）
+    NAIL_ANG_WIN = math.radians(35)        # 甲区角向窗口（相对逐指自标定 θmin）
+    NAIL_H = 0.10 / 1000.0                 # 甲面隆起量（压低避免与描边壳打架）
     NAIL_POW = 2.4
+    NAIL_RGB = (0.905, 0.845, 0.845)       # 甲色（贴近肤色，微冷）
+    NAIL_ALPHA = 0.85
 
     def superell(ta, ang):
         return (abs(ta) ** NAIL_POW + abs(ang) ** NAIL_POW) ** (1.0 / NAIL_POW)
@@ -329,33 +318,21 @@ if DO_NAILS:
             finger_frames.append({'gname': gname, 'd': d, 'head': head, 'axis': axis, 'L': L,
                                   'verts': list(verts_of_groups(me, [gname]))})
 
-    def nearest_frame(pw):
-        best, bestd = None, 1e9
-        for fr in finger_frames:
-            rel = pw - fr['head']
-            perp = (rel - fr['axis'] * rel.dot(fr['axis'])).length
-            if perp < bestd:
-                bestd, best = perp, fr
-        return best
-
-    # ① 逐指自标定 θmin：该指远端段中"最背面"法向与 d 的最小夹角
-    #   （消除骨轴不居中 / 低模圆柱面法向量化带来的系统性偏移；v5 对称性失败教训）
+    # ① 逐指自标定 θmin（该指远端段"最背面"法向与 d 的最小夹角）
     for fr in finger_frames:
         angles = []
         for vi in fr['verts']:
-            pw = body.matrix_world @ me.vertices[vi].co
             n = (mw3 @ me.vertices[vi].normal).normalized()
             angles.append(math.acos(max(-1.0, min(1.0, n.dot(fr['d'])))))
         fr['theta_min'] = min(angles) if angles else 0.0
 
-    # ② 甲面隆起（沿顶点法线，软收敛；掩盖超椭圆使边界不硬）
+    # ② 甲面隆起（沿顶点法线，软收敛）
     disp_n = 0
     for fr in finger_frames:
         d, head, axis, L = fr['d'], fr['head'], fr['axis'], fr['L']
         normals = {vi: (mw3 @ me.vertices[vi].normal).normalized() for vi in fr['verts']}
         for vi in fr['verts']:
-            pw = body.matrix_world @ me.vertices[vi].co
-            rel = pw - head
+            rel = (body.matrix_world @ me.vertices[vi].co) - head
             ta = rel.dot(axis) / L
             ang = max(0.0, math.acos(max(-1.0, min(1.0, normals[vi].dot(d)))) - fr['theta_min'])
             srad = superell((ta - (NAIL_TA0 + NAIL_TA1) / 2) / ((NAIL_TA1 - NAIL_TA0) / 2), ang / NAIL_ANG_WIN)
@@ -365,43 +342,86 @@ if DO_NAILS:
             me.vertices[vi].co += inv3 @ (normals[vi] * h)
             disp_n += 1
 
-    # ③ 面指派：最近指 + 轴向范围 + （法向角 − θmin）≤ 窗口 → Nail 材质
+    # ③ 甲面收集（按顶点组归属，防串指）
     face_n = 0
     per_finger = {}
+    nail_face_ids = []
     frame_of_group = {fr['gname']: fr for fr in finger_frames}
-    fg_after = dominant_groups(me, None)   # 细分后重算（面 → 主导顶点组）
+    fg_after = dominant_groups(me, None)
     for poly in me.polygons:
-        pw = body.matrix_world @ poly.center
         fr = frame_of_group.get(fg_after[poly.index] if poly.index < len(fg_after) else '')
         if fr is None:
             continue
-        rel = pw - fr['head']
-        ta = rel.dot(fr['axis']) / fr['L']
+        pw = body.matrix_world @ poly.center
+        ta = (pw - fr['head']).dot(fr['axis']) / fr['L']
         if not (NAIL_TA0 <= ta <= NAIL_TA1):
             continue
         fn = (mw3 @ poly.normal).normalized()
         ang = math.acos(max(-1.0, min(1.0, fn.dot(fr['d'])))) - fr['theta_min']
         if ang <= NAIL_ANG_WIN:
-            poly.material_index = nail_slot
+            nail_face_ids.append(poly.index)
             face_n += 1
             per_finger[fr['gname']] = per_finger.get(fr['gname'], 0) + 1
-    print(f'   θmin(deg)=' + str({fr['gname']: round(math.degrees(fr['theta_min']), 1) for fr in finger_frames}))
-    # 甲区轴向实测（诊断：相对 DIP 与指尖的毫米数，用于核对甲长是否压到近端关节）
+
+    print('   theta_min(deg)=' + str({fr['gname']: round(math.degrees(fr['theta_min']), 1) for fr in finger_frames}))
+    print('   每指甲面数: ' + str(dict(sorted(per_finger.items()))))
     for fr in finger_frames:
-        hit = [poly.center for poly in me.polygons
-               if poly.material_index == nail_slot and nearest_frame(body.matrix_world @ poly.center) is fr]
+        hit = [me.polygons[i].center for i in nail_face_ids
+               if frame_of_group.get(fg_after[i]) is fr]
         if not hit:
-            print(f'   [甲区 {fr["gname"]}] 空'); continue
-        tas = []
-        for c in hit:
-            rel = (body.matrix_world @ c) - fr['head']
-            tas.append(rel.dot(fr['axis']))
-        print(f'   [甲区 {fr["gname"]}] 甲长 {min(tas)*1000:.1f}~{max(tas)*1000:.1f}mm（相对 DIP）；'
-              f'远端骨长 {fr["L"]*1000:.1f}mm；甲占远端骨 {min(tas)/fr["L"]*100:.0f}%~{max(tas)/fr["L"]*100:.0f}%')
-    print(f'   每指甲面数: {dict(sorted(per_finger.items()))}')
+            print('   [甲区 ' + fr['gname'] + '] 空')
+            continue
+        tas = [(body.matrix_world @ c - fr['head']).dot(fr['axis']) for c in hit]
+        print(f"   [甲区 {fr['gname']}] 甲长 {min(tas)*1000:.1f}~{max(tas)*1000:.1f}mm（相对 DIP）"
+              f"＝远端骨 {min(tas)/fr['L']*100:.0f}%~{max(tas)/fr['L']*100:.0f}%（半长版）")
+
+    # ④ 甲形画进皮肤贴图（与皮肤同材质 → 同描边，不再有深色壳盖甲）
+    import numpy as np
+    uvl = me.uv_layers.active
+    img = None
+    for mat in me.materials:
+        if mat is None or not mat.use_nodes:
+            continue
+        for n in mat.node_tree.nodes:
+            if n.type == 'TEX_IMAGE' and n.image is not None:
+                img = n.image
+        if img is not None:
+            break
+    if img is not None and uvl is not None and nail_face_ids:
+        W, H = img.size
+        px = np.array(img.pixels[:], dtype=np.float32).reshape(H, W, 4)   # 行 0=底（与 uv.v 同向，免翻转）
+        mask = np.zeros((H, W), dtype=np.float32)
+        for fi in nail_face_ids:
+            poly = me.polygons[fi]
+            pts = [(uvl.data[li].uv.x * W, uvl.data[li].uv.y * H) for li in poly.loop_indices]
+            (x1, y1), (x2, y2), (x3, y3) = pts[0], pts[1], pts[2]
+            x0, xE = int(max(0, min(x1, x2, x3) - 1)), int(min(W - 1, max(x1, x2, x3) + 1))
+            y0, yE = int(max(0, min(y1, y2, y3) - 1)), int(min(H - 1, max(y1, y2, y3) + 1))
+            if xE < x0 or yE < y0:
+                continue
+            gx, gy = np.meshgrid(np.arange(x0, xE + 1) + 0.5, np.arange(y0, yE + 1) + 0.5)
+            d = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
+            if abs(d) < 1e-9:
+                continue
+            aa = ((y2 - y3) * (gx - x3) + (x3 - x2) * (gy - y3)) / d
+            bb = ((y3 - y1) * (gx - x3) + (x1 - x3) * (gy - y3)) / d
+            cc = 1.0 - aa - bb
+            inside = (aa >= -0.02) & (bb >= -0.02) & (cc >= -0.02)
+            mask[y0:yE + 1, x0:xE + 1][inside] = 1.0
+        if mask.sum() > 0:
+            m = mask.copy()
+            m[1:-1, 1:-1] = (mask[:-2, 1:-1] + mask[2:, 1:-1] + mask[1:-1, :-2] + mask[1:-1, 2:] + mask[1:-1, 1:-1]) / 5.0
+            nail_rgb = np.array(NAIL_RGB, dtype=np.float32)
+            alpha = (m * NAIL_ALPHA)[..., None]
+            px[..., :3] = px[..., :3] * (1.0 - alpha) + nail_rgb * alpha
+            img.pixels[:] = px.reshape(-1).tolist()
+            img.pack()
+            print(f"   甲面贴图着色：{len(nail_face_ids)} 面 → UV 掩膜 {int(mask.sum())} px（{W}x{H}，色 {NAIL_RGB}）")
+        else:
+            print('   甲面贴图着色：掩膜为空（跳过）')
     me.update()
     me.calc_loop_triangles()
-    print(f'--- 指甲（位移法 + 自标定）：位移顶点 {disp_n}，指派甲面 {face_n}，材质槽 {nail_slot}（Nail）')
+    print(f'--- 指甲（位移 {NAIL_H*1000:.2f}mm + 贴图着色，半长）：位移顶点 {disp_n}，甲面 {face_n}')
 
 # ---------------- 导出前处理：权重限 4 + 归一（防 >4 影响被导出截断） ----------------
 bpy.context.view_layer.objects.active = body
