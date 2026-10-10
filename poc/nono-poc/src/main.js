@@ -304,6 +304,10 @@ function rideChairTo(x, z, yawDeg = null, opts = {}) {
 // 这是从"碰家具"到"使用物品"的新概念（take/put 语义的第一步，大脑 give/take 类动作的地基）。
 let carryingCup = false;
 const HAND_CUP_OFFSET = new THREE.Vector3(0, -0.05, 0); // 杯心挂指尖下方 5cm（握姿视觉近似）
+// 物件位置连续性（2026-10-10 院长理念裁决：禁止闪现——「物件传送」是木偶式作弊）：
+// 杯子状态机 table→toHand(0.18s 带起插值)→carried(严格跟手)→toTable(0.18s 重力式下落)→table。
+// 位置永远连续变化，pick/place 只改变「谁控制位置」——与家具实体化同一思想。
+const cupAnim = { mode: 'table', t0: 0, from: new THREE.Vector3(), to: new THREE.Vector3() };
 
 // 通用伸手+判定（拿/放/抽屉共用；到 desk.item 站位后播 pick_cup，1.1s 窗口判定）
 async function reachAndHit(hitFn, label, { mirror = false } = {}) {
@@ -341,7 +345,11 @@ async function pickCup() {
   const center = roomApi.cupHitTest(new THREE.Vector3()).center;
   const r = await reachAndHit({ targetCenter: center, test: (P) => roomApi.cupHitTest(P, 0.14) }, '杯子');
   if (!r) return false;
-  if (r.hit.hit) { carryingCup = true; statusEl.textContent = '🥤 诺诺拿起了杯子'; }
+  if (r.hit.hit) {
+    carryingCup = true;
+    cupAnim.mode = 'toHand'; cupAnim.t0 = performance.now() / 1000; cupAnim.from.copy(roomApi.cup.mesh.position); // 带起插值（位置连续，禁闪现）
+    statusEl.textContent = '🥤 诺诺拿起了杯子';
+  }
   else statusEl.textContent = `⚠️ 没够到杯子（指尖距 ${r.hit.dist}m > 0.14）`;
   return r.hit.hit;
 }
@@ -352,7 +360,8 @@ async function placeCup() {
   const r = await reachAndHit({ targetCenter: [CUP_PLACE_POS.x, CUP_PLACE_POS.y, CUP_PLACE_POS.z], test: (P) => ({ hit: true, dist: 0 }) }, '放杯'); // 放=伸手到位即放（白盒）
   if (!r) return false;
   carryingCup = false;
-  roomApi.cup.mesh.position.set(CUP_PLACE_POS.x, CUP_PLACE_POS.y, CUP_PLACE_POS.z);
+  cupAnim.mode = 'toTable'; cupAnim.t0 = performance.now() / 1000;
+  cupAnim.from.copy(roomApi.cup.mesh.position); cupAnim.to.set(CUP_PLACE_POS.x, CUP_PLACE_POS.y, CUP_PLACE_POS.z); // 重力式下落（位置连续）
   statusEl.textContent = '🥤 杯子已放回桌面';
   return true;
 }
@@ -689,12 +698,28 @@ renderer.setAnimationLoop(() => {
       lookAtTarget.position.copy(lookAtLock);
     } else {
       // F5a 携带态（2026-10-10）：杯子跟随食指指尖（挂下方 5cm=握姿视觉近似）
-      if (carryingCup && vrm && roomApi) {
-        const cn = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
-        if (cn) {
-          const V = new THREE.Vector3();
-          cn.getWorldPosition(V);
-          roomApi.cup.mesh.position.copy(V).add(HAND_CUP_OFFSET);
+      if (vrm && roomApi) {
+        const cupMesh = roomApi.cup.mesh;
+        if (cupAnim.mode === 'toHand') {
+          // 带起：从桌面位置 0.18s 平滑贴到指尖（消除「闪现到手里」——院长理念裁决）
+          const k = Math.min(1, (performance.now() / 1000 - cupAnim.t0) / 0.18);
+          const cn = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
+          const hand = new THREE.Vector3();
+          if (cn) { cn.getWorldPosition(hand); hand.add(HAND_CUP_OFFSET); }
+          cupMesh.position.lerpVectors(cupAnim.from, hand, k * k * (3 - 2 * k)); // smoothstep
+          if (k >= 1) cupAnim.mode = 'carried';
+        } else if (cupAnim.mode === 'toTable') {
+          // 放下：重力式（easeIn 加速）落到桌面点位，落定即回 table
+          const k = Math.min(1, (performance.now() / 1000 - cupAnim.t0) / 0.18);
+          cupMesh.position.lerpVectors(cupAnim.from, cupAnim.to, k * k);
+          if (k >= 1) { cupMesh.position.copy(cupAnim.to); cupAnim.mode = 'table'; }
+        } else if (cupAnim.mode === 'carried') {
+          const cn = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
+          if (cn) {
+            const V = new THREE.Vector3();
+            cn.getWorldPosition(V);
+            cupMesh.position.copy(V).add(HAND_CUP_OFFSET);
+          }
         }
       }
       const px = (pointer.x + 1) / 2;

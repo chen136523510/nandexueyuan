@@ -14,7 +14,7 @@
 - **本轮实测踩坑（均已修复入注）**：①**配方欧拉角叠加垂臂 rest，「前后」语义随站位朝向变**——F1 面东参数不能复用面北（首测 dist 0.478 的根因），换朝向必须重标定；②**VRM 局部 +x=左手**——面北时右肩在东侧，杯放 0.35（左肩线）差 0.35 够不着，挪 0.69 修复；③**goToAnchor 的 promise 在启动行走时即 resolve**——编排层必须轮询等到位；④**walkSeq 双重递增**——外层编排再 ++ 会让自己防竞态快照恒失败，外层只读快照；⑤**vite dev 缓存旧 main.js**（watcher 失效）——"改了没生效"先重启 dev server 再排查；⑥抽屉判定恒对关合位（开着的抽屉腔会套住手，对当前中心判定错位 0.19m）
 - **接口变更表增补**：`roomApi.cup`（mesh+home 引用）/`cupHitTest`/`toggleDrawer`/`drawerHitTest(p,thr,useHome)`/`switchCenter`/`anchors['desk.item']`+`WAYPOINTS.switchFront`/`recipes: pick_cup+open_drawer`/HUD +3 按钮（拿杯子/放杯子/开关抽屉）
 - **回归**：椅坐稳定态偶发 1 条毫米级擦线抖动（呼吸性，v7.3 余量内）/床坐 0/拿放杯+抽屉往返全通/0 console error
-- **遗留**：①滑椅腿部、F2/F3 动作质量=复杂全身动作线（院长已裁）②携带态的杯子是"浮在指尖下"的视觉近似，真正握持网格（手型包杯）属手部精细交互轮③大脑语义调用（take/put/move_furniture schema）=直播间 v2
+- [fix] **携带态闪现修复（院长理念裁决：物件位置必须连续，禁止传送式作弊）**：杯子状态机 table→toHand（0.18s smoothstep 带起）→carried（严格跟手）→toTable（0.18s 重力式 easeIn 下落）→table——位置永远连续变化，pick/place 只改变「谁控制位置」，与家具实体化同一思想。实测起飞/携带/下落/落定全链 ✓。**遗留**：①滑椅腿部、F2/F3 动作质量=复杂全身动作线（院长已裁）②携带态杯子是"浮在指尖下"视觉近似，真正握持网格（手型包杯）属手部精细交互轮③大脑语义调用（take/put/move_furniture schema）=直播间 v2
 
 ## 2026-10-10（白机·调休补班·第三轮：BUG-112 修复（坐姿手位 v7.3）+ F1 精细化 v3 + F2/F3/F4 家具交互全落地）
 
