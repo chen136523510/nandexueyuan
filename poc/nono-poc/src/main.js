@@ -207,9 +207,12 @@ function goToAnchor(key) {
         sitAnchorKey = key;
         // F1 接触判定（2026-10-10）：锚点带 contact 字段=配方到位后做指尖-开关距离判定，
         //   够到→toggleLamp+状态栏反馈；没够到→显式报距（FAIL 可见，同 BUG-109「降级必须可见」教训）。
-        //   判定窗口 1.1s=配方到位 0.5s+blend，且在 autoReturn 1.5s 收回之前
+        //   判定窗口 1.1s=配方到位 0.5s+blend，且在 autoReturn 1.5s 收回之前。
+        //   F1 v3（精细度轮）：到位即锁视线注视按钮（否则按开关不看开关=动作假感主因），判定完 1.5s 释放
         if (a.contact) {
           const seqNow = seq;
+          const swCenter = roomApi.switchCenter?.(a.contact.switchIdx ?? 0);
+          if (swCenter) lookAtLock = new THREE.Vector3(swCenter.x, swCenter.y, swCenter.z);
           sleepMs(1100).then(() => {
             if (seqNow !== walkSeq || !vrm) return;
             const node = vrm.humanoid.getNormalizedBoneNode(a.contact.bone);
@@ -225,6 +228,7 @@ function goToAnchor(key) {
             } else {
               statusEl.textContent = `⚠️ 没够到开关（指尖距按钮 ${hit.dist}m > 阈值）`;
             }
+            sleepMs(1500).then(() => { if (seqNow === walkSeq) lookAtLock = null; });
           });
         }
       } else {
@@ -243,6 +247,56 @@ function goToAnchor(key) {
     roomApi.walkTo(key, { onDepart: depart, onArrive: arrive });
     return true;
   });
+}
+
+// ---------- F2/F3/F4 家具交互编排（动作库规划 §六·第一版程序示教，2026-10-10 白机） ----------
+// 人椅滑移基元：椅子与坐姿 root 同步平移（6.3 要点 2 的 v1 简化=刚体平移，腿平移悬空；旋转不滑）。
+// moveChair({withRider:true}) 跳过占用守卫——调用方（本层）负责同步移人；F2 推椅/F3 拉椅/F4 滑椅共用。
+function seatedSlideTo(x, z, yawDeg = null, { dur = 1.0 } = {}) {
+  if (!roomApi) return Promise.resolve({ ok: false, msg: '引擎未就绪' });
+  if (sitState !== 'sit_chair') return Promise.resolve({ ok: false, msg: '未坐椅——先「椅子坐」' });
+  const ret = roomApi.moveChair(x, z, yawDeg, { withRider: true });
+  if (!ret.ok) return Promise.resolve(ret);
+  const na = roomApi.anchors['chair.sit'];
+  roomApi.moveTo(na.pos, na.yawDeg, { dur }); // 人 root 同步滑+随椅朝向
+  statusEl.textContent = '🪑 人椅同滑中…';
+  sleepMs(dur * 1000 + 100).then(() => { if (sitState === 'sit_chair') statusEl.textContent = '🪑 已滑到 ' + na.pos.map((v) => +v.toFixed(2)).join(','); });
+  return Promise.resolve({ ok: true, anchor: na });
+}
+
+// F2 起身推椅：坐姿前倾 → 椅+人沿椅背方向退 0.2m → 起立（stand_up 自动滑到新 standExit——已随椅派生）
+async function pushChairBeforeStandup() {
+  if (!roomApi) return false;
+  if (sitState !== 'sit_chair') { statusEl.textContent = '⚠️ 起身推椅要先「椅子坐」'; return false; }
+  const seq = ++walkSeq;
+  recipeExecutor.play({ id: 'lean_forward', label: '前倾', hold: false, interruptible: true, layer: 'gesture', autoReturn: 0.5,
+    sequence: [{ op: 'rotate', bone: 'chest', axis: 'x', deg: 14, dur: 0.35, easing: 'easeOutQuad' }] });
+  await sleepMs(500);
+  if (seq !== walkSeq) return false;
+  const a = roomApi.anchors['chair.sit'];
+  const yr = (a.yawDeg * Math.PI) / 180;
+  const dx = -Math.cos(yr) * 0.2, dz = Math.sin(yr) * 0.2; // 椅前向=(cosY,-sinY)，推椅=反方向
+  const ret = roomApi.moveChair(a.pos[0] + dx, a.pos[2] + dz, null, { withRider: true });
+  if (!ret.ok) { statusEl.textContent = '⚠️ ' + ret.msg; return false; }
+  const na = roomApi.anchors['chair.sit'];
+  roomApi.moveTo(na.pos, null, { dur: 0.6 }); // 人随椅退（朝向不变）
+  statusEl.textContent = '🪑 推椅后撤 0.2m…';
+  await sleepMs(750);
+  if (seq !== walkSeq) return false;
+  fetchRecipe('stand_up').then((su) => { if (seq === walkSeq) { playRecipe(su); statusEl.textContent = '🪑 推椅完成，起身'; } });
+  return true;
+}
+
+// F3 拉椅到桌：坐姿人椅同滑到桌前预设位（v2 标定：x=1.12 椅缘 0.80 离桌沿 0.72 有 8cm——
+//   v1 的 0.98 椅盘插桌下 6cm，v7.3 前抬手位会×桌板 3.3cm；坐姿腿低于桌板不撞）
+const DESK_SIDE_SEAT = { x: 1.12, z: -3.25, yawDeg: 205 };
+function slideChairToDesk() {
+  return seatedSlideTo(DESK_SIDE_SEAT.x, DESK_SIDE_SEAT.z, DESK_SIDE_SEAT.yawDeg, { dur: 1.2 });
+}
+
+// F4 滑椅：坐姿人椅滑向任意目标点（大脑/控制台调用；白盒不做滑行避障，clamp 房间内）
+function rideChairTo(x, z, yawDeg = null, opts = {}) {
+  return seatedSlideTo(x, z, yawDeg, { dur: 1.2, ...opts });
 }
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -536,9 +590,15 @@ renderer.setAnimationLoop(() => {
 
   if (vrm) {
     // 验收 3：视线跟随鼠标（移动目标点，lookAt 自动追踪）
-    const px = (pointer.x + 1) / 2;
-    const py = (pointer.y + 1) / 2; // 鼠标屏幕顶=1 → 目标 y 高=抬头（修复上下反转）
-    lookAtTarget.position.set(px * 0.9 - 0.45, 1.45 + py * 0.35, 0.8); // 默认平视：目标基线=眼高 1.45（原 1.25 会让眼球永远朝下=翻白眼根因）
+    // F1 v3（2026-10-10）：视线锁——交互锚点（switch.operate）到位后锁定注视按钮，判定完释放；
+    //   不锁则每帧鼠标逻辑覆盖，「按开关不看开关」是动作假感的主要来源之一
+    if (lookAtLock) {
+      lookAtTarget.position.copy(lookAtLock);
+    } else {
+      const px = (pointer.x + 1) / 2;
+      const py = (pointer.y + 1) / 2; // 鼠标屏幕顶=1 → 目标 y 高=抬头（修复上下反转）
+      lookAtTarget.position.set(px * 0.9 - 0.45, 1.45 + py * 0.35, 0.8); // 默认平视：目标基线=眼高 1.45（原 1.25 会让眼球永远朝下=翻白眼根因）
+    }
 
     // 验收 4：表情权重（瞬时切换，无过渡——PoC 只验证通路）
     const em = vrm.expressionManager;
@@ -606,6 +666,7 @@ renderer.setAnimationLoop(() => {
 
 // ---------- 指针追踪（lookAt 用） ----------
 const pointer = new THREE.Vector2(0, 0);
+let lookAtLock = null; // F1 v3：视线锁（Vector3|null）——交互期间注视交互对象，完成释放
 window.addEventListener('pointermove', (e) => {
   pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -791,6 +852,15 @@ function setupRoomHud() {
       });
       anchorSpan.appendChild(b);
     }
+    // F2/F3 家具交互按钮（动作库规划 §六 第一版程序示教；F4 rideChairTo 走控制台/大脑）
+    const mkFurnBtn = (label, fn) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.addEventListener('click', () => { if (animPlaying) { statusEl.textContent = '⚠️ Mixamo 动作播放中'; return; } fn(); });
+      anchorSpan.appendChild(b);
+    };
+    mkFurnBtn('起身推椅', pushChairBeforeStandup);
+    mkFurnBtn('拉到桌前', slideChairToDesk);
   }
   document.getElementById('roomHud').style.display = 'block';
   const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn'), pb = document.getElementById('roomPlayBtn');
@@ -909,6 +979,7 @@ window.__poc = {
   stopWalk() { walkSettle = null; stopAnimation(); walkSource = null; },
   settleWalk: (dur) => settleWalkToRest(dur),
   goAnchor: (key) => goToAnchor(key), // 行走全流程编排（起立/寻路/落座）单一入口
+  rideChairTo, // F4 滑椅：坐姿人椅滑向任意点（控制台/大脑；例 rideChairTo(2.2,-1.0)）
   get animPlaying() { return animPlaying; },
   get mixer() { return animMixer; },
   boneWorld(name) { // 骨骼世界坐标（归一化骨；验收采样）

@@ -1,16 +1,132 @@
 {
   "id": "operate_switch",
   "label": "按开关",
-  "version": 2,
+  "version": 3,
   "hold": false,
   "interruptible": true,
   "mirrorable": true,
   "layer": "gesture",
   "autoReturn": 1.5,
-  "ref": "F1 关灯伸手配方（2026-10-10 白机，动作库规划 §六 F1）。站位=锚点 switch.operate（东墙开关面板正西 0.32m，右肩正对按钮，面东 yawDeg=0）。按钮中心 (4.422,1.18,-1.75)。**v2 实测标定**（浏览器判定窗口 1.1s 采样）：v1（-60/-15/-10）指尖 (4.512,1.106,-1.739)，dist=0.119 命中但指尖越墙 9cm（x 4.512>4.422，特写穿帮）且低 7.6cm；v2 收前抬角（-60→-54）+前臂微屈加深（-15→-22）——目标 dist≤0.10 且指尖不越墙。判定=main.js goToAnchor 1.1s 窗口 switchHitTest(食指指尖,阈值 0.15)。",
+  "ref": "F1 关灯伸手配方（动作库规划 §六 F1，第一版程序示教）。站位=锚点 switch.operate，按钮中心 (4.422,1.18,-1.75)。**v3（2026-10-10 精细度轮，院长「按按钮没达到理想精细水平」反馈）**：①食指按压手型=食指伸直(抵消 handPose 放松态)+中/无名/小指收拢——此前整只放松手糊上去是精细感差的主因②按压脉冲=上臂到位后扣 4°再回弹(同频道三段，BUG-105 修复后支持)③视线锁看按钮(main.js lookAtLock，非配方)④动捕不用于此类单点交互(示教+手型库足够；动捕留给 Phase B 复杂全身动作)。v2 定版伸手参数(-58/-18/-10)不变。判定=main.js goToAnchor 1.1s 窗口。",
   "sequence": [
-    { "op": "rotate", "bone": "rightUpperArm", "axis": "x", "deg": -58, "dur": 0.5, "easing": "easeOutSine" },
-    { "op": "rotate", "bone": "rightLowerArm", "axis": "x", "deg": -18, "dur": 0.5, "easing": "easeOutSine" },
-    { "op": "rotate", "bone": "rightHand", "axis": "x", "deg": -10, "dur": 0.4, "easing": "easeOutSine" }
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": -58,
+      "dur": 0.5,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLowerArm",
+      "axis": "x",
+      "deg": -18,
+      "dur": 0.5,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightHand",
+      "axis": "x",
+      "deg": -10,
+      "dur": 0.4,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightIndexProximal",
+      "axis": "y",
+      "deg": 22,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightIndexIntermediate",
+      "axis": "y",
+      "deg": 24,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightIndexDistal",
+      "axis": "y",
+      "deg": 8,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightMiddleProximal",
+      "axis": "y",
+      "deg": -45,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightMiddleIntermediate",
+      "axis": "y",
+      "deg": -30,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightRingProximal",
+      "axis": "y",
+      "deg": -48,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightRingIntermediate",
+      "axis": "y",
+      "deg": -32,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLittleProximal",
+      "axis": "y",
+      "deg": -52,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLittleIntermediate",
+      "axis": "y",
+      "deg": -35,
+      "dur": 0.45
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": -62,
+      "dur": 0.12,
+      "delay": 0.6
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": -58,
+      "dur": 0.2,
+      "delay": 0.78
+    },
+    {
+      "op": "rotate",
+      "bone": "rightIndexProximal",
+      "axis": "y",
+      "deg": 14,
+      "dur": 0.12,
+      "delay": 0.6
+    },
+    {
+      "op": "rotate",
+      "bone": "rightIndexProximal",
+      "axis": "y",
+      "deg": 22,
+      "dur": 0.2,
+      "delay": 0.78
+    }
   ]
 }

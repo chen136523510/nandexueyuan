@@ -638,6 +638,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
     const cos = Math.cos(dy), sin = Math.sin(dy);
     const [ox, oz] = CHAIR_EXIT_OFFSET;
     a.standExit = [a.pos[0] + ox * cos + oz * sin, 0, a.pos[2] - ox * sin + oz * cos];
+    a.yawDeg = ((Math.round(Math.atan2(-Math.cos(chair.rotation.y), Math.sin(chair.rotation.y)) * 180 / Math.PI) % 360) + 360) % 360; // 坐姿朝向随椅（rotation.y→yawDeg 语义反推，同 snapshot）
     WAYPOINTS.chairNear.pos = [a.standExit[0], a.standExit[2]];
   }
   function syncChairColliders() {
@@ -652,9 +653,9 @@ export function buildRoom(scene, { posterUrl } = {}) {
     chairDisc.box.min.set(chair.position.x - CHAIR_DISC_R, 0.0, chair.position.z - CHAIR_DISC_R);
     chairDisc.box.max.set(chair.position.x + CHAIR_DISC_R, 0.06, chair.position.z + CHAIR_DISC_R);
   }
-  function moveChair(x, z, yawDeg = null) {
-    if (state.occupiedFurniture === 'chair') {
-      return { ok: false, msg: '诺诺正坐在椅子上（人椅联动属 F3/F4，本版拒绝坐着挪椅）' };
+  function moveChair(x, z, yawDeg = null, { withRider = false } = {}) {
+    if (state.occupiedFurniture === 'chair' && !withRider) {
+      return { ok: false, msg: '诺诺正坐在椅子上（坐姿挪椅须走 withRider 人椅滑移——F2/F3/F4 编排层负责同步移人）' };
     }
     const px = Math.min(w - 0.45, Math.max(0.45, x));
     const pz = Math.min(-(0.45), Math.max(-(d - 0.45), z));
@@ -829,6 +830,11 @@ export function buildRoom(scene, { posterUrl } = {}) {
       return { ok: true, dist: +dist.toFixed(3), hit: dist <= threshold, center: [+c.x.toFixed(3), +c.y.toFixed(3), +c.z.toFixed(3)] };
     },
     boneRadiusFor: (name) => boneRadius(name), // 手部代理档 B：main.js 胶囊采样点取两端均值半径（单一真源防漂移）
+    // F1 v3：开关按钮世界坐标（视线锁用——到位后诺诺注视按钮）
+    switchCenter(idx = 0) {
+      const bx = switchBoxes[idx];
+      return bx ? bx.getCenter(new THREE.Vector3()) : null;
+    },
     // L1 场景状态快照（感官架构设计 §三；预算 ≤200 token 的浓缩 JSON）——前端侧只读适配器。
     // 跨进程形态（大脑在后端）由 main.js 经 WebSocket 上报身体态后端拼装，本函数只管前端权威的一半：
     //   环境全局量 + 家具位姿 + 自身位置；诺诺姿态（坐/站/动作）由 main.js 的 nonoSnapshot() 合入。
