@@ -297,8 +297,8 @@ function yearPct(cnt) {
           <span class="entry-arrow" aria-hidden="true">→</span>
         </button>
 
-        <!-- 自习室入口（R-058 诺诺·一期灰度仅 admin 可见，开发完全后放开） -->
-        <button v-if="isAdmin" class="hall-card entry-card studyroom-card" @click="router.push('/studyroom')">
+        <!-- 自习室入口下线（2026-10-10 院长裁决：诺诺转 Unity 单机开发，文字版灰度先撤；恢复=去掉 false 条件） -->
+        <button v-if="false && isAdmin" class="hall-card entry-card studyroom-card" @click="router.push('/studyroom')">
           <span class="entry-icon">习</span>
           <h3 class="entry-title">自习室</h3>
           <p class="entry-desc">诺诺在这里看书。去和她聊聊——她记得住重要的事。</p>

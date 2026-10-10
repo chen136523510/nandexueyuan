@@ -5,6 +5,19 @@ import prisma from '../src/lib/prisma.js'
 // 补录历史版本使版本历史连续完整，依据根 CHANGELOG.md 还原
 const versionList = [
   {
+    version: 'v4.1.1',
+    date: new Date('2026-10-10'),
+    summary: '自习室临时闭馆整顿，重开时焕然一新',
+    updates: JSON.stringify([
+      '自习室临时闭馆——诺诺要闭关修炼一套大本事，重开时给大家看焕然一新的她',
+    ], null, 0),
+    plans: JSON.stringify([
+      '诺诺 3D 化新形态制作中',
+      '星河问扩建——塔罗馆、群友默契测试筹备中',
+      '抽象小剧场——把群聊名场面做成节目',
+    ], null, 0),
+  },
+  {
     version: 'v4.1.0',
     date: new Date('2026-09-24'),
     summary: '自习室改成直播间啦：大家共用一条聊天流',

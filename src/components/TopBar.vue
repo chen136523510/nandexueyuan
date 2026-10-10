@@ -66,7 +66,8 @@ const drawerItems = computed(() =>
 const adminItems = [
   { to: '/history', label: '岁月史书' },
   { to: '/admin', label: '男通讯录' },
-  { to: '/studyroom', label: '自习室' },
+  // 自习室入口下线（2026-10-10 院长裁决：诺诺转 Unity 单机开发，文字版灰度先撤；代码保留，恢复即取消注释）
+  // { to: '/studyroom', label: '自习室' },
 ]
 </script>
 
