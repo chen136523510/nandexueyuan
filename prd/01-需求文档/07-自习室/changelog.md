@@ -5,6 +5,31 @@
 
 ---
 
+## 2026-10-10（白机·调休补班·下午轮：家具实体化 v1 + 手部体检代理档 B + F1 关灯 + roomApi.snapshot()——院长四连裁决"一起做"，全部落地）
+
+> 院长裁决：①手部体检代理选**档 B（指骨链+胶囊）**②实体化一起做③R-056 冻结，全精力投诺诺④snapshot() 顺手做⑤**新纪律：跨模块状态/接口变更必须文档落档（见下方接口变更表），不靠窗口记忆**。
+
+- [feat] **家具实体化 v1**（动作库规划 §六 地基，F2~F4 前置）：椅子从「静态 collider+手铺锚点」升级为可动实体——`roomApi.moveChair(x,z,yawDeg?)` 挪椅后**碰撞盒随动**（`syncChairColliders`：4 个 mesh 盒按 mesh 重算+圆盘 collider 平移）、**锚点/下车站派生**（`deriveChairAnchors`：sit=椅心、standExit=椅心+初始偏移向量按 Δyaw 旋转、chairNear 同步——实测挪椅 (2.6,-1.6) 转 160° 后 standExit=[2.225,-1.225] 旋转数学精确）、**寻路即时生效**（segClear/routeTo 每次现读 colliders）。**守卫**：`state.occupiedFurniture` 被占用（坐着）时拒绝挪椅（人椅刚体联动属 F3/F4）
+- [feat] **手部体检代理档 B**（院长问题①「代理要达到手掌，不是一个球」）：检测点从 2 个手骨心扩到 **30 根手型骨心+骨链胶囊采样**（相邻骨心连线按 12mm 步长插值、采样点显式携带两端均值半径；BONE_RADIUS 新增指骨分档 Metacarpal 14mm/Proximal 11mm/Intermediate 10mm/Distal 9mm——VRoid 指径 12~16mm 取微胖防漏报）。**立竿见影暴露真穿模=BUG-112（见 bug-log）**：椅坐 80 采样/床坐 43 采样「手指×座面/床垫」交叠 ≤2.6cm——旧 4cm 球代理完全不可见
+- [feat] **F1 关灯/开灯**（动作库规划 §六 F1，院长「第一版程序示教」）：开关面板**挪位**（北墙东段→东墙东南段门旁——原位在床区上方不可站立，床垫膨胀盒覆盖寻路采样高，物理不可达；生活逻辑同款"进门顺手按灯"，**场景变更已落档**）；新增锚点 `switch.operate`（站位右肩正对按钮）+ 伸手配方 `operate_switch`（v2 标定：upperArm -58/lowerArm -18/hand -10）+ **指尖接触判定**（到位后 1.1s 窗口，rightIndexDistal 与按钮距离 ≤15cm→`toggleLamp()`；没够到显式报距）。**实测：dist=0.096 命中不越墙，开/关双向验证通过**
+- [feat] **roomApi.snapshot()**（感官架构 §三 L1 前置，设计文档定性"白盒阶段顺手做"）：环境全局量+家具位姿（含 yawDeg 反推/占用态）+诺诺位置；main.js `nonoSnapshot()` 合入姿态（standing/sitting(chair)/sitting(bed)）与当前动作；`onIdle` 事件位已预留注释（self-prompting，直播间 v2 接）
+- **roomApi 接口变更表（2026-10-10 下午轮，跨模块落档纪律首次执行）**：
+
+| 接口/状态 | 类型 | 说明 | 消费方 |
+|---|---|---|---|
+| `roomApi.moveChair(x,z,yawDeg?)` | 新增 | 挪椅引擎能力；碰撞盒/锚点/下车站随动；占用守卫 | HUD/控制台/F2~F4/大脑 |
+| `roomApi.setFurnitureOccupied(group)` | 新增 | 家具占用态写入（**state 是 getter 浅拷贝，必须走此入口**——实测踩坑） | main.js playRecipe |
+| `roomApi.switchHitTest(p,idx,threshold)` | 新增 | 指尖-开关按钮距离判定 | main.js goToAnchor contact |
+| `roomApi.boneRadiusFor(name)` | 新增 | 骨半径分档查询（胶囊采样单一真源） | main.js roomCheck |
+| `roomApi.snapshot()` / `__poc.nonoSnapshot()` | 新增 | L1 场景快照（环境+家具 / +姿态合入） | 大脑 prompt（直播间 v2） |
+| `state.occupiedFurniture` | 新增 | 被占家具组名（'chair'/'bed'/null） | moveChair 守卫/snapshot |
+| `anchors['switch.operate']` + `WAYPOINTS.switchFront` | 新增 | F1 站位锚点+路点（含 contact 判定参数） | goToAnchor |
+| `ROOM.switchPanel.cy` | 变更 | 4.62→1.75（面板挪东墙东南段，场景变更） | 场景设计方案待同步 |
+| `BONE_RADIUS` | 扩充 | +指骨四档（Metacarpal/Proximal/Intermediate/Distal） | 体检 |
+| `recipes/operate_switch.json` | 新增 | F1 伸手示教配方 v2（角度已标定） | switch.operate 锚点 |
+
+- **遗留（登记待修）**：①**BUG-112 坐姿手指×家具面交叠**（档 B 暴露的真穿模，修复=坐姿手位 v7，归手部精细交互前置——院长问题①的延续）②场景设计方案 v4.1 文档的开关面板位置段落需同步（本轮先落 changelog，方案文档下轮补）③F2~F4（推椅/拉椅/滑椅）按 §六顺序推进，地基已就绪
+
 ## 2026-10-10（白机·调休补班：BUG-111 预备轮——诊断工具+v7 基线+修法脚本；BUG-097 复核办结）
 
 > 院长晨会指派两事：①BUG-111（手指加密后观感粗糙，黑机遗留）白机能做部分先做②BUG-097（坐姿手穿椅/床+掌恒绷直，登记未修复）核实边界。当日身份=白机（调休补班，院长裁决）。

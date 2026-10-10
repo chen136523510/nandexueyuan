@@ -18,7 +18,7 @@ export const ROOM = {
   window: { x0: 0.65, x1: 3.85, top: 2.80 }, // v2：落地窗，居中 3.2m，左右各留 0.65m 北墙
   doors: { west: { y0: 0.35, y1: 1.25, h: 2.05 }, east: { y0: 0.35, y1: 1.25, h: 2.05 } },
   poster: { cy: 4.25, w: 0.60, h: 0.80, z0: 1.30 }, // 不随床移动（院长裁决）
-  switchPanel: { cx: 4.12, cy: 4.62, z: 1.15 }, // 开关面板：北墙东段（床头北边），与天花板灯同区
+  switchPanel: { cx: 4.12, cy: 1.75, z: 1.15 }, // 开关面板：东墙东南段（门旁——F1「走过去按」可达位）。2026-10-10 场景变更：原北段 (cy 4.62) 位于床区上方，站立位在床面/北过道内不可达（床垫膨胀盒 y 0.2~0.7 覆盖躯干采样高 0.5，寻路过不去）→ 挪门旁（生活逻辑同款：进门顺手按灯）
   lamp: { cx: 2.25, cy: 2.50 },
 };
 
@@ -182,6 +182,7 @@ export function buildRoom(scene, { posterUrl } = {}) {
   const btnLamp = box(0.02, 0.055, 0.075, M(0xd8d2c4), w - 0.078, sw.z + 0.032, -sw.cy);
   const btnCur = box(0.02, 0.055, 0.075, M(0xd8d2c4), w - 0.078, sw.z - 0.032, -sw.cy);
   g.add(btnLamp, btnCur);
+  const switchBoxes = [btnLamp, btnCur].map((m) => new THREE.Box3().setFromObject(m)); // F1 接触判定用（switchHitTest）
 
   // 桌（西墙）
   const dk = ROOM.desk;
@@ -293,6 +294,8 @@ export function buildRoom(scene, { posterUrl } = {}) {
     timeSpeed: 0.5,       // 小时/秒
     lampOn: false,        // 灯态（生活动作，纯手动）
     curtainOpen: true,    // 帘默认开
+    occupiedFurniture: null, // 被诺诺占用的家具组名（'chair'=坐着；main.js playRecipe/goToAnchor 维护）——
+                             // moveChair 守卫「坐着挪椅」+ snapshot 报告家具占用态（实体化 v1，2026-10-10）
     // 当前插值值（向目标 lerp；sunX/sunY=太阳方位/高度角也走混合，影子扫掠连续）
     cur: { sunI: 1.7, sunC: 0xfff6e6, lampI: 0, lampC: 0xffd9a0, hemi: 0.55, seaTint: 0xffffff, glass: 0.35, monitor: 0.30, bg: 0x9fb8cc, curtain: 1, studio: 1, sunX: 2.25, sunY: 2.9 },
   };
@@ -485,20 +488,24 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // 臀部贴座面这类"合法接触"不检测（髋点在座面上方）
   const colliders = [];
   function addCollider(name, mesh, group = null) {
-    if (!mesh) return;
+    if (!mesh) return null;
     const bx = new THREE.Box3().setFromObject(mesh);
     bx.expandByScalar(-0.01); // 1cm 容差：贴面接触不算穿入
-    colliders.push({ name, group, box: bx });
+    const c = { name, group, box: bx };
+    colliders.push(c);
+    return c; // 返回引用：实体化轮 moveChair 后按 mesh 重算盒（syncChairColliders）
   }
   // 圆盘碰撞体（BUG-107 修复方向②补充）：五星脚底盘是圆柱而非方块——AABB 会把"盒角区"误报成
   // 穿入（实测坐姿脚趾 (0.66,-2.99) 距盘心 0.47m > 盘半径 0.32m，AABB 却报在盒内）。圆盘判定消除该假阳性。
   // box 字段=盘的 AABB，仅供寻路膨胀（segClear/routeTo 消费 .box）；穿入检测走 circle 精确判定
   function addCircleCollider(name, group, cx, cz, r, y0, y1) {
-    colliders.push({
+    const c = {
       name, group,
       circle: { cx, cz, r, y0, y1 },
       box: new THREE.Box3(new THREE.Vector3(cx - r, y0, cz - r), new THREE.Vector3(cx + r, y1, cz + r)),
-    });
+    };
+    colliders.push(c);
+    return c;
   }
   const findMesh = (px, py, pz) => {
     let best = null, bd = 1e9;
@@ -511,8 +518,13 @@ export function buildRoom(scene, { posterUrl } = {}) {
     });
     return best;
   };
-  addCollider('椅座', findMesh(ch.cx, ch.seatH - 0.035, -ch.cy), 'chair');
-  addCircleCollider('椅底座', 'chair', ch.cx, -ch.cy, 0.32, 0.0, 0.06); // 五星脚圆盘：r=盘半径（0.30~0.32 锥），y=盘厚区间
+  // 椅子碰撞体绑定（实体化 v1，2026-10-10）：保存 {collider, mesh} 引用——moveChair 后按 mesh
+  // 重算世界盒（syncChairColliders），锚点/圆盘随动，寻路（segClear 每次现读 colliders）自动生效
+  const chairColBindings = [];
+  const chairSeatMesh = findMesh(ch.cx, ch.seatH - 0.035, -ch.cy);
+  chairColBindings.push({ c: addCollider('椅座', chairSeatMesh, 'chair'), mesh: chairSeatMesh });
+  const CHAIR_DISC_R = 0.32;
+  const chairDisc = addCircleCollider('椅底座', 'chair', ch.cx, -ch.cy, CHAIR_DISC_R, 0.0, 0.06); // 五星脚圆盘：r=盘半径（0.30~0.32 锥），y=盘厚区间
   // 扶手/椅背随椅身旋转（205°）：局部坐标 → 世界坐标后匹配
   const chRot = Math.atan2(Math.cos((ch.faceDeg * Math.PI) / 180), -Math.sin((ch.faceDeg * Math.PI) / 180));
   const chLocal = (lx, ly, lz) => new THREE.Vector3(
@@ -522,10 +534,12 @@ export function buildRoom(scene, { posterUrl } = {}) {
   );
   for (const sgn of [1, -1]) {
     const c = chLocal(sgn * 0.265, ch.seatH + 0.12, 0.02);
-    addCollider('扶手', findMesh(c.x, c.y, c.z), 'chair');
+    const m = findMesh(c.x, c.y, c.z);
+    chairColBindings.push({ c: addCollider('扶手', m, 'chair'), mesh: m });
   }
   const backC = chLocal(0, ch.seatH + 0.30, -0.245);
-  addCollider('椅背', findMesh(backC.x, backC.y, backC.z), 'chair');
+  const chairBackMesh = findMesh(backC.x, backC.y, backC.z);
+  chairColBindings.push({ c: addCollider('椅背', chairBackMesh, 'chair'), mesh: chairBackMesh });
   addCollider('桌板', findMesh(dk.cx, dk.h - 0.025, -dk.cy), 'desk');
   addCollider('床垫', findMesh(bd.cx, bd.h - 0.05, -bd.cy), 'bed');
   addCollider('床箱', findMesh(bd.cx, (bd.h - 0.10) / 2, -bd.cy), 'bed');
@@ -539,12 +553,20 @@ export function buildRoom(scene, { posterUrl } = {}) {
   //   与 AABB 分支口径不一致，脚网格边缘搭上盘缘 ≤4.5cm 的接触漏报。改球-实心圆柱相交
   //   （水平超出 hEx + 垂直超出 vEx 合成距离 < 骨半径），两分支同口径；AABB 角区假阳性不会回归
   //   （旧假阳性点距盘心 0.47m，hEx=0.15m > 任何骨半径）。
-  const BONE_RADIUS = { UpperLeg: 0.06, LowerLeg: 0.05, Foot: 0.045, Toes: 0.04, Hand: 0.04, LowerArm: 0.04 };
+  const BONE_RADIUS = {
+    UpperLeg: 0.06, LowerLeg: 0.05, Foot: 0.045, Toes: 0.04, Hand: 0.04, LowerArm: 0.04,
+    // 手部代理档 B（2026-10-10 院长裁决「体检代理要达到手掌」）：指骨分档半径（VRoid 指径 12~16mm
+    //  → 半径 6~8mm，取微胖值防漏报；拇指最粗）。30 根手型骨全部入检——指尖伸进家具/指节擦碰可报
+    Metacarpal: 0.014, Proximal: 0.011, Intermediate: 0.010, Distal: 0.009,
+  };
   const boneRadius = (bone) => { for (const k in BONE_RADIUS) if (bone.endsWith(k)) return BONE_RADIUS[k]; return 0; };
+  // points 值：Vector3（半径=boneRadius(骨名)）或 { p:Vector3, r }（胶囊采样点显式携带半径——
+  //   main.js roomCheck 把指骨链按 12mm 步长插值采样，键名 `A~B#i` 不落在 BONE_RADIUS 分档里）
   function checkCollisions(points) {
     const out = [];
-    for (const [bone, p] of Object.entries(points)) {
-      const r = boneRadius(bone);
+    for (const [bone, pv] of Object.entries(points)) {
+      const p = pv.isVector3 ? pv : pv.p;
+      const r = pv.isVector3 ? boneRadius(bone) : pv.r;
       for (const c of colliders) {
         if (c.circle) {
           const dRz = Math.hypot(p.x - c.circle.cx, p.z - c.circle.cz);
@@ -573,6 +595,12 @@ export function buildRoom(scene, { posterUrl } = {}) {
     'chair.stand': { label: '椅旁站立', pos: [1.62, 0, -2.72], yawDeg: 150 },
     'bed.sit':     { label: '床沿坐',   pos: [3.50, 0, -3.18], yawDeg: 250, recipe: 'sit_bed',   group: 'bed',   approachWay: 'bedSide',   standExit: [3.50, 0, -2.72] },
     'room.center': { label: '活动区',   pos: [2.10, 0, -2.05], yawDeg: 180 },
+    // F1 关灯（2026-10-10）：站位=开关面板（东墙东南段，btnLamp 世界 (4.42,1.18,-1.75)）西侧，
+    //   右肩正对按钮（面东 yawDeg=0 时右手侧=南，站位 z 取 -1.92 使右肩 z≈-1.75 对准面板）；
+    //   x=4.00 为 v2 标定值（配方 upperArm -58 时指尖 x≈4.40 贴按钮不越墙，v1 站 4.10 指尖戳墙 9cm）；
+    //   contact=配方到位后的指尖接触判定（main.js goToAnchor 消费：够到→toggleLamp）
+    'switch.operate': { label: '开关灯', pos: [4.00, 0, -1.92], yawDeg: 0, recipe: 'operate_switch', approachWay: 'switchFront',
+      contact: { bone: 'rightIndexDistal', switchIdx: 0, threshold: 0.15 } },
   };
 
   // —— 导航路点图（BUG-095：滑步直线穿越家具——白盒导航层：手铺路点 + 线段×膨胀盒 clearance 校验 + Dijkstra）——
@@ -582,19 +610,63 @@ export function buildRoom(scene, { posterUrl } = {}) {
   // 两者必须一致，否则脚底打滑（配方步态时代 1.05 为近似值，2026-10-08 步态 clip 轮按几何精确值定）
   const WALK_SPEED = 0.88; // m/s
   const WAYPOINTS = {
-    center:     { pos: [2.10, -2.05] },
-    southMid:   { pos: [2.25, -1.30] },
-    chairNear:  { pos: [1.05, -2.72] }, // 下车站点=椅正南（滑座线 x 恒 1.05 全程椅背西缘外 9cm——垂落手臂包络不擦椅背；离位同点北出）
-    bedSide:    { pos: [3.50, -2.72] }, // 床沿下车站点（床缘外 0.38m）
-    westDoor:   { pos: [0.70, -0.80] },
-    eastDoor:   { pos: [3.80, -0.80] },
+    center:      { pos: [2.10, -2.05] },
+    southMid:    { pos: [2.25, -1.30] },
+    chairNear:   { pos: [1.05, -2.72] }, // 下车站点=椅正南（滑座线 x 恒 1.05 全程椅背西缘外 9cm——垂落手臂包络不擦椅背；离位同点北出）。实体化 v1 起由 deriveChairAnchors() 随椅自动更新
+    bedSide:     { pos: [3.50, -2.72] }, // 床沿下车站点（床缘外 0.38m）
+    westDoor:    { pos: [0.70, -0.80] },
+    eastDoor:    { pos: [3.80, -0.80] },
+    switchFront: { pos: [4.00, -1.92] }, // 开关面板站位（F1，2026-10-10；=锚点 'switch.operate'.pos）
   };
   const WAYPOINT_EDGES = [
     ['center', 'southMid'], ['center', 'chairNear'], ['center', 'bedSide'],
     ['southMid', 'westDoor'], ['southMid', 'eastDoor'], ['southMid', 'chairNear'],
     ['bedSide', 'eastDoor'], ['bedSide', 'chairNear'], ['bedSide', 'southMid'],
-    ['chairNear', 'westDoor'],
+    ['chairNear', 'westDoor'], ['eastDoor', 'switchFront'],
   ];
+
+  // —— 家具实体化 v1（2026-10-10 院长裁决，动作库规划 §六）：椅子从「静态 collider + 手铺锚点」
+  // 升级为可动实体——碰撞盒随动（syncChairColliders）+ 锚点/下车站从实体派生（deriveChairAnchors）
+  // + 寻路即时生效（segClear/routeTo 每次现读 colliders）。人椅刚体联动（推椅/滑椅时人随椅动）
+  // 属 F2~F4，不在本版——moveChair 以 state.occupiedFurniture 守卫「坐着挪椅」。 ——
+  const chairYaw0 = Math.atan2(Math.cos((ch.faceDeg * Math.PI) / 180), -Math.sin((ch.faceDeg * Math.PI) / 180));
+  const CHAIR_EXIT_OFFSET = [0, 0.53]; // 离位站点相对椅心的世界偏移（初始布局实测：[1.05,-3.25]→[1.05,-2.72]）
+  function deriveChairAnchors() {
+    const a = anchors['chair.sit'];
+    a.pos = [chair.position.x, 0, chair.position.z];
+    const dy = chair.rotation.y - chairYaw0; // 相对初始朝向的增量（绕 y）
+    const cos = Math.cos(dy), sin = Math.sin(dy);
+    const [ox, oz] = CHAIR_EXIT_OFFSET;
+    a.standExit = [a.pos[0] + ox * cos + oz * sin, 0, a.pos[2] - ox * sin + oz * cos];
+    WAYPOINTS.chairNear.pos = [a.standExit[0], a.standExit[2]];
+  }
+  function syncChairColliders() {
+    chair.updateMatrixWorld(true);
+    for (const b of chairColBindings) {
+      if (!b.c || !b.mesh) continue;
+      b.c.box.setFromObject(b.mesh);
+      b.c.box.expandByScalar(-0.01);
+    }
+    chairDisc.circle.cx = chair.position.x;
+    chairDisc.circle.cz = chair.position.z;
+    chairDisc.box.min.set(chair.position.x - CHAIR_DISC_R, 0.0, chair.position.z - CHAIR_DISC_R);
+    chairDisc.box.max.set(chair.position.x + CHAIR_DISC_R, 0.06, chair.position.z + CHAIR_DISC_R);
+  }
+  function moveChair(x, z, yawDeg = null) {
+    if (state.occupiedFurniture === 'chair') {
+      return { ok: false, msg: '诺诺正坐在椅子上（人椅联动属 F3/F4，本版拒绝坐着挪椅）' };
+    }
+    const px = Math.min(w - 0.45, Math.max(0.45, x));
+    const pz = Math.min(-(0.45), Math.max(-(d - 0.45), z));
+    chair.position.set(px, 0, pz);
+    if (yawDeg != null) {
+      const fr2 = (yawDeg * Math.PI) / 180;
+      chair.rotation.y = Math.atan2(Math.cos(fr2), -Math.sin(fr2));
+    }
+    syncChairColliders();
+    deriveChairAnchors();
+    return { ok: true, anchor: { ...anchors['chair.sit'] }, disc: { ...chairDisc.circle } };
+  }
   // 线段是否全程避开碰撞盒（逐 5cm 采样点对膨胀盒做 containsPoint；exemptGroups=目的地家具豁免）
   function segClear(ax, az, bx, bz, exemptGroups) {
     const dx = bx - ax, dz = bz - az;
@@ -743,6 +815,41 @@ export function buildRoom(scene, { posterUrl } = {}) {
     },
     cancelWalk() { walkAnim = null; },
     routeTo, // 调试：查看寻路结果（途经点数组）
+    // —— 家具实体化 v1（2026-10-10）——
+    moveChair, // 挪椅（引擎能力，F2~F4 地基）：碰撞盒/锚点/下车站随动；坐着挪椅被守卫拒绝
+    // 家具占用态 setter（实体化 v1）：state 是 getter 每次返回浅拷贝，外部直接对 roomApi.state.x 赋值
+    //   落不到内部 state（2026-10-10 实测踩坑）——occupy 必须走本入口；main.js playRecipe 消费
+    setFurnitureOccupied(group) { state.occupiedFurniture = group; },
+    // F1 接触判定：指尖点与开关按钮的距离与命中（threshold 默认 15cm=「按到」白盒口径）
+    switchHitTest(p, idx = 0, threshold = 0.15) {
+      const bx = switchBoxes[idx];
+      if (!bx) return { ok: false, msg: `开关按钮 #${idx} 不存在` };
+      const c = bx.getCenter(new THREE.Vector3());
+      const dist = p.distanceTo(c);
+      return { ok: true, dist: +dist.toFixed(3), hit: dist <= threshold, center: [+c.x.toFixed(3), +c.y.toFixed(3), +c.z.toFixed(3)] };
+    },
+    boneRadiusFor: (name) => boneRadius(name), // 手部代理档 B：main.js 胶囊采样点取两端均值半径（单一真源防漂移）
+    // L1 场景状态快照（感官架构设计 §三；预算 ≤200 token 的浓缩 JSON）——前端侧只读适配器。
+    // 跨进程形态（大脑在后端）由 main.js 经 WebSocket 上报身体态后端拼装，本函数只管前端权威的一半：
+    //   环境全局量 + 家具位姿 + 自身位置；诺诺姿态（坐/站/动作）由 main.js 的 nonoSnapshot() 合入。
+    snapshot() {
+      // rotation.y → 锚点 yawDeg 语义（前向=(cosY,-sinY)）的反推：Y=atan2(-cos(ry), sin(ry))
+      const rawDeg = Math.atan2(-Math.cos(chair.rotation.y), Math.sin(chair.rotation.y)) * 180 / Math.PI;
+      const chairYawDeg = ((Math.round(rawDeg) % 360) + 360) % 360;
+      const ms = modelScene;
+      return {
+        time: { name: state.time, hours: +state.hours.toFixed(2) },
+        weather: state.weather,
+        season: state.season,
+        lampOn: state.lampOn,
+        curtainOpen: state.curtainOpen,
+        furniture: [
+          { name: 'chair', x: +chair.position.x.toFixed(3), z: +chair.position.z.toFixed(3), yawDeg: chairYawDeg, occupiedBy: state.occupiedFurniture === 'chair' ? 'nono' : null },
+        ],
+        nono: ms ? { x: +ms.position.x.toFixed(3), z: +ms.position.z.toFixed(3), rotY: +ms.rotation.y.toFixed(3) } : null,
+        // onIdle 事件位预留（感官架构 §增强4 self-prompting）：大脑 idle 自主决策触发器挂点，v2 接
+      };
+    },
     get state() { return { ...state, cur: { ...state.cur } }; },
     switches: [btnLamp, btnCur], // 点击拾取用：0=灯 1=帘
     sea, glass, faceMat, dome, hemiLight: hemi,

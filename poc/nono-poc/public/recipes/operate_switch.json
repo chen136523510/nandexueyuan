@@ -1,0 +1,16 @@
+{
+  "id": "operate_switch",
+  "label": "按开关",
+  "version": 2,
+  "hold": false,
+  "interruptible": true,
+  "mirrorable": true,
+  "layer": "gesture",
+  "autoReturn": 1.5,
+  "ref": "F1 关灯伸手配方（2026-10-10 白机，动作库规划 §六 F1）。站位=锚点 switch.operate（东墙开关面板正西 0.32m，右肩正对按钮，面东 yawDeg=0）。按钮中心 (4.422,1.18,-1.75)。**v2 实测标定**（浏览器判定窗口 1.1s 采样）：v1（-60/-15/-10）指尖 (4.512,1.106,-1.739)，dist=0.119 命中但指尖越墙 9cm（x 4.512>4.422，特写穿帮）且低 7.6cm；v2 收前抬角（-60→-54）+前臂微屈加深（-15→-22）——目标 dist≤0.10 且指尖不越墙。判定=main.js goToAnchor 1.1s 窗口 switchHitTest(食指指尖,阈值 0.15)。",
+  "sequence": [
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "x", "deg": -58, "dur": 0.5, "easing": "easeOutSine" },
+    { "op": "rotate", "bone": "rightLowerArm", "axis": "x", "deg": -18, "dur": 0.5, "easing": "easeOutSine" },
+    { "op": "rotate", "bone": "rightHand", "axis": "x", "deg": -10, "dur": 0.4, "easing": "easeOutSine" }
+  ]
+}

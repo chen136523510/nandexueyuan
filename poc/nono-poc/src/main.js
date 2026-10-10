@@ -156,10 +156,15 @@ function playRecipe(rc) {
   }
   const ret = recipeExecutor.play(rc);
   if (ret.ok) {
-    if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) sitState = rc.id;
-    else if (rc?.id === 'stand_up') {
+    if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) {
+      sitState = rc.id;
+      // 家具占用态（实体化 v1）：坐姿配方→对应家具组；moveChair 守卫「坐着挪椅」+ snapshot 报告占用。
+      // state 是 getter 浅拷贝，必须走 setFurnitureOccupied 入口（直接赋值落不到内部 state）
+      roomApi.setFurnitureOccupied(rc.id === 'sit_chair' ? 'chair' : rc.id === 'sit_bed' ? 'bed' : null);
+    } else if (rc?.id === 'stand_up') {
       if (exitAfter) roomApi.moveTo(exitAfter.pos, null, { dur: 0.55, arc: exitAfter.group === 'chair' ? 0.09 : 0 });
       sitState = null; sitAnchorKey = null;
+      roomApi.setFurnitureOccupied(null);
     }
   }
   return ret;
@@ -200,6 +205,28 @@ function goToAnchor(key) {
         roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.5, arc: a.group === 'chair' ? 0.10 : 0 });
         playRecipe(rc);
         sitAnchorKey = key;
+        // F1 接触判定（2026-10-10）：锚点带 contact 字段=配方到位后做指尖-开关距离判定，
+        //   够到→toggleLamp+状态栏反馈；没够到→显式报距（FAIL 可见，同 BUG-109「降级必须可见」教训）。
+        //   判定窗口 1.1s=配方到位 0.5s+blend，且在 autoReturn 1.5s 收回之前
+        if (a.contact) {
+          const seqNow = seq;
+          sleepMs(1100).then(() => {
+            if (seqNow !== walkSeq || !vrm) return;
+            const node = vrm.humanoid.getNormalizedBoneNode(a.contact.bone);
+            if (!node) return;
+            const P = new THREE.Vector3();
+            node.getWorldPosition(P);
+            const hit = roomApi.switchHitTest(P, a.contact.switchIdx ?? 0, a.contact.threshold ?? 0.15);
+            if (hit.hit) {
+              roomApi.toggleLamp();
+              // 注意：syncRoomHud 是 init 块级 const，此处不可见——灯按钮高亮最小同步（HUD 行内两行）
+              document.getElementById('roomLampBtn')?.classList.toggle('on', roomApi.state.lampOn);
+              statusEl.textContent = roomApi.state.lampOn ? '💡 诺诺按到了开关——灯已开' : '💡 诺诺按到了开关——灯已关';
+            } else {
+              statusEl.textContent = `⚠️ 没够到开关（指尖距按钮 ${hit.dist}m > 阈值）`;
+            }
+          });
+        }
       } else {
         roomApi.moveTo(a.pos, a.yawDeg, { dur: 0.35 }); // 原地转向锚点朝向
       }
@@ -802,6 +829,17 @@ function updateRoomClock() {
 // v4：数值统一走 sit_chair.json（v2 运动学耦合版），滑步到位后播放——旧内联副本删除（双源易漂移）
 
 // 穿模体检：采样末端骨骼世界坐标 → 房间碰撞盒检测（白盒版 gate④，调配方时看违例数）
+// 手部代理档 B（2026-10-10 院长裁决「体检代理要达到手掌，不是一个球」）：
+//   检测点从 2 个手骨心扩到 30 根手型骨心 + 骨链胶囊采样（相邻骨心连线按 12mm 步长插值、
+//   采样点显式携带两端均值半径）——手掌区（Hand→各指 Proximal 段）与全部指节都在检，
+//   「指尖伸进家具/指节擦碰」可报；精细手姿（撑桌/扶栏）时代的检测地基。
+const HAND_CHAINS = [];
+for (const side of ['left', 'right']) {
+  HAND_CHAINS.push([`${side}Hand`, `${side}ThumbMetacarpal`, `${side}ThumbProximal`, `${side}ThumbDistal`]);
+  for (const f of ['Index', 'Middle', 'Ring', 'Little']) {
+    HAND_CHAINS.push([`${side}Hand`, `${side}${f}Proximal`, `${side}${f}Intermediate`, `${side}${f}Distal`]);
+  }
+}
 function roomCheck() {
   if (!vrm || !roomApi) return null;
   scene.updateMatrixWorld(true);
@@ -814,7 +852,38 @@ function roomCheck() {
       pts[n] = V.clone();
     }
   }
+  for (const chain of HAND_CHAINS) {
+    const wp = chain.map((n) => {
+      const node = vrm.humanoid.getNormalizedBoneNode(n);
+      if (!node) return null;
+      node.getWorldPosition(V);
+      return { name: n, v: V.clone() };
+    });
+    for (let i = 0; i < wp.length; i++) {
+      if (!wp[i]) continue;
+      pts[wp[i].name] = wp[i].v; // 骨心：半径按骨名分档（BONE_RADIUS）
+      if (i + 1 < wp.length && wp[i + 1]) {
+        const a = wp[i].v, b = wp[i + 1].v;
+        const nSub = Math.max(1, Math.ceil(a.distanceTo(b) / 0.012));
+        const rMid = (roomApi.boneRadiusFor(wp[i].name) + roomApi.boneRadiusFor(wp[i + 1].name)) / 2;
+        for (let k = 1; k < nSub; k++) {
+          pts[`${wp[i].name}~${wp[i + 1].name}#${k}`] = { p: a.clone().lerp(b, k / nSub), r: rMid };
+        }
+      }
+    }
+  }
   return roomApi.checkCollisions(pts);
+}
+
+// L1 快照·前端完整版（感官架构 §三）：roomApi.snapshot() 只管环境+家具+位置（前端权威的一半），
+//   诺诺姿态（坐/站/当前动作）是配方层状态（main.js 权威）——在此合入，构成大脑 prompt 消费的完整快照
+function nonoSnapshot() {
+  const s = roomApi.snapshot();
+  if (s.nono) {
+    s.nono.posture = sitState === 'sit_chair' ? 'sitting(chair)' : sitState === 'sit_bed' ? 'sitting(bed)' : 'standing';
+    s.nono.currentAction = recipeExecutor?.current?.recipe?.id ?? null;
+  }
+  return s;
 }
 
 // ---------- 调试钩子（Playwright/控制台验收用） ----------
@@ -831,6 +900,7 @@ window.__poc = {
   renderer, // 调试用：窗格被遮挡 rAF 节流时可手动 render 取证
   get room() { return roomApi; }, // 房间后台开关：room.toggleLamp()/toggleCurtain()/setTime('night')/gotoAnchor('chair.sit')/state
   roomCheck, // 穿模体检：末端骨骼 × 家具碰撞盒违例列表（白盒版 gate④）
+  nonoSnapshot, // L1 完整快照（roomApi.snapshot + 诺诺姿态/动作合入）
   // 步态 clip 调试（2026-10-08 步态轮）：验收脚本采样用
   get walkClip() { return walkClip; },
   get walkInfo() { return { status: walkClipStatus, url: WALK_CLIP_URL, source: walkSource, duration: walkClip?.duration ?? null }; },
