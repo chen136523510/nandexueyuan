@@ -1,0 +1,45 @@
+{
+  "id": "pick_cup",
+  "label": "拿取",
+  "version": 2,
+  "hold": false,
+  "interruptible": true,
+  "mirrorable": true,
+  "layer": "gesture",
+  "autoReturn": 1.4,
+  "ref": "F5 桌面物件伸手配方（拿杯/放杯/开关抽屉三编排共用）。站位=锚点 desk.item（0.52,0,-2.47 面北）。杯位 (0.69,0.765,-2.75)（右手线——**VRM 局部 +x=左手**，面北时右肩在东侧 x=0.69；v1 杯放 0.35 左肩线差 0.35 够不着，实测修正）。**v2 实测标定（浏览器扫描）**：chest36/upperArm -48/lowerArm -22 → 指尖距杯心 0.127（阈值 0.14 内且留余量）；v1（chest30/-55/-10）=0.137 擦线。**踩坑入注：配方欧拉角叠加垂臂 rest，「前后」语义随站位朝向变——换朝向必须重标定（F1 面东参数不能复用面北）**。判定=编排层 1.1s 窗口（拿 cupHitTest ≤0.14/抽屉 drawerHitTest ≤0.18）。",
+  "sequence": [
+    {
+      "op": "rotate",
+      "bone": "chest",
+      "axis": "x",
+      "deg": 36,
+      "dur": 0.45,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightUpperArm",
+      "axis": "x",
+      "deg": -48,
+      "dur": 0.45,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightLowerArm",
+      "axis": "x",
+      "deg": -22,
+      "dur": 0.45,
+      "easing": "easeOutSine"
+    },
+    {
+      "op": "rotate",
+      "bone": "rightHand",
+      "axis": "x",
+      "deg": -8,
+      "dur": 0.4,
+      "easing": "easeOutSine"
+    }
+  ]
+}

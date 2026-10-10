@@ -1,0 +1,16 @@
+{
+  "id": "open_drawer",
+  "label": "开抽屉",
+  "version": 1,
+  "hold": false,
+  "interruptible": true,
+  "mirrorable": true,
+  "layer": "gesture",
+  "autoReturn": 1.4,
+  "ref": "F5b 抽屉伸手配方（2026-10-10 白机 v1，坐姿）。**抽屉装桌东面朝椅（v1 定案）**：站姿开桌下抽屉（把手 0.59）物理不可达（前倾极限后肩 1.2，垂直缺口 0.5>臂长 0.49，真人需蹲——蹲姿属 Phase B）；改坐姿开启（现实更自然）。前提=坐在桌前位（F3 拉到桌前，编排 toggleDrawerAction 守卫+自动滑到桌前）。把手 (0.735,0.59,-3.25)，坐姿肩 ~0.94。角度=几何推算初值（chest 25/upperArm -55/lowerArm -10），上屏扫描标定后回写。",
+  "sequence": [
+    { "op": "rotate", "bone": "chest", "axis": "x", "deg": 25, "dur": 0.45, "easing": "easeOutSine" },
+    { "op": "rotate", "bone": "rightUpperArm", "axis": "x", "deg": -55, "dur": 0.45, "easing": "easeOutSine" },
+    { "op": "rotate", "bone": "rightLowerArm", "axis": "x", "deg": -10, "dur": 0.45, "easing": "easeOutSine" }
+  ]
+}

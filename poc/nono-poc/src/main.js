@@ -142,7 +142,7 @@ let walkSeq = 0;            // 锚点任务序号（新点击作废旧异步链�
 const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 统一播放入口：维护坐姿状态（配方 HUD / 交互锚点 / ?sit=1 三路共用）
-function playRecipe(rc) {
+function playRecipe(rc, opts = {}) {
   if (!recipeExecutor) return { ok: false, msg: '引擎未就绪' };
   walkSettle = null; // 配方接管：取消步态收势过渡（骨架写入互斥）
   // BUG-107 二修（院长复验三终态图：站在床上/站在椅子座面里）：起立语义自带离位——
@@ -154,7 +154,7 @@ function playRecipe(rc) {
     const cur = roomApi.anchors[sitAnchorKey];
     if (cur?.standExit) exitAfter = { pos: cur.standExit, group: cur.group };
   }
-  const ret = recipeExecutor.play(rc);
+  const ret = recipeExecutor.play(rc, opts);
   if (ret.ok) {
     if (typeof rc?.id === 'string' && rc.id.startsWith('sit_')) {
       sitState = rc.id;
@@ -297,6 +297,99 @@ function slideChairToDesk() {
 // F4 滑椅：坐姿人椅滑向任意目标点（大脑/控制台调用；白盒不做滑行避障，clamp 房间内）
 function rideChairTo(x, z, yawDeg = null, opts = {}) {
   return seatedSlideTo(x, z, yawDeg, { dur: 1.2, ...opts });
+}
+
+// ---------- F5 桌面物件（动作库规划 §六 F5：拿放桌面物件+抽屉，2026-10-10） ----------
+// 携带态：pick 判定命中后 carryingCup=true，rAF 每帧把杯子同步到食指指尖下方——「物件跟随手」。
+// 这是从"碰家具"到"使用物品"的新概念（take/put 语义的第一步，大脑 give/take 类动作的地基）。
+let carryingCup = false;
+const HAND_CUP_OFFSET = new THREE.Vector3(0, -0.05, 0); // 杯心挂指尖下方 5cm（握姿视觉近似）
+
+// 通用伸手+判定（拿/放/抽屉共用；到 desk.item 站位后播 pick_cup，1.1s 窗口判定）
+async function reachAndHit(hitFn, label, { mirror = false } = {}) {
+  if (animPlaying || !recipeExecutor) return null;
+  await goToAnchor('desk.item');
+  // ⚠️ 防竞态快照必须在 goToAnchor **之后**取：goToAnchor 内部会 ++walkSeq——若外层先 ++，
+  //   快照恒落后一步，本函数自己的防竞态检查会静默退出（2026-10-10 实测踩坑，v1 假失败根因之二）
+  const seqNow = walkSeq;
+  // ⚠️ goToAnchor 的 promise 在「启动行走」时即 resolve，不等到位——必须轮询等到位（实测踩坑：
+  //   直接 sleep 会让判定窗口在半路跑完，v1 首测假失败根因之一）；到位后收势+伸手配方 0.45s+blend
+  const st = roomApi.anchors['desk.item'].pos;
+  let wt = 0;
+  while (wt < 9000 && Math.hypot(vrm.scene.position.x - st[0], vrm.scene.position.z - st[2]) > 0.15) {
+    await sleepMs(200); wt += 200;
+  }
+  await sleepMs(500);
+  if (seqNow !== walkSeq) return null;
+  const rc = await fetchRecipe('pick_cup').catch(() => null);
+  if (!rc) return null;
+  playRecipe(rc, { mirror }); // mirror=true=左手（目标在左肩线时用——抽屉把手在桌中线=面北站位的左手侧）
+  lookAtLock = new THREE.Vector3(...hitFn.targetCenter); // 视线锁：注视操作对象（同 F1 v3）
+  await sleepMs(1100);
+  if (seqNow !== walkSeq || !vrm) return null;
+  const node = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
+  if (!node) return null;
+  const P = new THREE.Vector3();
+  node.getWorldPosition(P);
+  const hit = hitFn.test(P);
+  sleepMs(1400).then(() => { if (seqNow === walkSeq) lookAtLock = null; });
+  return { hit, P };
+}
+
+async function pickCup() {
+  if (carryingCup) { statusEl.textContent = '⚠️ 已经拿着杯子了'; return false; }
+  const center = roomApi.cupHitTest(new THREE.Vector3()).center;
+  const r = await reachAndHit({ targetCenter: center, test: (P) => roomApi.cupHitTest(P, 0.14) }, '杯子');
+  if (!r) return false;
+  if (r.hit.hit) { carryingCup = true; statusEl.textContent = '🥤 诺诺拿起了杯子'; }
+  else statusEl.textContent = `⚠️ 没够到杯子（指尖距 ${r.hit.dist}m > 0.14）`;
+  return r.hit.hit;
+}
+
+const CUP_PLACE_POS = { x: 0.20, y: 0.765, z: -3.10 }; // 放置位=桌面西南角（桌上另一处）
+async function placeCup() {
+  if (!carryingCup) { statusEl.textContent = '⚠️ 手上没有杯子'; return false; }
+  const r = await reachAndHit({ targetCenter: [CUP_PLACE_POS.x, CUP_PLACE_POS.y, CUP_PLACE_POS.z], test: (P) => ({ hit: true, dist: 0 }) }, '放杯'); // 放=伸手到位即放（白盒）
+  if (!r) return false;
+  carryingCup = false;
+  roomApi.cup.mesh.position.set(CUP_PLACE_POS.x, CUP_PLACE_POS.y, CUP_PLACE_POS.z);
+  statusEl.textContent = '🥤 杯子已放回桌面';
+  return true;
+}
+
+async function toggleDrawerAction() {
+  if (carryingCup) { statusEl.textContent = '⚠️ 拿着杯子先放下来'; return false; }
+  if (!roomApi) return false;
+  // 未坐椅则自动去坐（坐姿开抽屉的前提——站姿对桌下把手物理不可达）
+  if (sitState !== 'sit_chair') {
+    statusEl.textContent = '🚶 先去坐到桌前椅…';
+    await goToAnchor('chair.sit');
+    await sleepMs(800);
+    if (sitState !== 'sit_chair') { statusEl.textContent = '⚠️ 未能落座，开抽屉取消'; return false; }
+  }
+  // 坐姿开启（抽屉在桌东面朝椅 0.59 高——站姿不可达见 bug-log/配方 ref）；先确保在桌前位
+  await seatedSlideTo(DESK_SIDE_SEAT.x, DESK_SIDE_SEAT.z, DESK_SIDE_SEAT.yawDeg, { dur: 1.0 });
+  const seqNow = walkSeq;
+  const dHit = roomApi.drawerHitTest(new THREE.Vector3(), 0.15, true);
+  const rc = await fetchRecipe('open_drawer').catch(() => null);
+  if (!rc) return false;
+  playRecipe(rc);
+  lookAtLock = new THREE.Vector3(...dHit.center);
+  await sleepMs(1100);
+  if (seqNow !== walkSeq || !vrm) return false;
+  const node = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
+  if (!node) return false;
+  const P = new THREE.Vector3();
+  node.getWorldPosition(P);
+  const hit = roomApi.drawerHitTest(P, 0.15, true); // 对关合位判定（开着的抽屉腔会套住手，对当前中心判定错位 0.19m）
+  sleepMs(1400).then(() => { if (seqNow === walkSeq) lookAtLock = null; });
+  if (hit.hit) {
+    const open = roomApi.toggleDrawer();
+    statusEl.textContent = open ? '🗄️ 诺诺拉开了抽屉' : '🗄️ 诺诺推上了抽屉';
+  } else {
+    statusEl.textContent = `⚠️ 没够到抽屉（指尖距 ${hit.dist}m > 0.15）`;
+  }
+  return hit.hit;
 }
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -595,6 +688,15 @@ renderer.setAnimationLoop(() => {
     if (lookAtLock) {
       lookAtTarget.position.copy(lookAtLock);
     } else {
+      // F5a 携带态（2026-10-10）：杯子跟随食指指尖（挂下方 5cm=握姿视觉近似）
+      if (carryingCup && vrm && roomApi) {
+        const cn = vrm.humanoid.getNormalizedBoneNode('rightIndexDistal');
+        if (cn) {
+          const V = new THREE.Vector3();
+          cn.getWorldPosition(V);
+          roomApi.cup.mesh.position.copy(V).add(HAND_CUP_OFFSET);
+        }
+      }
       const px = (pointer.x + 1) / 2;
       const py = (pointer.y + 1) / 2; // 鼠标屏幕顶=1 → 目标 y 高=抬头（修复上下反转）
       lookAtTarget.position.set(px * 0.9 - 0.45, 1.45 + py * 0.35, 0.8); // 默认平视：目标基线=眼高 1.45（原 1.25 会让眼球永远朝下=翻白眼根因）
@@ -861,6 +963,9 @@ function setupRoomHud() {
     };
     mkFurnBtn('起身推椅', pushChairBeforeStandup);
     mkFurnBtn('拉到桌前', slideChairToDesk);
+    mkFurnBtn('拿杯子', pickCup);
+    mkFurnBtn('放杯子', placeCup);
+    mkFurnBtn('开关抽屉', toggleDrawerAction);
   }
   document.getElementById('roomHud').style.display = 'block';
   const lb = document.getElementById('roomLampBtn'), cb = document.getElementById('roomCurBtn'), pb = document.getElementById('roomPlayBtn');

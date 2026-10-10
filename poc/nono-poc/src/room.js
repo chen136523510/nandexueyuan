@@ -184,6 +184,29 @@ export function buildRoom(scene, { posterUrl } = {}) {
   g.add(btnLamp, btnCur);
   const switchBoxes = [btnLamp, btnCur].map((m) => new THREE.Box3().setFromObject(m)); // F1 接触判定用（switchHitTest）
 
+  // —— F5 桌面物件：杯子（拿放/携带态地基，2026-10-10）——
+  // 位置=桌面南端 (0.69, 桌面+0.045, -2.75)：站位 desk.item 面北(yawDeg=90)时**右手**在东侧
+  //   （VRM 局部 +x=左手！面北时右肩 x=0.69——v1 放 0.35 左肩线导致差 0.35 够不着，实测修正）
+  const dk0 = ROOM.desk;
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.09, 16), M(0xe8e4da, { roughness: 0.4 }));
+  cup.castShadow = true;
+  const CUP_HOME = new THREE.Vector3(0.69, dk0.h + 0.045, -2.75);
+  cup.position.copy(CUP_HOME);
+  g.add(cup);
+  const cupCenter = CUP_HOME.clone(); // 静态杯中心（携带后不参与 hitTest）
+
+  // —— F5b 抽屉（桌**东面**朝椅，坐姿开启——2026-10-10 实测定案）——
+  // 站姿开桌下抽屉（把手 0.59）物理不可达：前倾极限后肩高 ~1.2，垂直缺口 0.5>臂长 0.49，真人需蹲
+  // （蹲姿基元属 Phase B）。改坐姿开启（现实中更自然）：坐姿肩 ~0.94，把手 0.59 在正前下方，可及
+  const drawer = new THREE.Group();
+  const dPanel = box(0.02, 0.10, 0.30, M(0x8a6a4a), 0, 0, 0);
+  const dBody = box(0.20, 0.08, 0.26, M(0xa8825a), -0.11, -0.01, 0); // 盒体藏桌内
+  drawer.add(dPanel, dBody);
+  const DRAWER_HOME_X = 0.72 + 0.015; // 面板凸出桌东面 1.5cm
+  drawer.position.set(DRAWER_HOME_X, dk0.h - 0.13, -dk0.cy);
+  g.add(drawer);
+  let drawerOpen = false, drawerT = 0; // 插值 0=关 1=开（update 驱动；拉出=沿 +x 东滑 0.18m）
+
   // 桌（西墙）
   const dk = ROOM.desk;
   g.add(box(dk.w, 0.05, dk.l, woodMat, dk.cx, dk.h - 0.025, -dk.cy));
@@ -406,6 +429,9 @@ export function buildRoom(scene, { posterUrl } = {}) {
   let moveAnim = null; // 锚点滑步动画 { fromPos, toPos, fromYaw, dYaw, t0, dur, onDone }
   function update(dt, bg) {
     elapsed += dt;
+    // F5b 抽屉滑轨插值（开/关目标间平滑过渡；拉出=东滑）
+    drawerT += ((drawerOpen ? 1 : 0) - drawerT) * Math.min(1, dt * 6);
+    drawer.position.x = DRAWER_HOME_X + drawerT * 0.18;
     if (state.timePlay) {
       state.hours = (state.hours + dt * state.timeSpeed) % 24;
       applyTargets();
@@ -601,6 +627,9 @@ export function buildRoom(scene, { posterUrl } = {}) {
     //   contact=配方到位后的指尖接触判定（main.js goToAnchor 消费：够到→toggleLamp）
     'switch.operate': { label: '开关灯', pos: [4.00, 0, -1.92], yawDeg: 0, recipe: 'operate_switch', approachWay: 'switchFront',
       contact: { bone: 'rightIndexDistal', switchIdx: 0, threshold: 0.15 } },
+    // F5 桌面物件站位（2026-10-10）：桌南缘前，面北（yawDeg=90）时右肩（西侧）正对杯位/抽屉把手；
+    //   pick/place 配方由 main.js 编排播（共用伸手配方 pick_cup），contact 判定在编排层做（拿/放/抽屉判定对象不同）
+    'desk.item': { label: '桌前', pos: [0.52, 0, -2.47], yawDeg: 90, group: 'desk' },
   };
 
   // —— 导航路点图（BUG-095：滑步直线穿越家具——白盒导航层：手铺路点 + 线段×膨胀盒 clearance 校验 + Dijkstra）——
@@ -834,6 +863,21 @@ export function buildRoom(scene, { posterUrl } = {}) {
     switchCenter(idx = 0) {
       const bx = switchBoxes[idx];
       return bx ? bx.getCenter(new THREE.Vector3()) : null;
+    },
+    // —— F5 桌面物件/抽屉（2026-10-10）——
+    cup: { mesh: cup, home: CUP_HOME }, // 杯子引用：携带态由 main.js rAF 同步到手骨；home=归位点
+    cupHitTest(p, threshold = 0.12) {
+      const dist = p.distanceTo(cupCenter);
+      return { ok: true, dist: +dist.toFixed(3), hit: dist <= threshold, center: [+cupCenter.x.toFixed(3), +cupCenter.y.toFixed(3), +cupCenter.z.toFixed(3)] };
+    },
+    toggleDrawer() { drawerOpen = !drawerOpen; return drawerOpen; },
+    drawerHitTest(p, threshold = 0.15, useHome = false) {
+      // useHome=true=对关合位面板中心判定（开关抽屉编排恒用——开着的抽屉腔会被手伸入，
+      //   对「当前中心」判定会错位 0.19m，2026-10-10 实测踩坑）
+      const c = new THREE.Vector3(DRAWER_HOME_X, drawer.position.y, drawer.position.z);
+      if (!useHome) dPanel.getWorldPosition(c);
+      const dist = p.distanceTo(c);
+      return { ok: true, dist: +dist.toFixed(3), hit: dist <= threshold, center: [+c.x.toFixed(3), +c.y.toFixed(3), +c.z.toFixed(3)] };
     },
     // L1 场景状态快照（感官架构设计 §三；预算 ≤200 token 的浓缩 JSON）——前端侧只读适配器。
     // 跨进程形态（大脑在后端）由 main.js 经 WebSocket 上报身体态后端拼装，本函数只管前端权威的一半：
