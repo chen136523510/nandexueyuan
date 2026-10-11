@@ -1,6 +1,6 @@
 # AI 交接单
 
-> 最后更新：2026-10-11 20:1x（黑机·nono Unity 立项窗口——**U0 启动，nono 独立仓初始化完成**。拉取白机 10-10 全天产出并分析；院长拍板①Unity 版本=2022.3 LTS 定版②远程仓名=nono；Unity 工程 `G:\nono\nono`（Universal 3D+URP 14）git+LFS+目录骨架+文档体系+U0 需求立案全部就绪，待院长网页建仓后推送。**nono 仓详细状态见其自带交接单 `G:\nono\nono\.ai\handoff.md`**）
+> 最后更新：2026-10-11 20:3x（黑机·nono Unity 立项窗口——**U0 启动+sync-docs 四文档同步完成**。拉取白机 10-10 全天产出并分析；院长拍板①Unity 版本=2022.3 LTS 定版②远程仓名=nono；Unity 工程 `G:\nono\nono`（Universal 3D+URP 14）git+LFS+目录骨架+文档体系+U0 需求立案全部就绪，**远程仓已建已推送**（github.com/chen136523510/nono）。**⚠️ 院长接下来直接在 G:\nono\nono 启动 ZCode 协作——主仓窗口后续进来的 AI 注意：R-058 Unity 线活跃工作区在 nono 仓，上下文入口=nono 仓自带 AGENTS.md+.ai/handoff.md，勿用本仓文档管理 nono 线**）
 > 所在设备：黑机（RTX 4070 主力机；2026-10-11 周六晚=黑机窗口）
 > 稳定版本：**v4.1.1 线上**（commit `2f066a1`；自习室入口下线——诺诺转 Unity 单机开发，文字版灰度先撤，代码保留可恢复）。本地最新=步态 clip v1（R-058 线；nono-poc 属本地 PoC 不涉主站部署）
 > 数据规模：prod.db —— message_chunks 5,372 块 / group_messages 538,915 条 / users 21（1 super_admin + 1 admin + 19 member）+ nono 两表 + feedbacks 表（BUG-080 补建）

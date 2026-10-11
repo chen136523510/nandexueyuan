@@ -99,6 +99,7 @@
 | 眼睛精细化（Krita 实战：虹膜 round2 + 泪痣 C + 开心放松对调） | ✅ done（2026-10-08，院长"告一段落"） | `?v=14`；BUG-099 |
 | **Blender 步态 clip v1（自研授权 → .vrma 替换配方步态）** | ✅ done（2026-10-08），**待院长复验观感** | `walk_loop.vrma`；BUG-100~102；`blender_walk_gait.py` |
 | 手部资产精细化（往返基线 ✅ → 几何 ✅ → 指甲三轮 ✅ → **表面细节/法线平滑(BUG-111)**） | ⛰️ downhill（2026-10-09：基线全绿 + 候选 v11） | `blender_roundtrip_probe.py`/`blender_hand_probe.py`/`blender_hand_refine.py`/`poc_hand_orient_check.js`；**待解决 BUG-111**（加密后观感粗糙→平滑法线或 Catmull-Clark） |
+| **Unity 迁移 U0 原型（nono 独立仓：加载 v7 VRM/播 .vrma/接大脑说一句话）** | ⛰️ downhill（2026-10-11 启动：工程+git/LFS+文档体系就绪，UniVRM 待装） | `G:\nono\nono`（2022.3 LTS 定版+URP 14）；github.com/chen136523510/nono；U0 立案=nono 仓 `docs/01-需求/U0-原型验证.md` |
 | Phase B：配方库扩充 + 动捕→配方编译器 v1 + 穿模体检脚本 | ⛰️ uphill（下一站） | - |
 | 直播间集成（接 nonoAgent 大脑，语义层调用配方） | ⛰️ uphill（后置） | - |
 

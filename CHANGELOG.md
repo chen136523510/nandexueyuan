@@ -5,6 +5,27 @@
 ---
 ---
 
+## 2026-10-11 项目结构新增独立 Unity 仓 nono（U0 原型启动，引擎版本定版）
+
+### 概要
+
+承接 10-10 迁移决策，**诺诺 Unity 线以独立仓库形式立项**：`G:\nono\nono`（Unity 2022.3.62f3c1 LTS + URP 14，Universal 3D 模板）+ 远程私有仓 github.com/chen136523510/nono（Git LFS 管模型/贴图/音视频），与 nande 主仓（大脑服务/需求池/调研文档）双仓协作、协议契约化。院长双拍板：①引擎版本=**2022.3 LTS 定版**（稳定+开源生态；迁移纪要所写「Unity 6」按实际修正，官方 Claude Code MCP（Unity 6+ 独占）改社区 unity-mcp 替代）②仓名=nono。
+
+### 代码变更
+
+| 文件/位置 | 变更 |
+|------|------|
+| `G:\nono\nono`（独立仓，非本仓路径） | git(master)+Unity .gitignore+LFS 追踪+`Assets/_Project` 九目录骨架+AGENTS.md+交接单+docs 五分区+U0 需求立案，3 提交已推送 |
+| 本仓 `pm/需求池.md`/`pm/ROADMAP.md`/自习室 changelog/handoff | R-058 迁移注记更新为「U0 已启动」+ROADMAP 增 U0 里程碑行+立项窗口流水 |
+
+### 决策依据与影响评估
+
+- 独立仓而非内嵌：Unity Library 缓存数 GB 会拖垮本仓 vite watcher 与体积治理成果（迁移纪要 §三）。
+- 2022.3 LTS 对 U0 三关（加载 v7 VRM/播 walk_loop.vrma/接大脑说一句话）零阻塞；UniVRM 支持该版本；唯一代价=官方 MCP 不可用，社区 unity-mcp 替代，升级窗口保留（项目越小迁移成本越低）。
+- 主仓职责不变：大脑服务/配方源/需求裁决权威仍在 nande；nono 仓自建 AGENTS/handoff/docs 体系，主仓文档不复制过去。
+
+---
+
 ## 2026-10-10 自习室入口下线（诺诺转 Unity 单机开发，文字版灰度先撤）
 
 ### 概要

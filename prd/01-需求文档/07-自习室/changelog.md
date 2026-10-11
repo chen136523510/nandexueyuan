@@ -5,6 +5,18 @@
 
 ---
 
+## 2026-10-11（黑机·立项窗口：U0 启动——nono Unity 独立仓初始化，院长双拍板）
+
+> 承接白机 10-10 Unity 迁移讨论纪要 §五。院长指令：建 Unity 工程+独立仓，U0 原型开工。
+
+- **院长双拍板**：①Unity 版本=**2022.3.62f3c1 LTS 定版**（稳定+开源生态考量；纪要「Unity 6」论据按实际修正——代价=官方 Claude Code MCP（Unity 6+ 独占）不可用，改社区 unity-mcp 替代）②远程仓名=**nono**（私有仓+LFS）
+- **Unity 工程就绪**：`G:\nono\nono`（Universal 3D 模板+URP 14，院长创建；Hub 自动双层路径，项目根=内层）——git(master)+Unity 官方 .gitignore+LFS 追踪（vrm/vrma/fbx/贴图/音视频）+`Assets/_Project` 九目录骨架（Scenes 黑机单人管/Scripts 三模块 Core·Brain·Acting/Art 三类/Recipes/Prefabs）
+- **文档体系立项**（院长"目录/文档管理先行，防屎山+上下文经济"）：nono 仓自带 AGENTS.md（工作区指令≤120 行）+ .ai/handoff.md（交接单）+ docs 五分区（01-需求/02-决策 ADR/03-bug 号池 BUG-U001 起与主仓隔离/04-技术笔记/05-纪要）+ CHANGELOG
+- **U0 原型立案**（nono 仓 `docs/01-需求/U0-原型验证.md`）：验收三关=加载 v7 VRM/播 walk_loop.vrma/接大脑说一句话；明确界外清单（场景资产化/动作打磨/打包分发等全部后置）
+- **远程推送**：github.com/chen136523510/nono master 首版（3 提交）；踩坑=LFS locksverify API 超时挡推送→关闭锁验证（个人仓无需）已入册
+- **资产源登记**（nono 交接单 §四）：v7 定版=诺诺/模型/nonono_v7_vroid_eye.vrm（15MB）；步态=anims/walk_loop.vrma（55KB）；配方 JSON×12=recipes/；v11 候选**未定版不入 nono 仓**
+- **下一步**：装 UniVRM（版本先查官方 release 兼容 2022.3 再向院长确认）→导资产→三关验证；白机协作注记=只碰 .cs/.json/.md+配置 git lfs skip-smudge
+
 ## 2026-10-10（白机·调休补班·第四轮：F5 桌面物件/抽屉落地——拿放携带态 + 坐姿开抽屉；院长三裁决落档）
 
 > 院长指令：①F2/F3 观感问题后续靠复杂全身动作修复（已落档）②问 F5 具体是什么 ③世界模型调研（已落 `00-调研/01-技术/世界模型技术版图与诺诺参考价值调研.md`）。本轮开发 F5。
