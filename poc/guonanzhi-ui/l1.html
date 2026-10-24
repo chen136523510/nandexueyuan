@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国男志 · L1 战略大地图（手绘风雏形）</title>
+<link rel="stylesheet" href="css/l1.css">
+</head>
+<body>
+  <canvas id="l1canvas"></canvas>
+
+  <!-- 加载序幕 -->
+  <div id="veil">
+    <div class="veil-inner">
+      <div class="veil-title">国 男 志</div>
+      <div class="veil-sub">东亚 · 群雄逐鹿十三城</div>
+      <div class="veil-barbox"><div id="veil-bar"></div></div>
+      <div id="veil-text">铺陈沧海…</div>
+    </div>
+  </div>
+
+  <!-- 顶部题匾 -->
+  <header id="topbar">
+    <div class="tb-plaque">
+      <span class="tb-seal">國男志</span>
+      <span class="tb-divider"></span>
+      <span class="tb-title">战略大地图 · L1</span>
+    </div>
+    <div class="tb-factions">
+      <span class="fac" style="--fc:#d8564e">中国 6城</span>
+      <span class="fac" style="--fc:#e0913c">日本 3城</span>
+      <span class="fac" style="--fc:#4f9fd8">韩国 2城</span>
+      <span class="fac" style="--fc:#5fbf7f">澳洲 2城</span>
+    </div>
+  </header>
+
+  <!-- 右下控件 -->
+  <div id="ctrl">
+    <button id="btn-zin" title="放大">＋</button>
+    <button id="btn-zout" title="缩小">－</button>
+    <button id="btn-fit" title="全景">全景</button>
+  </div>
+
+  <!-- 左下图例 -->
+  <div id="legend">
+    <div class="lg-title">由外及里 · 点击城市进入</div>
+    <div class="lg-row"><i class="ls land"></i>内陆邻接</div>
+    <div class="lg-row"><i class="ls sea"></i>跨海登陆</div>
+    <div class="lg-row"><i class="ls fake"></i>架空直连</div>
+    <div class="lg-row"><i class="ls ocean"></i>远洋航线</div>
+  </div>
+
+  <!-- 城市面板 -->
+  <aside id="city-panel"></aside>
+
+  <!-- 悬浮提示 -->
+  <div id="tooltip"></div>
+
+  <script type="module" src="js/l1/main.js"></script>
+</body>
+</html>
