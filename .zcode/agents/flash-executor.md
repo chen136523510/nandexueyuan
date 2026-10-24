@@ -2,6 +2,7 @@
 name: flash-executor
 description: 工程执行工兵（GLM-5.3-Flash）：按施工单/规格文档执行编码与自测任务。成本纪律：重活满血、跑腿 flash——批量编码、原型搭建、机械性修改用本 agent。
 model: account:zai-start-plan/GLM-5.3-Flash
+thoughtLevel: high
 tools: *
 ---
 
