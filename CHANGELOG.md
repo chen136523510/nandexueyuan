@@ -5,16 +5,18 @@
 ---
 ---
 
-## 2026-10-24 国男志（R-059）引擎转向 Unity，独立仓立项待建（ADR-009）
+## 2026-10-24 国男志（R-059）引擎转向 Unity，独立仓 A Gentleman's War 已建（ADR-009，R18~R19）
 
 ### 概要
 
 院长验收 Web 版 L1 大地图雏形（R16~R17：Canvas 手绘引擎 + 13 城 ComfyUI 贴图，性能画风均达标）后拍板：**国男志运行时从 Web 转向 Unity**——核心诉求=**打包单机可执行文件发给朋友直接玩**。版本对齐 nono 先例 **2022.3.62f3c1 LTS**（本机已装，`F:\Unity\unityEditor1.0`，VS2022 构建链齐备），渲染走 Unity 2D（URP）。Web 侧结论保留存档：画风与性能 Web 可达，转 Unity 是分发形态决策而非技术失败。详见 [ADR-009](prd/01-需求文档/00-调研/decisions/ADR-009-国男志引擎选型Web转Unity.md)。
 
+**R19（同日）建仓完成**：英文名院长定案 **A Gentleman's War**；独立仓 `G:\A Gentleman's War`（git+LFS+AGENTS+docs 七分区，对齐 nono 先例），设计文档 8 模块/游戏数据 JSON/13 城贴图/L1 底图烘焙 PNG（3760×3440）/ZCode 工程化资产（5 技能+flash-executor）全数迁入，首版 commit `4293583`。**主仓国男志模块冻结**：/guonanzhi 路由下线（代码归档）、08-国男志转只读历史档案、设计权威迁新仓 docs/06-设计。GitHub 远程仓 `a-gentlemans-war` 待建（gh CLI 未装，院长网页自建或后续装 gh）。
+
 ### 决策依据与影响评估
 
-- 独立仓承载（对齐 nono 先例）：Unity Library 缓存数 GB 不进主仓；仓名与国男志英文名（院长 2026-10-24 提案需求：R18 三案待拍板，主推 Romance of the Four Kingdoms）确认后建仓。
-- 主仓保留设计文档权威（00~07 模块文档全部继续有效）+ Web 验证资产归档（src/guonanzhi、poc/guonanzhi-ui、public/guonanzhi 不再迭代）；数据资产（烘焙海岸线/13 城数据/城贴图 PNG）全部可移植 Unity。
+- 独立仓承载（对齐 nono 先例）：Unity Library 缓存数 GB 不进主仓；英文名 **A Gentleman's War** 院长 2026-10-24 定案（R18 提案三案中选 A 案，文件夹同名），仓根即工程根（已拍平 Hub 默认「My project」嵌套）。
+- 主仓保留设计文档历史归档（只读）+ Web 验证资产归档（src/guonanzhi、poc/guonanzhi-ui、public/guonanzhi 不再迭代）；数据资产（烘焙海岸线/13 城数据/城贴图 PNG）已全部迁入新仓。
 - 需求池 R-059 技术栈注记更新；R1"Web 单机浏览器权威"定案被本决策取代。
 
 ---

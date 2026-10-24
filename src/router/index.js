@@ -62,11 +62,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    // 国男志 R-059 · L1 战略大地图（R16 手绘雏形）。
-    // TODO(L2 接入时): 挂 requiresAuth——雏形阶段不挂，便于本地走查
-    path: '/guonanzhi',
-    name: 'guonanzhi',
-    component: () => import('../views/GuonanzhiView.vue'),
+    // 🔒 R19 冻结（2026-10-24）：国男志转独立 Unity 仓 G:\A Gentleman's War（AGENTS.md 红线3：单机无部署线）。
+    // 入口下线、代码归档保留；恢复=取消注释（组件与引擎 src/guonanzhi/ 仍可用作参考实现）。
+    // path: '/guonanzhi',
+    // name: 'guonanzhi',
+    // component: () => import('../views/GuonanzhiView.vue'),
   },
   {
     path: '/about',

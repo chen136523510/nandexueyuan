@@ -1,7 +1,7 @@
 # AI 交接单
 
-> 最后更新：2026-10-24 17:05（黑机·国男志 R18——**院长拍板转 Unity（ADR-009 已接受，2022.3.62f3c1 本机 F:\Unity 就绪，独立仓待建）**/三服务补齐（:3000+:2567 此前未启致「网络连接失败」）/国男志英文名三案待拍板（主推 Romance of the Four Kingdoms）/R17 的 L1 主站版+13 城贴图已交付。⭐下一窗口第一动作=院长拍板英文名+仓名→建 guonanzhi 独立 Unity 仓）
-> 所在设备：黑机（周六 15:10 R16 L1 雏形 / 15:55~16:40 R17 八点反馈+主站接入 / 16:45~17:05 R18 Unity 转向落档）
+> 最后更新：2026-10-24 21:45（黑机·国男志 R19——**模块冻结迁出完成：独立 Unity 仓 `G:\A Gentleman's War` 已建**（英文名院长定案；git+LFS+AGENTS+docs 全迁+数据/贴图/底图就位，首版 commit 4293583；GitHub 远程待建）/主仓 /guonanzhi 下线+08 目录转只读档案/My project 嵌套已拍平（Hub 默认工程名所致，重开请 Add→选仓根）。⭐下一窗口：国男志工作全在新仓（入口=新仓 AGENTS.md+handoff）；主仓下一动作=院长挑（L2 早已无关国男志，回到男德通/德塔/门户线））
+> 所在设备：黑机（周六 15:10 R16 / 15:55~16:40 R17 / 16:45~17:05 R18 / 20:30~21:45 R19 建仓迁移+冻结）
 > 稳定版本：**v4.1.1 线上**（commit `2f066a1`；自习室入口下线——诺诺转 Unity 单机开发，文字版灰度先撤，代码保留可恢复）。本地最新=步态 clip v1（R-058 线；nono-poc 属本地 PoC 不涉主站部署）
 > 数据规模：prod.db —— message_chunks 5,372 块 / group_messages 538,915 条 / users 21（1 super_admin + 1 admin + 19 member）+ nono 两表 + feedbacks 表（BUG-080 补建）
 
@@ -111,7 +111,15 @@
 
 ---
 
-## 本窗口产出摘要（黑机 2026-10-24 16:45 ~ 17:05·国男志 R18 转 Unity 决策落档+服务修复+英文名提案）
+## 本窗口产出摘要（黑机 2026-10-24 20:30 ~ 21:45·国男志 R19 建仓迁移+模块冻结）
+
+- **独立 Unity 仓 `G:\A Gentleman's War` 建成**（对齐 nono 先例）：git master + Unity .gitignore + LFS（png/音频/模型）+ Assets/_Project 八目录 + docs 七分区 + AGENTS.md（≤120 行）+ .ai/handoff + .zcode（5 技能+flash-executor）；首版 commit 4293583
+- **迁移完成**（清单=新仓 docs/04-技术笔记）：设计文档 8 模块整树 / ADR-009 / 数据 JSON（cities/links/geo）/ 13 城贴图 / **L1 底图离线烘焙 PNG（3760×3440 19.8MB，Web 引擎 buildBase(2) 经浏览器导出）** / 美术纪律+资产登记
+- **My project 嵌套已拍平**（成因=Hub 新建时 Location 填父目录+工程名留默认；已温和关闭编辑器再上提；**院长重开工程：Hub Add → 选 `G:\A Gentleman's War`**，旧条目失效）
+- **主仓冻结**：/guonanzhi 路由注释下线（代码保留）、08-国男志转只读档案、需求池/根 CHANGELOG/07 changelog 同步；坑×2 入新仓 CHANGELOG（Hub 默认名嵌套 / Vite watcher EBUSY——大文件别落被 watch 目录）
+- **待办**：GitHub 私有仓 `a-gentlemans-war` 待院长网页自建（gh 未装）→ 新仓 remote+push；国男志 M1（L1 复刻）在新仓开单
+
+## 上一窗口产出摘要（黑机 2026-10-24 16:45 ~ 17:05·国男志 R18 转 Unity 决策落档+服务修复+英文名提案）
 
 - **院长三点反馈落地**：①「网络连接失败」根因=:3000/:2567 后端未启动（axios 拦截器报错）——两后端已起，netstat 实证监听，四服务全绿（4396/3000/2567/8188-ComfyUI）②**转 Unity 决策落 ADR-009**：2022.3.62f3c1 本机就绪（F:\Unity\unityEditor1.0，batchmode 实证）、Unity 2D URP、独立仓待建（对齐 nono 先例）、Web 资产转归档、迁移清单五项；根 CHANGELOG 已记架构级 ③**英文名三案提案**：Romance of the Four Kingdoms（主推）/ A Gentleman's War / Total Men: Modern Kingdoms
 - 文档：ADR-009 新档 / 根 CHANGELOG 架构级 / 需求池 R-059 技术栈注记 / 08-国男志 README+07 changelog R18 / 本文件

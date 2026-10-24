@@ -4,6 +4,7 @@
 
 | 日期 | 轮次 | 类型 | 一句话 |
 |---|---|---|---|
+| 2026-10-24 | R19 | 拆分 | **模块冻结迁出：独立 Unity 仓 `G:\A Gentleman's War` 已建**——英文名院长定案（文件夹同名）；设计文档 8 模块+数据 JSON+13 城贴图+L1 底图烘焙 PNG+ZCode 工程化资产全迁新仓（清单见新仓 docs/04-技术笔记）；本目录转只读档案，/guonanzhi 入口下线 |
 | 2026-10-24 | R18 | 决策 | **引擎转向 Unity（ADR-009，取代 R1"Web 浏览器权威"）**——诉求=打包 exe 发朋友；2022.3.62f3c1 本机就绪（F:\Unity），独立仓待建（对齐 nono 先例）；Web 版转归档，数据资产全部可移植 |
 | 2026-10-24 | R18 | 交付 | 本地服务补齐：:3000 API + :2567 game-server 已起（此前 axios 拦截器报「网络连接失败」根因=后端未启）；:4396 正常 |
 | 2026-10-24 | R18 | 提案 | **国男志英文名三案待院长拍板**：主推 Romance of the Four Kingdoms（戏仿三国志英译，四=四阵营）/ A Gentleman's War（反差幽默）/ Total Men: Modern Kingdoms（全面战争梗） |
@@ -24,6 +25,13 @@
 | 2026-10-22 | R9 | 拆分 | 从前期纪要提炼至本模块 |
 
 ---
+
+## 2026-10-24 R19 · 模块冻结迁出（独立 Unity 仓 A Gentleman's War 已建）
+
+- 类型：拆分/决策
+- 依据：院长三点指令——①解释并修正 `G:\A Gentleman's War\My project` 嵌套（Unity Hub 默认工程名所致：Location 填父目录、名字留默认；已关编辑器拍平到仓根）②「开始迁移项目内容以及项目工程经验（zcode 技能、agent 协作、文件管理）」③「男德学院内的国男志模块冻结」
+- 变更：①新仓 `G:\A Gentleman's War`（git master + Unity .gitignore + LFS png/音频/模型 + Assets/_Project 八目录 + docs 七分区 + AGENTS ≤120 行 + .ai/handoff + .zcode 5 技能/flash-executor agent）；②迁移：设计文档 8 模块整树、ADR-009、游戏数据 JSON（cities/links/geo 87KB）、13 城贴图、**L1 底图离线烘焙 PNG（3760×3440，Web 引擎 buildBase(2) 经浏览器下载导出，19.8MB）**、美术纪律+资产登记；首版 commit `4293583`；③本仓冻结：/guonanzhi 路由注释下线（代码保留可恢复）、本目录转只读档案、需求池注记更新；④迁移坑两条入新仓 CHANGELOG：Hub 默认工程名嵌套 / Vite watcher EBUSY（烘焙大文件勿落被 watch 目录）
+- 影响：主仓 router、需求池 R-059、08-国男志 README（冻结声明）、根 CHANGELOG、handoff；**后续国男志一切工作在新仓**（入口=新仓 AGENTS.md）
 
 ## 2026-10-24 R18 · 引擎转向 Unity（ADR-009）+ 本地服务补齐 + 英文名提案
 
