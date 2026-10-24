@@ -19,7 +19,7 @@ export const CITIES = [
   { id: "shanghai", name: "上海", faction: "CN", lon: 121.5, lat: 31.2, dx: 0, dy: 0, lp: "r", capital: false,
     note: "商业都市 · 沿海", generals: ["魏嘉豪"], init: "3 件+市政府" },
   { id: "shenzhen", name: "深圳", faction: "CN", lon: 114.1, lat: 22.5, dx: -26, dy: -20, lp: "tl", capital: false,
-    note: "中央军团 · 远洋起点", generals: ["陈梓键(院长)", "饶志锐", "袁崇轩", "朱宇涵"], init: "3 件+市政府" },
+    note: "中央军团 · 远洋起点", generals: ["陈梓键", "饶志锐", "袁崇轩", "朱宇涵"], init: "3 件+市政府" },
   { id: "xian", name: "西安", faction: "CN", lon: 108.9, lat: 34.3, dx: 0, dy: 0, lp: "l", capital: false,
     note: "内陆边城 · 异族方向(二期)", generals: ["陈俊杰"], init: "3 件+市政府" },
   { id: "hongkong", name: "香港", faction: "CN", lon: 114.2, lat: 22.3, dx: 26, dy: -2, lp: "br", capital: false,
@@ -36,9 +36,9 @@ export const CITIES = [
     note: "首都 · 直连北京/东京", generals: ["徐浩森", "陈楠"], init: "3 件+市政府" },
   { id: "incheon", name: "仁川", faction: "KR", lon: 126.6, lat: 37.5, dx: 24, dy: 30, lp: "bl", capital: false,
     note: "登陆战代言城", generals: ["黄学远"], init: "3 件+市政府" },
-  { id: "sydney", name: "悉尼", faction: "AU", lon: 151.2, lat: -33.9, dx: 0, dy: 0, lp: "r", capital: false,
+  { id: "sydney", name: "悉尼", faction: "AU", lon: 151.2, lat: -33.9, dx: 0, dy: 0, lp: "r", capital: false, oc: true,
     note: "沿海 · 远洋终点", generals: ["马逸杰"], init: "3 件+市政府" },
-  { id: "melbourne", name: "墨尔本", faction: "AU", lon: 144.96, lat: -37.8, dx: 0, dy: 0, lp: "r", capital: false,
+  { id: "melbourne", name: "墨尔本", faction: "AU", lon: 144.96, lat: -37.8, dx: 0, dy: 0, lp: "r", capital: false, oc: true,
     note: "沿海", generals: ["邹志华", "庞楷垒"], init: "3 件+市政府" },
 ];
 

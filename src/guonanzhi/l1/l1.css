@@ -1,0 +1,96 @@
+/* 国男志 L1 大地图 · HUD（墨漆描金 × 楷体）——全部收在 .gnz-l1 作用域内，避免污染主站样式 */
+.gnz-l1 {
+  --g-gold: #d9b45c;
+  --g-gold-dim: #9a7c3e;
+  --g-lacquer: rgba(28, 22, 15, 0.88);
+  --g-lacquer-line: rgba(217, 180, 92, 0.55);
+  --g-ink: #f0e6c8;
+  position: fixed; inset: 0; background: #10151b;
+  font-family: "KaiTi", "STKaiti", "BiauKai", "DFKai-SB", serif;
+  color: var(--g-ink);
+}
+.gnz-l1 canvas.g-map { position: absolute; inset: 0; cursor: grab; }
+.gnz-l1 canvas.g-map:active { cursor: grabbing; }
+
+/* 加载序幕 */
+.gnz-l1 .g-veil {
+  position: absolute; inset: 0; z-index: 60;
+  background: radial-gradient(ellipse at 50% 42%, #2a241a 0%, #17120c 62%, #0d0a06 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.gnz-l1 .g-veil-inner { text-align: center; }
+.gnz-l1 .g-veil-title { font-size: 54px; letter-spacing: 0.55em; text-indent: 0.55em; text-shadow: 0 0 24px rgba(217, 180, 92, 0.35); }
+.gnz-l1 .g-veil-sub { margin-top: 10px; font-size: 16px; letter-spacing: 0.3em; color: #a89870; }
+.gnz-l1 .g-veil-barbox { width: 300px; height: 5px; margin: 26px auto 10px; background: rgba(255,255,255,0.09); border: 1px solid rgba(217,180,92,0.35); }
+.gnz-l1 .g-veil-bar { height: 100%; width: 0; background: linear-gradient(90deg, #8a6a2f, var(--g-gold)); transition: width 0.25s; }
+.gnz-l1 .g-veil-text { font-size: 13px; color: #8f815f; letter-spacing: 0.2em; }
+
+/* 顶部题匾 */
+.gnz-l1 .g-topbar { position: absolute; top: 14px; left: 18px; right: 18px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 20; }
+.gnz-l1 .g-plaque {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--g-lacquer); border: 1px solid var(--g-lacquer-line);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 2.5px rgba(217,180,92,0.18), 0 4px 18px rgba(0,0,0,0.5);
+  padding: 8px 16px;
+}
+.gnz-l1 .g-seal { font-size: 21px; letter-spacing: 0.14em; color: var(--g-gold); border: 1.5px solid var(--g-gold-dim); padding: 2px 7px; text-shadow: 0 0 12px rgba(217,180,92,0.45); }
+.gnz-l1 .g-divider { width: 1px; height: 22px; background: var(--g-lacquer-line); }
+.gnz-l1 .g-title { font-size: 15px; letter-spacing: 0.2em; color: #cfc2a0; }
+.gnz-l1 .g-factions { display: flex; gap: 8px; }
+.gnz-l1 .g-fac { background: var(--g-lacquer); border: 1px solid var(--g-lacquer-line); border-left: 3px solid var(--fc); padding: 5px 12px; font-size: 13px; letter-spacing: 0.12em; color: #e8ddbd; box-shadow: 0 3px 12px rgba(0,0,0,0.45); }
+
+/* 右下控件 */
+.gnz-l1 .g-ctrl { position: absolute; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
+.gnz-l1 .g-ctrl button {
+  width: 44px; height: 40px; background: var(--g-lacquer); color: var(--g-gold);
+  border: 1px solid var(--g-lacquer-line); font-size: 19px; font-family: inherit;
+  cursor: pointer; letter-spacing: 0.05em; box-shadow: 0 3px 12px rgba(0,0,0,0.45); transition: all 0.15s;
+}
+.gnz-l1 .g-ctrl button.g-fit { font-size: 13px; }
+.gnz-l1 .g-ctrl button:hover { background: rgba(58,46,28,0.95); border-color: var(--g-gold); }
+
+/* 左下图例 */
+.gnz-l1 .g-legend { position: absolute; left: 18px; bottom: 18px; background: var(--g-lacquer); border: 1px solid var(--g-lacquer-line); padding: 10px 14px 12px; min-width: 168px; box-shadow: 0 4px 16px rgba(0,0,0,0.5); z-index: 20; }
+.gnz-l1 .g-lg-title { font-size: 13.5px; color: var(--g-gold); letter-spacing: 0.14em; margin-bottom: 8px; }
+.gnz-l1 .g-lg-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #cfc4a6; margin-top: 5px; letter-spacing: 0.08em; }
+.gnz-l1 .g-ls { display: inline-block; width: 26px; }
+.gnz-l1 .g-ls.land { border-top: 3px solid #d9c9a2; }
+.gnz-l1 .g-ls.sea { border-top: 3px dashed #7fc0e4; }
+.gnz-l1 .g-ls.fake { border-top: 2.5px dashed #d86458; }
+.gnz-l1 .g-ls.ocean { border-top: 3px dotted #e9c56e; }
+
+/* 城市面板 */
+.gnz-l1 .g-panel {
+  position: absolute; top: 76px; right: 18px; width: 264px;
+  background: var(--g-lacquer); border: 1px solid var(--g-lacquer-line);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6); padding: 0 0 14px;
+  opacity: 0; transform: translateX(16px); pointer-events: none; transition: all 0.22s ease; z-index: 25;
+}
+.gnz-l1 .g-panel.open { opacity: 1; transform: none; pointer-events: auto; }
+.gnz-l1 .cp-head { padding: 12px 14px 10px; border-bottom: 1px solid rgba(217,180,92,0.25); border-left: 3px solid var(--fc); position: relative; }
+.gnz-l1 .cp-head h2 { font-size: 24px; letter-spacing: 0.18em; margin-top: 2px; }
+.gnz-l1 .cp-faction { font-size: 12.5px; color: var(--fc); letter-spacing: 0.15em; }
+.gnz-l1 .cp-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #9a8c68; font-size: 20px; cursor: pointer; }
+.gnz-l1 .cp-close:hover { color: var(--g-gold); }
+.gnz-l1 .cp-sec { padding: 10px 14px 0; }
+.gnz-l1 .cp-sec label { display: block; font-size: 12px; color: #8f815f; letter-spacing: 0.18em; margin-bottom: 6px; }
+.gnz-l1 .cp-gens { display: flex; flex-wrap: wrap; gap: 6px; }
+.gnz-l1 .gen { font-size: 12.5px; padding: 3px 9px; color: #e8ddbd; background: rgba(255,255,255,0.05); border: 1px solid rgba(217,180,92,0.3); }
+.gnz-l1 .cp-enter {
+  display: block; margin: 14px 14px 0; width: calc(100% - 28px);
+  padding: 9px 0; font-family: inherit; font-size: 14.5px; letter-spacing: 0.14em;
+  color: #1c150c; background: linear-gradient(180deg, #e8c87e, #c89c4a);
+  border: 1px solid #8a6a2f; cursor: pointer; transition: filter 0.15s;
+}
+.gnz-l1 .cp-enter:hover { filter: brightness(1.08); }
+.gnz-l1 .cp-hint { margin: 9px 14px 0; font-size: 11.5px; color: #7d7154; letter-spacing: 0.1em; text-align: center; }
+
+/* 悬浮提示 */
+.gnz-l1 .g-tooltip {
+  position: absolute; z-index: 40; max-width: 240px;
+  background: rgba(24,19,12,0.94); border: 1px solid var(--g-lacquer-line);
+  padding: 9px 12px; font-size: 12.5px; line-height: 1.65;
+  pointer-events: none; opacity: 0; transition: opacity 0.12s;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5); letter-spacing: 0.04em;
+}
+.gnz-l1 .g-tooltip b { font-size: 14px; }

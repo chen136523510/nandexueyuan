@@ -62,6 +62,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    // 国男志 R-059 · L1 战略大地图（R16 手绘雏形）。
+    // TODO(L2 接入时): 挂 requiresAuth——雏形阶段不挂，便于本地走查
+    path: '/guonanzhi',
+    name: 'guonanzhi',
+    component: () => import('../views/GuonanzhiView.vue'),
+  },
+  {
     path: '/about',
     name: 'about',
     component: () => import('../views/AboutView.vue'),

@@ -1,0 +1,258 @@
+// 国男志 L1 大地图 · 引擎入口（Vue 挂载版）
+// mountL1(els) → { dispose }；els = { canvas, tooltip, panel, onProgress, onReady }
+// UI 原则（院长 R16 定）：游戏不是 PPT——信息用形式表达（旗色/星徽/图标/画面），不堆文本介绍。
+import { buildBase, WORLD, cityAnchor, linkCurve, loadCityImages } from "./paint-map.js";
+import { CITIES, LINKS, FACTIONS } from "./map-data.js";
+import { mulberry32 } from "./noise.js";
+
+export function mountL1(els) {
+  const canvas = els.canvas;
+  const ctx = canvas.getContext("2d");
+  const tooltip = els.tooltip;
+  const panel = els.panel;
+  const onProgress = els.onProgress || (() => {});
+  const onReady = els.onReady || (() => {});
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let vw = 0, vh = 0;
+  const cam = { x: 0, y: 0, scale: 1 };
+  let base = null;
+  let hoverCity = null, selectedCity = null;
+  let hoverLink = -1;
+  let rafId = 0, disposed = false, t0 = performance.now();
+  const loadStart = performance.now();
+
+  // ---------- 相机 ----------
+  function resize() {
+    vw = window.innerWidth; vh = window.innerHeight;
+    canvas.width = vw * dpr; canvas.height = vh * dpr;
+    canvas.style.width = vw + "px"; canvas.style.height = vh + "px";
+    clampCam(); render();
+  }
+  function fitAll() {
+    const s = Math.min(vw / WORLD.w, vh / WORLD.h) * 0.96;
+    cam.scale = s;
+    cam.x = (vw - WORLD.w * s) / 2;
+    cam.y = (vh - WORLD.h * s) / 2;
+  }
+  function minScale() { return Math.min(vw / WORLD.w, vh / WORLD.h) * 0.5; }
+  function clampCam() {
+    cam.scale = Math.max(minScale(), Math.min(4.5, cam.scale));
+    // 允许越界 120px 缓冲；图小于视口时仍可小幅拖动
+    const R = (dim, view) => Math.abs(dim * cam.scale - view) / 2 + 120;
+    cam.x = Math.max(vw - WORLD.w * cam.scale - R(WORLD.w, vw), Math.min(R(WORLD.w, vw), cam.x));
+    cam.y = Math.max(vh - WORLD.h * cam.scale - R(WORLD.h, vh), Math.min(R(WORLD.h, vh), cam.y));
+  }
+  const toWorld = (sx, sy) => [(sx - cam.x) / cam.scale, (sy - cam.y) / cam.scale];
+
+  function onWheel(e) {
+    e.preventDefault();
+    const [wx, wy] = toWorld(e.offsetX, e.offsetY);
+    const k = Math.exp(-e.deltaY * 0.0014);
+    cam.scale = Math.max(minScale(), Math.min(4.5, cam.scale * k));
+    cam.x = e.offsetX - wx * cam.scale;
+    cam.y = e.offsetY - wy * cam.scale;
+    clampCam(); render();
+  }
+  let dragging = false, dragMoved = 0, last = null;
+  function onDown(e) {
+    dragging = true; dragMoved = 0; last = [e.clientX, e.clientY];
+    canvas.setPointerCapture(e.pointerId);
+  }
+  function onMove(e) {
+    if (dragging) {
+      dragMoved += Math.abs(e.clientX - last[0]) + Math.abs(e.clientY - last[1]);
+      cam.x += e.clientX - last[0]; cam.y += e.clientY - last[1];
+      last = [e.clientX, e.clientY];
+      clampCam(); render();
+    } else {
+      updateHover(e.offsetX, e.offsetY);
+    }
+  }
+  function onUp(e) {
+    dragging = false;
+    if (dragMoved < 6) handleClick(e.offsetX, e.offsetY);
+  }
+  function onLeave() { if (!dragging) setHover(null); }
+  function onKey(e) {
+    if (e.key === "Escape") { selectedCity = null; renderPanel(); render(); }
+  }
+
+  function cityAt(sx, sy) {
+    const [wx, wy] = toWorld(sx, sy);
+    let best = null, bd = 30;
+    for (const c of CITIES) {
+      const [x, y] = cityAnchor(c);
+      const d = Math.hypot(wx - x, wy - y + 18);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+  function setHover(c) {
+    if (hoverCity === c) return;
+    hoverCity = c;
+    canvas.style.cursor = c ? "pointer" : "grab";
+    if (!c) { tooltip.style.opacity = 0; } else {
+      const f = FACTIONS[c.faction];
+      tooltip.innerHTML = `<b style="color:${f.color}">${c.name}</b> · ${f.name}${c.capital ? " · <span style='color:#ffd76a'>首都</span>" : ""}<br><span style="color:#b8b2a4">驻守 ${c.generals.length} 员</span>`;
+      tooltip.style.opacity = 1;
+    }
+    render();
+  }
+  function updateHover(sx, sy) {
+    const c = cityAt(sx, sy);
+    setHover(c);
+    if (c) {
+      tooltip.style.left = Math.min(sx + 16, vw - 250) + "px";
+      tooltip.style.top = Math.min(sy + 16, vh - 110) + "px";
+    }
+    hoverLink = LINKS.findIndex(l => hoverCity && (l.a === hoverCity.id || l.b === hoverCity.id));
+  }
+  function handleClick(sx, sy) {
+    selectedCity = cityAt(sx, sy) || null;
+    renderPanel(); render();
+  }
+
+  // ---------- 侧栏 ----------
+  function renderPanel() {
+    if (!selectedCity) { panel.classList.remove("open"); return; }
+    const c = selectedCity, f = FACTIONS[c.faction];
+    panel.innerHTML = `
+      <div class="cp-head" style="--fc:${f.color}">
+        <span class="cp-faction">${f.name}${c.capital ? " · 首都" : ""}</span>
+        <h2>${c.name}</h2>
+        <button class="cp-close" title="关闭">×</button>
+      </div>
+      <div class="cp-sec"><label>驻守武将 · ${c.generals.length} 员</label>
+        <div class="cp-gens">${c.generals.map(g => `<span class="gen">${g}</span>`).join("")}</div>
+      </div>
+      <button class="cp-enter">进入城市内景（L2 雏形）→</button>
+      <p class="cp-hint">由外及里：L1 战略 → L2 城内网格 → L3 战斗</p>`;
+    panel.classList.add("open");
+    panel.querySelector(".cp-close").onclick = () => { selectedCity = null; renderPanel(); render(); };
+    panel.querySelector(".cp-enter").onclick = () => { location.href = "/nde"; }; // TODO: L2 正式页就绪后替换
+  }
+
+  // ---------- 动态层素材 ----------
+  const clouds = [];
+  {
+    const r = mulberry32(99);
+    for (let i = 0; i < 5; i++) clouds.push({ x: r() * WORLD.w, y: r() * WORLD.h, r: 130 + r() * 180, v: 6 + r() * 10 });
+  }
+  let SPARKLES = [];
+
+  // ---------- 渲染循环 ----------
+  function render(now = performance.now()) {
+    if (!base || disposed) return;
+    const t = (now - t0) / 1000;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#10151b";
+    ctx.fillRect(0, 0, vw, vh);
+    ctx.setTransform(dpr * cam.scale, 0, 0, dpr * cam.scale, dpr * cam.x, dpr * cam.y);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(base, 0, 0, WORLD.w, WORLD.h);
+
+    for (const s of SPARKLES) {
+      const a = (Math.sin(t * s.v + s.p) * 0.5 + 0.5) * 0.5;
+      if (a < 0.06) continue;
+      ctx.fillStyle = `rgba(225,245,250,${a})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = "multiply";
+    for (const cl of clouds) {
+      const x = ((cl.x + t * cl.v) % (WORLD.w + 600)) - 300;
+      const g = ctx.createRadialGradient(x, cl.y, 0, x, cl.y, cl.r);
+      g.addColorStop(0, "rgba(58,64,74,0.10)"); g.addColorStop(1, "rgba(58,64,74,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(x, cl.y, cl.r, cl.r * 0.62, 0, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+
+    if (hoverLink >= 0) {
+      const byId = Object.fromEntries(CITIES.map(cc => [cc.id, cc]));
+      const l = LINKS[hoverLink];
+      const { x1, y1, x2, y2, cx, cy } = linkCurve(byId[l.a], byId[l.b]);
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(cx, cy, x2, y2);
+      ctx.strokeStyle = "rgba(255,238,170,0.55)"; ctx.lineWidth = 8; ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const c of CITIES) {
+      if (c !== hoverCity && c !== selectedCity) continue;
+      const [x, y] = cityAnchor(c);
+      const f = FACTIONS[c.faction];
+      const pulse = c === selectedCity ? (Math.sin(t * 3) * 0.5 + 0.5) : 0.75;
+      ctx.save();
+      const g = ctx.createRadialGradient(x, y - 6, 4, x, y - 6, 42);
+      g.addColorStop(0, hexA(f.color, 0.55 * pulse + 0.2)); g.addColorStop(1, hexA(f.color, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y - 6, 42, 0, 7); ctx.fill();
+      if (c === selectedCity) {
+        ctx.strokeStyle = hexA("#ffd76a", 0.9); ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]); ctx.lineDashOffset = -t * 14;
+        ctx.beginPath(); ctx.arc(x, y - 8, 34, 0, 7); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    rafId = requestAnimationFrame(render);
+  }
+  function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+
+  // ---------- 控件回调（由视图层转接） ----------
+  const controls = {
+    fit: () => { fitAll(); clampCam(); render(); },
+    zoom: k => {
+      const cx = vw / 2, cy = vh / 2;
+      const [wx, wy] = toWorld(cx, cy);
+      cam.scale = Math.max(minScale(), Math.min(4.5, cam.scale * k));
+      cam.x = cx - wx * cam.scale; cam.y = cy - wy * cam.scale;
+      clampCam(); render();
+    },
+  };
+
+  // ---------- 启动 ----------
+  resize(); fitAll(); render();
+  window.addEventListener("resize", resize);
+  canvas.addEventListener("wheel", onWheel, { passive: false });
+  canvas.addEventListener("pointerdown", onDown);
+  canvas.addEventListener("pointermove", onMove);
+  canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointerleave", onLeave);
+  window.addEventListener("keydown", onKey);
+
+  const stats = { loadMs: 0 };
+  (async () => {
+    onProgress(0.04);
+    const cityImages = await loadCityImages();
+    const built = await buildBase(2, onProgress, cityImages);
+    if (disposed) return;
+    base = built.canvas;
+    SPARKLES = built.sparkles;
+    stats.loadMs = Math.round(performance.now() - loadStart);
+    onReady(stats);
+    render();
+  })();
+
+  return {
+    controls,
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("keydown", onKey);
+      canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointerleave", onLeave);
+    },
+    __stats: stats,
+  };
+}

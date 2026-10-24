@@ -662,11 +662,11 @@ export async function buildBase(scale = 2, onProgress = () => {}) {
 
   // --- 8. 城市图标 + 匾额 + 地名 ---
   for (const city of CITIES) {
-    const [x, y] = [proj(city.lon, city.lat)[0] + city.dx, proj(city.lon, city.lat)[1] + city.dy];
+    const [x, y] = cityAnchor(city);
     CITY_PAINTERS[city.id](c, x, y);
   }
   for (const city of CITIES) {
-    const [x, y] = [proj(city.lon, city.lat)[0] + city.dx, proj(city.lon, city.lat)[1] + city.dy];
+    const [x, y] = cityAnchor(city);
     banner(c, city, x, y, 22);
   }
   // 海名（疏散排布）
@@ -745,8 +745,8 @@ function drawSpaced(c, text, [x, y], size, fill, font, spread = 1.7) {
   c.restore();
 }
 
-// 供主程序用的城市屏幕锚点（含 dx/dy）
+// 供主程序用的城市屏幕锚点（含 dx/dy；澳洲城市随板块北移）
 export function cityAnchor(city) {
-  const [x, y] = proj(city.lon, city.lat);
+  const [x, y] = proj(city.lon, city.lat, city.oc ? AU_SHIFT : 0);
   return [x + (city.dx || 0), y + (city.dy || 0)];
 }

@@ -1,4 +1,6 @@
 // L1 大地图 · 主程序：相机 / 悬停 / 选中面板 / 动态层（云影·海光）/ 加载序幕
+// UI 原则（院长 R16 定）：游戏不是 PPT——信息用形式表达（旗色/星徽/图标/画面），
+// 不堆文本介绍；城市无 note 文案、面板只留必要交互信息。
 import { buildBase, WORLD, cityAnchor, linkCurve } from "./paint-map.js";
 import { CITIES, LINKS, FACTIONS } from "./map-data.js";
 import { mulberry32 } from "./noise.js";
@@ -89,7 +91,7 @@ function setHover(c) {
   canvas.style.cursor = c ? "pointer" : "grab";
   if (!c) { tooltip.style.opacity = 0; } else {
     const f = FACTIONS[c.faction];
-    tooltip.innerHTML = `<b style="color:${f.color}">${c.name}</b> · ${f.name}阵营${c.capital ? " · <span style='color:#ffd76a'>首都</span>" : ""}<br>${c.note}<br><span style="color:#b8b2a4">驻守：${c.generals.join("、")}</span>`;
+    tooltip.innerHTML = `<b style="color:${f.color}">${c.name}</b> · ${f.name}${c.capital ? " · <span style='color:#ffd76a'>首都</span>" : ""}<br><span style="color:#b8b2a4">驻守 ${c.generals.length} 员</span>`;
     tooltip.style.opacity = 1;
   }
   render();
@@ -123,11 +125,9 @@ function renderPanel() {
       <h2>${c.name}</h2>
       <button id="cp-close" title="关闭">×</button>
     </div>
-    <p class="cp-note">${c.note}</p>
     <div class="cp-sec"><label>驻守武将 · ${c.generals.length} 员</label>
       <div class="cp-gens">${c.generals.map(g => `<span class="gen">${g}</span>`).join("")}</div>
     </div>
-    <div class="cp-sec"><label>初始建筑</label><p>${c.init}</p></div>
     <button id="cp-enter">进入城市内景（L2 雏形）→</button>
     <p class="cp-hint">由外及里：L1 战略 → L2 城内网格 → L3 战斗</p>`;
   panel.classList.add("open");
