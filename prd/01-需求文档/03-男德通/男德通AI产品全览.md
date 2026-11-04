@@ -1,8 +1,16 @@
-# 男德通 AI 产品全览
+# 男德通 AI 产品全览（v3.5.0 历史快照·已停更归档）
 
+> 📚 **归档声明（2026-11-04 白机，院长裁决方案 A）**：本文是 **v3.5.0 时代（2026-08-21）的逐行审计快照**，此后 v3.7.0（视觉动态路由 + R-055 兜底前 8 + BUG-79 修复）与 v3.8.0（DeepSeek 双通道切换）两波改动脉冲已将其击穿，**正文停更、原地归档**——保留行号级审计与 §14 的 26 项痛点原始盘点的史料价值，**不再作为现状依据**。
+> **现状唯一权威 = 《[男德通AI技术文档.md](男德通AI技术文档.md)》（v2.0，基于 v4.1.1）**；代码变更记录 = `server/src/agents/changelog.md` + `server/src/utils/changelog.md`；26 项痛点处置结果 = 《男德通AI优化方案设计.md》底部裁决表（15 项已落地）。
+>
+> **已知过时点速查**（正文未逐处修改，读时对照）：
+> ① 主模型 glm-5.2/超时 180s → DeepSeek 官方 deepseek-flash 双通道/60s；② 视觉链路单层 visionAgent → 三层 fallback（主模型直识优先）；③ 默认人设 tiwei → normal；④ FTS5 trigram → unicode61+预分词 v2；⑤ TASK_TIMEOUT 15s → 60s；⑥ SITE_VERSION 硬编码 → 动态读 package.json；⑦ 无 rerank/bm25 列权重/Jaccard 去重（R-053 后新增）；⑧ 无 full_analysis 全量分析（R-049 已上线）；⑨ §14 痛点 26 项中 15+ 项已解决（正文零标记）。
+>
+> ---- 以下为归档前原文（最后更新 2026-08-21）----
+>
 > 最后更新：2026-08-21（白机，基于 v3.5.0 线上代码逐行审计产出）
 > 来源：`server/src/agents/`、`server/src/utils/`、`server/src/controllers/chatController.js`、`server/src/searchHub.js`、`server/scripts/`、`src/views/ChatView.vue` 全部源码
-> 定位：本文是男德通 AI 的**工程实况快照**，每个参数/阈值/prompt 均来自源码，可直接作为优化依据
+> 定位（历史）：本文是男德通 AI 的**工程实况快照**，每个参数/阈值/prompt 均来自源码，可直接作为优化依据——该职责 2026-11-04 起移交《男德通AI技术文档.md》v2.0
 
 ---
 

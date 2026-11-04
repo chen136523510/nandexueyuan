@@ -1,8 +1,10 @@
 # 男德通 AI 技术文档
 
-> 版本：v1.0 | 基于线上 v3.6.0 源码 + 需求池规划项 | 日期：2026-08-24
+> 版本：**v2.0**（2026-11-04 白机，基于线上 **v4.1.1** 源码全面刷新）| 初版 v1.0：2026-08-24（v3.6.0 基准）
+> **定位：男德通工程现状唯一权威文档**。《男德通AI产品全览.md》已转 v3.5.0 历史快照归档（见其头部横幅）
 > 代码位置：`server/src/agents/`（9 个子 Agent + orchestrator）、`server/src/utils/`（llm/persona/knowledge/tokenizer）、`server/src/controllers/chatController.js`、`server/src/searchHub.js`
 > 前端：`src/views/ChatView.vue`
+> 维护纪律（2026-11-04 审计教训）：**男德通代码变更发版时必须同步刷新本文档**——快照型文档不随版本刷新曾导致双文档集体失真（详见 [模块 changelog](changelog.md) 2026-11-04 条）
 
 ---
 
@@ -35,8 +37,10 @@ chatController.askChat()
   │
   └─ orchestrate(question, history, send, personaId, customDesc, images, lastIntent)
        │
-       ├─ ① 视觉识别（带图必跑，无图跳过）
-       │    └─ visionAgent → visionChatCompletion（doubao-seed-2-0-mini）
+       ├─ ① 视觉识别（带图必跑，无图跳过；v3.7.0 起三层动态路由）
+       │    ├─ 第一层：tryDirectMultimodal() 主模型直识图（chatCompletionWithImages，运行时探测）
+       │    ├─ 第二层：失败 fallback runVisionAgent()（DeepSeek 通道走主模型；火山通道走 doubao-seed-2-0-mini）
+       │    └─ 第三层：整体异常 → 降级文本回答（"图片识别服务异常"，不中断）
        │       识别结果拼进 effectiveQuestion，回写 user turn
        │
        ├─ ② 快速短路判断（无图时）
@@ -66,13 +70,13 @@ chatController.askChat()
 1. **闲聊短路**：`isCasualChat(question, history)` --≤10 字 + 匹配 ABSOLUTE_CASUAL 词表（问候/致谢/身份类零信息量）直接闲聊；REACTION_CASUAL（哈哈哈/笑死等）有上下文时不短路（可能是高密度回应）
 2. **快速路由**：`matchQuickPattern(question)` --正则匹配高频模板（"XX 发了多少条"→person_stat、"群里最近聊了什么"→topic_search、"多少条消息"→db_info），跳过规划 LLM
 3. **反馈检测**：`matchFeedbackIntent(question)` --用户说"xx 有 bug""xx 太慢"时走反馈流程，LLM 判断是否真反馈，确认后 `feedback_created` SSE 事件推前端确认
-4. **LLM 规划**：glm-5.3-flash temp=0 thinking:disabled（glm 不支持 → llm.js 自动降级，见 §4），输出 JSON 任务数组，带 `full:true` 标记走全量管线
+4. **LLM 规划**：主模型 temp=0 + thinking:disabled（模型不支持时 llm.js 摘参数自动降级重试一次，见 §4），输出 JSON 任务数组，带 `full:true` 标记走全量管线
 
 ---
 
 ## 3. 子 Agent 一览
 
-共 9 个子 Agent + 1 个视觉 Agent。已弃用 2 个（semanticAgent / statisticAgent），保留代码作工程参考。
+共 9 个在役子 Agent（含视觉）。目录中另有 `nonoAgent.js`（诺诺线，2026-10-12 已冻结移交 nono 仓）与 2 个已弃用 Agent（semanticAgent / statisticAgent，保留代码作工程参考）。
 
 | # | Agent | 入口函数 | 数据源 | LLM 调用 | 职责 |
 |---|-------|---------|--------|----------|------|
@@ -83,7 +87,7 @@ chatController.askChat()
 | 5 | time_search | `runTimeSearchAgent` | `message_chunks` 按日期 | 话题块摘要 1 次 LLM | 时间范围检索，按日/月聚合 |
 | 6 | worldbook | `runWorldbookAgent` | 设定集文件（3 万字） | 无 | 德塔世界观设定，按需注入全文 |
 | 7 | db_info | `runDbInfoAgent` / `queryDbStats` | `group_messages` + `message_chunks` SQL | 无（纯 SQL） | 数据库元信息：总数/跨度/排行/版本 |
-| 8 | vision | `runVisionAgent` | 图片 base64 | doubao-seed-2-0-mini | 图片理解，150 字中文描述 |
+| 8 | vision | `runVisionAgent` / `tryDirectMultimodal` | 图片 base64 | 主模型直识优先；兜底 DeepSeek=主模型 / 火山=doubao-seed-2-0-mini | 图片理解，150 字中文描述；v3.7.0 起三层 fallback（探测反馈决定路由，无需维护多模态元数据） |
 | 9 | full_analysis | `runFullAnalysisAgent` | `group_messages` 全量 | map-reduce 多次 LLM | 全量数据分析，分批摘要 + 分层合并 |
 | - | ~~semantic~~ | - | - | - | 已弃用（被 topic+time 替代） |
 | - | ~~statistic~~ | - | - | - | 已弃用（被直查 SQL 替代，避免幻觉） |
@@ -94,7 +98,12 @@ chatController.askChat()
 |-------|------|-----|------|
 | topic_search | 同义词缓存 | LRU 1h / 200 条 | LLM 失败时用原始关键词 |
 | topic_search | 结果缓存 | LRU 10min / 50 条 | 同关键词零查询零 LLM |
-| topic_search | 分块 LIMIT | 5 | 最多 5 个话题块 |
+| topic_search | Level 1 召回 | `RERANK_CANDIDATES=20` | R-053 方案 B：大召回保证不漏（v3.5.0 时代为 5） |
+| topic_search | rerank 保留 | `RERANK_KEEP=5` | rerank 成功时注入下游 prompt 的目标宽度 |
+| topic_search | rerank 兜底 | `RERANK_FALLBACK_KEEP=8` | R-055 方案①：失败/幻觉 id/审核降级取初排前 8（考公块 10522 案受益） |
+| topic_search | rerank 触发线 | `RERANK_TRIGGER=6` | 候选 >6 才触发 rerank（≤5 直接用初排，省一次 LLM） |
+| topic_search | FTS5 列权重 | `bm25(fts, 3.0, 1.0)` | R-053 方案 C：keywords 权重 3 倍于 summary |
+| topic_search | 块间去重 | keywords 词集 Jaccard > 0.7 | R-053 方案 D：同质块合并，保留 rank 靠前的 |
 | topic_search | 消息 LIMIT | 50 | 每块抽样上限 |
 | topic_search | 抽样预算 | `MSG_BUDGET_PER_CHUNK=10` | 每块 10 条（关键词命中优先 + 头尾定边界） |
 | topic_search | 单条截断 | 200 字符 | content 超 200 截断 |
@@ -123,14 +132,20 @@ chatController.askChat()
 
 统一入口，所有文本模型调用走这里，无旁路直调。
 
-### 模型配置
+### 模型配置（v3.8.0 起双通道自动选择）
+
+| 通道 | 触发条件 | 端点 | 模型 | 说明 |
+|------|---------|------|------|------|
+| **DeepSeek 官方（当前主通道）** | 配置了 `DEEPSEEK_API_KEY` | `https://api.deepseek.com`（`DEEPSEEK_BASE_URL` 可覆盖） | `deepseek-flash`（V4.1-Flash） | 自带图像理解 + 1M 上下文；**文本+视觉同模型**；支持 Context Caching（`prompt_cache_hit_tokens`/`miss_tokens`，onUsage 可观测） |
+| 火山 ARK（回退通道） | 未配置 DeepSeek key | coding 端点（文本）+ 标准按量端点（视觉，独立 `VOLC_STD_BASE_URL`） | `VOLC_MODEL` | 视觉走独立 `doubao-seed-2-0-mini-260428`；coding plan 订阅 2026-09-20 已到期，ark key 对标准端点仍有效（应急路径） |
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| `MODEL` | `glm-5.3-flash` | 火山引擎方舟（2026-09-10 从 deepseek-v4-flash 切回，**原生多模态**） |
-| `BASE_URL` | `https://ark.cn-beijing.volces.com/api/coding/v3` | coding plan 端点 |
-| `TIMEOUT_MS` | 60000 (60s) | 实测 glm-5.3-flash 1.6~5s/次 |
-| 视觉模型 | `doubao-seed-2-0-mini-260428` | 标准按量端点，60s，thinking:disabled。**未随主模型统一**——glm-5.3-flash 虽为原生多模态，是否合并视觉链路待裁决 |
+| `TIMEOUT_MS` | 60000 (60s) | 实测秒级返回，留足余量 |
+| `VISION_TIMEOUT_MS` | 60000 | - |
+| 通道探测 | `PROVIDER / BASE_URL / MODEL` 导出 | probeModel.js 头部显示当前通道，运维确认用 |
+
+> **通道沿革**：glm-5.2 →（8-24 算力紧张）deepseek-v4-flash-ga →（9-10）glm-5.3-flash →（9-20 火山 coding plan 到期）**DeepSeek 官方 deepseek-flash 主通道 + 火山回退**（v3.8.0）。
 
 > ⚠️ **换模型前必跑 `node scripts/probeModel.js [模型ID]`**（探测连通/thinking 兼容/JSON/流式四项）。BUG-78 的教训：只改 env 不等于切完，`thinking:disabled` 这类**能力差异参数**在不同模型上行为不同，必须实测。
 
@@ -139,18 +154,19 @@ chatController.askChat()
 | 函数 | 用途 | thinking 参数 |
 |------|------|--------------|
 | `chatCompletion(messages, options)` | 非流式对话 | `options.thinking='disabled'` 跳过思考链 |
-| `chatCompletionStream(messages, options)` | 流式对话（SSE） | 同上 |
-| `visionChatCompletion(messages)` | 图片理解 | 固定 thinking:disabled |
+| `chatCompletionStream(messages, options)` | 流式对话（SSE）；支持 `options.onUsage(u)` 回调透出流尾 usage（缓存命中率统计） | 同上 |
+| `chatCompletionWithImages(messages, options)` | 主模型直识图（v3.7.0 新增，走主端点，视觉第一层 `tryDirectMultimodal` 使用） | 同上 |
+| `visionChatCompletion(messages)` | 图片理解（DeepSeek 通道=主模型主端点；火山通道=doubao 标准端点） | 固定 thinking:disabled，不支持时自动降级重试 |
 | `TEMPS` | 温度常量 | PLANNING=0 / ANALYSIS=0.5 / CHAT=0.7 / FEEDBACK=0 / NPC=0.8 |
+| `PROVIDER / BASE_URL / MODEL` | 当前通道信息导出 | - |
 
-### 模型特性（glm-5.3-flash vs deepseek-v4-flash）
+### 模型特性备忘（通道差异）
 
-| 维度 | glm-5.3-flash（当前） | deepseek-v4-flash |
-|------|----------------------|-------------------|
-| `thinking:disabled` | **400 拒绝**（`InvalidParameter: thinking.type disabled is not supported by this model`） | 接受（200，reasoning_tokens=0） |
-| `max_tokens` | llm.js 当前不透传 | 可传，不吞正文 |
-| 推理类型 | 原生多模态 | 纯文本（混合推理） |
-| 响应速度 | 实测 1.6~5s | 1-5s |
+| 维度 | DeepSeek deepseek-flash（当前） | 火山 glm 系（回退通道） |
+|------|------|------|
+| `thinking:disabled` | 接受 | glm 系 **400 拒绝** → llm.js 摘参数自动降级重试一次（BUG-78 机制） |
+| 多模态 | 原生（文本+视觉同模型） | glm-5.3-flash 原生多模态；旧 deepseek-v4-flash（火山版）纯文本 |
+| Context Caching | 官方自动（onUsage 可观测命中率） | coding 端点自动缓存 system prompt（cached_tokens=1024 实测） |
 | 流式格式 | delta.content / delta.reasoning_content 分开 | 同 |
 
 适配策略：planner / feedback 仍传 `thinking:'disabled'`（确定性 JSON 场景省算力），但 **glm 系不支持该参数**——`llm.js` 已加「模型不支持则摘掉参数**自动降级重试一次**」（BUG-78），换模型因此不再断链；代价是这两个场景在 glm 上以「思考链开启」运行（略慢、多耗算力）。闲聊/分析/流式本就是默认思考链，不受影响。
@@ -211,7 +227,7 @@ chatController.askChat()
 | 函数 | 用途 |
 |------|------|
 | `tokenizeZh(text)` | 索引侧：token 空格 join 写入 FTS5 列 |
-| `buildFtsQuery(rawWords)` | 查询侧：多词 token 全部 OR 连接（宽松召回）。⚠️ **不剥离 FTS5 语法字符**——遇含点号的人名别名（`O.o`/`@.........`）会报 `fts5: syntax error near "."`（**BUG-79**，有 LIKE 后备自愈，待修） |
+| `buildFtsQuery(rawWords)` | 查询侧：多词 token 全部 OR 连接（宽松召回）。产空串时跳过 FTS 直落 LIKE（防 `MATCH ''` 语法错误）。含点号人名别名（`O.o`/`@.........`）已由 **BUG-79 修复**（2026-09-15 三层加固：非汉字段按非字母数字切分对齐 unicode61 真实行为 + LIKE 转义 `%`/`_`/`\` 加 `ESCAPE '\'`，随 v3.7.0 上线） |
 
 索引重建脚本 `scripts/rebuildFtsV2.js`：纯本地 CPU 操作，batch 500，不调 LLM。
 
@@ -342,6 +358,38 @@ map 并发 4 批 → 每批 LLM 查询感知摘要（保留人物/事件/次数/
 
 展示 agent_thinking 事件流：agent（main/person_stat/topic_search...）+ phase（planning/analyzing/searching/done）+ content。全量分析时显示 📚 图标 + mapping/reducing phase + 「第 x/y 批」进度徽章。
 
+### SSE 事件序列示例（v2.0 自《产品全览》§11.3 并入）
+
+```
+event: agent_thinking     ← 规划/检索/分析各阶段进度
+data: {"agent":"main","phase":"planning","content":"正在分析...","data":null}
+
+event: agent_thinking     ← 子 Agent 进度
+data: {"agent":"topic_search","phase":"searching","content":"关键词：..."}
+
+event: agent_thinking     ← 黑机离线警告（可选）
+data: {"agent":"main","phase":"warning","content":"⚠️ 当前高性能计算节点..."}
+
+event: token              ← 流式回答（逐 chunk）
+data: {"content":"丘"}
+
+event: feedback_created   ← 反馈草稿（可选）
+event: sources            ← 引用来源（可选）
+event: done               ← 完成 {"sessionId":123,"intent":"multi"}
+```
+
+### 前端交互要点（v2.0 自《产品全览》§10/§11 并入）
+
+| 项 | 要点 |
+|----|------|
+| 人设选择 | 5 选项（normal 默认/体委/丘比/开开/自定义）；localStorage `chat_persona` + `chat_persona_custom` |
+| 图片上传 | 最多 3 张 / 4MB / jpg·png·webp·gif；`POST /api/chat/upload`（multer 落 `uploads/chat/`，文件名 `chat_{ts}_{random6}`）；controller 入口正则二次校验 |
+| 限流 | `rateLimit(10/min)` 内存 Map；超限 HTTP 429 `{code:4290}` |
+| 停止生成 | AbortController 中断 fetch → 后端 `req.on('close')` → send 抛 `CLIENT_ABORTED` 静默中断，前端保留已生成部分 |
+| Markdown 渲染 | markdown-it + DOMPurify 安全渲染（v-html） |
+| Agent 图标 | main🧠 / person_stat📊 / person_messages💬 / mentioned🔍 / topic_search🔎 / 视觉识别👁️ |
+| 反馈确认卡 | 反馈不自动入库，前端「确认投递」按钮调 createFeedback()（确认制） |
+
 ---
 
 ## 12. 数据库表结构
@@ -436,8 +484,11 @@ message_chunks_fts_v2（FTS5 虚拟表）
 ## 15. 环境变量
 
 ```env
-# LLM
-VOLC_API_KEY=ark-xxx
+# LLM（v3.8.0 起双通道：配了 DEEPSEEK_API_KEY 走官方主通道，否则火山回退）
+DEEPSEEK_API_KEY=sk-xxx          # DeepSeek 官方（当前主通道）
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-flash
+VOLC_API_KEY=ark-xxx             # 火山回退通道
 VOLC_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
 VOLC_MODEL=glm-5.3-flash
 VOLC_STD_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
@@ -512,6 +563,8 @@ doubao-embedding 1024 维，向量化 5,372 分块 keywords+summary → sqlite-v
 | BUG-75 | catch 引用 try 内 const ftsQuery，ReferenceError 吞掉真实错误 | catch 块引用的变量必须在 try 外声明 |
 | BUG-76 | 黑机缓存代码插进 orchestrate 函数体内部，planTasks 从未被调用，主流程引用 planningFailed 时 ReferenceError | 内联代码抽函数后必须确认调用点已更新；deploy.sh 9/9 全过 ≠ 功能可用 |
 | BUG-61/65/70 | DATABASE_URL 指向错库（dev.db vs prod.db） | 操作前确认连接的是哪个库 |
+| BUG-78 | glm 系拒绝 thinking:disabled 直接 400 断链（换模型即断） | 能力差异参数换模型必实测 probeModel；llm.js 已加摘参数自动降级重试一次 |
+| BUG-79 | 含点号昵称（`O.o`）产出非法 FTS5 MATCH token（syntax error） | 索引/查询两侧分词规则必须对齐真实分词器行为；空 query 防御 + LIKE 三字符转义三层加固（2026-09-15，v3.7.0 上线） |
 
 ---
 
@@ -521,11 +574,12 @@ doubao-embedding 1024 维，向量化 5,372 分块 keywords+summary → sqlite-v
 |------|------|------|
 | 男德通 AI 技术文档（本文档） | `prd/01-需求文档/03-男德通/男德通AI技术文档.md` | 现状+规划综合技术文档 |
 | AI 助手 PRD v2 | `prd/01-需求文档/03-男德通/AI助手.md` | 产品需求（v1 三分类已废弃） |
-| 男德通 AI 产品全览 | `prd/01-需求文档/03-男德通/男德通AI产品全览.md` | 工程实况快照（v3.5.0 逐行审计） |
-| 男德通 AI 优化方案设计 | `prd/01-需求文档/03-男德通/男德通AI优化方案设计.md` | 26 项痛点裁决记录 |
+| 男德通 AI 产品全览 | `prd/01-需求文档/03-男德通/男德通AI产品全览.md` | 📚 v3.5.0 历史快照（2026-11-04 起停更归档；26 项痛点原始盘点/行号级审计的史料价值保留；现状以本文档为准） |
+| 男德通 AI 优化方案设计 | `prd/01-需求文档/03-男德通/男德通AI优化方案设计.md` | 26 项痛点裁决记录（已裁决实施完毕，存档） |
+| 男德通模块 Changelog | `prd/01-需求文档/03-男德通/changelog.md` | 模块文档层变更记录 |
 | Agents Changelog | `server/src/agents/changelog.md` | Agent 代码变更记录 |
 | Bug Log | `prd/01-需求文档/04-德塔/bug-log.md` | Bug 修复记录 |
 | 需求池 | `pm/需求池.md` | 全局需求排期 |
 | RAG 检索策略调研 | `prd/01-需求文档/00-调研/01-技术/RAG检索策略与工程化调研.md` | 检索方案对比 |
 
-> **注**：《男德通AI产品全览.md》基于 v3.5.0 审计，部分内容已过时（默认人设写 tiwei 实际已改 normal、TASK_TIMEOUT 写 15s 实际已改 60s、SITE_VERSION 写硬编码实际已改动态）。本文档以 v3.6.0 + glm-5.3-flash 线上代码为准，如遇冲突以本文档和源码为准。
+> **注**：本文档 v2.0（2026-11-04）基于 **v4.1.1** 线上代码全面刷新，是男德通工程现状**唯一权威**。《男德通AI产品全览.md》同日转 v3.5.0 历史快照归档（过时点速查见其头部横幅）。**维护纪律**：男德通代码变更发版时必须同步刷新本文档——"快照型文档不随版本刷新"是 2026-11-04 审计定性的集体失真根因。

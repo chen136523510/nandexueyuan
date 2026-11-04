@@ -2,6 +2,7 @@
 
 > 版本：v1.0 | 日期：2026-09-15（白机）
 > 状态：⛰️ uphill 设计落档，**未排期**（院长 2026-09-15 明确"可以做重试设计，但不是今天要处理的"）
+> 【2026-11-04 勘误注】rerank 所用 LLM 通道已随 v3.8.0（2026-09-20）切 **DeepSeek 官方 deepseek-flash**，实施时按新通道验证（需求池条目已同步此注）
 > 关联：R-053 方案 B（LLM rerank，已落地）+ R-055 方案①（兜底放宽到前 8，已实施）
 > 改动范围：`server/src/agents/topicSearchAgent.js` `rerankChunks` 函数（约 R-053 落地的代码段）
 > 前置依赖：R-055 实施（commit `0859277`）已新增 `RERANK_FALLBACK_KEEP=8` 常量

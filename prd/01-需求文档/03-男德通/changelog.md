@@ -1,0 +1,17 @@
+# 男德通模块 Changelog
+
+> 倒序排列，最新在最上方。模块级**文档与产品形态**变更记录。
+> 代码层变更分记：Agent 层 → `server/src/agents/changelog.md`；LLM/工具层 → `server/src/utils/changelog.md`。
+> Bug 记录 → `prd/01-需求文档/04-德塔/bug-log.md`（BUG-001~080，男德通归此 log）。
+
+---
+
+## 2026-11-04（白机·文档过时审计与结构化收编，院长裁决方案 A）
+
+- **[审计]** 7 份模块文档对照 v4.1.1 源码全面审计（代码对照点均实锤验证）：《产品全览》（v3.5.0 基准）过时 12+ 处、《技术文档》（v3.6.0 基准）过时 ~15 处、《AI助手.md PRD v2》滞后 4 处；三份方案类文档（R-056/RAG 方案/summary 材料）时效健康。**根因定性**：快照型文档未随 v3.7.0（视觉动态路由+R-055+BUG-79）/v3.8.0（DeepSeek 双通道）两波改动脉冲刷新 + 双现状权威并存（全览 1024 行 vs 技术文档 531 章节平行重叠）
+- **[结构] 文档权威收编**：《男德通AI技术文档.md》升 **v2.0**（基于 v4.1.1 全面刷新）为**唯一现状权威**，并入产品全览独有价值（SSE 事件序列示例/前端交互要点/限流细节）；《男德通AI产品全览.md》转 **v3.5.0 历史快照原地归档**（头部横幅+九条过时点速查，正文保留不动——行号级审计与 26 项痛点原始盘点的史料价值）。技术文档头部新增**维护纪律**：男德通代码发版必须同步刷新技术文档
+- **[修订] 技术文档 v2.0 刷新点**：①模型配置改双通道表（DeepSeek deepseek-flash 主 + 火山回退，含通道沿革链）②视觉链路三层 fallback（tryDirectMultimodal → runVisionAgent → 文本降级）③导出函数表补 chatCompletionWithImages/onUsage/PROVIDER ④topic_search 参数表补 rerank 四常量（CANDIDATES=20/KEEP=5/FALLBACK_KEEP=8/TRIGGER=6）+ bm25(3.0,1.0) 列权重 + Jaccard 0.7 去重 ⑤BUG-79 由「待修」改「已修复（三层加固）」⑥环境变量补 DEEPSEEK_* ⑦踩坑表补 BUG-78/79 ⑧§18 文档索引更新权威关系
+- **[修订] AI助手.md 升 v2.1**：当前形态对齐 v4.1.1；子 Agent 表补 full_analysis 行（R-049）+ 视觉行更新；§3 视觉描述三层降级；§5 summary 列实况勘误（5,372/5,372 全空）；§8 待开发补全 R-050~R-056；v1 归档说明 RAG 待拍板→已落地
+- **[修订]** 《优化方案设计》头部状态改「✅ 已裁决并实施完毕」（原「方案设计阶段」与底部 26 项裁决表矛盾）；《RAG 方案》头部「rerank 偶发失败待观察」补闭环注（R-055 定位 CONTENT_MODERATION + 兜底前 8 + R-056 承接重试）；《R-056 设计》补 DeepSeek 通道勘误注
+- **[勘误]** 需求池 R-049「未部署」修正为已上线（fullAnalysisAgent 随 v3.6.0 后发版部署，orchestrator.js:224 接线实证）
+- **[登记]** 本 changelog 新建（此前男德通模块无文档层 changelog，变更散记根 CHANGELOG/代码层 changelog/需求池）
